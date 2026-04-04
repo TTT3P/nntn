@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>บันทึกผลิต Prep — NNTN</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-dark: #1B5E20;
+      --green: #4CAF50;
+      --bg: #F1F8E9;
+      --border: #e0e0e0;
+      --muted: #757575;
+      --red: #C62828;
+      --orange: #E65100;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: var(--bg); min-height: 100vh; }
+
+    header {
+      background: var(--green-dark); color: white;
+      padding: 14px 16px 10px; position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 1.1rem; }
+    header .sub { font-size: 0.78rem; opacity: 0.8; margin-top: 2px; }
+
+    nav {
+      display: flex; gap: 8px; padding: 10px 16px;
+      background: white; border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    nav a {
+      text-decoration: none; color: var(--green-dark);
+      font-size: 0.82rem; white-space: nowrap;
+      padding: 5px 12px; border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+    nav a.active { background: var(--green-dark); color: white; }
+
+    .content { padding: 16px; }
+
+    .card {
+      background: white; border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 16px; margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 0.8rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px;
+    }
+
+    .form-row { margin-bottom: 14px; }
+    .form-row label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 5px; }
+    .form-row input, .form-row select {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid var(--border); border-radius: 8px;
+      font-size: 0.95rem; font-family: inherit; background: white;
+    }
+    .form-row input:focus, .form-row select:focus {
+      outline: none; border-color: var(--green);
+    }
+
+    .srcp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .srcp-card {
+      border: 2px solid var(--border); border-radius: 10px;
+      padding: 12px 14px; cursor: pointer; background: white;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .srcp-card.selected { border-color: var(--green); background: #F1F8E9; }
+    .srcp-card .code { font-size: 0.72rem; color: var(--muted); font-weight: 600; }
+    .srcp-card .name { font-size: 0.92rem; font-weight: 700; margin-top: 2px; }
+    .srcp-card .unit { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+    .yield-row {
+      display: flex; gap: 10px; align-items: flex-end;
+    }
+    .yield-row .form-row { flex: 1; margin-bottom: 0; }
+    .unit-badge {
+      padding: 10px 14px; background: #f5f5f5;
+      border: 1px solid var(--border); border-radius: 8px;
+      font-size: 0.85rem; color: var(--muted); white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .calc-box {
+      background: #E8F5E9; border-radius: 8px;
+      padding: 12px 14px; margin-bottom: 14px;
+      font-size: 0.85rem; line-height: 1.6;
+      display: none;
+    }
+    .calc-box.show { display: block; }
+    .calc-box .hl { font-weight: 700; color: var(--green-dark); }
+
+    .bom-box {
+      background: white; border: 1px solid var(--border); border-radius: 8px;
+      margin-bottom: 14px; overflow: hidden; display: none;
+    }
+    .bom-box.show { display: block; }
+    .bom-box-title {
+      background: #F1F8E9; padding: 8px 12px;
+      font-size: 0.78rem; font-weight: 700; color: var(--green-dark);
+      border-bottom: 1px solid var(--border);
+    }
+    .bom-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .bom-table th { padding: 6px 12px; text-align: left; color: var(--muted); font-size: 0.75rem; font-weight: 600; border-bottom: 1px solid var(--border); }
+    .bom-table td { padding: 7px 12px; border-bottom: 1px solid #f5f5f5; }
+    .bom-table tr:last-child td { border-bottom: none; }
+    .bom-table .qty-col { text-align: right; font-weight: 600; color: var(--green-dark); white-space: nowrap; }
+
+    .btn-submit {
+      width: 100%; padding: 14px;
+      background: var(--green-dark); color: white;
+      border: none; border-radius: 10px;
+      font-size: 1rem; font-weight: 700; font-family: inherit;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-submit:active { background: #2E7D32; }
+    .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+
+    .alert {
+      padding: 12px 14px; border-radius: 8px;
+      font-size: 0.88rem; margin-bottom: 14px; display: none;
+    }
+    .alert.success { background: #E8F5E9; color: #1B5E20; border: 1px solid #A5D6A7; display: block; }
+    .alert.error   { background: #FFEBEE; color: var(--red); border: 1px solid #EF9A9A; display: block; }
+
+    .history-item {
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-item .top { display: flex; justify-content: space-between; }
+    .history-item .srcp-tag {
+      font-size: 0.72rem; background: #E8F5E9; color: var(--green-dark);
+      padding: 1px 8px; border-radius: 10px; font-weight: 600;
+    }
+    .history-item .yield-val { font-weight: 700; color: var(--green-dark); }
+    .history-item .meta { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🥄 บันทึกผลิต Prep</h1>
+    <div class="sub" id="date-display"></div>
+  </div>
+</header>
+
+<nav>
+  <a href="index.html">🏠 หน้าหลัก</a>
+  <a href="dashboard.html">📊 Dashboard</a>
+  <a href="prep-form.html" class="active">🥄 ผลิต Prep</a>
+  <a href="portion-form.html">🛍️ แบ่งถุง</a>
+  <a href="production-log-form.html">🍳 บันทึกผลิต RCP</a>
+</nav>
+
+<div class="content">
+
+  <div class="card">
+    <div class="card-title">เลือก Sub-Recipe</div>
+    <div class="srcp-grid" id="srcp-grid">
+      <div style="color:var(--muted);font-size:0.85rem">⏳ กำลังโหลด...</div>
+    </div>
+  </div>
+
+  <div class="card" id="form-card" style="display:none">
+    <div class="card-title" id="form-title">บันทึกการผลิต</div>
+
+    <div id="alert-box" class="alert"></div>
+
+    <div class="form-row">
+      <label>วันที่ผลิต</label>
+      <input type="date" id="logged-at">
+    </div>
+
+    <div class="form-row">
+      <label>ชื่อผู้บันทึก</label>
+      <input type="text" id="logged-by" placeholder="เช่น อิม, ชาติ">
+    </div>
+
+    <div class="form-row">
+      <label>จำนวน batch</label>
+      <input type="number" id="batch-count" min="0.5" step="0.5" value="1">
+    </div>
+
+    <div class="form-row">
+      <label>Yield จริงที่ได้</label>
+      <div class="yield-row">
+        <div class="form-row">
+          <input type="number" id="yield-grams" min="1" step="1" placeholder="กรอกกรัม/ml">
+        </div>
+        <div class="unit-badge" id="unit-badge">g</div>
+      </div>
+    </div>
+
+    <div class="bom-box" id="bom-box">
+      <div class="bom-box-title" id="bom-box-title">📋 ส่วนผสม</div>
+      <table class="bom-table">
+        <thead><tr><th>#</th><th>วัตถุดิบ</th><th class="qty-col">ปริมาณ</th></tr></thead>
+        <tbody id="bom-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="calc-box" id="calc-box"></div>
+
+    <div class="form-row">
+      <label>หมายเหตุ (ถ้ามี)</label>
+      <input type="text" id="note" placeholder="เช่น batch ใหม่, yield ต่ำกว่าปกติ">
+    </div>
+
+    <button class="btn-submit" id="btn-submit" onclick="submit()">✅ บันทึก</button>
+  </div>
+
+  <div class="card" id="history-card" style="display:none">
+    <div class="card-title">ประวัติล่าสุด (7 วัน)</div>
+    <div id="history-list"><div style="color:var(--muted);font-size:0.85rem">⏳ กำลังโหลด...</div></div>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const SRCP_LIST = [
+  { sku: 'SRCP-001', name: 'ซอสลับ', unit: 'ml', kitchen_only: true },
+  { sku: 'SRCP-004', name: 'พริกน้ำส้ม', unit: 'g', kitchen_only: false },
+  { sku: 'SRCP-005', name: 'กระเทียมเจียว', unit: 'g', kitchen_only: false },
+  { sku: 'SRCP-006', name: 'พริกผัด', unit: 'g', kitchen_only: false },
+];
+
+let selectedSrcp = null;
+let currentBom = []; // BOM rows for selected SRCP
+
+// SRCP → RCP mapping (for bom_items lookup)
+const SRCP_TO_RCP = {
+  'SRCP-001': 'RCP-001',
+  'SRCP-004': 'RCP-004',
+  'SRCP-005': 'RCP-005',
+  'SRCP-006': 'RCP-006',
+};
+
+// Date
+const today = new Date();
+document.getElementById('date-display').textContent =
+  today.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+document.getElementById('logged-at').value = today.toISOString().split('T')[0];
+
+// Build SRCP grid
+function buildGrid() {
+  const grid = document.getElementById('srcp-grid');
+  grid.innerHTML = '';
+  SRCP_LIST.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'srcp-card';
+    div.innerHTML = `<div class="code">${s.sku}</div><div class="name">${s.name}</div><div class="unit">หน่วย: ${s.unit}${s.kitchen_only ? ' · kitchen only' : ''}</div>`;
+    div.onclick = () => selectSrcp(s);
+    div.id = 'card-' + s.sku;
+    grid.appendChild(div);
+  });
+}
+
+async function selectSrcp(s) {
+  selectedSrcp = s;
+  currentBom = [];
+  document.querySelectorAll('.srcp-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('card-' + s.sku).classList.add('selected');
+  document.getElementById('form-title').textContent = 'บันทึกผลิต — ' + s.name;
+  document.getElementById('unit-badge').textContent = s.unit;
+  document.getElementById('form-card').style.display = 'block';
+  document.getElementById('history-card').style.display = 'block';
+  document.getElementById('alert-box').className = 'alert';
+  document.getElementById('calc-box').className = 'calc-box';
+  document.getElementById('bom-box').className = 'bom-box';
+  document.getElementById('yield-grams').value = '';
+  loadHistory(s.sku);
+  await loadBom(s.sku);
+}
+
+async function loadBom(sku) {
+  const rcpCode = SRCP_TO_RCP[sku];
+  if (!rcpCode) return;
+
+  const { data } = await sb.from('bom_items')
+    .select('line_no, sp_code, ingredient, qty, unit')
+    .eq('rcp_code', rcpCode)
+    .order('line_no');
+
+  if (!data || data.length === 0) return;
+  currentBom = data;
+  renderBom(1);
+}
+
+function renderBom(batch) {
+  if (currentBom.length === 0) return;
+  const srcp = selectedSrcp;
+  document.getElementById('bom-box-title').textContent =
+    `📋 ส่วนผสม × ${batch} batch`;
+
+  const tbody = document.getElementById('bom-tbody');
+  tbody.innerHTML = currentBom.map((row, i) => {
+    const total = parseFloat(row.qty) * batch;
+    const totalStr = Number.isInteger(total) ? total.toLocaleString() : total.toFixed(1).replace(/\.0$/, '');
+    const perBatch = parseFloat(row.qty);
+    const perStr = Number.isInteger(perBatch) ? perBatch.toLocaleString() : perBatch.toFixed(1).replace(/\.0$/, '');
+    const extra = batch > 1 ? ` <span style="color:var(--muted);font-weight:400;font-size:0.78rem">(${perStr}/batch)</span>` : '';
+    return `<tr>
+      <td style="color:var(--muted);font-size:0.78rem">${row.line_no}</td>
+      <td>${row.ingredient}</td>
+      <td class="qty-col">${totalStr} ${row.unit}${extra}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('bom-box').className = 'bom-box show';
+}
+
+document.getElementById('yield-grams').addEventListener('input', updateCalc);
+document.getElementById('batch-count').addEventListener('input', () => {
+  const batch = parseFloat(document.getElementById('batch-count').value) || 1;
+  renderBom(batch);
+  updateCalc();
+});
+
+function updateCalc() {
+  if (!selectedSrcp) return;
+  const yield_g = parseFloat(document.getElementById('yield-grams').value);
+  const batch = parseFloat(document.getElementById('batch-count').value);
+  const box = document.getElementById('calc-box');
+
+  if (!yield_g || !batch) { box.className = 'calc-box'; return; }
+
+  const per_batch = (yield_g / batch).toFixed(0);
+  let html = `<span class="hl">${yield_g.toLocaleString()} ${selectedSrcp.unit}</span> จาก ${batch} batch`;
+  html += ` → <span class="hl">${parseFloat(per_batch).toLocaleString()} ${selectedSrcp.unit}/batch</span>`;
+
+  if (selectedSrcp.sku === 'SRCP-005' || selectedSrcp.sku === 'SRCP-006') {
+    const bags = Math.floor(yield_g / 250);
+    const rem = yield_g % 250;
+    html += `<br>แบ่งถุง 250g → <span class="hl">${bags} ถุง</span>`;
+    if (rem > 0) html += ` + เศษ <span class="hl">${rem} g</span>`;
+  }
+
+  box.innerHTML = html;
+  box.className = 'calc-box show';
+}
+
+async function loadHistory(sku) {
+  const from7 = new Date(); from7.setDate(from7.getDate() - 6);
+  const fromStr = from7.toISOString().split('T')[0];
+  const { data } = await sb.from('prep_log').select('*')
+    .eq('srcp_code', sku).gte('logged_at', fromStr)
+    .order('logged_at', { ascending: false }).order('created_at', { ascending: false })
+    .limit(10);
+
+  const el = document.getElementById('history-list');
+  if (!data || data.length === 0) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:8px 0">ยังไม่มีประวัติ</div>';
+    return;
+  }
+  el.innerHTML = data.map(r => {
+    const d = new Date(r.logged_at + 'T00:00:00');
+    const dateStr = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+    return `<div class="history-item">
+      <div class="top">
+        <span><span class="srcp-tag">${r.srcp_code}</span> ${r.srcp_name}</span>
+        <span class="yield-val">${parseFloat(r.yield_grams).toLocaleString()} ${selectedSrcp.unit}</span>
+      </div>
+      <div class="meta">${dateStr} · ${r.batch_count} batch · ${r.logged_by}${r.note ? ' · ' + r.note : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+async function submit() {
+  if (!selectedSrcp) return;
+  const logged_at = document.getElementById('logged-at').value;
+  const logged_by = document.getElementById('logged-by').value.trim();
+  const batch_count = parseFloat(document.getElementById('batch-count').value);
+  const yield_grams = parseFloat(document.getElementById('yield-grams').value);
+  const note = document.getElementById('note').value.trim();
+  const alertEl = document.getElementById('alert-box');
+
+  if (!logged_at || !logged_by || !batch_count || !yield_grams) {
+    alertEl.textContent = '❌ กรุณากรอกข้อมูลให้ครบ';
+    alertEl.className = 'alert error';
+    return;
+  }
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+
+  const { error } = await sb.from('prep_log').insert({
+    logged_at, logged_by,
+    srcp_code: selectedSrcp.sku,
+    srcp_name: selectedSrcp.name,
+    batch_count, yield_grams,
+    note: note || null
+  });
+
+  btn.disabled = false; btn.textContent = '✅ บันทึก';
+
+  if (error) {
+    alertEl.textContent = '❌ บันทึกไม่ได้: ' + error.message;
+    alertEl.className = 'alert error';
+    return;
+  }
+
+  alertEl.textContent = `✅ บันทึกแล้ว — ${selectedSrcp.name} ${yield_grams.toLocaleString()} ${selectedSrcp.unit} (${batch_count} batch)`;
+  alertEl.className = 'alert success';
+  document.getElementById('yield-grams').value = '';
+  document.getElementById('note').value = '';
+  document.getElementById('calc-box').className = 'calc-box';
+  loadHistory(selectedSrcp.sku);
+}
+
+buildGrid();
+</script>
+</body>
+</html>

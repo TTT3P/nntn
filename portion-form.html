@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>แบ่งถุง Portion — NNTN</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-dark: #1B5E20;
+      --green: #4CAF50;
+      --bg: #F1F8E9;
+      --border: #e0e0e0;
+      --muted: #757575;
+      --red: #C62828;
+      --orange: #E65100;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: var(--bg); min-height: 100vh; }
+
+    header {
+      background: var(--green-dark); color: white;
+      padding: 14px 16px 10px; position: sticky; top: 0; z-index: 10;
+    }
+    header h1 { font-size: 1.1rem; }
+    header .sub { font-size: 0.78rem; opacity: 0.8; margin-top: 2px; }
+
+    nav {
+      display: flex; gap: 8px; padding: 10px 16px;
+      background: white; border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    nav a {
+      text-decoration: none; color: var(--green-dark);
+      font-size: 0.82rem; white-space: nowrap;
+      padding: 5px 12px; border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+    nav a.active { background: var(--green-dark); color: white; }
+
+    .content { padding: 16px; }
+
+    .card {
+      background: white; border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 16px; margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 0.8rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px;
+    }
+
+    .form-row { margin-bottom: 14px; }
+    .form-row label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 5px; }
+    .form-row input, .form-row select {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid var(--border); border-radius: 8px;
+      font-size: 0.95rem; font-family: inherit; background: white;
+    }
+    .form-row input:focus, .form-row select:focus {
+      outline: none; border-color: var(--green);
+    }
+
+    /* SRCP selector */
+    .srcp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .srcp-card {
+      border: 2px solid var(--border); border-radius: 10px;
+      padding: 12px 14px; cursor: pointer; background: white;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .srcp-card.selected { border-color: var(--green); background: #F1F8E9; }
+    .srcp-card .code { font-size: 0.72rem; color: var(--muted); font-weight: 600; }
+    .srcp-card .name { font-size: 0.92rem; font-weight: 700; margin-top: 2px; }
+    .srcp-card .stock { font-size: 0.78rem; margin-top: 4px; }
+    .srcp-card .stock.ok { color: var(--green-dark); }
+    .srcp-card .stock.low { color: var(--orange); }
+    .srcp-card .stock.none { color: var(--red); }
+
+    /* Calc result */
+    .result-box {
+      border-radius: 10px; padding: 16px;
+      margin-bottom: 16px; display: none;
+      background: #E8F5E9; border: 1px solid #A5D6A7;
+    }
+    .result-box.show { display: block; }
+    .result-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; }
+    .result-row .lbl { font-size: 0.85rem; color: var(--muted); }
+    .result-row .val { font-size: 1rem; font-weight: 700; color: var(--green-dark); }
+    .result-row.highlight .val { font-size: 1.3rem; }
+    .result-divider { border: none; border-top: 1px solid #C8E6C9; margin: 6px 0; }
+
+    .remainder-note {
+      background: #FFF8E1; border: 1px solid #FFE082;
+      border-radius: 8px; padding: 10px 12px;
+      font-size: 0.82rem; color: #E65100; margin-top: 8px;
+    }
+
+    .btn-submit {
+      width: 100%; padding: 14px;
+      background: var(--green-dark); color: white;
+      border: none; border-radius: 10px;
+      font-size: 1rem; font-weight: 700; font-family: inherit;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-submit:active { background: #2E7D32; }
+    .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+
+    .alert {
+      padding: 12px 14px; border-radius: 8px;
+      font-size: 0.88rem; margin-bottom: 14px; display: none;
+    }
+    .alert.success { background: #E8F5E9; color: #1B5E20; border: 1px solid #A5D6A7; display: block; }
+    .alert.error   { background: #FFEBEE; color: var(--red); border: 1px solid #EF9A9A; display: block; }
+
+    .history-item {
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-item .top { display: flex; justify-content: space-between; align-items: center; }
+    .history-item .bags-val { font-weight: 700; color: var(--green-dark); font-size: 1rem; }
+    .history-item .meta { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+    .rem-chip {
+      font-size: 0.72rem; background: #FFF8E1; color: var(--orange);
+      padding: 1px 8px; border-radius: 10px; margin-left: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🛍️ แบ่งถุง Portion</h1>
+    <div class="sub" id="date-display"></div>
+  </div>
+</header>
+
+<nav>
+  <a href="index.html">🏠 หน้าหลัก</a>
+  <a href="dashboard.html">📊 Dashboard</a>
+  <a href="prep-form.html">🥄 ผลิต Prep</a>
+  <a href="portion-form.html" class="active">🛍️ แบ่งถุง</a>
+  <a href="production-log-form.html">🍳 บันทึกผลิต RCP</a>
+</nav>
+
+<div class="content">
+
+  <div class="card">
+    <div class="card-title">เลือก Sub-Recipe ที่จะแบ่ง</div>
+    <div class="srcp-grid" id="srcp-grid">
+      <div style="color:var(--muted);font-size:0.85rem">⏳ กำลังโหลด...</div>
+    </div>
+  </div>
+
+  <div class="card" id="form-card" style="display:none">
+    <div class="card-title" id="form-title">แบ่งถุง</div>
+    <div id="alert-box" class="alert"></div>
+
+    <div class="form-row">
+      <label>วันที่</label>
+      <input type="date" id="logged-at">
+    </div>
+
+    <div class="form-row">
+      <label>ชื่อผู้บันทึก</label>
+      <input type="text" id="logged-by" placeholder="เช่น อิม, ชาติ">
+    </div>
+
+    <div class="form-row">
+      <label id="grams-label">กรัมที่จะแบ่ง (g)</label>
+      <input type="number" id="grams-used" min="1" step="1" placeholder="กรอกกรัมที่จะเอามาแบ่งถุง" oninput="calcResult()">
+    </div>
+
+    <div class="form-row">
+      <label id="per-bag-label">กรัม/ถุง</label>
+      <input type="number" id="grams-per-bag" min="1" step="1" oninput="calcResult()">
+    </div>
+
+    <!-- Result preview -->
+    <div class="result-box" id="result-box">
+      <div class="result-row highlight">
+        <span class="lbl">ถุงที่ได้</span>
+        <span class="val" id="r-bags">—</span>
+      </div>
+      <hr class="result-divider">
+      <div class="result-row">
+        <span class="lbl">กรัมที่ใช้</span>
+        <span class="val" id="r-used">—</span>
+      </div>
+      <div class="result-row">
+        <span class="lbl">เศษที่เหลือ</span>
+        <span class="val" id="r-rem">—</span>
+      </div>
+      <div class="remainder-note" id="rem-note" style="display:none">
+        ⚠️ เศษ <span id="rem-val"></span> g จะถูกคืนเข้าสต๊อก SRCP อัตโนมัติ
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>หมายเหตุ (ถ้ามี)</label>
+      <input type="text" id="note" placeholder="เช่น แบ่งรอบเช้า">
+    </div>
+
+    <button class="btn-submit" id="btn-submit" onclick="submitPortion()">✅ บันทึกการแบ่งถุง</button>
+  </div>
+
+  <div class="card" id="history-card" style="display:none">
+    <div class="card-title">ประวัติแบ่งถุง (7 วัน)</div>
+    <div id="history-list"></div>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// SRCP ที่ portion ได้ (ไม่รวม SRCP-001 ซอสลับ)
+const SRCP_PKG_MAP = {
+  'SRCP-005': { name: 'กระเทียมเจียว', pkg_code: 'PKG-005', pkg_name: 'กระเทียมเจียว 250g', default_per_bag: 250 },
+  'SRCP-006': { name: 'พริกผัด', pkg_code: 'PKG-006', pkg_name: 'พริกผัด 250g', default_per_bag: 250 },
+};
+
+let selectedSrcp = null;
+let stockMap = {};
+
+const today = new Date();
+document.getElementById('date-display').textContent =
+  today.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+document.getElementById('logged-at').value = today.toISOString().split('T')[0];
+
+async function loadStockAndBuild() {
+  // ดึง latest stock count สำหรับ SRCP-005, SRCP-006
+  const { data: items } = await sb.from('items').select('id,sku,name').in('sku', ['SRCP-005','SRCP-006']);
+  if (!items) return buildGrid({});
+
+  const ids = items.map(i => i.id);
+  const { data: counts } = await sb.from('stock_counts').select('item_id,qty,counted_at')
+    .in('item_id', ids).order('counted_at', { ascending: false });
+
+  const latestMap = {};
+  (counts || []).forEach(r => { if (!latestMap[r.item_id]) latestMap[r.item_id] = r; });
+
+  items.forEach(item => {
+    const c = latestMap[item.id];
+    stockMap[item.sku] = c ? c.qty : null;
+  });
+
+  buildGrid();
+}
+
+function buildGrid() {
+  const grid = document.getElementById('srcp-grid');
+  grid.innerHTML = '';
+  Object.entries(SRCP_PKG_MAP).forEach(([sku, info]) => {
+    const qty = stockMap[sku];
+    let stockClass = 'none', stockText = 'ไม่มีข้อมูลสต๊อก';
+    if (qty !== null && qty !== undefined) {
+      stockText = `สต๊อก: ${qty.toLocaleString()} g`;
+      stockClass = qty >= 1000 ? 'ok' : qty > 0 ? 'low' : 'none';
+    }
+    const div = document.createElement('div');
+    div.className = 'srcp-card';
+    div.id = 'card-' + sku;
+    div.innerHTML = `<div class="code">${sku}</div><div class="name">${info.name}</div><div class="stock ${stockClass}">${stockText}</div>`;
+    div.onclick = () => selectSrcp(sku, info);
+    grid.appendChild(div);
+  });
+}
+
+function selectSrcp(sku, info) {
+  selectedSrcp = { sku, ...info };
+  document.querySelectorAll('.srcp-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('card-' + sku)?.classList.add('selected');
+  document.getElementById('form-title').textContent = 'แบ่งถุง — ' + info.name;
+  document.getElementById('grams-label').textContent = `กรัมที่จะแบ่ง (g) — สต๊อก: ${stockMap[sku] ?? '?'} g`;
+  document.getElementById('grams-per-bag').value = info.default_per_bag;
+  document.getElementById('grams-used').value = '';
+  document.getElementById('form-card').style.display = 'block';
+  document.getElementById('history-card').style.display = 'block';
+  document.getElementById('alert-box').className = 'alert';
+  document.getElementById('result-box').className = 'result-box';
+  calcResult();
+  loadHistory(sku);
+}
+
+function calcResult() {
+  const grams = parseFloat(document.getElementById('grams-used').value);
+  const per_bag = parseFloat(document.getElementById('grams-per-bag').value);
+  if (!grams || !per_bag) { document.getElementById('result-box').className = 'result-box'; return; }
+
+  const bags = Math.floor(grams / per_bag);
+  const rem = Math.round((grams % per_bag) * 10) / 10;
+
+  document.getElementById('r-bags').textContent = bags + ' ถุง';
+  document.getElementById('r-used').textContent = grams.toLocaleString() + ' g';
+  document.getElementById('r-rem').textContent = rem + ' g';
+
+  const remNote = document.getElementById('rem-note');
+  if (rem > 0) {
+    document.getElementById('rem-val').textContent = rem;
+    remNote.style.display = 'block';
+  } else {
+    remNote.style.display = 'none';
+  }
+  document.getElementById('result-box').className = 'result-box show';
+}
+
+async function loadHistory(sku) {
+  const from7 = new Date(); from7.setDate(from7.getDate() - 6);
+  const { data } = await sb.from('portion_log').select('*')
+    .eq('srcp_code', sku).gte('logged_at', from7.toISOString().split('T')[0])
+    .order('logged_at', { ascending: false }).order('created_at', { ascending: false })
+    .limit(10);
+
+  const el = document.getElementById('history-list');
+  if (!data || data.length === 0) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:8px 0">ยังไม่มีประวัติ</div>';
+    return;
+  }
+  el.innerHTML = data.map(r => {
+    const d = new Date(r.logged_at + 'T00:00:00');
+    const dateStr = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+    const remChip = r.grams_remainder > 0 ? `<span class="rem-chip">เศษ ${r.grams_remainder}g</span>` : '';
+    return `<div class="history-item">
+      <div class="top">
+        <span>${r.srcp_name}</span>
+        <span><span class="bags-val">${r.bags_out} ถุง</span>${remChip}</span>
+      </div>
+      <div class="meta">${dateStr} · ${r.grams_used}g ÷ ${r.grams_per_bag}g/ถุง · ${r.logged_by}${r.note ? ' · ' + r.note : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+async function submitPortion() {
+  if (!selectedSrcp) return;
+  const logged_at = document.getElementById('logged-at').value;
+  const logged_by = document.getElementById('logged-by').value.trim();
+  const grams_used = parseFloat(document.getElementById('grams-used').value);
+  const grams_per_bag = parseFloat(document.getElementById('grams-per-bag').value);
+  const note = document.getElementById('note').value.trim();
+  const alertEl = document.getElementById('alert-box');
+
+  if (!logged_at || !logged_by || !grams_used || !grams_per_bag) {
+    alertEl.textContent = '❌ กรุณากรอกข้อมูลให้ครบ';
+    alertEl.className = 'alert error';
+    return;
+  }
+
+  const bags_out = Math.floor(grams_used / grams_per_bag);
+  const grams_remainder = Math.round((grams_used % grams_per_bag) * 10) / 10;
+
+  if (bags_out === 0) {
+    alertEl.textContent = '❌ กรัมที่กรอกน้อยกว่า 1 ถุง';
+    alertEl.className = 'alert error';
+    return;
+  }
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+
+  const { error } = await sb.from('portion_log').insert({
+    logged_at, logged_by,
+    srcp_code: selectedSrcp.sku,
+    srcp_name: selectedSrcp.name,
+    pkg_code: selectedSrcp.pkg_code,
+    pkg_name: selectedSrcp.pkg_name,
+    grams_used, grams_per_bag,
+    bags_out, grams_remainder,
+    note: note || null
+  });
+
+  btn.disabled = false; btn.textContent = '✅ บันทึกการแบ่งถุง';
+
+  if (error) {
+    alertEl.textContent = '❌ บันทึกไม่ได้: ' + error.message;
+    alertEl.className = 'alert error';
+    return;
+  }
+
+  alertEl.textContent = `✅ แบ่งแล้ว — ${selectedSrcp.name} ${bags_out} ถุง${grams_remainder > 0 ? ` + เศษ ${grams_remainder}g` : ''}`;
+  alertEl.className = 'alert success';
+  document.getElementById('grams-used').value = '';
+  document.getElementById('note').value = '';
+  document.getElementById('result-box').className = 'result-box';
+  loadHistory(selectedSrcp.sku);
+}
+
+loadStockAndBuild();
+</script>
+</body>
+</html>

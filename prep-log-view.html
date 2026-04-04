@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>ประวัติ Prep — NNTN</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-dark: #1B5E20;
+      --green: #4CAF50;
+      --bg: #F1F8E9;
+      --border: #e0e0e0;
+      --muted: #757575;
+      --red: #C62828;
+      --orange: #E65100;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: var(--bg); min-height: 100vh; }
+
+    header {
+      background: var(--green-dark); color: white;
+      padding: 14px 16px 10px; position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 1.1rem; }
+    header .sub { font-size: 0.78rem; opacity: 0.8; margin-top: 2px; }
+    .refresh-btn {
+      background: none; border: 1px solid white; color: white;
+      padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; cursor: pointer;
+    }
+
+    nav {
+      display: flex; gap: 8px; padding: 10px 16px;
+      background: white; border-bottom: 1px solid var(--border); overflow-x: auto;
+    }
+    nav a {
+      text-decoration: none; color: var(--green-dark);
+      font-size: 0.82rem; white-space: nowrap;
+      padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
+    }
+    nav a.active { background: var(--green-dark); color: white; }
+
+    /* Summary cards */
+    .summary-row {
+      display: flex; gap: 10px; padding: 12px 16px; overflow-x: auto;
+    }
+    .stat-card {
+      background: white; border-radius: 10px; padding: 12px 16px;
+      min-width: 120px; border: 1px solid var(--border); text-align: center; flex-shrink: 0;
+    }
+    .stat-card .num { font-size: 1.5rem; font-weight: 700; color: var(--green-dark); }
+    .stat-card .lbl { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+    /* SRCP filter chips */
+    .chip-row {
+      display: flex; gap: 8px; padding: 0 16px 12px; overflow-x: auto; flex-wrap: nowrap;
+    }
+    .chip {
+      background: white; border: 1px solid var(--border);
+      border-radius: 20px; padding: 5px 14px;
+      font-size: 0.8rem; cursor: pointer; white-space: nowrap;
+      color: var(--green-dark); flex-shrink: 0;
+    }
+    .chip.active { background: var(--green-dark); color: white; border-color: var(--green-dark); }
+
+    /* Filter bar */
+    .filter-bar {
+      display: flex; gap: 8px; padding: 0 16px 12px;
+      align-items: center; flex-wrap: wrap;
+    }
+    .filter-bar label { font-size: 0.82rem; color: var(--muted); }
+    .filter-bar input, .filter-bar select {
+      padding: 7px 10px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 0.85rem; background: white;
+    }
+    .filter-btn {
+      padding: 7px 14px; background: var(--green-dark); color: white;
+      border: none; border-radius: 8px; font-size: 0.85rem; cursor: pointer;
+    }
+
+    /* Yield trend per SRCP */
+    .srcp-section { padding: 0 16px 20px; }
+    .srcp-title {
+      font-size: 0.75rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    table {
+      width: 100%; border-collapse: collapse; background: white;
+      border-radius: 10px; overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07); font-size: 0.85rem;
+    }
+    th {
+      background: var(--green-dark); color: white;
+      padding: 10px 12px; text-align: left; font-weight: 600; font-size: 0.8rem;
+    }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9fbe7; }
+
+    .srcp-badge {
+      display: inline-block; font-size: 0.72rem;
+      background: #E8F5E9; color: var(--green-dark);
+      padding: 1px 8px; border-radius: 10px; font-weight: 600;
+    }
+    .yield-val { font-weight: 700; color: var(--green-dark); }
+    .per-batch { font-size: 0.78rem; color: var(--muted); }
+
+    .group-date {
+      background: #f5f5f5; font-weight: 700; font-size: 0.8rem;
+      color: var(--muted); padding: 6px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .empty { text-align: center; padding: 40px; color: var(--muted); font-size: 0.9rem; }
+
+    /* Yield avg boxes */
+    .avg-row {
+      display: flex; gap: 10px; padding: 0 16px 16px; overflow-x: auto;
+    }
+    .avg-card {
+      background: white; border-radius: 10px; padding: 12px 16px;
+      border: 1px solid var(--border); flex-shrink: 0; min-width: 150px;
+    }
+    .avg-card .code { font-size: 0.72rem; color: var(--muted); font-weight: 600; }
+    .avg-card .name { font-size: 0.88rem; font-weight: 700; margin-top: 2px; }
+    .avg-card .avg  { font-size: 1.1rem; font-weight: 700; color: var(--green-dark); margin-top: 6px; }
+    .avg-card .sub  { font-size: 0.75rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>📈 ประวัติ Prep & Yield</h1>
+    <div class="sub" id="date-display"></div>
+  </div>
+  <button class="refresh-btn" onclick="loadData()">🔄 รีเฟรช</button>
+</header>
+
+<nav>
+  <a href="index.html">🏠 หน้าหลัก</a>
+  <a href="dashboard.html">📊 Dashboard</a>
+  <a href="prep-form.html">🥄 ผลิต Prep</a>
+  <a href="portion-form.html">🛍️ แบ่งถุง</a>
+  <a href="prep-log-view.html" class="active">📈 ประวัติ Prep</a>
+</nav>
+
+<!-- Summary -->
+<div class="summary-row" id="summary-row">
+  <div class="stat-card"><div class="num" id="s-total">—</div><div class="lbl">batch ทั้งหมด</div></div>
+  <div class="stat-card"><div class="num" id="s-yield">—</div><div class="lbl">yield รวม (g/ml)</div></div>
+  <div class="stat-card"><div class="num" id="s-srcp">—</div><div class="lbl">SRCP ที่ผลิต</div></div>
+</div>
+
+<!-- Yield avg per SRCP -->
+<div class="avg-row" id="avg-row"></div>
+
+<!-- Chips -->
+<div class="chip-row" id="chip-row">
+  <span class="chip active" id="chip-all" onclick="filterSrcp('')">ทั้งหมด</span>
+</div>
+
+<!-- Filter -->
+<div class="filter-bar">
+  <label>ตั้งแต่</label>
+  <input type="date" id="filter-from">
+  <label>ถึง</label>
+  <input type="date" id="filter-to">
+  <button class="filter-btn" onclick="loadData()">กรอง</button>
+</div>
+
+<!-- Table -->
+<div class="srcp-section">
+  <table id="log-table">
+    <thead>
+      <tr>
+        <th>วันที่</th>
+        <th>Sub-Recipe</th>
+        <th>Batch</th>
+        <th>Yield จริง</th>
+        <th>g/batch</th>
+        <th>ผู้บันทึก</th>
+      </tr>
+    </thead>
+    <tbody id="log-body">
+      <tr><td colspan="6" class="empty">⏳ กำลังโหลด...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const SRCP_UNIT = { 'SRCP-001': 'ml', 'SRCP-004': 'g', 'SRCP-005': 'g', 'SRCP-006': 'g' };
+
+let allData = [];
+let activeSrcp = '';
+
+// Dates
+const today = new Date();
+document.getElementById('date-display').textContent =
+  today.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+const toStr = today.toISOString().split('T')[0];
+const from30 = new Date(today); from30.setDate(from30.getDate() - 29);
+document.getElementById('filter-from').value = from30.toISOString().split('T')[0];
+document.getElementById('filter-to').value = toStr;
+
+function thDate(str) {
+  const d = new Date(str + 'T00:00:00');
+  return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+}
+
+function filterSrcp(code) {
+  activeSrcp = code;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  document.getElementById(code ? 'chip-' + code : 'chip-all')?.classList.add('active');
+  renderTable();
+}
+
+async function loadData() {
+  const fromVal = document.getElementById('filter-from').value;
+  const toVal   = document.getElementById('filter-to').value;
+
+  let query = sb.from('prep_log').select('*')
+    .order('logged_at', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (fromVal) query = query.gte('logged_at', fromVal);
+  if (toVal)   query = query.lte('logged_at', toVal);
+
+  const { data, error } = await query;
+  if (error) {
+    document.getElementById('log-body').innerHTML = `<tr><td colspan="6" class="empty">❌ ${error.message}</td></tr>`;
+    return;
+  }
+
+  allData = data || [];
+
+  // Build chips
+  const srcpCodes = [...new Set(allData.map(r => r.srcp_code))].sort();
+  const chipRow = document.getElementById('chip-row');
+  chipRow.innerHTML = '<span class="chip active" id="chip-all" onclick="filterSrcp(\'\')">ทั้งหมด</span>';
+  srcpCodes.forEach(code => {
+    const name = allData.find(r => r.srcp_code === code)?.srcp_name || code;
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.id = 'chip-' + code;
+    chip.textContent = code + ' ' + name;
+    chip.onclick = () => filterSrcp(code);
+    chipRow.appendChild(chip);
+  });
+
+  // Summary
+  const totalBatch = allData.reduce((s, r) => s + parseFloat(r.batch_count), 0);
+  const totalYield = allData.reduce((s, r) => s + parseFloat(r.yield_grams), 0);
+  document.getElementById('s-total').textContent = totalBatch;
+  document.getElementById('s-yield').textContent = totalYield.toLocaleString();
+  document.getElementById('s-srcp').textContent = srcpCodes.length;
+
+  // Yield avg per SRCP
+  const avgRow = document.getElementById('avg-row');
+  avgRow.innerHTML = '';
+  srcpCodes.forEach(code => {
+    const rows = allData.filter(r => r.srcp_code === code);
+    const totalY = rows.reduce((s, r) => s + parseFloat(r.yield_grams), 0);
+    const totalB = rows.reduce((s, r) => s + parseFloat(r.batch_count), 0);
+    const avgPerBatch = totalB > 0 ? Math.round(totalY / totalB) : 0;
+    const unit = SRCP_UNIT[code] || 'g';
+    const name = rows[0]?.srcp_name || code;
+
+    const card = document.createElement('div');
+    card.className = 'avg-card';
+    card.innerHTML = `
+      <div class="code">${code}</div>
+      <div class="name">${name}</div>
+      <div class="avg">${avgPerBatch.toLocaleString()} ${unit}</div>
+      <div class="sub">avg/batch (${rows.length} ครั้ง)</div>
+    `;
+    avgRow.appendChild(card);
+  });
+
+  renderTable();
+}
+
+function renderTable() {
+  const filtered = activeSrcp ? allData.filter(r => r.srcp_code === activeSrcp) : allData;
+
+  if (filtered.length === 0) {
+    document.getElementById('log-body').innerHTML = '<tr><td colspan="6" class="empty">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>';
+    return;
+  }
+
+  let html = '';
+  let lastDate = '';
+  filtered.forEach(r => {
+    const unit = SRCP_UNIT[r.srcp_code] || 'g';
+    const perBatch = r.batch_count > 0 ? Math.round(parseFloat(r.yield_grams) / parseFloat(r.batch_count)) : 0;
+
+    if (r.logged_at !== lastDate) {
+      lastDate = r.logged_at;
+      html += `<tr><td colspan="6" class="group-date">📅 ${thDate(r.logged_at)}</td></tr>`;
+    }
+    html += `<tr>
+      <td style="color:var(--muted);font-size:0.8rem">${thDate(r.logged_at)}</td>
+      <td><span class="srcp-badge">${r.srcp_code}</span> ${r.srcp_name}</td>
+      <td>${r.batch_count}</td>
+      <td><span class="yield-val">${parseFloat(r.yield_grams).toLocaleString()}</span> <span style="font-size:0.78rem;color:var(--muted)">${unit}</span></td>
+      <td class="per-batch">${perBatch.toLocaleString()} ${unit}</td>
+      <td style="color:var(--muted);font-size:0.8rem">${r.logged_by}${r.note ? '<br><span style="font-size:0.72rem">'+r.note+'</span>' : ''}</td>
+    </tr>`;
+  });
+
+  document.getElementById('log-body').innerHTML = html;
+}
+
+loadData();
+</script>
+</body>
+</html>

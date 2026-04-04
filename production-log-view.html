@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>ประวัติการผลิต — NNTN</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-dark: #1B5E20;
+      --green: #4CAF50;
+      --bg: #F1F8E9;
+      --border: #e0e0e0;
+      --muted: #757575;
+      --customer: #1565C0;
+      --staff: #6A1B9A;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: var(--bg); min-height: 100vh; }
+
+    header {
+      background: var(--green-dark);
+      color: white;
+      padding: 14px 16px 10px;
+      position: sticky; top: 0; z-index: 10;
+    }
+    header h1 { font-size: 1.1rem; }
+    header .sub { font-size: 0.8rem; opacity: 0.8; margin-top: 2px; }
+
+    nav {
+      display: flex; gap: 8px; padding: 10px 16px;
+      background: white; border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    nav a {
+      text-decoration: none; color: var(--green-dark);
+      font-size: 0.82rem; white-space: nowrap;
+      padding: 5px 12px; border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+    nav a.active { background: var(--green-dark); color: white; }
+
+    .summary-row {
+      display: flex; gap: 10px; padding: 12px 16px;
+      overflow-x: auto;
+    }
+    .card {
+      background: white; border-radius: 10px;
+      padding: 12px 16px; min-width: 110px;
+      border: 1px solid var(--border); text-align: center;
+      flex-shrink: 0;
+    }
+    .card .num { font-size: 1.6rem; font-weight: 700; color: var(--green-dark); }
+    .card .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+    .filter-bar {
+      display: flex; gap: 8px; padding: 0 16px 12px;
+      flex-wrap: wrap; align-items: center;
+    }
+    .filter-bar select, .filter-bar input {
+      padding: 7px 10px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 0.85rem; background: white;
+    }
+    .filter-bar label { font-size: 0.82rem; color: var(--muted); }
+
+    .section { padding: 0 16px 20px; }
+
+    table {
+      width: 100%; border-collapse: collapse;
+      background: white; border-radius: 10px;
+      overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      font-size: 0.85rem;
+    }
+    th {
+      background: var(--green-dark); color: white;
+      padding: 10px 12px; text-align: left; font-weight: 600;
+    }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9fbe7; }
+
+    .badge {
+      display: inline-block; padding: 2px 10px;
+      border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+    }
+    .badge.customer { background: #E3F2FD; color: var(--customer); }
+    .badge.staff    { background: #F3E5F5; color: var(--staff); }
+
+    .rcp-code { font-size: 0.75rem; color: var(--muted); }
+    .batch-num { font-weight: 700; font-size: 1rem; color: var(--green-dark); }
+
+    .empty { text-align: center; padding: 40px; color: var(--muted); font-size: 0.9rem; }
+
+    .group-header {
+      background: #f5f5f5; font-weight: 700;
+      font-size: 0.8rem; color: var(--muted);
+      padding: 6px 12px; border-bottom: 1px solid var(--border);
+    }
+
+    .refresh-btn {
+      margin-left: auto; background: none; border: 1px solid white;
+      color: white; padding: 4px 12px; border-radius: 20px;
+      font-size: 0.78rem; cursor: pointer;
+    }
+    .header-row { display: flex; align-items: center; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <div>
+      <h1>🍳 ประวัติการผลิต</h1>
+      <div class="sub" id="date-display"></div>
+    </div>
+    <button class="refresh-btn" onclick="loadData()">🔄 รีเฟรช</button>
+  </div>
+</header>
+
+<nav>
+  <a href="dashboard.html">📊 Dashboard</a>
+  <a href="stock-form.html">📋 นับสต๊อก</a>
+  <a href="production-log-form.html">🍳 บันทึกผลิต</a>
+  <a href="production-log-view.html" class="active">📜 ประวัติผลิต</a>
+  <a href="admin-config.html">⚙️ ตั้งค่า Par</a>
+</nav>
+
+<div class="summary-row" id="summary-row">
+  <div class="card"><div class="num" id="sum-total">—</div><div class="lbl">batch ทั้งหมด</div></div>
+  <div class="card"><div class="num" id="sum-customer">—</div><div class="lbl">🍜 ลูกค้า</div></div>
+  <div class="card"><div class="num" id="sum-staff">—</div><div class="lbl">👤 พนักงาน</div></div>
+  <div class="card"><div class="num" id="sum-rcp">—</div><div class="lbl">สูตรที่ผลิต</div></div>
+</div>
+
+<div class="filter-bar">
+  <label>ตั้งแต่</label>
+  <input type="date" id="filter-from">
+  <label>ถึง</label>
+  <input type="date" id="filter-to">
+  <select id="filter-rcp">
+    <option value="">— ทุกสูตร —</option>
+  </select>
+  <select id="filter-type">
+    <option value="">— ทุกประเภท —</option>
+    <option value="customer">🍜 ลูกค้า</option>
+    <option value="staff">👤 พนักงาน</option>
+  </select>
+  <button onclick="loadData()" style="padding:7px 14px;background:var(--green-dark);color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;">กรอง</button>
+</div>
+
+<div class="section">
+  <table id="log-table">
+    <thead>
+      <tr>
+        <th>วันที่</th>
+        <th>สูตร</th>
+        <th>Batch</th>
+        <th>ประเภท</th>
+        <th>ผู้บันทึก</th>
+        <th>หมายเหตุ</th>
+      </tr>
+    </thead>
+    <tbody id="log-body">
+      <tr><td colspan="6" class="empty">⏳ กำลังโหลด...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Date display
+const today = new Date();
+document.getElementById('date-display').textContent =
+  today.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+// Default filter: last 7 days
+const toStr  = today.toISOString().split('T')[0];
+const from7  = new Date(today); from7.setDate(from7.getDate() - 6);
+const fromStr = from7.toISOString().split('T')[0];
+document.getElementById('filter-from').value = fromStr;
+document.getElementById('filter-to').value   = toStr;
+
+function thDate(str) {
+  const d = new Date(str + 'T00:00:00');
+  return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+}
+
+async function loadData() {
+  const fromVal = document.getElementById('filter-from').value;
+  const toVal   = document.getElementById('filter-to').value;
+  const rcpVal  = document.getElementById('filter-rcp').value;
+  const typeVal = document.getElementById('filter-type').value;
+
+  let query = sb.from('production_log')
+    .select('*')
+    .order('logged_at', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (fromVal) query = query.gte('logged_at', fromVal);
+  if (toVal)   query = query.lte('logged_at', toVal);
+  if (rcpVal)  query = query.eq('rcp_code', rcpVal);
+  if (typeVal) query = query.eq('type', typeVal);
+
+  const { data, error } = await query;
+  if (error) {
+    document.getElementById('log-body').innerHTML = `<tr><td colspan="6" class="empty">❌ โหลดไม่ได้: ${error.message}</td></tr>`;
+    return;
+  }
+
+  // Summary
+  const total    = data.reduce((s, r) => s + r.batch_count, 0);
+  const customer = data.filter(r => r.type === 'customer').reduce((s, r) => s + r.batch_count, 0);
+  const staff    = data.filter(r => r.type === 'staff').reduce((s, r) => s + r.batch_count, 0);
+  const rcpSet   = new Set(data.map(r => r.rcp_code));
+  document.getElementById('sum-total').textContent    = total;
+  document.getElementById('sum-customer').textContent = customer;
+  document.getElementById('sum-staff').textContent    = staff;
+  document.getElementById('sum-rcp').textContent      = rcpSet.size;
+
+  // Populate RCP filter
+  const rcpSel = document.getElementById('filter-rcp');
+  const existingCodes = new Set([...rcpSel.options].map(o => o.value).filter(v => v));
+  rcpSet.forEach(code => {
+    if (!existingCodes.has(code)) {
+      const row = data.find(r => r.rcp_code === code);
+      const opt = document.createElement('option');
+      opt.value = code;
+      opt.textContent = `${code} — ${row.rcp_name}`;
+      rcpSel.appendChild(opt);
+    }
+  });
+
+  // Build table grouped by date
+  if (data.length === 0) {
+    document.getElementById('log-body').innerHTML = `<tr><td colspan="6" class="empty">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>`;
+    return;
+  }
+
+  let html = '';
+  let lastDate = '';
+  data.forEach(r => {
+    if (r.logged_at !== lastDate) {
+      lastDate = r.logged_at;
+      html += `<tr><td colspan="6" class="group-header">📅 ${thDate(r.logged_at)}</td></tr>`;
+    }
+    const badge = r.type === 'customer'
+      ? '<span class="badge customer">🍜 ลูกค้า</span>'
+      : '<span class="badge staff">👤 พนักงาน</span>';
+    html += `<tr>
+      <td style="color:var(--muted);font-size:0.8rem">${thDate(r.logged_at)}</td>
+      <td>
+        <div>${r.rcp_name}</div>
+        <div class="rcp-code">${r.rcp_code}</div>
+      </td>
+      <td><span class="batch-num">${r.batch_count}</span> batch</td>
+      <td>${badge}</td>
+      <td>${r.logged_by}</td>
+      <td style="color:var(--muted);font-size:0.8rem">${r.note || '—'}</td>
+    </tr>`;
+  });
+
+  document.getElementById('log-body').innerHTML = html;
+}
+
+loadData();
+</script>
+</body>
+</html>

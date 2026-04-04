@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Dashboard สต๊อก — NNTN</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-dark: #1B5E20;
+      --green: #4CAF50;
+      --yellow: #F57F17;
+      --orange: #E65100;
+      --red: #C62828;
+      --bg: #F1F8E9;
+      --border: #e0e0e0;
+      --muted: #757575;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--bg);
+      color: #212121;
+      font-size: 16px;
+      padding-bottom: 24px;
+    }
+
+    header {
+      background: var(--green-dark);
+      color: white;
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    header h1 { font-size: 20px; font-weight: bold; }
+    header p  { font-size: 13px; opacity: 0.75; margin-top: 3px; }
+
+    /* Summary cards */
+    .summary-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      padding: 14px 16px;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 12px 10px;
+      text-align: center;
+      border-top: 4px solid transparent;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .card.out        { border-top-color: var(--red); }
+    .card.order-now  { border-top-color: var(--orange); }
+    .card.low        { border-top-color: var(--yellow); }
+    .card.ok         { border-top-color: var(--green); }
+    .card-num  { font-size: 26px; font-weight: bold; }
+    .card.out .card-num        { color: var(--red); }
+    .card.order-now .card-num  { color: var(--orange); }
+    .card.low .card-num        { color: var(--yellow); }
+    .card.ok .card-num         { color: var(--green-dark); }
+    .card-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* Filter tabs */
+    .filter-tabs {
+      display: flex;
+      background: white;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    .tab {
+      flex: 0 0 auto;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-family: inherit;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .tab.active { color: var(--green-dark); border-bottom-color: var(--green-dark); font-weight: bold; }
+
+    /* Category chips */
+    .cat-chips {
+      display: flex; gap: 8px; padding: 8px 16px;
+      background: white; border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    .cat-chip {
+      flex-shrink: 0; padding: 4px 12px;
+      border-radius: 20px; border: 1px solid var(--border);
+      font-size: 0.78rem; cursor: pointer; background: white;
+      color: var(--green-dark); white-space: nowrap; font-family: inherit;
+    }
+    .cat-chip.active { background: var(--green-dark); color: white; border-color: var(--green-dark); }
+
+    /* Refresh button */
+    .toolbar {
+      display: flex;
+      justify-content: flex-end;
+      padding: 8px 16px;
+    }
+    .refresh-btn {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      color: var(--green-dark);
+    }
+    .refresh-btn:active { background: #E8F5E9; }
+
+    /* Item list */
+    .group-header {
+      background: #E8F5E9;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--green-dark);
+      border-top: 1px solid #C8E6C9;
+      border-bottom: 1px solid #C8E6C9;
+    }
+
+    .stock-row {
+      background: white;
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-left: 4px solid transparent;
+    }
+    .stock-row.status-OUT        { border-left-color: var(--red);    background: #fff8f8; }
+    .stock-row.status-ORDER_NOW  { border-left-color: var(--orange); background: #fffbf3; }
+    .stock-row.status-LOW        { border-left-color: var(--yellow); }
+    .stock-row.status-OK         { border-left-color: #81C784; }
+
+    .row-info { flex: 1; min-width: 0; }
+    .row-name { font-size: 15px; font-weight: 500; }
+    .row-meta { font-size: 12px; color: var(--muted); margin-top: 2px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .row-qty { text-align: right; }
+    .qty-big  { font-size: 22px; font-weight: bold; }
+    .qty-big.zero { color: var(--red); }
+    .qty-big.low  { color: var(--orange); }
+    .qty-big.ok   { color: var(--green-dark); }
+    .qty-unit { font-size: 12px; color: var(--muted); }
+    .par-info { font-size: 11px; color: var(--muted); }
+
+    .status-chip {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .chip-OUT        { background: #FFEBEE; color: var(--red); }
+    .chip-ORDER_NOW  { background: #FFF3E0; color: var(--orange); }
+    .chip-LOW        { background: #FFFDE7; color: var(--yellow); }
+    .chip-OK         { background: #E8F5E9; color: var(--green-dark); }
+
+    /* Nav links */
+    .nav-links {
+      display: flex;
+      gap: 10px;
+      padding: 12px 16px;
+      flex-wrap: wrap;
+    }
+    .nav-btn {
+      flex: 1;
+      min-width: 140px;
+      padding: 12px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: center;
+      color: var(--green-dark);
+      font-weight: bold;
+      text-decoration: none;
+      display: block;
+    }
+    .nav-btn:active { background: #E8F5E9; }
+
+    .loading { text-align: center; padding: 48px 16px; color: var(--muted); font-size: 16px; }
+    .empty   { text-align: center; padding: 32px 16px; color: var(--muted); font-size: 14px; }
+
+    .last-update {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 8px 16px 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <a href="/" style="color:white; opacity:0.8; text-decoration:none; font-size:20px; line-height:1;">‹</a>
+    <div>
+      <h1>📊 Dashboard สต๊อก Non-Meat</h1>
+      <p id="date-display"></p>
+    </div>
+  </div>
+</header>
+
+<!-- Summary cards -->
+<div class="summary-row">
+  <div class="card out"><div class="card-num" id="cnt-out">—</div><div class="card-label">🔴 หมด</div></div>
+  <div class="card order-now"><div class="card-num" id="cnt-order">—</div><div class="card-label">🟠 ต้องสั่ง</div></div>
+  <div class="card low"><div class="card-num" id="cnt-low">—</div><div class="card-label">🟡 ใกล้หมด</div></div>
+  <div class="card ok"><div class="card-num" id="cnt-ok">—</div><div class="card-label">🟢 ปกติ</div></div>
+</div>
+
+<!-- Quick nav -->
+<div class="nav-links">
+  <a href="stock-form.html" class="nav-btn">📋 นับสต๊อก</a>
+  <a href="production-log-form.html" class="nav-btn">🍳 บันทึกผลิต</a>
+  <a href="admin-config.html" class="nav-btn">⚙️ ตั้งค่า Par</a>
+</div>
+
+<!-- Filter tabs -->
+<div class="filter-tabs">
+  <button class="tab active" onclick="setFilter('all')">ทั้งหมด</button>
+  <button class="tab" onclick="setFilter('OUT')">🔴 หมด</button>
+  <button class="tab" onclick="setFilter('ORDER_NOW')">🟠 ต้องสั่ง</button>
+  <button class="tab" onclick="setFilter('LOW')">🟡 ใกล้หมด</button>
+  <button class="tab" onclick="setFilter('OK')">🟢 ปกติ</button>
+</div>
+
+<!-- Category chips -->
+<div class="cat-chips" id="cat-chips">
+  <button class="cat-chip active" onclick="setCat('')">ทุกหมวด</button>
+</div>
+
+<div class="toolbar">
+  <button class="refresh-btn" onclick="loadStock()">🔄 รีเฟรช</button>
+</div>
+
+<p class="last-update" id="last-update"></p>
+
+<div id="stock-container">
+  <div class="loading">⏳ กำลังโหลด...</div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CAT_LABELS = {
+  seasoning:  '🧂 เครื่องปรุง',
+  spice:      '🌿 สมุนไพร',
+  vegetable:  '🥬 ผัก',
+  packaging:  '📦 แพ็กเกจจิ้ง',
+  consumable: '🛒 วัสดุสิ้นเปลือง',
+  noodle:     '🍜 เส้น & ข้าว',
+  srcp:       '🥄 Sub-Recipe',
+  pkg:        '🛍️ Portioned',
+};
+
+const STATUS_LABELS = { OUT: 'หมด', ORDER_NOW: 'ต้องสั่ง', LOW: 'ใกล้หมด', OK: 'ปกติ' };
+
+let allData = [];
+let activeFilter = 'all';
+let activeCat = '';
+
+const d = new Date();
+document.getElementById('date-display').textContent =
+  d.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  renderStock();
+}
+
+function setCat(cat) {
+  activeCat = cat;
+  document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  renderStock();
+}
+
+function buildCatChips() {
+  const cats = [...new Set(allData.map(r => r.category))].sort();
+  const row = document.getElementById('cat-chips');
+  row.innerHTML = '<button class="cat-chip active" onclick="setCat(\'\')">ทุกหมวด</button>';
+  cats.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-chip';
+    btn.textContent = CAT_LABELS[cat] || cat;
+    btn.onclick = () => { activeCat = cat; document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active')); btn.classList.add('active'); renderStock(); };
+    row.appendChild(btn);
+  });
+}
+
+function fmtDateTime(iso) {
+  if (!iso) return 'ยังไม่มีข้อมูล';
+  const dt = new Date(iso);
+  return dt.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+async function loadStock() {
+  document.getElementById('stock-container').innerHTML = '<div class="loading">⏳ กำลังโหลด...</div>';
+
+  // Load items
+  const { data: itemData, error: itemErr } = await sb
+    .from('items')
+    .select('id, sku, name, category, unit, par_level, max_level')
+    .eq('is_active', true)
+    .order('category').order('sku');
+
+  if (itemErr) {
+    document.getElementById('stock-container').innerHTML =
+      '<div class="loading" style="color:#C62828">❌ โหลดไม่ได้ ลองรีเฟรช</div>';
+    return;
+  }
+
+  // Load latest stock count per item
+  const { data: countData } = await sb
+    .from('stock_counts')
+    .select('item_id, qty, counted_at, counted_by')
+    .order('counted_at', { ascending: false });
+
+  // Build latest count map (first occurrence = latest)
+  const latestMap = {};
+  (countData || []).forEach(row => {
+    if (!latestMap[row.item_id]) latestMap[row.item_id] = row;
+  });
+
+  // Build allData with computed status
+  const data = itemData.map(item => {
+    const latest = latestMap[item.id];
+    const qty = latest ? latest.qty : 0;
+    let status;
+    if (qty === 0)              status = 'OUT';
+    else if (qty < item.par_level)       status = 'ORDER_NOW';
+    else if (qty < item.par_level * 1.5) status = 'LOW';
+    else                                 status = 'OK';
+    return {
+      ...item,
+      current_qty: qty,
+      status,
+      last_counted: latest ? latest.counted_at : null,
+      last_counted_by: latest ? latest.counted_by : null,
+    };
+  });
+
+  allData = data;
+  buildCatChips();
+
+  // Update counters
+  const counts = { OUT: 0, ORDER_NOW: 0, LOW: 0, OK: 0 };
+  data.forEach(r => { counts[r.status] = (counts[r.status] || 0) + 1; });
+  document.getElementById('cnt-out').textContent   = counts.OUT;
+  document.getElementById('cnt-order').textContent = counts.ORDER_NOW;
+  document.getElementById('cnt-low').textContent   = counts.LOW;
+  document.getElementById('cnt-ok').textContent    = counts.OK;
+
+  document.getElementById('last-update').textContent =
+    'อัปเดต: ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+  renderStock();
+}
+
+function renderStock() {
+  let filtered = activeFilter === 'all' ? allData : allData.filter(r => r.status === activeFilter);
+  if (activeCat) filtered = filtered.filter(r => r.category === activeCat);
+
+  if (filtered.length === 0) {
+    document.getElementById('stock-container').innerHTML =
+      '<div class="empty">✅ ไม่มีรายการในหมวดนี้</div>';
+    return;
+  }
+
+  let html = '';
+  let lastCat = null;
+
+  filtered.forEach(item => {
+    if (item.category !== lastCat) {
+      lastCat = item.category;
+      html += `<div class="group-header">${CAT_LABELS[item.category] || item.category}</div>`;
+    }
+
+    const qtyClass = item.current_qty === 0 ? 'zero' : (item.status === 'ORDER_NOW' || item.status === 'LOW') ? 'low' : 'ok';
+    const chipClass = `chip-${item.status}`;
+    const lastInfo = item.last_counted
+      ? `นับล่าสุด: ${fmtDateTime(item.last_counted)} โดย ${item.last_counted_by}`
+      : 'ยังไม่มีการนับ';
+
+    html += `
+      <div class="stock-row status-${item.status}">
+        <div class="row-info">
+          <div class="row-name">${item.name}</div>
+          <div class="row-meta">
+            <span>${item.sku}</span>
+            <span class="status-chip ${chipClass}">${STATUS_LABELS[item.status]}</span>
+          </div>
+          <div class="row-meta" style="margin-top:3px; font-size:11px">${lastInfo}</div>
+        </div>
+        <div class="row-qty">
+          <div class="qty-big ${qtyClass}">${item.current_qty}</div>
+          <div class="qty-unit">${item.unit}</div>
+          <div class="par-info">Par ${item.par_level}</div>
+        </div>
+      </div>`;
+  });
+
+  document.getElementById('stock-container').innerHTML = html;
+}
+
+loadStock();
+</script>
+</body>
+</html>

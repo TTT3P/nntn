@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>นับสต๊อก Non-Meat — NNTN</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-dark: #1B5E20;
+      --green: #4CAF50;
+      --yellow: #F57F17;
+      --red: #C62828;
+      --bg: #F1F8E9;
+      --card: #ffffff;
+      --border: #e0e0e0;
+      --muted: #757575;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--bg);
+      color: #212121;
+      font-size: 16px;
+      padding-bottom: 90px;
+    }
+
+    header {
+      background: var(--green-dark);
+      color: white;
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    header h1 { font-size: 20px; font-weight: bold; }
+    header p  { font-size: 13px; opacity: 0.75; margin-top: 3px; }
+
+    nav {
+      display: flex; gap: 8px; padding: 10px 16px;
+      background: white; border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    nav a {
+      text-decoration: none; color: var(--green-dark);
+      font-size: 0.82rem; white-space: nowrap;
+      padding: 5px 12px; border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+    nav a.active { background: var(--green-dark); color: white; }
+
+    .name-section {
+      background: white;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .name-section label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .name-section select {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      font-family: inherit;
+    }
+
+    .group-header {
+      background: #E8F5E9;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--green-dark);
+      border-top: 1px solid #C8E6C9;
+      border-bottom: 1px solid #C8E6C9;
+      letter-spacing: 0.3px;
+    }
+
+    /* Status colors on left border */
+    .item-row {
+      background: white;
+      padding: 13px 16px 10px;
+      border-bottom: 1px solid #f5f5f5;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      border-left: 4px solid transparent;
+    }
+    .item-row.status-OUT        { border-left-color: var(--red); background: #fff8f8; }
+    .item-row.status-ORDER_NOW  { border-left-color: #FF6F00; background: #fffbf3; }
+    .item-row.status-LOW        { border-left-color: var(--yellow); }
+    .item-row.status-OK         { border-left-color: #81C784; }
+
+    .item-info { flex: 1; min-width: 0; }
+    .item-name  { font-size: 16px; font-weight: 500; }
+    .item-meta  { font-size: 12px; color: var(--muted); margin-top: 3px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .par-badge  {
+      font-size: 11px;
+      background: #FFF9C4;
+      color: var(--yellow);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .last-count {
+      font-size: 11px;
+      color: var(--muted);
+      font-style: italic;
+    }
+    .status-chip {
+      font-size: 10px;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.3px;
+    }
+    .chip-OUT        { background: #FFEBEE; color: var(--red); }
+    .chip-ORDER_NOW  { background: #FFF3E0; color: #E65100; }
+    .chip-LOW        { background: #FFFDE7; color: var(--yellow); }
+    .chip-OK         { background: #E8F5E9; color: var(--green-dark); display: none; }
+
+    .item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+    .qty-wrap { display: flex; align-items: center; gap: 6px; }
+    .item-input {
+      width: 72px;
+      padding: 10px 6px;
+      font-size: 22px;
+      text-align: center;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      -moz-appearance: textfield;
+    }
+    .item-input::-webkit-outer-spin-button,
+    .item-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .item-input:focus { outline: none; border-color: var(--green); }
+    .unit-lbl { font-size: 13px; color: var(--muted); min-width: 28px; }
+
+    .note-input {
+      width: 100%;
+      padding: 6px 8px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: inherit;
+      color: #424242;
+      background: #fafafa;
+      resize: none;
+      height: 32px;
+      line-height: 1.4;
+    }
+    .note-input:focus { outline: none; border-color: var(--green); background: white; }
+    .note-input::placeholder { color: #bdbdbd; }
+
+    .footer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: white;
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+    }
+    .submit-btn {
+      width: 100%;
+      padding: 15px;
+      background: var(--green-dark);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .submit-btn:active  { opacity: 0.85; }
+    .submit-btn:disabled { background: #9E9E9E; cursor: default; }
+
+    .toast {
+      position: fixed;
+      top: 80px; left: 16px; right: 16px;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 16px;
+      text-align: center;
+      font-weight: bold;
+      z-index: 100;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .toast.success { background: #E8F5E9; color: #1B5E20; border: 2px solid #4CAF50; }
+    .toast.error   { background: #FFEBEE; color: #C62828; border: 2px solid #EF5350; }
+
+    /* Post-submit summary */
+    .summary-banner {
+      margin: 12px 16px;
+      padding: 12px 14px;
+      background: #FFF3E0;
+      border: 1px solid #FFB300;
+      border-radius: 10px;
+      font-size: 14px;
+      display: none;
+    }
+    .summary-banner h3 { font-size: 14px; color: #E65100; margin-bottom: 6px; }
+    .summary-banner ul { margin: 0; padding-left: 16px; color: #424242; }
+    .summary-banner li { margin-bottom: 3px; }
+
+    .loading { text-align: center; padding: 48px 16px; color: var(--muted); font-size: 16px; }
+
+    .cat-chips {
+      display: flex; gap: 8px; padding: 10px 16px;
+      background: white; border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    .cat-chip {
+      padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+      font-size: 13px; font-family: inherit; background: white;
+      cursor: pointer; white-space: nowrap; color: #424242;
+    }
+    .cat-chip.active { background: var(--green-dark); color: white; border-color: var(--green-dark); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📋 นับสต๊อก Non-Meat</h1>
+  <p id="date-display"></p>
+</header>
+
+<nav>
+  <a href="index.html">🏠 หน้าหลัก</a>
+  <a href="dashboard.html">📊 Dashboard</a>
+  <a href="stock-form.html" class="active">📋 นับสต๊อก</a>
+  <a href="prep-form.html">🥄 ผลิต Prep</a>
+  <a href="production-log-form.html">🍳 บันทึกผลิต</a>
+  <a href="admin-config.html">⚙️ ตั้งค่า Par</a>
+</nav>
+
+<div class="name-section">
+  <label>ชื่อผู้นับ</label>
+  <select id="counted-by">
+    <option value="">— เลือกชื่อ —</option>
+    <option>อิม</option>
+    <option>ชาติ</option>
+    <option>ส้ม</option>
+    <option>อุทัย</option>
+    <option>กุ้ง</option>
+    <option>พร</option>
+    <option>โส</option>
+  </select>
+</div>
+
+<div class="cat-chips" id="cat-chips"></div>
+
+<div id="summary-banner" class="summary-banner">
+  <h3>⚠️ รายการที่ต้องสั่งซื้อ</h3>
+  <ul id="summary-list"></ul>
+</div>
+
+<div id="items-container">
+  <div class="loading">⏳ กำลังโหลด...</div>
+</div>
+
+<div class="footer">
+  <button class="submit-btn" id="submit-btn" onclick="submitCount()">✅ ส่งยอดนับ</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let items = [];
+let lastCounts = {}; // item_id → { qty, counted_at, status }
+let activeCat = 'all';
+
+const CAT_LABELS = {
+  seasoning:  '🧂 เครื่องปรุงน้ำซุป',
+  spice:      '🌿 สมุนไพร & เครื่องเทศ',
+  vegetable:  '🥬 ผัก',
+  packaging:  '📦 แพ็กเกจจิ้ง',
+  consumable: '🛒 วัสดุสิ้นเปลือง',
+  noodle:     '🍜 เส้น & ข้าว',
+  srcp:       '🥄 Sub-Recipe (bulk)',
+  pkg:        '🛍️ Portioned (ถุง)',
+};
+
+const STATUS_LABELS = { OUT: 'หมด', ORDER_NOW: 'ต้องสั่ง', LOW: 'ใกล้หมด', OK: 'ปกติ' };
+
+// Date header
+const d = new Date();
+document.getElementById('date-display').textContent =
+  d.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+function calcStatus(qty, par) {
+  if (qty === 0)              return 'OUT';
+  if (qty < par)              return 'ORDER_NOW';
+  if (qty < par * 1.5)       return 'LOW';
+  return 'OK';
+}
+
+function fmtDate(iso) {
+  if (!iso) return null;
+  const dt = new Date(iso);
+  return dt.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+}
+
+async function loadItems() {
+  // Load items
+  const { data: itemData, error: itemErr } = await sb
+    .from('items')
+    .select('id, sku, name, unit, category, par_level')
+    .eq('is_active', true)
+    .order('category')
+    .order('sku');
+
+  if (itemErr) {
+    document.getElementById('items-container').innerHTML =
+      '<div class="loading" style="color:#C62828">❌ โหลดไม่ได้ ลองรีเฟรช</div>';
+    return;
+  }
+
+  // Load latest count per item via current_stock view
+  const { data: stockData } = await sb
+    .from('current_stock')
+    .select('sku, current_qty, status, last_counted, last_counted_by');
+
+  if (stockData) {
+    stockData.forEach(row => {
+      // match by sku
+      lastCounts[row.sku] = row;
+    });
+  }
+
+  items = itemData;
+  buildCatChips(itemData);
+  renderItems();
+}
+
+function buildCatChips(itemData) {
+  const cats = ['all', ...new Set(itemData.map(i => i.category))];
+  const labels = { all: 'ทั้งหมด', ...CAT_LABELS };
+  const shortLabels = {
+    all: 'ทั้งหมด', seasoning: '🧂 เครื่องปรุง', spice: '🌿 สมุนไพร',
+    vegetable: '🥬 ผัก', packaging: '📦 แพ็กเกจ', consumable: '🛒 วัสดุ',
+    noodle: '🍜 เส้น', srcp: '🥄 Sub-Recipe', pkg: '🛍️ Portioned',
+  };
+  const el = document.getElementById('cat-chips');
+  el.innerHTML = cats.map(c =>
+    `<button class="cat-chip${c === activeCat ? ' active' : ''}" onclick="setCat('${c}')">${shortLabels[c] || c}</button>`
+  ).join('');
+}
+
+function setCat(cat) {
+  activeCat = cat;
+  document.querySelectorAll('.cat-chip').forEach(b => {
+    b.classList.toggle('active', b.textContent === (cat === 'all' ? 'ทั้งหมด' : b.textContent) && b.onclick.toString().includes(`'${cat}'`));
+  });
+  buildCatChips(items);
+  renderItems();
+}
+
+function renderItems() {
+  const filtered = activeCat === 'all' ? items : items.filter(i => i.category === activeCat);
+  let html = '';
+  let lastCat = null;
+
+  filtered.forEach(item => {
+    if (item.category !== lastCat) {
+      lastCat = item.category;
+      html += `<div class="group-header">${CAT_LABELS[item.category] || item.category}</div>`;
+    }
+
+    const sc = lastCounts[item.sku];
+    const prevQty = sc ? sc.current_qty : null;
+    const status  = sc ? sc.status : 'OUT';
+    const lastDate = sc ? fmtDate(sc.last_counted) : null;
+
+    const lastCountHtml = prevQty !== null
+      ? `<span class="last-count">ครั้งก่อน: ${prevQty} ${item.unit}${lastDate ? ` (${lastDate})` : ''}</span>`
+      : `<span class="last-count">ยังไม่มีข้อมูล</span>`;
+
+    const chipClass = `chip-${status}`;
+    const chipLabel = STATUS_LABELS[status] || status;
+
+    html += `
+      <div class="item-row status-${status}" id="row-${item.id}">
+        <div class="item-info">
+          <div class="item-name">${item.name}</div>
+          <div class="item-meta">
+            <span class="par-badge">Par ${item.par_level}</span>
+            <span>${item.sku}</span>
+            <span class="status-chip ${chipClass}">${chipLabel}</span>
+          </div>
+          <div class="item-meta" style="margin-top:4px">${lastCountHtml}</div>
+          <input class="note-input" type="text" id="note-${item.id}"
+            placeholder="หมายเหตุ (ถ้ามี)" style="margin-top:6px">
+        </div>
+        <div class="item-right">
+          <div class="qty-wrap">
+            <input class="item-input" type="number" min="0" inputmode="numeric"
+              placeholder="0" id="qty-${item.id}">
+            <span class="unit-lbl">${item.unit}</span>
+          </div>
+        </div>
+      </div>`;
+  });
+
+  document.getElementById('items-container').innerHTML = html || '<div class="loading">ไม่มีรายการในหมวดนี้</div>';
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type}`;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 4000);
+}
+
+async function submitCount() {
+  const countedBy = document.getElementById('counted-by').value;
+  if (!countedBy) { showToast('⚠️ กรุณาเลือกชื่อก่อน', 'error'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังส่ง...';
+
+  // ส่งเฉพาะ item ที่มี input อยู่ใน DOM (ตาม filter ที่เลือก)
+  const visibleIds = new Set(
+    Array.from(document.querySelectorAll('[id^="qty-"]')).map(el => el.id.replace('qty-', ''))
+  );
+  const rows = items.filter(item => visibleIds.has(item.id)).map(item => ({
+    item_id:    item.id,
+    qty:        parseFloat(document.getElementById(`qty-${item.id}`).value) || 0,
+    counted_by: countedBy,
+    note:       document.getElementById(`note-${item.id}`).value.trim() || null,
+  }));
+
+  const { error } = await sb.from('stock_counts').insert(rows);
+
+  if (error) {
+    showToast('❌ ส่งไม่สำเร็จ: ' + error.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '✅ ส่งยอดนับ';
+    return;
+  }
+
+  showToast(`✅ บันทึกแล้ว ${rows.length} รายการ`, 'success');
+  btn.textContent = '✅ ส่งแล้ว!';
+
+  // Show summary of OUT/LOW items
+  const criticalItems = rows
+    .map(r => {
+      const item = items.find(i => i.id === r.item_id);
+      const status = calcStatus(r.qty, item.par_level);
+      return { name: item.name, qty: r.qty, unit: item.unit, status };
+    })
+    .filter(r => r.status === 'OUT' || r.status === 'ORDER_NOW' || r.status === 'LOW');
+
+  if (criticalItems.length > 0) {
+    const ul = document.getElementById('summary-list');
+    ul.innerHTML = criticalItems.map(r => {
+      const label = r.status === 'OUT' ? '🔴 หมด' : r.status === 'ORDER_NOW' ? '🟠 ต้องสั่ง' : '🟡 ใกล้หมด';
+      return `<li>${label} — <strong>${r.name}</strong> เหลือ ${r.qty} ${r.unit}</li>`;
+    }).join('');
+    document.getElementById('summary-banner').style.display = 'block';
+  }
+
+  // Reset form
+  items.forEach(item => {
+    document.getElementById(`qty-${item.id}`).value = '';
+    document.getElementById(`note-${item.id}`).value = '';
+  });
+  document.getElementById('counted-by').value = '';
+  setTimeout(() => { btn.disabled = false; btn.textContent = '✅ ส่งยอดนับ'; }, 3000);
+}
+
+loadItems();
+</script>
+</body>
+</html>

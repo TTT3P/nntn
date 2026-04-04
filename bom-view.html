@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>BOM สูตรผลิต — NNTN</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-dark: #1B5E20;
+      --green: #4CAF50;
+      --bg: #F1F8E9;
+      --border: #e0e0e0;
+      --muted: #757575;
+      --card-bg: white;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: var(--bg); min-height: 100vh; }
+
+    header {
+      background: var(--green-dark); color: white;
+      padding: 14px 16px 10px; position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 1.1rem; }
+    header .sub { font-size: 0.78rem; opacity: 0.8; margin-top: 2px; }
+
+    nav {
+      display: flex; gap: 8px; padding: 10px 16px;
+      background: white; border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    nav a {
+      text-decoration: none; color: var(--green-dark);
+      font-size: 0.82rem; white-space: nowrap;
+      padding: 5px 12px; border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+    nav a.active { background: var(--green-dark); color: white; }
+
+    .filter-bar {
+      display: flex; gap: 8px; padding: 12px 16px;
+      align-items: center; flex-wrap: wrap;
+      background: white; border-bottom: 1px solid var(--border);
+    }
+    .filter-bar select, .filter-bar input {
+      padding: 7px 10px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 0.85rem; background: white;
+    }
+
+    .content { padding: 14px 16px; }
+
+    .rcp-card {
+      background: white; border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 16px; overflow: hidden;
+    }
+    .rcp-header {
+      background: var(--green-dark); color: white;
+      padding: 12px 16px; display: flex;
+      align-items: center; justify-content: space-between;
+    }
+    .rcp-header .code {
+      font-size: 0.75rem; opacity: 0.8;
+      background: rgba(255,255,255,0.15);
+      padding: 2px 8px; border-radius: 10px; margin-right: 8px;
+    }
+    .rcp-header .name { font-size: 1rem; font-weight: 700; }
+    .rcp-header .batch {
+      font-size: 0.75rem; opacity: 0.8;
+      background: rgba(255,255,255,0.15);
+      padding: 3px 10px; border-radius: 10px;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th {
+      background: #f5f5f5; padding: 8px 14px;
+      text-align: left; font-weight: 600; color: var(--muted);
+      font-size: 0.75rem; border-bottom: 1px solid var(--border);
+    }
+    td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9fbe7; }
+
+    .sp-code {
+      display: inline-block; font-size: 0.72rem;
+      background: #E8F5E9; color: var(--green-dark);
+      padding: 1px 7px; border-radius: 10px;
+      font-weight: 600; margin-right: 6px;
+    }
+    .qty-val { font-weight: 700; color: var(--green-dark); }
+    .unit-val { color: var(--muted); font-size: 0.8rem; margin-left: 3px; }
+
+    .empty { text-align: center; padding: 40px; color: var(--muted); }
+
+    .summary-chips {
+      display: flex; gap: 8px; padding: 10px 16px 0;
+      overflow-x: auto; flex-wrap: wrap;
+    }
+    .chip {
+      background: white; border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 12px;
+      font-size: 0.78rem; cursor: pointer; white-space: nowrap;
+      color: var(--green-dark);
+    }
+    .chip.active { background: var(--green-dark); color: white; border-color: var(--green-dark); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>📖 BOM สูตรผลิต</h1>
+    <div class="sub">CookingBook v7.1 — 10 สูตร</div>
+  </div>
+</header>
+
+<nav>
+  <a href="dashboard.html">📊 Dashboard</a>
+  <a href="stock-form.html">📋 นับสต๊อก</a>
+  <a href="production-log-form.html">🍳 บันทึกผลิต</a>
+  <a href="production-log-view.html">📜 ประวัติผลิต</a>
+  <a href="bom-view.html" class="active">📖 BOM</a>
+  <a href="admin-config.html">⚙️ ตั้งค่า Par</a>
+</nav>
+
+<div class="summary-chips" id="rcp-chips">
+  <span class="chip active" onclick="filterRcp('')" id="chip-all">ทั้งหมด</span>
+</div>
+
+<div class="filter-bar">
+  <input type="text" id="search-input" placeholder="🔍 ค้นหาวัตถุดิบ..." oninput="renderBOM()" style="flex:1; min-width:150px;">
+</div>
+
+<div class="content" id="bom-content">
+  <div class="empty">⏳ กำลังโหลด...</div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let allData = [];
+let activeRcp = '';
+
+async function loadBOM() {
+  const { data, error } = await sb.from('bom_items')
+    .select('*')
+    .order('rcp_code')
+    .order('line_no');
+
+  if (error) {
+    document.getElementById('bom-content').innerHTML = `<div class="empty">❌ ${error.message}</div>`;
+    return;
+  }
+  allData = data;
+
+  // Build RCP chips
+  const rcps = [...new Map(data.map(r => [r.rcp_code, {code: r.rcp_code, name: r.rcp_name, batch: r.batch_desc}])).values()];
+  const chipsEl = document.getElementById('rcp-chips');
+  rcps.forEach(r => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.id = 'chip-' + r.code;
+    chip.textContent = r.code + ' ' + r.name;
+    chip.onclick = () => filterRcp(r.code);
+    chipsEl.appendChild(chip);
+  });
+
+  renderBOM();
+}
+
+function filterRcp(code) {
+  activeRcp = code;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  document.getElementById(code ? 'chip-' + code : 'chip-all')?.classList.add('active');
+  renderBOM();
+}
+
+function renderBOM() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  let filtered = allData;
+
+  if (activeRcp) filtered = filtered.filter(r => r.rcp_code === activeRcp);
+  if (search)    filtered = filtered.filter(r =>
+    r.ingredient.toLowerCase().includes(search) ||
+    (r.sp_code || '').toLowerCase().includes(search) ||
+    r.rcp_name.toLowerCase().includes(search)
+  );
+
+  if (filtered.length === 0) {
+    document.getElementById('bom-content').innerHTML = '<div class="empty">ไม่พบข้อมูล</div>';
+    return;
+  }
+
+  // Group by RCP
+  const grouped = {};
+  filtered.forEach(r => {
+    if (!grouped[r.rcp_code]) grouped[r.rcp_code] = { name: r.rcp_name, batch: r.batch_desc, items: [] };
+    grouped[r.rcp_code].items.push(r);
+  });
+
+  let html = '';
+  Object.entries(grouped).forEach(([code, rcp]) => {
+    html += `<div class="rcp-card">
+      <div class="rcp-header">
+        <div style="display:flex;align-items:center">
+          <span class="code">${code}</span>
+          <span class="name">${rcp.name}</span>
+        </div>
+        <span class="batch">${rcp.batch}</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>#</th><th>วัตถุดิบ</th><th style="text-align:right">ปริมาณ</th>
+        </tr></thead>
+        <tbody>`;
+    rcp.items.forEach(item => {
+      html += `<tr>
+        <td style="color:var(--muted);width:32px">${item.line_no}</td>
+        <td>
+          ${item.sp_code ? `<span class="sp-code">${item.sp_code}</span>` : ''}
+          ${item.ingredient}
+        </td>
+        <td style="text-align:right">
+          <span class="qty-val">${item.qty ?? '—'}</span>
+          <span class="unit-val">${item.unit || ''}</span>
+        </td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  });
+
+  document.getElementById('bom-content').innerHTML = html;
+}
+
+loadBOM();
+</script>
+</body>
+</html>

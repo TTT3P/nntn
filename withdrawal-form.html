@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ใบเบิกครัวกลาง — NNTN</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      font-size: 13px;
+      color: #212121;
+      background: white;
+      padding: 14px 18px;
+    }
+
+    .page-header {
+      border-bottom: 3px solid #B71C1C;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .header-left h1 { font-size: 17px; font-weight: 700; color: #B71C1C; }
+    .header-left p  { font-size: 11px; color: #555; margin-top: 2px; }
+    .header-right { font-size: 12px; text-align: right; }
+    .field-row {
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 4px; justify-content: flex-end;
+    }
+    .field-row label { color: #555; white-space: nowrap; }
+    .field-line { border-bottom: 1px solid #333; width: 110px; height: 17px; display: inline-block; }
+
+    .round-row {
+      display: flex; gap: 16px; align-items: center;
+      margin-bottom: 8px; font-size: 12px;
+    }
+    .round-row label { display: flex; align-items: center; gap: 4px; }
+    .cb-box {
+      width: 13px; height: 13px;
+      border: 1.5px solid #333;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .section-title {
+      background: #B71C1C;
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 7px;
+      margin-top: 8px;
+      margin-bottom: 0;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      background: #FFEBEE;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 5px;
+      text-align: left;
+      border: 1px solid #FFCDD2;
+      color: #B71C1C;
+    }
+    thead th.center { text-align: center; }
+    tbody tr:nth-child(even) { background: #FAFAFA; }
+    tbody td {
+      padding: 3px 5px;
+      border: 1px solid #E0E0E0;
+      font-size: 12px;
+    }
+    .td-cb    { width: 22px; text-align: center; }
+    .td-name  { }
+    .td-unit  { width: 45px; text-align: center; color: #555; }
+    .td-qty   { width: 55px; background: #FFF8E1; border: 1px solid #F9A825 !important; }
+    .td-note  { width: 90px; background: #F5F5F5; }
+
+    .footer {
+      margin-top: 12px;
+      border-top: 1px solid #CCC;
+      padding-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #757575;
+    }
+    .sign-box { text-align: center; width: 150px; }
+    .sign-line { border-bottom: 1px solid #333; height: 26px; margin-bottom: 3px; }
+
+    @media print {
+      body { padding: 6px 10px; font-size: 12px; }
+      .no-print { display: none; }
+      .section-title { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .td-qty { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+
+    .print-btn {
+      position: fixed; bottom: 20px; right: 20px;
+      background: #B71C1C; color: white;
+      border: none; border-radius: 50px;
+      padding: 11px 22px; font-size: 15px;
+      font-weight: bold; font-family: inherit;
+      cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .print-btn:hover { background: #C62828; }
+    .loading { text-align: center; padding: 30px; color: #888; }
+    .error-msg { text-align: center; padding: 16px; color: #c62828; background: #ffebee; border-radius: 6px; margin: 10px 0; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="header-left">
+    <h1>📤 ใบเบิกครัวกลาง</h1>
+    <p>ครัวเนื้อในตำนาน (NNTN) — วิชรธรรม 53</p>
+  </div>
+  <div class="header-right">
+    <div class="field-row"><label>วันที่:</label><span class="field-line"></span></div>
+    <div class="field-row"><label>ผู้เบิก:</label><span class="field-line"></span></div>
+    <div class="field-row"><label>อนุมัติโดย:</label><span class="field-line"></span></div>
+  </div>
+</div>
+
+<div class="round-row">
+  <strong>รอบ:</strong>
+  <label><span class="cb-box"></span> เช้า</label>
+  <label><span class="cb-box"></span> เย็น (เพิ่มเติม)</label>
+</div>
+
+<p style="font-size:11px;color:#555;margin-bottom:6px;">
+  ★ ติ๊ก ✓ รายการที่เบิก แล้วเขียนจำนวน | ถ้ามีรายการนอกลิสต์ → เขียนเพิ่มในช่องว่าง
+</p>
+
+<div id="content"><div class="loading">⏳ กำลังโหลด...</div></div>
+
+<div class="footer" id="footer" style="display:none;">
+  <div>
+    <p>หมายเหตุ: ________________________________________________</p>
+    <p style="margin-top:4px">_________________________________________________________</p>
+  </div>
+  <div style="display:flex;gap:28px;">
+    <div class="sign-box"><div class="sign-line"></div><p>ผู้เบิก</p></div>
+    <div class="sign-box"><div class="sign-line"></div><p>ผู้อนุมัติ</p></div>
+  </div>
+</div>
+
+<button class="print-btn no-print" onclick="window.print()">🖨️ พิมพ์</button>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+
+const SKIP_PREFIXES = ['SRCP-', 'PKG-'];
+
+const CATEGORY_LABELS = {
+  seasoning:  '🧂 เครื่องปรุง & ซอส',
+  spice:      '🌿 สมุนไพร & เครื่องเทศ',
+  vegetable:  '🥬 ผัก & โปรตีน',
+  noodle:     '🍜 เส้น & ข้าว & แป้ง',
+  packaging:  '📦 แพ็กเกจจิ้ง & สิ้นเปลือง',
+  other:      '📋 อื่นๆ',
+};
+
+const EXTRA_BLANK_ROWS = 3;
+
+async function load() {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/items?is_active=eq.true&order=category,sku`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const items = await res.json();
+
+    const filtered = items.filter(i =>
+      !SKIP_PREFIXES.some(p => i.sku.startsWith(p))
+    );
+
+    const groups = {};
+    for (const item of filtered) {
+      const cat = item.category || 'other';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    }
+
+    render(groups);
+  } catch (err) {
+    document.getElementById('content').innerHTML =
+      `<div class="error-msg">❌ โหลดไม่ได้: ${err.message}</div>`;
+  }
+}
+
+function tableHead() {
+  return `<thead><tr>
+    <th class="center">✓</th>
+    <th>ชื่อรายการ</th>
+    <th class="center">หน่วย</th>
+    <th class="center">จำนวนที่เบิก</th>
+    <th>หมายเหตุ</th>
+  </tr></thead>`;
+}
+
+function blankRow() {
+  return `<tr>
+    <td class="td-cb"><span style="display:inline-block;width:13px;height:13px;border:1.5px solid #ccc;"></span></td>
+    <td class="td-name"></td>
+    <td class="td-unit"></td>
+    <td class="td-qty"></td>
+    <td class="td-note"></td>
+  </tr>`;
+}
+
+function render(groups) {
+  const orderedCats = Object.keys(CATEGORY_LABELS);
+  const allCats = [...orderedCats, ...Object.keys(groups).filter(c => !orderedCats.includes(c))];
+
+  let html = '';
+  for (const cat of allCats) {
+    if (!groups[cat] || groups[cat].length === 0) continue;
+    const label = CATEGORY_LABELS[cat] || cat;
+
+    const rows = groups[cat].map(item => `
+      <tr>
+        <td class="td-cb"><span style="display:inline-block;width:13px;height:13px;border:1.5px solid #333;"></span></td>
+        <td class="td-name">${item.name}</td>
+        <td class="td-unit">${item.unit || ''}</td>
+        <td class="td-qty"></td>
+        <td class="td-note"></td>
+      </tr>
+    `).join('');
+
+    const blanks = Array(EXTRA_BLANK_ROWS).fill(blankRow()).join('');
+
+    html += `
+      <div class="section-title">${label}</div>
+      <table>${tableHead()}<tbody>${rows}${blanks}</tbody></table>
+    `;
+  }
+
+  document.getElementById('content').innerHTML = html || '<div class="error-msg">ไม่พบรายการ</div>';
+  document.getElementById('footer').style.display = 'flex';
+}
+
+load();
+</script>
+</body>
+</html>

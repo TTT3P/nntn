@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>จัดการ BOM — NNTN</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-dark: #1B5E20;
+      --green: #4CAF50;
+      --red: #C62828;
+      --orange: #E65100;
+      --yellow: #F57F17;
+      --bg: #F1F8E9;
+      --border: #e0e0e0;
+      --muted: #757575;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: #212121; font-size: 16px; padding-bottom: 40px; }
+
+    header { background: var(--green-dark); color: white; padding: 16px; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+    header h1 { font-size: 20px; font-weight: bold; }
+    header p  { font-size: 13px; opacity: 0.75; margin-top: 3px; }
+
+    nav { display: flex; gap: 8px; padding: 10px 16px; background: white; border-bottom: 1px solid var(--border); overflow-x: auto; }
+    nav a { text-decoration: none; color: var(--green-dark); font-size: 0.82rem; white-space: nowrap; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); }
+    nav a.active { background: var(--green-dark); color: white; }
+
+    .rcp-selector { background: white; padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
+    .rcp-selector label { font-size: 14px; font-weight: 600; white-space: nowrap; }
+    .rcp-selector select { flex: 1; padding: 10px 12px; font-size: 15px; border: 2px solid var(--border); border-radius: 8px; font-family: inherit; background: white; }
+    .rcp-selector select:focus { outline: none; border-color: var(--green); }
+
+    .toolbar { background: white; padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
+    .toolbar span { font-size: 13px; color: var(--muted); flex: 1; }
+    .add-btn { padding: 10px 18px; background: var(--green-dark); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; font-family: inherit; cursor: pointer; white-space: nowrap; }
+    .add-btn:disabled { background: #9E9E9E; cursor: default; }
+
+    .bom-row { background: white; padding: 12px 16px; border-bottom: 1px solid #f5f5f5; display: flex; align-items: center; gap: 10px; }
+    .bom-row:last-child { border-bottom: none; }
+    .row-num { font-size: 13px; color: var(--muted); min-width: 24px; text-align: center; font-weight: 600; }
+    .row-info { flex: 1; }
+    .row-name { font-size: 15px; font-weight: 500; }
+    .row-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .row-qty  { font-size: 15px; font-weight: 600; text-align: right; white-space: nowrap; }
+
+    .row-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .btn-edit { padding: 6px 12px; background: #E3F2FD; color: #1565C0; border: none; border-radius: 8px; font-size: 13px; font-family: inherit; cursor: pointer; }
+    .btn-del  { padding: 6px 12px; background: #FFEBEE; color: var(--red); border: none; border-radius: 8px; font-size: 13px; font-family: inherit; cursor: pointer; }
+
+    /* Modal */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50; align-items: flex-end; }
+    .overlay.open { display: flex; }
+    .modal { background: white; width: 100%; border-radius: 20px 20px 0 0; padding: 20px 16px 32px; max-height: 90vh; overflow-y: auto; }
+    .modal h2 { font-size: 18px; font-weight: bold; margin-bottom: 16px; }
+
+    .field { margin-bottom: 14px; }
+    .field label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 5px; }
+    .field input, .field select {
+      width: 100%; padding: 11px 12px; font-size: 16px;
+      border: 2px solid var(--border); border-radius: 8px;
+      font-family: inherit; background: white;
+    }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--green); }
+    .field-row { display: flex; gap: 10px; }
+    .field-row .field { flex: 1; }
+
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-actions button { flex: 1; padding: 13px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; font-family: inherit; cursor: pointer; }
+    .btn-cancel { background: #f5f5f5; color: #333; }
+    .btn-save   { background: var(--green-dark); color: white; }
+    .btn-save:disabled { background: #9E9E9E; }
+
+    /* Confirm delete */
+    .confirm-box { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 60; align-items: center; justify-content: center; }
+    .confirm-box.open { display: flex; }
+    .confirm-inner { background: white; border-radius: 16px; padding: 24px 20px; max-width: 320px; width: 90%; text-align: center; }
+    .confirm-inner h3 { font-size: 17px; margin-bottom: 8px; }
+    .confirm-inner p { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+    .confirm-btns { display: flex; gap: 10px; }
+    .confirm-btns button { flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; font-family: inherit; cursor: pointer; }
+    .btn-confirm-del { background: var(--red); color: white; }
+    .btn-confirm-cancel { background: #f5f5f5; color: #333; }
+
+    .toast { position: fixed; top: 80px; left: 16px; right: 16px; padding: 14px; border-radius: 12px; font-size: 15px; text-align: center; font-weight: bold; z-index: 100; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .toast.success { background: #E8F5E9; color: #1B5E20; border: 2px solid #4CAF50; }
+    .toast.error   { background: #FFEBEE; color: #C62828; border: 2px solid #EF5350; }
+    .loading { text-align: center; padding: 48px 16px; color: var(--muted); font-size: 16px; }
+
+    .rcp-info { background: white; padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+    .rcp-info strong { color: #212121; }
+
+    .empty-hint { text-align: center; padding: 40px 16px; color: var(--muted); }
+    .empty-hint p { font-size: 15px; margin-bottom: 8px; }
+    .empty-hint small { font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📋 จัดการ BOM</h1>
+  <p>เพิ่ม / แก้ / ลบ ส่วนประกอบสูตร</p>
+</header>
+
+<nav>
+  <a href="index.html">🏠 หน้าหลัก</a>
+  <a href="admin-config.html">⚙️ ตั้งค่า Par</a>
+  <a href="admin-items.html">🧩 Ingredients</a>
+  <a href="admin-bom.html" class="active">📋 BOM</a>
+</nav>
+
+<div class="rcp-selector">
+  <label>สูตร:</label>
+  <select id="rcp-select" onchange="onRcpChange()">
+    <option value="">— เลือกสูตร —</option>
+    <option value="RCP-001">RCP-001 ซอสลับ</option>
+    <option value="RCP-002">RCP-002 ซุป</option>
+    <option value="RCP-003">RCP-003 เนื้อสดหมักนุ่ม</option>
+    <option value="RCP-004">RCP-004 พริกน้ำส้ม</option>
+    <option value="RCP-005">RCP-005 กระเทียมเจียว</option>
+    <option value="RCP-006">RCP-006 พริกผัด</option>
+    <option value="RCP-007">RCP-007 เครื่องเทศ</option>
+    <option value="RCP-008">RCP-008 เนื้อแดด (กับแกล้ม)</option>
+    <option value="RCP-009">RCP-009 เนื้อแดด (ข้าวขยำ)</option>
+    <option value="RCP-010">RCP-010 น้ำซอสก๋วยเตี๋ยวแห้ง</option>
+  </select>
+</div>
+
+<div id="rcp-info" class="rcp-info" style="display:none"></div>
+
+<div class="toolbar">
+  <span id="row-count">เลือกสูตรก่อน</span>
+  <button class="add-btn" id="add-btn" onclick="openModal()" disabled>+ เพิ่ม ingredient</button>
+</div>
+
+<div id="bom-container">
+  <div class="empty-hint">
+    <p>👆 เลือกสูตรที่ต้องการแก้ไข</p>
+    <small>BOM ของสูตรนั้นจะแสดงที่นี่</small>
+  </div>
+</div>
+
+<!-- Modal เพิ่ม/แก้ -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="modal-title">เพิ่ม Ingredient</h2>
+    <input type="hidden" id="edit-id">
+
+    <div class="field">
+      <label>รหัสวัตถุดิบ (SP/SRCP code)</label>
+      <input type="text" id="f-spcode" placeholder="เช่น SP-005, SRCP-001" autocapitalize="characters">
+    </div>
+    <div class="field">
+      <label>ชื่อ <span style="color:#C62828">*</span></label>
+      <input type="text" id="f-ingredient" placeholder="ชื่อวัตถุดิบที่แสดงใน BOM">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>ปริมาณ <span style="color:#C62828">*</span></label>
+        <input type="number" id="f-qty" min="0" step="0.001" placeholder="0">
+      </div>
+      <div class="field">
+        <label>หน่วย <span style="color:#C62828">*</span></label>
+        <input type="text" id="f-unit" placeholder="g, ml, ลิตร, ถ้วย…">
+      </div>
+    </div>
+    <div class="field">
+      <label>ลำดับที่ (line_no)</label>
+      <input type="number" id="f-lineno" min="0" step="1" placeholder="ระบบจะเรียงให้อัตโนมัติถ้าเว้นว่าง">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn-save" id="modal-save-btn" onclick="saveRow()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm delete -->
+<div class="confirm-box" id="confirm-box">
+  <div class="confirm-inner">
+    <h3>ลบ ingredient?</h3>
+    <p id="confirm-msg"></p>
+    <div class="confirm-btns">
+      <button class="btn-confirm-cancel" onclick="closeConfirm()">ยกเลิก</button>
+      <button class="btn-confirm-del" onclick="confirmDelete()">🗑️ ลบ</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const RCP_META = {
+  'RCP-001': { name: 'ซอสลับ',              batch: 'Batch: 5 ลิตร' },
+  'RCP-002': { name: 'ซุป',                  batch: 'Batch: 50 ลิตร' },
+  'RCP-003': { name: 'เนื้อสดหมักนุ่ม',     batch: 'Batch: 1,000 กรัม' },
+  'RCP-004': { name: 'พริกน้ำส้ม',          batch: 'Batch: 1 สูตร' },
+  'RCP-005': { name: 'กระเทียมเจียว',       batch: 'Batch: 1 สูตร' },
+  'RCP-006': { name: 'พริกผัด',             batch: 'Batch: 1 สูตร' },
+  'RCP-007': { name: 'เครื่องเทศ',          batch: 'Batch: 1 ถุง' },
+  'RCP-008': { name: 'เนื้อแดด (กับแกล้ม)', batch: 'Batch: 1 สูตร' },
+  'RCP-009': { name: 'เนื้อแดด (ข้าวขยำ)',  batch: 'Batch: 1 สูตร' },
+  'RCP-010': { name: 'น้ำซอสก๋วยเตี๋ยวแห้ง', batch: 'Batch: 1 สูตร' },
+};
+
+let currentRcp = null;
+let bomRows = [];
+let pendingDeleteId = null;
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type}`;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 3000);
+}
+
+// ---- RCP select ----
+function onRcpChange() {
+  currentRcp = document.getElementById('rcp-select').value || null;
+  if (!currentRcp) {
+    document.getElementById('rcp-info').style.display = 'none';
+    document.getElementById('add-btn').disabled = true;
+    document.getElementById('row-count').textContent = 'เลือกสูตรก่อน';
+    document.getElementById('bom-container').innerHTML =
+      '<div class="empty-hint"><p>👆 เลือกสูตรที่ต้องการแก้ไข</p><small>BOM ของสูตรนั้นจะแสดงที่นี่</small></div>';
+    return;
+  }
+  const meta = RCP_META[currentRcp];
+  if (meta) {
+    document.getElementById('rcp-info').style.display = 'block';
+    document.getElementById('rcp-info').innerHTML =
+      `<strong>${currentRcp} ${meta.name}</strong> — ${meta.batch}`;
+  }
+  document.getElementById('add-btn').disabled = false;
+  loadBom();
+}
+
+async function loadBom() {
+  document.getElementById('bom-container').innerHTML = '<div class="loading">⏳ กำลังโหลด...</div>';
+  document.getElementById('row-count').textContent = 'กำลังโหลด...';
+
+  const { data, error } = await sb
+    .from('bom_items')
+    .select('id, line_no, sp_code, ingredient, qty, unit')
+    .eq('rcp_code', currentRcp)
+    .order('line_no');
+
+  if (error) {
+    document.getElementById('bom-container').innerHTML =
+      '<div class="loading" style="color:#C62828">❌ โหลดไม่ได้ ลองรีเฟรช</div>';
+    return;
+  }
+
+  bomRows = data || [];
+  renderBom();
+}
+
+function renderBom() {
+  document.getElementById('row-count').textContent = `${bomRows.length} รายการ`;
+
+  if (bomRows.length === 0) {
+    document.getElementById('bom-container').innerHTML =
+      '<div class="empty-hint"><p>ยังไม่มี ingredient</p><small>กด "+ เพิ่ม ingredient" ด้านบน</small></div>';
+    return;
+  }
+
+  let html = '<div style="background:white">';
+  bomRows.forEach(row => {
+    const qty = parseFloat(row.qty);
+    const qtyStr = Number.isInteger(qty) ? qty.toString() : qty.toFixed(qty < 1 ? 3 : 1).replace(/\.?0+$/, '');
+    html += `
+      <div class="bom-row">
+        <div class="row-num">${row.line_no}</div>
+        <div class="row-info">
+          <div class="row-name">${row.ingredient}</div>
+          <div class="row-meta">${row.sp_code || '—'}</div>
+        </div>
+        <div class="row-qty">${qtyStr} ${row.unit}</div>
+        <div class="row-actions">
+          <button class="btn-edit" onclick="openEdit('${row.id}')">✏️</button>
+          <button class="btn-del"  onclick="openConfirm('${row.id}')">🗑️</button>
+        </div>
+      </div>`;
+  });
+  html += '</div>';
+  document.getElementById('bom-container').innerHTML = html;
+}
+
+// ---- Modal ----
+function openModal() {
+  if (!currentRcp) return;
+  document.getElementById('modal-title').textContent = 'เพิ่ม Ingredient';
+  document.getElementById('edit-id').value = '';
+  document.getElementById('f-spcode').value = '';
+  document.getElementById('f-ingredient').value = '';
+  document.getElementById('f-qty').value = '';
+  document.getElementById('f-unit').value = '';
+  // Auto next line_no
+  const nextLine = bomRows.length > 0 ? Math.max(...bomRows.map(r => r.line_no)) + 1 : 1;
+  document.getElementById('f-lineno').value = nextLine;
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-spcode').focus(), 150);
+}
+
+function openEdit(id) {
+  const row = bomRows.find(r => r.id === id);
+  if (!row) return;
+  document.getElementById('modal-title').textContent = 'แก้ไข Ingredient';
+  document.getElementById('edit-id').value = id;
+  document.getElementById('f-spcode').value = row.sp_code || '';
+  document.getElementById('f-ingredient').value = row.ingredient;
+  document.getElementById('f-qty').value = row.qty;
+  document.getElementById('f-unit').value = row.unit;
+  document.getElementById('f-lineno').value = row.line_no;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+async function saveRow() {
+  const editId     = document.getElementById('edit-id').value;
+  const spCode     = document.getElementById('f-spcode').value.trim().toUpperCase() || null;
+  const ingredient = document.getElementById('f-ingredient').value.trim();
+  const qty        = parseFloat(document.getElementById('f-qty').value);
+  const unit       = document.getElementById('f-unit').value.trim();
+  const lineNo     = parseInt(document.getElementById('f-lineno').value) || 0;
+
+  if (!ingredient || !unit || isNaN(qty) || qty < 0) {
+    showToast('⚠️ กรุณากรอกข้อมูลให้ครบ', 'error'); return;
+  }
+
+  const btn = document.getElementById('modal-save-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังบันทึก...';
+
+  const meta = RCP_META[currentRcp] || {};
+  let error;
+
+  if (editId) {
+    ({ error } = await sb.from('bom_items')
+      .update({ sp_code: spCode, ingredient, qty, unit, line_no: lineNo })
+      .eq('id', editId));
+  } else {
+    ({ error } = await sb.from('bom_items').insert({
+      rcp_code:   currentRcp,
+      rcp_name:   meta.name || currentRcp,
+      batch_desc: meta.batch || '',
+      line_no:    lineNo,
+      sp_code:    spCode,
+      ingredient,
+      qty,
+      unit,
+    }));
+  }
+
+  btn.disabled = false;
+  btn.textContent = '💾 บันทึก';
+
+  if (error) {
+    showToast('❌ บันทึกไม่สำเร็จ: ' + (error.message || 'ลองใหม่'), 'error');
+    return;
+  }
+
+  closeModal();
+  showToast(editId ? '✅ แก้ไขแล้ว' : '✅ เพิ่มแล้ว', 'success');
+  await loadBom();
+}
+
+// ---- Delete ----
+function openConfirm(id) {
+  const row = bomRows.find(r => r.id === id);
+  if (!row) return;
+  pendingDeleteId = id;
+  document.getElementById('confirm-msg').textContent =
+    `"${row.ingredient}" (${row.qty} ${row.unit}) จะถูกลบออกจาก BOM`;
+  document.getElementById('confirm-box').classList.add('open');
+}
+
+function closeConfirm() {
+  pendingDeleteId = null;
+  document.getElementById('confirm-box').classList.remove('open');
+}
+
+async function confirmDelete() {
+  if (!pendingDeleteId) return;
+  const id = pendingDeleteId;
+  closeConfirm();
+
+  const { error } = await sb.from('bom_items').delete().eq('id', id);
+  if (error) { showToast('❌ ลบไม่สำเร็จ', 'error'); return; }
+
+  showToast('✅ ลบแล้ว', 'success');
+  await loadBom();
+}
+
+document.getElementById('overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>

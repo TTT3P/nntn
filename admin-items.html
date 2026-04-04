@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>จัดการ Ingredients — NNTN</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-dark: #1B5E20;
+      --green: #4CAF50;
+      --red: #C62828;
+      --orange: #E65100;
+      --yellow: #F57F17;
+      --bg: #F1F8E9;
+      --border: #e0e0e0;
+      --muted: #757575;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: #212121; font-size: 16px; padding-bottom: 40px; }
+
+    header { background: var(--green-dark); color: white; padding: 16px; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+    header h1 { font-size: 20px; font-weight: bold; }
+    header p  { font-size: 13px; opacity: 0.75; margin-top: 3px; }
+
+    nav { display: flex; gap: 8px; padding: 10px 16px; background: white; border-bottom: 1px solid var(--border); overflow-x: auto; }
+    nav a { text-decoration: none; color: var(--green-dark); font-size: 0.82rem; white-space: nowrap; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); }
+    nav a.active { background: var(--green-dark); color: white; }
+
+    .toolbar { background: white; padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
+    .toolbar span { font-size: 13px; color: var(--muted); flex: 1; }
+    .add-btn { padding: 10px 20px; background: var(--green-dark); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; font-family: inherit; cursor: pointer; white-space: nowrap; }
+    .add-btn:active { opacity: 0.85; }
+
+    .group-header { background: #E8F5E9; padding: 8px 16px; font-size: 13px; font-weight: bold; color: var(--green-dark); border-top: 1px solid #C8E6C9; border-bottom: 1px solid #C8E6C9; }
+
+    .item-row { background: white; padding: 12px 16px; border-bottom: 1px solid #f5f5f5; display: flex; align-items: center; gap: 10px; }
+    .item-row.editing { background: #FFFDE7; }
+
+    .item-info { flex: 1; }
+    .item-name { font-size: 15px; font-weight: 500; }
+    .item-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .item-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .btn-edit { padding: 7px 14px; background: #E3F2FD; color: #1565C0; border: none; border-radius: 8px; font-size: 13px; font-family: inherit; cursor: pointer; }
+    .btn-del  { padding: 7px 14px; background: #FFEBEE; color: var(--red); border: none; border-radius: 8px; font-size: 13px; font-family: inherit; cursor: pointer; }
+
+    /* Modal */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50; align-items: flex-end; }
+    .overlay.open { display: flex; }
+    .modal { background: white; width: 100%; border-radius: 20px 20px 0 0; padding: 20px 16px 32px; max-height: 90vh; overflow-y: auto; }
+    .modal h2 { font-size: 18px; font-weight: bold; margin-bottom: 16px; }
+
+    .field { margin-bottom: 14px; }
+    .field label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 5px; }
+    .field input, .field select {
+      width: 100%; padding: 11px 12px; font-size: 16px;
+      border: 2px solid var(--border); border-radius: 8px;
+      font-family: inherit; background: white;
+    }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--green); }
+
+    .field-row { display: flex; gap: 10px; }
+    .field-row .field { flex: 1; }
+
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-actions button { flex: 1; padding: 13px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; font-family: inherit; cursor: pointer; }
+    .btn-cancel { background: #f5f5f5; color: #333; }
+    .btn-save   { background: var(--green-dark); color: white; }
+    .btn-save:disabled { background: #9E9E9E; }
+
+    /* Confirm delete */
+    .confirm-box { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 60; align-items: center; justify-content: center; }
+    .confirm-box.open { display: flex; }
+    .confirm-inner { background: white; border-radius: 16px; padding: 24px 20px; max-width: 320px; width: 90%; text-align: center; }
+    .confirm-inner h3 { font-size: 17px; margin-bottom: 8px; }
+    .confirm-inner p { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+    .confirm-btns { display: flex; gap: 10px; }
+    .confirm-btns button { flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; font-family: inherit; cursor: pointer; }
+    .btn-confirm-del { background: var(--red); color: white; }
+    .btn-confirm-cancel { background: #f5f5f5; color: #333; }
+
+    .toast { position: fixed; top: 80px; left: 16px; right: 16px; padding: 14px; border-radius: 12px; font-size: 15px; text-align: center; font-weight: bold; z-index: 100; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .toast.success { background: #E8F5E9; color: #1B5E20; border: 2px solid #4CAF50; }
+    .toast.error   { background: #FFEBEE; color: #C62828; border: 2px solid #EF5350; }
+    .loading { text-align: center; padding: 48px 16px; color: var(--muted); font-size: 16px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🧩 จัดการ Ingredients</h1>
+  <p>เพิ่ม / แก้ / ลบ รายการวัตถุดิบ</p>
+</header>
+
+<nav>
+  <a href="index.html">🏠 หน้าหลัก</a>
+  <a href="admin-config.html">⚙️ ตั้งค่า Par</a>
+  <a href="admin-items.html" class="active">🧩 Ingredients</a>
+  <a href="admin-bom.html">📋 BOM</a>
+</nav>
+
+<div class="toolbar">
+  <span id="item-count">กำลังโหลด...</span>
+  <button class="add-btn" onclick="openModal()">+ เพิ่มรายการ</button>
+</div>
+
+<div id="list-container">
+  <div class="loading">⏳ กำลังโหลด...</div>
+</div>
+
+<!-- Modal เพิ่ม/แก้ -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="modal-title">เพิ่มรายการใหม่</h2>
+    <input type="hidden" id="edit-id">
+
+    <div class="field">
+      <label>SKU <span style="font-size:11px;color:var(--muted);font-weight:400">(กำหนดอัตโนมัติตามหมวด)</span></label>
+      <input type="text" id="f-sku" placeholder="← เลือกหมวดก่อน" readonly
+        style="background:#f5f5f5;color:var(--muted);cursor:default;">
+    </div>
+    <div class="field">
+      <label>ชื่อ <span style="color:#C62828">*</span></label>
+      <input type="text" id="f-name" placeholder="ชื่อวัตถุดิบ">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>หน่วย <span style="color:#C62828">*</span></label>
+        <input type="text" id="f-unit" placeholder="เช่น ขวด, ถุง, กก.">
+      </div>
+      <div class="field">
+        <label>หมวด <span style="color:#C62828">*</span></label>
+        <select id="f-category">
+          <option value="">— เลือก —</option>
+          <option value="seasoning">🧂 เครื่องปรุงน้ำซุป</option>
+          <option value="spice">🌿 สมุนไพร & เครื่องเทศ</option>
+          <option value="vegetable">🥬 ผัก</option>
+          <option value="noodle">🍜 เส้น & ข้าว</option>
+          <option value="packaging">📦 แพ็กเกจจิ้ง</option>
+          <option value="consumable">🛒 วัสดุสิ้นเปลือง</option>
+          <option value="srcp">🥄 Sub-Recipe (bulk)</option>
+          <option value="pkg">🛍️ Portioned (ถุง)</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Par Level (ขั้นต่ำ)</label>
+        <input type="number" id="f-par" min="0" step="0.5" placeholder="0">
+      </div>
+      <div class="field">
+        <label>Max Level (เป้าหมาย)</label>
+        <input type="number" id="f-max" min="0" step="0.5" placeholder="0">
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn-save" id="modal-save-btn" onclick="saveItem()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm delete -->
+<div class="confirm-box" id="confirm-box">
+  <div class="confirm-inner">
+    <h3>ลบรายการ?</h3>
+    <p id="confirm-msg">ต้องการลบรายการนี้ออกจากระบบ?</p>
+    <div class="confirm-btns">
+      <button class="btn-confirm-cancel" onclick="closeConfirm()">ยกเลิก</button>
+      <button class="btn-confirm-del" onclick="confirmDelete()">🗑️ ลบ</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CAT_LABELS = {
+  seasoning:  '🧂 เครื่องปรุงน้ำซุป',
+  spice:      '🌿 สมุนไพร & เครื่องเทศ',
+  vegetable:  '🥬 ผัก',
+  noodle:     '🍜 เส้น & ข้าว',
+  packaging:  '📦 แพ็กเกจจิ้ง',
+  consumable: '🛒 วัสดุสิ้นเปลือง',
+  srcp:       '🥄 Sub-Recipe (bulk)',
+  pkg:        '🛍️ Portioned (ถุง)',
+};
+
+let items = [];
+let pendingDeleteId = null;
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type}`;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 3000);
+}
+
+// ---- Load ----
+async function loadItems() {
+  const { data, error } = await sb
+    .from('items')
+    .select('id, sku, name, category, unit, par_level, max_level, is_active')
+    .order('category').order('sku');
+    // โหลดทุกรายการรวม inactive เพื่อให้ suggestSku() ไม่ซ้ำ SKU ที่ถูกลบไปแล้ว
+
+  if (error) {
+    document.getElementById('list-container').innerHTML =
+      '<div class="loading" style="color:#C62828">❌ โหลดไม่ได้ ลองรีเฟรช</div>';
+    return;
+  }
+
+  items = data || [];
+  renderList();
+}
+
+function renderList() {
+  const active = items.filter(i => i.is_active);
+  document.getElementById('item-count').textContent = `${active.length} รายการ`;
+
+  let html = '';
+  let lastCat = null;
+
+  active.forEach(item => {
+    if (item.category !== lastCat) {
+      lastCat = item.category;
+      html += `<div class="group-header">${CAT_LABELS[item.category] || item.category}</div>`;
+    }
+    html += `
+      <div class="item-row" id="row-${item.id}">
+        <div class="item-info">
+          <div class="item-name">${item.name}</div>
+          <div class="item-meta">${item.sku} · ${item.unit} · Par: ${item.par_level} / Max: ${item.max_level}</div>
+        </div>
+        <div class="item-actions">
+          <button class="btn-edit" onclick="openEdit('${item.id}')">✏️ แก้</button>
+          <button class="btn-del"  onclick="openConfirm('${item.id}')">🗑️</button>
+        </div>
+      </div>`;
+  });
+
+  document.getElementById('list-container').innerHTML = html || '<div class="loading">ไม่มีรายการ</div>';
+}
+
+// ---- SKU suggest ----
+function getPrefix(category) {
+  if (category === 'srcp') return 'SRCP';
+  if (category === 'pkg')  return 'PKG';
+  return 'SP';
+}
+
+function suggestSku(category) {
+  if (!category) { document.getElementById('f-sku').value = ''; return; }
+  const prefix = getPrefix(category);
+  // หา SKU สูงสุดของ prefix นั้น (รวม inactive ด้วย เพื่อไม่ให้ซ้ำ)
+  const nums = items
+    .filter(i => i.sku.startsWith(prefix + '-'))
+    .map(i => parseInt(i.sku.replace(prefix + '-', ''), 10))
+    .filter(n => !isNaN(n));
+  const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+  document.getElementById('f-sku').value = `${prefix}-${String(next).padStart(3, '0')}`;
+}
+
+// ---- Modal ----
+function openModal() {
+  document.getElementById('modal-title').textContent = 'เพิ่มรายการใหม่';
+  document.getElementById('edit-id').value = '';
+  document.getElementById('f-sku').value = '';
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-unit').value = '';
+  document.getElementById('f-category').value = '';
+  document.getElementById('f-par').value = '';
+  document.getElementById('f-max').value = '';
+  document.getElementById('f-sku').disabled = false;
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-name').focus(), 150);
+}
+
+// เมื่อเลือก category → suggest SKU อัตโนมัติ
+document.getElementById('f-category').addEventListener('change', function() {
+  const editId = document.getElementById('edit-id').value;
+  if (!editId) suggestSku(this.value); // เฉพาะตอนเพิ่มใหม่
+});
+
+function openEdit(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  document.getElementById('modal-title').textContent = 'แก้ไขรายการ';
+  document.getElementById('edit-id').value = id;
+  document.getElementById('f-sku').value = item.sku;
+  document.getElementById('f-sku').disabled = true; // SKU ไม่ให้แก้
+  document.getElementById('f-name').value = item.name;
+  document.getElementById('f-unit').value = item.unit;
+  document.getElementById('f-category').value = item.category;
+  document.getElementById('f-par').value = item.par_level;
+  document.getElementById('f-max').value = item.max_level;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+async function saveItem() {
+  const editId = document.getElementById('edit-id').value;
+  const sku      = document.getElementById('f-sku').value.trim().toUpperCase();
+  const name     = document.getElementById('f-name').value.trim();
+  const unit     = document.getElementById('f-unit').value.trim();
+  const category = document.getElementById('f-category').value;
+  const par      = parseFloat(document.getElementById('f-par').value) || 0;
+  const max      = parseFloat(document.getElementById('f-max').value) || 0;
+
+  if (!name || !unit || !category) {
+    showToast('⚠️ กรุณากรอกข้อมูลให้ครบ', 'error'); return;
+  }
+  if (!editId && !sku) {
+    showToast('⚠️ กรุณาระบุ SKU', 'error'); return;
+  }
+  if (max < par) {
+    showToast('⚠️ Max ต้องมากกว่าหรือเท่ากับ Par', 'error'); return;
+  }
+
+  const btn = document.getElementById('modal-save-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังบันทึก...';
+
+  let error;
+  if (editId) {
+    ({ error } = await sb.from('items')
+      .update({ name, unit, category, par_level: par, max_level: max })
+      .eq('id', editId));
+  } else {
+    ({ error } = await sb.from('items')
+      .insert({ sku, name, unit, category, par_level: par, max_level: max, is_active: true }));
+  }
+
+  btn.disabled = false;
+  btn.textContent = '💾 บันทึก';
+
+  if (error) {
+    showToast('❌ บันทึกไม่สำเร็จ: ' + (error.message || 'ลองใหม่'), 'error');
+    return;
+  }
+
+  closeModal();
+  showToast(editId ? '✅ แก้ไขแล้ว' : '✅ เพิ่มรายการแล้ว', 'success');
+  await loadItems();
+}
+
+// ---- Delete ----
+function openConfirm(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  pendingDeleteId = id;
+  document.getElementById('confirm-msg').textContent =
+    `"${item.name}" (${item.sku}) จะถูกปิดใช้งาน ข้อมูลสต๊อกยังคงอยู่`;
+  document.getElementById('confirm-box').classList.add('open');
+}
+
+function closeConfirm() {
+  pendingDeleteId = null;
+  document.getElementById('confirm-box').classList.remove('open');
+}
+
+async function confirmDelete() {
+  if (!pendingDeleteId) return;
+  const id = pendingDeleteId;
+  closeConfirm();
+
+  // Soft delete — ปิด is_active แทนลบจริง
+  const { error } = await sb.from('items').update({ is_active: false }).eq('id', id);
+  if (error) { showToast('❌ ลบไม่สำเร็จ', 'error'); return; }
+
+  showToast('✅ ลบรายการแล้ว', 'success');
+  await loadItems();
+}
+
+// Close overlay on outside tap
+document.getElementById('overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+loadItems();
+</script>
+</body>
+</html>

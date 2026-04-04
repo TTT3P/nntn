@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>บันทึกการผลิต — NNTN</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-dark: #1B5E20;
+      --green: #4CAF50;
+      --yellow: #F57F17;
+      --red: #C62828;
+      --bg: #F1F8E9;
+      --border: #e0e0e0;
+      --muted: #757575;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--bg);
+      color: #212121;
+      font-size: 16px;
+      padding-bottom: 100px;
+    }
+
+    header {
+      background: var(--green-dark);
+      color: white;
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    header h1 { font-size: 20px; font-weight: bold; }
+    header p  { font-size: 13px; opacity: 0.75; margin-top: 3px; }
+
+    .top-section {
+      background: white;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 12px;
+    }
+    .field-group { flex: 1; }
+    .field-group label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .field-group select,
+    .field-group input[type="date"] {
+      width: 100%;
+      padding: 11px 10px;
+      font-size: 15px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      font-family: inherit;
+    }
+    .field-group select:focus,
+    .field-group input:focus { outline: none; border-color: var(--green); }
+
+    /* Batch rows */
+    .rows-section { padding: 12px 16px; }
+    .rows-section h2 {
+      font-size: 14px;
+      color: var(--green-dark);
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .batch-row {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+      position: relative;
+    }
+    .batch-row-top {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .batch-field { flex: 1; }
+    .batch-field label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; }
+    .batch-field select,
+    .batch-field input[type="number"] {
+      width: 100%;
+      padding: 10px 8px;
+      font-size: 15px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      font-family: inherit;
+    }
+    .batch-field input[type="number"] {
+      text-align: center;
+      font-size: 20px;
+      -moz-appearance: textfield;
+    }
+    .batch-field input[type="number"]::-webkit-outer-spin-button,
+    .batch-field input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .batch-field select:focus,
+    .batch-field input:focus { outline: none; border-color: var(--green); }
+
+    .type-toggle {
+      display: flex;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .type-toggle label {
+      flex: 1;
+      text-align: center;
+      padding: 8px 4px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--muted);
+      transition: background 0.15s, color 0.15s;
+    }
+    .type-toggle input[type="radio"] { display: none; }
+    .type-toggle input[type="radio"]:checked + label {
+      background: var(--green-dark);
+      color: white;
+      font-weight: bold;
+    }
+
+    .note-field { margin-top: 8px; }
+    .note-field input {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: inherit;
+      color: #424242;
+    }
+    .note-field input:focus { outline: none; border-color: var(--green); }
+    .note-field input::placeholder { color: #bdbdbd; }
+
+    .remove-btn {
+      position: absolute;
+      top: 8px; right: 10px;
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #bdbdbd;
+      cursor: pointer;
+      padding: 2px 6px;
+      line-height: 1;
+    }
+    .remove-btn:hover { color: var(--red); }
+
+    .add-btn {
+      width: 100%;
+      padding: 14px;
+      background: white;
+      color: var(--green-dark);
+      border: 2px dashed #A5D6A7;
+      border-radius: 10px;
+      font-size: 16px;
+      font-family: inherit;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.15s;
+    }
+    .add-btn:active { background: #E8F5E9; }
+
+    .footer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: white;
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+    }
+    .submit-btn {
+      width: 100%;
+      padding: 15px;
+      background: var(--green-dark);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .submit-btn:active  { opacity: 0.85; }
+    .submit-btn:disabled { background: #9E9E9E; cursor: default; }
+
+    .toast {
+      position: fixed;
+      top: 80px; left: 16px; right: 16px;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 16px;
+      text-align: center;
+      font-weight: bold;
+      z-index: 100;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .toast.success { background: #E8F5E9; color: #1B5E20; border: 2px solid #4CAF50; }
+    .toast.error   { background: #FFEBEE; color: #C62828; border: 2px solid #EF5350; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🍳 บันทึกการผลิต</h1>
+  <p id="date-display"></p>
+</header>
+
+<!-- วันที่ + ชื่อ -->
+<div class="top-section">
+  <div class="field-group">
+    <label>วันที่ผลิต</label>
+    <input type="date" id="log-date">
+  </div>
+  <div class="field-group">
+    <label>ชื่อผู้บันทึก</label>
+    <select id="logged-by">
+      <option value="">— เลือก —</option>
+      <option>อิม</option>
+      <option>ชาติ</option>
+      <option>ส้ม</option>
+      <option>อุทัย</option>
+      <option>กุ้ง</option>
+      <option>พร</option>
+      <option>โส</option>
+    </select>
+  </div>
+</div>
+
+<!-- Batch rows -->
+<div class="rows-section">
+  <h2>รายการที่ผลิตวันนี้</h2>
+  <div id="batch-container"></div>
+  <button class="add-btn" onclick="addRow()">+ เพิ่มรายการ</button>
+</div>
+
+<div class="footer">
+  <button class="submit-btn" id="submit-btn" onclick="submitLog()">✅ บันทึกการผลิต</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const RECIPES = [
+  { code: 'RCP-001', name: 'ซอสลับ' },
+  { code: 'RCP-002', name: 'น้ำซุป' },
+  { code: 'RCP-003', name: 'น้ำซุปสำเร็จ' },
+  { code: 'RCP-004', name: 'เนื้อตุ๋น' },
+  { code: 'RCP-005', name: 'ซี่โครงตุ๋น' },
+  { code: 'RCP-006', name: 'ลิ้นตุ๋น' },
+  { code: 'RCP-007', name: 'เอ็นตุ๋น' },
+  { code: 'RCP-008', name: 'ไส้ตุ๋น' },
+  { code: 'RCP-009', name: 'กระดูกตุ๋น' },
+  { code: 'RCP-010', name: 'ริ้วขาวตุ๋น' },
+  { code: 'RCP-011', name: 'เนื้อแดง' },
+  { code: 'RCP-012', name: 'น้ำซุปพนักงาน' },
+  { code: 'RCP-013', name: 'ข้าวขยำ' },
+  { code: 'RCP-014', name: 'น้ำจิ้มวีไอพี' },
+  { code: 'RCP-015', name: 'น้ำจิ้มธรรมดา' },
+  { code: 'RCP-016', name: 'ซอสพริก' },
+  { code: 'RCP-017', name: 'น้ำซุปเข้มข้น' },
+  { code: 'RCP-018', name: 'น้ำปรุงก๋วยเตี๋ยว' },
+  { code: 'RCP-019', name: 'ซอสหมัก' },
+  { code: 'RCP-020', name: 'เนื้อย่าง' },
+  { code: 'RCP-021', name: 'น้ำหวาน' },
+  { code: 'RCP-022', name: 'น้ำสลัด' },
+  { code: 'RCP-023', name: 'ซอสเปรี้ยว' },
+  { code: 'RCP-024', name: 'ซอสกะหรี่' },
+  { code: 'RCP-025', name: 'น้ำพริกเผา' },
+];
+
+const rcpOptions = RECIPES.map(r =>
+  `<option value="${r.code}" data-name="${r.name}">${r.code} — ${r.name}</option>`
+).join('');
+
+let rowId = 0;
+
+// Set today's date
+const today = new Date();
+const yyyy = today.getFullYear();
+const mm   = String(today.getMonth() + 1).padStart(2, '0');
+const dd   = String(today.getDate()).padStart(2, '0');
+document.getElementById('log-date').value = `${yyyy}-${mm}-${dd}`;
+
+document.getElementById('date-display').textContent =
+  today.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+function addRow(rcpCode = '', batchCount = '', type = 'customer') {
+  const id = ++rowId;
+  const div = document.createElement('div');
+  div.className = 'batch-row';
+  div.id = `row-${id}`;
+  div.innerHTML = `
+    <button class="remove-btn" onclick="removeRow(${id})" title="ลบ">✕</button>
+    <div class="batch-row-top">
+      <div class="batch-field" style="flex:2">
+        <label>สูตร (RCP)</label>
+        <select id="rcp-${id}">
+          <option value="">— เลือกสูตร —</option>
+          ${rcpOptions}
+        </select>
+      </div>
+      <div class="batch-field" style="flex:1">
+        <label>จำนวน batch</label>
+        <input type="number" min="0.5" step="0.5" id="batch-${id}" value="1">
+      </div>
+    </div>
+    <div class="type-toggle">
+      <input type="radio" name="type-${id}" id="cust-${id}" value="customer" ${type==='customer'?'checked':''}>
+      <label for="cust-${id}">🍜 ลูกค้า</label>
+      <input type="radio" name="type-${id}" id="staff-${id}" value="staff" ${type==='staff'?'checked':''}>
+      <label for="staff-${id}">👤 พนักงาน</label>
+    </div>
+    <div class="note-field">
+      <input type="text" id="note-${id}" placeholder="หมายเหตุ (ถ้ามี)">
+    </div>`;
+
+  if (rcpCode) div.querySelector(`#rcp-${id}`).value = rcpCode;
+  if (batchCount) div.querySelector(`#batch-${id}`).value = batchCount;
+
+  document.getElementById('batch-container').appendChild(div);
+}
+
+function removeRow(id) {
+  const el = document.getElementById(`row-${id}`);
+  if (el) el.remove();
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type}`;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 4000);
+}
+
+async function submitLog() {
+  const logDate  = document.getElementById('log-date').value;
+  const loggedBy = document.getElementById('logged-by').value;
+
+  if (!logDate)   { showToast('⚠️ กรุณาเลือกวันที่', 'error'); return; }
+  if (!loggedBy)  { showToast('⚠️ กรุณาเลือกชื่อ', 'error'); return; }
+
+  // Collect rows
+  const rows = [];
+  document.querySelectorAll('.batch-row').forEach(rowEl => {
+    const id = rowEl.id.replace('row-', '');
+    const rcpSel = document.getElementById(`rcp-${id}`);
+    const rcpCode = rcpSel.value;
+    const rcpName = rcpSel.options[rcpSel.selectedIndex]?.dataset.name || '';
+    const batchCount = parseFloat(document.getElementById(`batch-${id}`).value);
+    const type = document.querySelector(`input[name="type-${id}"]:checked`)?.value || 'customer';
+    const note = document.getElementById(`note-${id}`).value.trim() || null;
+
+    if (!rcpCode) { return; } // skip unselected
+    if (!batchCount || batchCount <= 0) { return; } // skip empty batch
+
+    rows.push({ logged_at: logDate, logged_by: loggedBy, rcp_code: rcpCode, rcp_name: rcpName, batch_count: batchCount, type, note });
+  });
+
+  if (rows.length === 0) {
+    showToast('⚠️ กรุณากรอกอย่างน้อย 1 รายการ', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังบันทึก...';
+
+  const { error } = await sb.from('production_log').insert(rows);
+
+  if (error) {
+    showToast('❌ บันทึกไม่สำเร็จ: ' + error.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '✅ บันทึกการผลิต';
+    return;
+  }
+
+  showToast(`✅ บันทึกแล้ว ${rows.length} รายการ`, 'success');
+  btn.textContent = '✅ บันทึกแล้ว!';
+
+  // Clear rows
+  document.getElementById('batch-container').innerHTML = '';
+  rowId = 0;
+  addRow(); // start fresh with one empty row
+
+  setTimeout(() => { btn.disabled = false; btn.textContent = '✅ บันทึกการผลิต'; }, 3000);
+}
+
+// Start with one empty row
+addRow();
+</script>
+</body>
+</html>

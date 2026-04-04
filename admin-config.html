@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>ตั้งค่า Par Level — NNTN</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-dark: #1B5E20;
+      --green: #4CAF50;
+      --yellow: #F57F17;
+      --orange: #E65100;
+      --red: #C62828;
+      --bg: #F1F8E9;
+      --border: #e0e0e0;
+      --muted: #757575;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--bg);
+      color: #212121;
+      font-size: 16px;
+      padding-bottom: 24px;
+    }
+
+    header {
+      background: var(--green-dark);
+      color: white;
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    header h1 { font-size: 20px; font-weight: bold; }
+    header p  { font-size: 13px; opacity: 0.75; margin-top: 3px; }
+
+    .toolbar {
+      background: white;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .toolbar span { font-size: 13px; color: var(--muted); flex: 1; }
+    .save-all-btn {
+      padding: 10px 20px;
+      background: var(--green-dark);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: bold;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .save-all-btn:active { opacity: 0.85; }
+    .save-all-btn:disabled { background: #9E9E9E; cursor: default; }
+
+    .group-header {
+      background: #E8F5E9;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--green-dark);
+      border-top: 1px solid #C8E6C9;
+      border-bottom: 1px solid #C8E6C9;
+    }
+
+    .config-row {
+      background: white;
+      padding: 12px 16px;
+      border-bottom: 1px solid #f5f5f5;
+      border-left: 4px solid transparent;
+    }
+    .config-row.status-OUT       { border-left-color: var(--red); background: #fff8f8; }
+    .config-row.status-ORDER_NOW { border-left-color: var(--orange); background: #fffbf3; }
+    .config-row.status-LOW       { border-left-color: var(--yellow); }
+    .config-row.status-OK        { border-left-color: #81C784; }
+
+    .row-top { display: flex; align-items: center; gap: 10px; }
+    .row-info { flex: 1; }
+    .row-name { font-size: 15px; font-weight: 500; }
+    .row-meta { font-size: 12px; color: var(--muted); margin-top: 2px; display: flex; gap: 6px; }
+
+    .current-qty {
+      font-size: 18px;
+      font-weight: bold;
+      text-align: right;
+      min-width: 48px;
+    }
+    .current-qty.zero { color: var(--red); }
+    .current-qty.low  { color: var(--orange); }
+    .current-qty.ok   { color: var(--green-dark); }
+    .qty-unit { font-size: 11px; color: var(--muted); text-align: right; }
+
+    .row-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      align-items: center;
+    }
+    .ctrl-group { flex: 1; }
+    .ctrl-group label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; }
+    .ctrl-group input[type="number"] {
+      width: 100%;
+      padding: 8px;
+      font-size: 16px;
+      text-align: center;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      -moz-appearance: textfield;
+    }
+    .ctrl-group input[type="number"]::-webkit-outer-spin-button,
+    .ctrl-group input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .ctrl-group input:focus { outline: none; border-color: var(--green); }
+    .ctrl-group input.changed { border-color: var(--yellow); background: #FFFDE7; }
+
+    .save-row-btn {
+      padding: 8px 14px;
+      background: var(--green-dark);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      align-self: flex-end;
+      margin-bottom: 0;
+    }
+    .save-row-btn:active { opacity: 0.85; }
+    .save-row-btn.saved  { background: #81C784; }
+
+    .toast {
+      position: fixed;
+      top: 80px; left: 16px; right: 16px;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      text-align: center;
+      font-weight: bold;
+      z-index: 100;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .toast.success { background: #E8F5E9; color: #1B5E20; border: 2px solid #4CAF50; }
+    .toast.error   { background: #FFEBEE; color: #C62828; border: 2px solid #EF5350; }
+
+    .loading { text-align: center; padding: 48px 16px; color: var(--muted); font-size: 16px; }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      padding: 14px;
+      color: var(--green-dark);
+      font-size: 14px;
+      text-decoration: none;
+    }
+
+    nav {
+      display: flex; gap: 8px; padding: 10px 16px;
+      background: white; border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    nav a {
+      text-decoration: none; color: var(--green-dark);
+      font-size: 0.82rem; white-space: nowrap;
+      padding: 5px 12px; border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+    nav a.active { background: var(--green-dark); color: white; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚙️ ตั้งค่า Par Level</h1>
+  <p>ปรับขั้นต่ำ (Par) และเป้าหมายสต๊อก (Max)</p>
+</header>
+
+<nav>
+  <a href="index.html">🏠 หน้าหลัก</a>
+  <a href="dashboard.html">📊 Dashboard</a>
+  <a href="stock-form.html">📋 นับสต๊อก</a>
+  <a href="admin-config.html" class="active">⚙️ ตั้งค่า Par</a>
+</nav>
+
+<div class="toolbar">
+  <span id="change-count">กำลังโหลด...</span>
+  <button class="save-all-btn" id="save-all-btn" onclick="saveAll()">💾 บันทึกทั้งหมด</button>
+</div>
+
+<div id="config-container">
+  <div class="loading">⏳ กำลังโหลด...</div>
+</div>
+
+<a href="dashboard.html" class="back-link">← กลับ Dashboard</a>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CAT_LABELS = {
+  seasoning:  '🧂 เครื่องปรุงน้ำซุป',
+  spice:      '🌿 สมุนไพร & เครื่องเทศ',
+  vegetable:  '🥬 ผัก',
+  packaging:  '📦 แพ็กเกจจิ้ง',
+  consumable: '🛒 วัสดุสิ้นเปลือง',
+  noodle:     '🍜 เส้น & ข้าว',
+};
+
+let items = []; // { id, sku, name, category, unit, par_level, max_level, current_qty, status }
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type}`;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 3500);
+}
+
+function updateChangeCount() {
+  let changed = 0;
+  items.forEach(item => {
+    const p = parseFloat(document.getElementById(`par-${item.id}`)?.value);
+    const m = parseFloat(document.getElementById(`max-${item.id}`)?.value);
+    if (p !== item.par_level || m !== item.max_level) changed++;
+  });
+  document.getElementById('change-count').textContent =
+    changed > 0 ? `มี ${changed} รายการที่เปลี่ยน` : 'ยังไม่มีการเปลี่ยนแปลง';
+}
+
+function markChanged(itemId) {
+  const parInput = document.getElementById(`par-${itemId}`);
+  const maxInput = document.getElementById(`max-${itemId}`);
+  const item = items.find(i => i.id === itemId);
+  if (!item) return;
+
+  const parChanged = parseFloat(parInput.value) !== item.par_level;
+  const maxChanged = parseFloat(maxInput.value) !== item.max_level;
+  parInput.classList.toggle('changed', parChanged);
+  maxInput.classList.toggle('changed', maxChanged);
+  updateChangeCount();
+}
+
+async function saveRow(itemId) {
+  const item = items.find(i => i.id === itemId);
+  if (!item) return;
+
+  const newPar = parseFloat(document.getElementById(`par-${itemId}`).value);
+  const newMax = parseFloat(document.getElementById(`max-${itemId}`).value);
+
+  if (isNaN(newPar) || newPar < 0) { showToast('⚠️ Par Level ต้องเป็นตัวเลข ≥ 0', 'error'); return; }
+  if (isNaN(newMax) || newMax < newPar) { showToast('⚠️ Max ต้องมากกว่าหรือเท่ากับ Par', 'error'); return; }
+
+  const btn = document.getElementById(`btn-${itemId}`);
+  btn.disabled = true;
+
+  const { error } = await sb.from('items')
+    .update({ par_level: newPar, max_level: newMax })
+    .eq('id', itemId);
+
+  if (error) {
+    showToast('❌ บันทึกไม่สำเร็จ', 'error');
+    btn.disabled = false;
+    return;
+  }
+
+  // Update local state
+  item.par_level = newPar;
+  item.max_level = newMax;
+  document.getElementById(`par-${itemId}`).classList.remove('changed');
+  document.getElementById(`max-${itemId}`).classList.remove('changed');
+  btn.textContent = '✅ บันทึกแล้ว';
+  btn.classList.add('saved');
+  updateChangeCount();
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = '💾 บันทึก';
+    btn.classList.remove('saved');
+  }, 2000);
+}
+
+async function saveAll() {
+  const changed = items.filter(item => {
+    const p = parseFloat(document.getElementById(`par-${item.id}`)?.value);
+    const m = parseFloat(document.getElementById(`max-${item.id}`)?.value);
+    return p !== item.par_level || m !== item.max_level;
+  });
+
+  if (changed.length === 0) { showToast('ไม่มีการเปลี่ยนแปลง', 'success'); return; }
+
+  const btn = document.getElementById('save-all-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังบันทึก...';
+
+  let errors = 0;
+  for (const item of changed) {
+    const newPar = parseFloat(document.getElementById(`par-${item.id}`).value);
+    const newMax = parseFloat(document.getElementById(`max-${item.id}`).value);
+    if (isNaN(newPar) || isNaN(newMax) || newPar < 0 || newMax < newPar) { errors++; continue; }
+
+    const { error } = await sb.from('items')
+      .update({ par_level: newPar, max_level: newMax })
+      .eq('id', item.id);
+
+    if (!error) {
+      item.par_level = newPar;
+      item.max_level = newMax;
+      document.getElementById(`par-${item.id}`).classList.remove('changed');
+      document.getElementById(`max-${item.id}`).classList.remove('changed');
+    } else { errors++; }
+  }
+
+  btn.disabled = false;
+  btn.textContent = '💾 บันทึกทั้งหมด';
+  updateChangeCount();
+
+  if (errors > 0) {
+    showToast(`⚠️ บันทึกสำเร็จ ${changed.length - errors} / ${changed.length} รายการ`, 'error');
+  } else {
+    showToast(`✅ บันทึกแล้ว ${changed.length} รายการ`, 'success');
+  }
+}
+
+async function loadItems() {
+  const { data: itemData, error } = await sb
+    .from('items')
+    .select('id, sku, name, category, unit, par_level, max_level')
+    .eq('is_active', true)
+    .order('category').order('sku');
+
+  if (error) {
+    document.getElementById('config-container').innerHTML =
+      '<div class="loading" style="color:#C62828">❌ โหลดไม่ได้ ลองรีเฟรช</div>';
+    return;
+  }
+
+  // Load latest count per item
+  const { data: countData } = await sb
+    .from('stock_counts')
+    .select('item_id, qty, counted_at')
+    .order('counted_at', { ascending: false });
+
+  const latestMap = {};
+  (countData || []).forEach(row => {
+    if (!latestMap[row.item_id]) latestMap[row.item_id] = row;
+  });
+
+  items = (itemData || []).map(item => {
+    const latest = latestMap[item.id];
+    const qty = latest ? latest.qty : 0;
+    let status;
+    if (qty === 0)                       status = 'OUT';
+    else if (qty < item.par_level)       status = 'ORDER_NOW';
+    else if (qty < item.par_level * 1.5) status = 'LOW';
+    else                                 status = 'OK';
+    return { ...item, current_qty: qty, status };
+  });
+
+  let html = '';
+  let lastCat = null;
+
+  items.forEach(item => {
+    if (item.category !== lastCat) {
+      lastCat = item.category;
+      html += `<div class="group-header">${CAT_LABELS[item.category] || item.category}</div>`;
+    }
+
+    const qtyClass = item.current_qty === 0 ? 'zero' : (item.status !== 'OK') ? 'low' : 'ok';
+
+    html += `
+      <div class="config-row status-${item.status}">
+        <div class="row-top">
+          <div class="row-info">
+            <div class="row-name">${item.name}</div>
+            <div class="row-meta"><span>${item.sku}</span></div>
+          </div>
+          <div>
+            <div class="current-qty ${qtyClass}">${item.current_qty}</div>
+            <div class="qty-unit">${item.unit} (ปัจจุบัน)</div>
+          </div>
+        </div>
+        <div class="row-controls">
+          <div class="ctrl-group">
+            <label>Par (ขั้นต่ำ)</label>
+            <input type="number" min="0" step="0.5" id="par-${item.id}"
+              value="${item.par_level}"
+              oninput="markChanged('${item.id}')">
+          </div>
+          <div class="ctrl-group">
+            <label>Max (เป้าหมาย)</label>
+            <input type="number" min="0" step="0.5" id="max-${item.id}"
+              value="${item.max_level}"
+              oninput="markChanged('${item.id}')">
+          </div>
+          <button class="save-row-btn" id="btn-${item.id}" onclick="saveRow('${item.id}')">💾 บันทึก</button>
+        </div>
+      </div>`;
+  });
+
+  document.getElementById('config-container').innerHTML = html;
+  updateChangeCount();
+}
+
+loadItems();
+</script>
+</body>
+</html>

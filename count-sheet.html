@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ใบนับสต๊อก Non-Meat — NNTN</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      font-size: 13px;
+      color: #212121;
+      background: white;
+      padding: 16px 20px;
+    }
+
+    /* ── Header ── */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 3px solid #1B5E20;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+    .header-left h1 { font-size: 18px; font-weight: 700; color: #1B5E20; }
+    .header-left p  { font-size: 12px; color: #555; margin-top: 2px; }
+
+    .header-right {
+      text-align: right;
+      font-size: 12px;
+    }
+    .header-right .field-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 5px;
+      justify-content: flex-end;
+    }
+    .header-right .field-row label { color: #555; white-space: nowrap; }
+    .field-line {
+      border-bottom: 1px solid #333;
+      width: 120px;
+      height: 18px;
+      display: inline-block;
+    }
+
+    /* ── Table ── */
+    .section-title {
+      background: #1B5E20;
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 8px;
+      margin-top: 10px;
+      margin-bottom: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead th {
+      background: #E8F5E9;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 6px;
+      text-align: left;
+      border: 1px solid #C8E6C9;
+      color: #1B5E20;
+    }
+    thead th.center { text-align: center; }
+    tbody tr:nth-child(even) { background: #FAFAFA; }
+    tbody td {
+      padding: 4px 6px;
+      border: 1px solid #E0E0E0;
+      font-size: 12px;
+      vertical-align: middle;
+    }
+    .td-no    { text-align: center; width: 28px; color: #9E9E9E; font-size: 11px; }
+    .td-sku   { width: 70px; color: #757575; font-size: 11px; }
+    .td-name  { }
+    .td-unit  { width: 40px; text-align: center; color: #555; }
+    .td-par   { width: 36px; text-align: center; font-weight: 600; color: #1B5E20; }
+    .td-count { width: 60px; background: #FFFDE7; border: 1px solid #F9A825 !important; }
+    .td-note  { width: 100px; background: #F5F5F5; }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 14px;
+      border-top: 1px solid #CCC;
+      padding-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #757575;
+    }
+    .sign-box {
+      text-align: center;
+      width: 160px;
+    }
+    .sign-box .sign-line {
+      border-bottom: 1px solid #333;
+      height: 28px;
+      margin-bottom: 4px;
+    }
+
+    /* ── Loading / Error ── */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #888;
+      font-size: 14px;
+    }
+    .error-msg {
+      text-align: center;
+      padding: 20px;
+      color: #c62828;
+      font-size: 13px;
+      background: #ffebee;
+      border-radius: 6px;
+      margin: 12px 0;
+    }
+
+    /* ── Print ── */
+    @media print {
+      body { padding: 8px 12px; font-size: 12px; }
+      .no-print { display: none; }
+      .section-title { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .td-count { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+
+    /* ── Screen only ── */
+    .print-btn {
+      position: fixed;
+      bottom: 20px; right: 20px;
+      background: #1B5E20;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .print-btn:hover { background: #2E7D32; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="page-header">
+  <div class="header-left">
+    <h1>📋 ใบนับสต๊อก Non-Meat</h1>
+    <p>ครัวเนื้อในตำนาน (NNTN) — วิชรธรรม 53</p>
+  </div>
+  <div class="header-right">
+    <div class="field-row">
+      <label>วันที่นับ:</label>
+      <span class="field-line"></span>
+    </div>
+    <div class="field-row">
+      <label>ผู้นับ:</label>
+      <span class="field-line"></span>
+    </div>
+    <div class="field-row">
+      <label>ตรวจสอบโดย:</label>
+      <span class="field-line"></span>
+    </div>
+  </div>
+</div>
+
+<!-- คำอธิบาย -->
+<p style="font-size:11px; color:#555; margin-bottom:8px;">
+  ★ นับจำนวน <u>แพ็ก/ขวด/ถุง</u> ที่ยังปิดอยู่ + ที่เปิดใช้อยู่ กรอกลงช่อง <span style="color:#F57F17;font-weight:bold;">ยอดนับ</span> &nbsp;|&nbsp; <span style="color:#1B5E20;font-weight:bold;">Par</span> = จำนวนขั้นต่ำที่ต้องมี
+</p>
+
+<!-- Content area -->
+<div id="content">
+  <div class="loading">⏳ กำลังโหลดรายการ...</div>
+</div>
+
+<!-- Footer -->
+<div class="footer" id="footer" style="display:none;">
+  <div>
+    <p>หมายเหตุ: _______________________________________________</p>
+    <p style="margin-top:4px">______________________________________________________</p>
+  </div>
+  <div style="display:flex; gap:30px;">
+    <div class="sign-box">
+      <div class="sign-line"></div>
+      <p>ผู้นับสต๊อก</p>
+    </div>
+    <div class="sign-box">
+      <div class="sign-line"></div>
+      <p>ผู้ตรวจสอบ</p>
+    </div>
+  </div>
+</div>
+
+<!-- Print Button -->
+<button class="print-btn no-print" onclick="window.print()">🖨️ พิมพ์</button>
+
+<script>
+  const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+
+  const CATEGORY_LABELS = {
+    seasoning:   '🧂 เครื่องปรุงน้ำซุป',
+    spice:       '🌿 สมุนไพร & เครื่องเทศ',
+    vegetable:   '🥬 ผัก & โปรตีน',
+    noodle:      '🍜 เส้น & ข้าว',
+    packaging:   '📦 แพ็กเกจจิ้ง',
+    srcp:        '🥣 Sub-Recipe (SRCP)',
+    pkg:         '🛍️ Portioned Package (PKG)',
+    other:       '📋 อื่นๆ',
+  };
+
+  // แสดงเฉพาะ SP (วัตถุดิบซื้อ) — ไม่รวม SRCP/PKG ในใบนับ
+  const SKIP_PREFIXES = ['SRCP-', 'PKG-'];
+
+  async function loadItems() {
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/items?is_active=eq.true&order=category,sku`,
+        { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const items = await res.json();
+
+      // กรอง SRCP/PKG ออก (ใบนับใช้สำหรับ SP เท่านั้น)
+      const spItems = items.filter(i => !SKIP_PREFIXES.some(p => i.sku.startsWith(p)));
+
+      // Group by category
+      const groups = {};
+      for (const item of spItems) {
+        const cat = item.category || 'other';
+        if (!groups[cat]) groups[cat] = [];
+        groups[cat].push(item);
+      }
+
+      renderSheet(groups);
+    } catch (err) {
+      document.getElementById('content').innerHTML =
+        `<div class="error-msg">❌ โหลดไม่ได้: ${err.message}</div>`;
+    }
+  }
+
+  function renderSheet(groups) {
+    const tableHead = `
+      <thead><tr>
+        <th class="center">#</th>
+        <th>รหัส</th>
+        <th>ชื่อวัตถุดิบ</th>
+        <th class="center">หน่วย</th>
+        <th class="center">Par</th>
+        <th class="center">ยอดนับ</th>
+        <th>หมายเหตุ</th>
+      </tr></thead>
+    `;
+
+    // เรียง category ตาม CATEGORY_LABELS order
+    const orderedCats = Object.keys(CATEGORY_LABELS);
+    const allCats = [...orderedCats, ...Object.keys(groups).filter(c => !orderedCats.includes(c))];
+
+    let html = '';
+    for (const cat of allCats) {
+      if (!groups[cat] || groups[cat].length === 0) continue;
+      const label = CATEGORY_LABELS[cat] || cat;
+      const rows = groups[cat].map((item, i) => `
+        <tr>
+          <td class="td-no">${i + 1}</td>
+          <td class="td-sku">${item.sku}</td>
+          <td class="td-name">${item.name}</td>
+          <td class="td-unit">${item.unit || ''}</td>
+          <td class="td-par">${item.par_level ?? ''}</td>
+          <td class="td-count"></td>
+          <td class="td-note"></td>
+        </tr>
+      `).join('');
+
+      html += `
+        <div class="section-title">${label}</div>
+        <table>${tableHead}<tbody>${rows}</tbody></table>
+      `;
+    }
+
+    if (!html) {
+      html = '<div class="error-msg">ไม่พบรายการ ingredient ที่ active</div>';
+    }
+
+    document.getElementById('content').innerHTML = html;
+    document.getElementById('footer').style.display = 'flex';
+  }
+
+  loadItems();
+</script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>NNTN Non-Meat Stock</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-dark: #1B5E20;
+      --green: #4CAF50;
+      --bg: #F1F8E9;
+      --border: #e0e0e0;
+      --muted: #757575;
+      --red: #C62828;
+      --orange: #E65100;
+      --yellow: #F57F17;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: var(--bg); min-height: 100vh; }
+
+    header {
+      background: var(--green-dark); color: white;
+      padding: 20px 20px 16px; text-align: center;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.5px; }
+    header .sub { font-size: 0.85rem; opacity: 0.75; margin-top: 4px; }
+
+    .status-bar {
+      background: white; border-bottom: 1px solid var(--border);
+      padding: 10px 16px; display: flex; gap: 16px;
+      align-items: center; overflow-x: auto;
+    }
+    .status-item { text-align: center; flex-shrink: 0; }
+    .status-item .num { font-size: 1.3rem; font-weight: 700; }
+    .status-item .lbl { font-size: 0.7rem; color: var(--muted); }
+    .status-item.red .num   { color: var(--red); }
+    .status-item.orange .num { color: var(--orange); }
+    .status-item.yellow .num { color: var(--yellow); }
+    .status-item.green .num  { color: var(--green-dark); }
+    .divider { width: 1px; background: var(--border); height: 32px; flex-shrink: 0; }
+
+    .date-bar {
+      padding: 8px 16px; font-size: 0.8rem; color: var(--muted);
+      text-align: center;
+    }
+
+    .section { padding: 14px 16px 0; }
+    .section-title {
+      font-size: 0.72rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+    }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .grid.single { grid-template-columns: 1fr; }
+    .grid.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+    .card {
+      background: white; border-radius: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      text-decoration: none; color: inherit;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 20px 12px; text-align: center;
+      transition: box-shadow 0.15s, transform 0.1s;
+      border: 2px solid transparent;
+    }
+    .card:active { transform: scale(0.97); }
+    .card.primary { border-color: var(--green); background: #F1F8E9; }
+    .card .icon { font-size: 2rem; margin-bottom: 8px; }
+    .card .title { font-size: 0.9rem; font-weight: 700; color: #1a1a1a; }
+    .card .desc { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+    .card.wide { flex-direction: row; gap: 14px; padding: 14px 18px; text-align: left; align-items: center; }
+    .card.wide .icon { font-size: 1.6rem; margin-bottom: 0; flex-shrink: 0; }
+    .card.wide .text .title { font-size: 0.88rem; }
+
+    .footer {
+      text-align: center; padding: 20px 16px 32px;
+      font-size: 0.72rem; color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🥩 NNTN Non-Meat Stock</h1>
+  <div class="sub" id="date-display">ระบบจัดการวัตถุดิบ ครัวเนื้อในตำนาน</div>
+</header>
+
+<div class="status-bar" id="status-bar">
+  <div class="status-item red"><div class="num" id="s-out">—</div><div class="lbl">🔴 หมด</div></div>
+  <div class="divider"></div>
+  <div class="status-item orange"><div class="num" id="s-order">—</div><div class="lbl">🟠 ต้องสั่ง</div></div>
+  <div class="divider"></div>
+  <div class="status-item yellow"><div class="num" id="s-low">—</div><div class="lbl">🟡 ใกล้หมด</div></div>
+  <div class="divider"></div>
+  <div class="status-item green"><div class="num" id="s-ok">—</div><div class="lbl">🟢 ปกติ</div></div>
+</div>
+
+<div class="date-bar" id="date-bar">กำลังโหลด...</div>
+
+<div class="section">
+  <div class="section-title">หน้าหลัก</div>
+  <div class="grid single">
+    <a href="dashboard.html" class="card primary wide">
+      <div class="icon">📊</div>
+      <div class="text">
+        <div class="title">Dashboard สต๊อก</div>
+        <div class="desc">ภาพรวมสถานะวัตถุดิบทั้งหมด</div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">บันทึกประจำวัน</div>
+  <div class="grid">
+    <a href="stock-form.html" class="card">
+      <div class="icon">📋</div>
+      <div class="title">นับสต๊อก</div>
+      <div class="desc">กรอกยอดนับวัตถุดิบ</div>
+    </a>
+    <a href="production-log-form.html" class="card">
+      <div class="icon">🍳</div>
+      <div class="title">บันทึกผลิต</div>
+      <div class="desc">RCP batch ลูกค้า/พนักงาน</div>
+    </a>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">ดูรายงาน</div>
+  <div class="grid">
+    <a href="production-log-view.html" class="card">
+      <div class="icon">📜</div>
+      <div class="title">ประวัติผลิต RCP</div>
+      <div class="desc">log การผลิตย้อนหลัง</div>
+    </a>
+    <a href="prep-log-view.html" class="card">
+      <div class="icon">📈</div>
+      <div class="title">ประวัติ Prep</div>
+      <div class="desc">yield SRCP + เทรนด์</div>
+    </a>
+    <a href="bom-view.html" class="card">
+      <div class="icon">📖</div>
+      <div class="title">BOM สูตร</div>
+      <div class="desc">วัตถุดิบต่อ batch แต่ละ RCP</div>
+    </a>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">ครัวกลาง — Prep</div>
+  <div class="grid">
+    <a href="prep-form.html" class="card">
+      <div class="icon">🥄</div>
+      <div class="title">ผลิต Prep</div>
+      <div class="desc">บันทึก yield ซอส/กระเทียม/พริก</div>
+    </a>
+    <a href="portion-form.html" class="card">
+      <div class="icon">🛍️</div>
+      <div class="title">แบ่งถุง</div>
+      <div class="desc">กรัม → ถุง 250g + คำนวณเศษ</div>
+    </a>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">เครื่องมือ</div>
+  <div class="grid">
+    <a href="count-sheet.html" class="card" target="_blank">
+      <div class="icon">🖨️</div>
+      <div class="title">ใบนับสต๊อก</div>
+      <div class="desc">พิมพ์กระดาษ A4</div>
+    </a>
+    <a href="admin-config.html" class="card">
+      <div class="icon">⚙️</div>
+      <div class="title">ตั้งค่า Par</div>
+      <div class="desc">แก้ par level / max level</div>
+    </a>
+    <a href="admin-items.html" class="card">
+      <div class="icon">🧩</div>
+      <div class="title">จัดการ Ingredients</div>
+      <div class="desc">เพิ่ม / แก้ / ลบ วัตถุดิบ</div>
+    </a>
+    <a href="admin-bom.html" class="card">
+      <div class="icon">📋</div>
+      <div class="title">จัดการ BOM</div>
+      <div class="desc">แก้ส่วนประกอบสูตรผลิต</div>
+    </a>
+  </div>
+</div>
+
+<div class="footer" id="footer-text">—</div>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const today = new Date();
+document.getElementById('date-display').textContent =
+  today.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+(async function() {
+  const { data: items } = await sb.from('items').select('id,par_level,max_level').eq('is_active', true);
+  const { data: counts } = await sb.from('stock_counts').select('item_id,qty,counted_at').order('counted_at', { ascending: false });
+
+  if (!items || !counts) return;
+
+  const latestMap = {};
+  counts.forEach(r => { if (!latestMap[r.item_id]) latestMap[r.item_id] = r; });
+
+  let out = 0, order = 0, low = 0, ok = 0;
+  let lastDate = null;
+
+  items.forEach(item => {
+    const c = latestMap[item.id];
+    const qty = c ? c.qty : null;
+    const par = item.par_level || 1;
+    if (qty === null) { out++; return; }
+    if (qty === 0) out++;
+    else if (qty < par) order++;
+    else if (qty < par * 1.5) low++;
+    else ok++;
+
+    if (c && c.counted_at) {
+      const d = new Date(c.counted_at);
+      if (!lastDate || d > lastDate) lastDate = d;
+    }
+  });
+
+  document.getElementById('s-out').textContent   = out;
+  document.getElementById('s-order').textContent  = order;
+  document.getElementById('s-low').textContent    = low;
+  document.getElementById('s-ok').textContent     = ok;
+
+  if (lastDate) {
+    const dateStr = lastDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+    const timeStr = lastDate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('date-bar').textContent = `อัปเดตล่าสุด: ${dateStr} ${timeStr}`;
+    document.getElementById('footer-text').textContent = `NNTN Non-Meat Stock System • v1.0`;
+  }
+})();
+</script>
+</body>
+</html>
