@@ -319,13 +319,14 @@ function renderList() {
     active = active.filter(i => i.category === activeFilter);
   }
 
-  // Sort by cost_per_pack DESC (nulls last)
+  // Sort: หมวดก่อน → ภายในหมวดเรียงมูลค่า DESC (ไม่มีราคาไว้ท้าย)
+  const CAT_ORDER = ['seasoning','spice','vegetable','noodle','packaging','consumable','srcp','pkg'];
   active.sort((a, b) => {
-    const ca = parseFloat(a.cost_per_pack) || 0;
-    const cb = parseFloat(b.cost_per_pack) || 0;
+    const ci = CAT_ORDER.indexOf(a.category) - CAT_ORDER.indexOf(b.category);
+    if (ci !== 0) return ci;
     if (!a.cost_per_pack && b.cost_per_pack) return 1;
     if (a.cost_per_pack && !b.cost_per_pack) return -1;
-    return cb - ca;
+    return parseFloat(b.cost_per_pack) - parseFloat(a.cost_per_pack);
   });
 
   document.getElementById('item-count').textContent = `${active.length} รายการ`;
