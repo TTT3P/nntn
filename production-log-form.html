@@ -255,39 +255,10 @@
 <script>
 const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb   = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sbCB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'cookingbook' } });
 
-const RECIPES = [
-  { code: 'RCP-001', name: 'ซอสลับ' },
-  { code: 'RCP-002', name: 'น้ำซุป' },
-  { code: 'RCP-003', name: 'น้ำซุปสำเร็จ' },
-  { code: 'RCP-004', name: 'เนื้อตุ๋น' },
-  { code: 'RCP-005', name: 'ซี่โครงตุ๋น' },
-  { code: 'RCP-006', name: 'ลิ้นตุ๋น' },
-  { code: 'RCP-007', name: 'เอ็นตุ๋น' },
-  { code: 'RCP-008', name: 'ไส้ตุ๋น' },
-  { code: 'RCP-009', name: 'กระดูกตุ๋น' },
-  { code: 'RCP-010', name: 'ริ้วขาวตุ๋น' },
-  { code: 'RCP-011', name: 'เนื้อแดง' },
-  { code: 'RCP-012', name: 'น้ำซุปพนักงาน' },
-  { code: 'RCP-013', name: 'ข้าวขยำ' },
-  { code: 'RCP-014', name: 'น้ำจิ้มวีไอพี' },
-  { code: 'RCP-015', name: 'น้ำจิ้มธรรมดา' },
-  { code: 'RCP-016', name: 'ซอสพริก' },
-  { code: 'RCP-017', name: 'น้ำซุปเข้มข้น' },
-  { code: 'RCP-018', name: 'น้ำปรุงก๋วยเตี๋ยว' },
-  { code: 'RCP-019', name: 'ซอสหมัก' },
-  { code: 'RCP-020', name: 'เนื้อย่าง' },
-  { code: 'RCP-021', name: 'น้ำหวาน' },
-  { code: 'RCP-022', name: 'น้ำสลัด' },
-  { code: 'RCP-023', name: 'ซอสเปรี้ยว' },
-  { code: 'RCP-024', name: 'ซอสกะหรี่' },
-  { code: 'RCP-025', name: 'น้ำพริกเผา' },
-];
-
-const rcpOptions = RECIPES.map(r =>
-  `<option value="${r.code}" data-name="${r.name}">${r.code} — ${r.name}</option>`
-).join('');
+let rcpOptions = '';
 
 let rowId = 0;
 
@@ -403,8 +374,21 @@ async function submitLog() {
   setTimeout(() => { btn.disabled = false; btn.textContent = '✅ บันทึกการผลิต'; }, 3000);
 }
 
-// Start with one empty row
-addRow();
+async function init() {
+  const { data } = await sbCB.from('recipes')
+    .select('rcp_code, name, type')
+    .in('type', ['prep', 'sub', 'kitchen'])
+    .order('rcp_code');
+
+  if (data && data.length) {
+    rcpOptions = data.map(r =>
+      `<option value="${r.rcp_code}" data-name="${r.name}">${r.rcp_code} — ${r.name}</option>`
+    ).join('');
+  }
+  addRow();
+}
+
+init();
 </script>
 </body>
 </html>
