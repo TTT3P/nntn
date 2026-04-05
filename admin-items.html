@@ -32,6 +32,11 @@
     .add-btn { padding: 10px 20px; background: var(--green-dark); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; font-family: inherit; cursor: pointer; white-space: nowrap; }
     .add-btn:active { opacity: 0.85; }
 
+    .filter-bar { display: flex; gap: 8px; padding: 10px 16px; background: white; border-bottom: 2px solid var(--border); overflow-x: auto; }
+    .filter-pill { flex-shrink: 0; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); font-size: 13px; font-family: inherit; background: white; color: #444; cursor: pointer; white-space: nowrap; }
+    .filter-pill.active { background: var(--green-dark); color: white; border-color: var(--green-dark); font-weight: bold; }
+    .filter-pill:active { opacity: 0.8; }
+
     .group-header { background: #E8F5E9; padding: 8px 16px; font-size: 13px; font-weight: bold; color: var(--green-dark); border-top: 1px solid #C8E6C9; border-bottom: 1px solid #C8E6C9; }
 
     .item-row { background: white; padding: 12px 16px; border-bottom: 1px solid #f5f5f5; display: flex; align-items: center; gap: 10px; }
@@ -102,6 +107,19 @@
   <a href="admin-items.html" class="active">📦 วัตถุดิบ</a>
   <a href="admin-bom.html">📋 BOM</a>
 </nav>
+
+<div class="filter-bar" id="filter-bar">
+  <button class="filter-pill active" onclick="setFilter('all')">🗂 ทั้งหมด</button>
+  <button class="filter-pill" onclick="setFilter('seasoning')">🧂 เครื่องปรุง</button>
+  <button class="filter-pill" onclick="setFilter('spice')">🌿 สมุนไพร</button>
+  <button class="filter-pill" onclick="setFilter('vegetable')">🥬 ผัก</button>
+  <button class="filter-pill" onclick="setFilter('noodle')">🍜 เส้น & ข้าว</button>
+  <button class="filter-pill" onclick="setFilter('packaging')">📦 แพ็กเกจจิ้ง</button>
+  <button class="filter-pill" onclick="setFilter('consumable')">🛒 สิ้นเปลือง</button>
+  <button class="filter-pill" onclick="setFilter('srcp')">🥄 Sub-Recipe</button>
+  <button class="filter-pill" onclick="setFilter('pkg')">🛍️ Portioned</button>
+  <button class="filter-pill" onclick="setFilter('no-price')" style="border-color:#E65100;color:#E65100">⚠️ ไม่มีราคา</button>
+</div>
 
 <div class="toolbar">
   <span id="item-count">กำลังโหลด...</span>
@@ -230,8 +248,19 @@ const CAT_LABELS = {
 
 let items = [];
 let suppliers = [];
-let itemSuppliers = [];  // [{item_id, supplier_id, is_preferred}]
+let itemSuppliers = [];
 let pendingDeleteId = null;
+let activeFilter = 'all';
+
+function setFilter(cat) {
+  activeFilter = cat;
+  document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+  const pills = document.querySelectorAll('.filter-pill');
+  const idx = ['all','seasoning','spice','vegetable','noodle','packaging','consumable','srcp','pkg','no-price'];
+  const i = idx.indexOf(cat);
+  if (i >= 0 && pills[i]) pills[i].classList.add('active');
+  renderList();
+}
 
 function showToast(msg, type) {
   const t = document.getElementById('toast');
@@ -281,16 +310,35 @@ function getPreferredSupplier(itemId) {
 }
 
 function renderList() {
-  const active = items.filter(i => i.is_active);
+  let active = items.filter(i => i.is_active);
+
+  // Filter
+  if (activeFilter === 'no-price') {
+    active = active.filter(i => !i.cost_per_pack);
+  } else if (activeFilter !== 'all') {
+    active = active.filter(i => i.category === activeFilter);
+  }
+
+  // Sort by cost_per_pack DESC (nulls last)
+  active.sort((a, b) => {
+    const ca = parseFloat(a.cost_per_pack) || 0;
+    const cb = parseFloat(b.cost_per_pack) || 0;
+    if (!a.cost_per_pack && b.cost_per_pack) return 1;
+    if (a.cost_per_pack && !b.cost_per_pack) return -1;
+    return cb - ca;
+  });
+
   document.getElementById('item-count').textContent = `${active.length} รายการ`;
 
   let html = '';
   let lastCat = null;
 
   active.forEach(item => {
-    if (item.category !== lastCat) {
-      lastCat = item.category;
-      html += `<div class="group-header">${CAT_LABELS[item.category] || item.category}</div>`;
+    if (activeFilter === 'all' || activeFilter === 'no-price') {
+      if (item.category !== lastCat) {
+        lastCat = item.category;
+        html += `<div class="group-header">${CAT_LABELS[item.category] || item.category}</div>`;
+      }
     }
 
     const sup = getPreferredSupplier(item.id);
