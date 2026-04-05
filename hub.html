@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>NNTN — ระบบจัดการร้าน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #111;
+      padding: 28px 20px 20px;
+      text-align: center;
+      border-bottom: 2px solid #8B0000;
+    }
+    header .logo {
+      font-size: 0.75rem;
+      letter-spacing: 3px;
+      color: #888;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.5px;
+    }
+    header .sub {
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      padding: 24px 16px;
+      max-width: 480px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    @media (min-width: 600px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+        max-width: 700px;
+      }
+    }
+
+    .card {
+      background: #222;
+      border-radius: 12px;
+      padding: 24px 20px;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border: 1px solid #333;
+      transition: border-color 0.2s, transform 0.15s;
+      cursor: pointer;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+    }
+    .card.active:hover { border-color: var(--accent); }
+    .card.disabled { opacity: 0.45; cursor: default; pointer-events: none; }
+
+    .card .icon { font-size: 2rem; }
+    .card .label {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .card .desc {
+      font-size: 0.8rem;
+      color: #888;
+      line-height: 1.4;
+    }
+    .card .badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-top: 4px;
+      width: fit-content;
+    }
+    .badge-live { background: #1b5e20; color: #a5d6a7; }
+    .badge-soon { background: #333; color: #666; }
+
+    /* Accent colors per card */
+    .card-nonmeat { --accent: #4CAF50; border-color: #2e7d32; }
+    .card-meat     { --accent: #ef5350; }
+    .card-cb       { --accent: #FFA726; }
+    .card-hr       { --accent: #42A5F5; }
+
+    .card-nonmeat .icon::after { content: '🧅'; }
+    .card-meat .icon::after    { content: '🥩'; }
+    .card-cb .icon::after      { content: '📖'; }
+    .card-hr .icon::after      { content: '👥'; }
+
+    footer {
+      margin-top: auto;
+      text-align: center;
+      padding: 20px;
+      font-size: 0.7rem;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ครัวเนื้อในตำนาน</div>
+  <h1>NNTN Hub</h1>
+  <div class="sub">ระบบจัดการร้าน — เลือก module</div>
+</header>
+
+<div class="grid">
+
+  <a class="card card-nonmeat active" href="./index.html">
+    <div class="icon"></div>
+    <div class="label">วัตถุดิบ (Non-Meat)</div>
+    <div class="desc">สต๊อก, รับ/เบิก, ใบนับสต๊อก, แบบฟอร์มพนักงาน</div>
+    <span class="badge badge-live">● LIVE</span>
+  </a>
+
+  <a class="card card-meat disabled" href="#">
+    <div class="icon"></div>
+    <div class="label">เนื้อตุ๋น (Meat Stock)</div>
+    <div class="desc">CW, FIFO, คลัง A/B/C, NT/FS delivery</div>
+    <span class="badge badge-soon">เร็วๆ นี้</span>
+  </a>
+
+  <a class="card card-cb disabled" href="#">
+    <div class="icon"></div>
+    <div class="label">CookingBook</div>
+    <div class="desc">BOM, ต้นทุน, FC%, ราคาขาย, สูตรอาหาร</div>
+    <span class="badge badge-soon">เร็วๆ นี้</span>
+  </a>
+
+  <a class="card card-hr disabled" href="#">
+    <div class="icon"></div>
+    <div class="label">HR</div>
+    <div class="desc">พนักงาน, payroll, สลิปเงินเดือน</div>
+    <span class="badge badge-soon">เร็วๆ นี้</span>
+  </a>
+
+</div>
+
+<footer>NNTN Platform v1.0 — 05/04/2026</footer>
+
+</body>
+</html>
