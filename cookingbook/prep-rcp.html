@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Prep Recipes — CookingBook</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: #f5f5f5; }
+    header {
+      background: #4527A0; color: white; padding: 16px 20px;
+      display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10;
+    }
+    header a { color: white; text-decoration: none; font-size: 20px; opacity: 0.8; }
+    header h1 { flex: 1; font-size: 1.1rem; font-weight: 700; }
+    .search-bar { padding: 12px 16px; background: white; border-bottom: 1px solid #e0e0e0; }
+    .search-bar input {
+      width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;
+      font-family: 'Sarabun', sans-serif; font-size: 0.9rem;
+    }
+    .count { padding: 8px 16px; font-size: 0.78rem; color: #888; background: #fafafa; border-bottom: 1px solid #eee; }
+    .card-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+    .rcp-card {
+      background: white; border-radius: 10px; border: 1px solid #e0e0e0;
+      overflow: hidden; cursor: pointer;
+    }
+    .rcp-card-header {
+      padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+    }
+    .rcp-code { font-size: 0.72rem; font-family: monospace; color: #888; background: #f5f5f5; padding: 2px 6px; border-radius: 4px; }
+    .rcp-name { flex: 1; font-size: 0.95rem; font-weight: 600; }
+    .rcp-type { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; background: #ede7f6; color: #4527A0; }
+    .rcp-meta { font-size: 0.78rem; color: #888; padding: 0 16px 10px; }
+    .bom-list { border-top: 1px solid #f0f0f0; padding: 10px 16px; display: none; background: #fafafa; }
+    .bom-list.open { display: block; }
+    .bom-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 0.82rem; border-bottom: 1px solid #f0f0f0; }
+    .bom-row:last-child { border-bottom: none; }
+    .bom-ing { color: #333; }
+    .bom-qty { color: #E65100; font-weight: 600; }
+    .loading { text-align: center; padding: 40px; color: #999; }
+    .toggle-icon { font-size: 0.8rem; color: #aaa; transition: transform 0.2s; }
+    .toggle-icon.open { transform: rotate(180deg); }
+  </style>
+</head>
+<body>
+<header>
+  <a href="./index.html">‹</a>
+  <h1>🍲 Prep Recipes</h1>
+  <span id="total" style="font-size:0.8rem;opacity:0.8"></span>
+</header>
+
+<div class="search-bar">
+  <input type="text" id="search" placeholder="ค้นหา recipe..." oninput="filterList()">
+</div>
+<div class="count" id="count"></div>
+
+<div class="card-list" id="list">
+  <div class="loading">กำลังโหลด...</div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'cookingbook' } });
+
+let allRecipes = [];
+let allBOM = [];
+let allIngredients = [];
+
+async function load() {
+  const [rcpRes, bomRes, ingRes] = await Promise.all([
+    sb.from('recipes').select('*').in('type', ['prep','sub','kitchen']).order('rcp_code'),
+    sb.from('bom_items').select('*, ingredients(name, unit)'),
+    sb.from('ingredients').select('id, name, unit')
+  ]);
+  allRecipes = rcpRes.data || [];
+  allBOM = bomRes.data || [];
+  allIngredients = ingRes.data || [];
+  document.getElementById('total').textContent = allRecipes.length + ' สูตร';
+  filterList();
+}
+
+function filterList() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const filtered = q ? allRecipes.filter(r => r.name.toLowerCase().includes(q) || r.rcp_code.toLowerCase().includes(q)) : allRecipes;
+  document.getElementById('count').textContent = `แสดง ${filtered.length} สูตร`;
+  renderList(filtered);
+}
+
+function renderList(recipes) {
+  if (!recipes.length) { document.getElementById('list').innerHTML = '<div class="loading">ไม่พบข้อมูล</div>'; return; }
+  document.getElementById('list').innerHTML = recipes.map(r => {
+    const bom = allBOM.filter(b => b.recipe_id === r.id);
+    const typeLabel = {prep:'Prep',sub:'Sub',kitchen:'Kitchen'}[r.type] || r.type;
+    return `
+    <div class="rcp-card">
+      <div class="rcp-card-header" onclick="toggleBOM(${r.id})">
+        <div>
+          <div class="rcp-name">${r.name}</div>
+          <div style="margin-top:4px;display:flex;gap:6px;align-items:center">
+            <span class="rcp-code">${r.rcp_code}</span>
+            <span class="rcp-type">${typeLabel}</span>
+          </div>
+        </div>
+        <span class="toggle-icon" id="icon-${r.id}">▼</span>
+      </div>
+      ${r.batch_size_g ? `<div class="rcp-meta">batch: ${r.batch_size_g}g · yield: ${r.yield_pct ? (r.yield_pct*100).toFixed(0)+'%' : '100%'}</div>` : ''}
+      <div class="bom-list" id="bom-${r.id}">
+        ${bom.length ? bom.map(b => `
+          <div class="bom-row">
+            <span class="bom-ing">${b.ingredients?.name || '—'}</span>
+            <span class="bom-qty">${b.qty_g}${b.unit||'g'}</span>
+          </div>`).join('') : '<div style="color:#aaa;font-size:0.8rem">ไม่มี BOM</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleBOM(id) {
+  const el = document.getElementById('bom-'+id);
+  const icon = document.getElementById('icon-'+id);
+  el.classList.toggle('open');
+  icon.classList.toggle('open');
+}
+
+load();
+</script>
+</body>
+</html>

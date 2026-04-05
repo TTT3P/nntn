@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Ingredients — CookingBook</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: #f5f5f5; }
+    header {
+      background: #E65100; color: white; padding: 16px 20px;
+      display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10;
+    }
+    header a { color: white; text-decoration: none; font-size: 20px; opacity: 0.8; }
+    header h1 { flex: 1; font-size: 1.1rem; font-weight: 700; }
+    .search-bar { padding: 12px 16px; background: white; border-bottom: 1px solid #e0e0e0; }
+    .search-bar input {
+      width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;
+      font-family: 'Sarabun', sans-serif; font-size: 0.9rem;
+    }
+    .filters { display: flex; gap: 8px; padding: 10px 16px; overflow-x: auto; background: white; border-bottom: 1px solid #e0e0e0; }
+    .chip {
+      padding: 4px 12px; border-radius: 20px; border: 1px solid #ddd;
+      font-size: 0.75rem; white-space: nowrap; cursor: pointer; background: white;
+      font-family: 'Sarabun', sans-serif;
+    }
+    .chip.active { background: #E65100; color: white; border-color: #E65100; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: #fff3e0; padding: 10px 12px; font-size: 0.78rem; color: #666; text-align: left; border-bottom: 2px solid #e0e0e0; position: sticky; top: 56px; }
+    tbody tr { border-bottom: 1px solid #eee; background: white; }
+    tbody tr:hover { background: #fff8f5; }
+    td { padding: 10px 12px; font-size: 0.85rem; vertical-align: middle; }
+    .sku { font-size: 0.72rem; color: #999; font-family: monospace; }
+    .cost { font-weight: 600; color: #E65100; }
+    .unit { color: #888; font-size: 0.78rem; }
+    .category-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 0.68rem; background: #f5f5f5; color: #666;
+    }
+    .loading { text-align: center; padding: 40px; color: #999; }
+    .count { padding: 8px 16px; font-size: 0.78rem; color: #888; background: #fafafa; border-bottom: 1px solid #eee; }
+  </style>
+</head>
+<body>
+<header>
+  <a href="./index.html">‹</a>
+  <h1>🧂 Ingredients</h1>
+  <span id="total" style="font-size:0.8rem;opacity:0.8"></span>
+</header>
+
+<div class="search-bar">
+  <input type="text" id="search" placeholder="ค้นหาชื่อ หรือ SP-code..." oninput="filterTable()">
+</div>
+
+<div class="filters" id="filters"></div>
+<div class="count" id="count"></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>ชื่อ</th>
+      <th>ราคา/หน่วย</th>
+      <th>Yield</th>
+      <th>หมวด</th>
+    </tr>
+  </thead>
+  <tbody id="tbody">
+    <tr><td colspan="4" class="loading">กำลังโหลด...</td></tr>
+  </tbody>
+</table>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'cookingbook' } });
+
+let allData = [];
+let activeCategory = 'ทั้งหมด';
+
+async function load() {
+  const { data, error } = await sb.from('ingredients').select('*').eq('is_active', true).order('sp_code');
+  if (error) { document.getElementById('tbody').innerHTML = `<tr><td colspan="4" class="loading">Error: ${error.message}</td></tr>`; return; }
+  allData = data;
+  document.getElementById('total').textContent = data.length + ' รายการ';
+  buildFilters();
+  renderTable(data);
+}
+
+function buildFilters() {
+  const cats = ['ทั้งหมด', ...new Set(allData.map(r => r.category).filter(Boolean).sort())];
+  const div = document.getElementById('filters');
+  div.innerHTML = cats.map(c => `<button class="chip ${c==='ทั้งหมด'?'active':''}" onclick="setCategory('${c}')">${c}</button>`).join('');
+}
+
+function setCategory(cat) {
+  activeCategory = cat;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.textContent === cat));
+  filterTable();
+}
+
+function filterTable() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let filtered = allData;
+  if (activeCategory !== 'ทั้งหมด') filtered = filtered.filter(r => r.category === activeCategory);
+  if (q) filtered = filtered.filter(r => r.name.toLowerCase().includes(q) || r.sp_code.toLowerCase().includes(q));
+  renderTable(filtered);
+}
+
+function renderTable(data) {
+  document.getElementById('count').textContent = `แสดง ${data.length} รายการ`;
+  if (!data.length) { document.getElementById('tbody').innerHTML = '<tr><td colspan="4" class="loading">ไม่พบข้อมูล</td></tr>'; return; }
+  document.getElementById('tbody').innerHTML = data.map(r => `
+    <tr>
+      <td>
+        <div>${r.name}</div>
+        <div class="sku">${r.sp_code}</div>
+      </td>
+      <td>
+        <span class="cost">${r.cost_per_unit ? '฿' + parseFloat(r.cost_per_unit).toFixed(2) : '—'}</span>
+        <span class="unit">/${r.unit||''}</span>
+      </td>
+      <td>${r.yield_pct && r.yield_pct != 1 ? (r.yield_pct*100).toFixed(0)+'%' : '—'}</td>
+      <td><span class="category-badge">${r.category||'—'}</span></td>
+    </tr>`).join('');
+}
+
+load();
+</script>
+</body>
+</html>

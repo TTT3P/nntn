@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>BOM Detail — CookingBook</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: #f5f5f5; }
+    header {
+      background: #37474F; color: white; padding: 16px 20px;
+      display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10;
+    }
+    header a { color: white; text-decoration: none; font-size: 20px; opacity: 0.8; }
+    header h1 { flex: 1; font-size: 1.1rem; font-weight: 700; }
+    .selector { padding: 14px 16px; background: white; border-bottom: 1px solid #e0e0e0; }
+    .selector select {
+      width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px;
+      font-family: 'Sarabun', sans-serif; font-size: 0.9rem; background: white;
+    }
+    .recipe-info {
+      background: white; margin: 12px 16px; border-radius: 10px;
+      border: 1px solid #e0e0e0; padding: 14px 16px;
+    }
+    .recipe-name { font-size: 1.05rem; font-weight: 700; }
+    .recipe-meta { font-size: 0.8rem; color: #888; margin-top: 4px; display: flex; gap: 16px; flex-wrap: wrap; }
+    .recipe-meta span { display: flex; flex-direction: column; }
+    .recipe-meta .val { font-weight: 600; color: #333; font-size: 0.9rem; }
+    .section-title { padding: 12px 16px 6px; font-size: 0.78rem; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+    .bom-card { background: white; margin: 0 16px 8px; border-radius: 8px; border: 1px solid #e0e0e0; overflow: hidden; }
+    .bom-row { display: flex; align-items: center; padding: 11px 14px; border-bottom: 1px solid #f5f5f5; gap: 10px; }
+    .bom-row:last-child { border-bottom: none; }
+    .line-no { font-size: 0.68rem; color: #bbb; min-width: 20px; }
+    .bom-name { flex: 1; font-size: 0.88rem; }
+    .bom-sku { font-size: 0.68rem; color: #aaa; font-family: monospace; }
+    .bom-qty { font-weight: 700; color: #E65100; font-size: 0.9rem; text-align: right; }
+    .bom-cost { font-size: 0.75rem; color: #888; text-align: right; }
+    .sub-badge { font-size: 0.65rem; background: #ede7f6; color: #4527A0; padding: 1px 6px; border-radius: 8px; }
+    .summary { background: #fff3e0; margin: 0 16px 16px; border-radius: 8px; padding: 12px 14px; }
+    .summary-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 3px 0; }
+    .summary-row.total { font-weight: 700; font-size: 0.95rem; border-top: 1px solid #ffe0b2; margin-top: 6px; padding-top: 8px; }
+    .loading { text-align: center; padding: 40px; color: #999; }
+    .placeholder { text-align: center; padding: 60px 20px; color: #aaa; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+<header>
+  <a href="./index.html">‹</a>
+  <h1>🔍 BOM Detail</h1>
+</header>
+
+<div class="selector">
+  <select id="rcp-select" onchange="loadBOM()">
+    <option value="">— เลือก Recipe —</option>
+  </select>
+</div>
+
+<div id="content">
+  <div class="placeholder">เลือก recipe เพื่อดู BOM</div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'cookingbook' } });
+
+let allRecipes = [];
+
+async function init() {
+  const { data } = await sb.from('recipes').select('id, rcp_code, name, type').order('rcp_code');
+  allRecipes = data || [];
+  const sel = document.getElementById('rcp-select');
+  const types = { prep: '🍲 Prep', menu: '🍜 Menu', sub: '🥣 Sub', kitchen: '🔥 Kitchen' };
+  const groups = {};
+  allRecipes.forEach(r => {
+    const g = types[r.type] || r.type;
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(r);
+  });
+  Object.entries(groups).forEach(([label, items]) => {
+    const og = document.createElement('optgroup');
+    og.label = label;
+    items.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = `${r.rcp_code} — ${r.name}`;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+}
+
+async function loadBOM() {
+  const id = document.getElementById('rcp-select').value;
+  if (!id) { document.getElementById('content').innerHTML = '<div class="placeholder">เลือก recipe เพื่อดู BOM</div>'; return; }
+
+  document.getElementById('content').innerHTML = '<div class="loading">กำลังโหลด...</div>';
+
+  const rcp = allRecipes.find(r => r.id == id);
+  const [bomRes, costRes] = await Promise.all([
+    sb.from('bom_items').select('*, ingredients(name, unit, sp_code, cost_per_unit, yield_pct)').eq('recipe_id', id).order('line_no'),
+    sb.from('recipe_costs').select('*').eq('id', id).single()
+  ]);
+
+  const bom = bomRes.data || [];
+  const cost = costRes.data;
+
+  const ingRows = bom.filter(b => b.ingredient_id);
+  const subRows = bom.filter(b => b.sub_recipe_id);
+
+  const unitFactor = (unit) => (unit === 'กก.' || unit === 'ลิตร') ? 0.001 : 1;
+
+  let html = `
+    <div class="recipe-info">
+      <div class="recipe-name">${rcp.name}</div>
+      <div class="recipe-meta">
+        <span><div class="val">${rcp.rcp_code}</div><div>code</div></span>
+        ${cost?.total_cost ? `<span><div class="val">฿${parseFloat(cost.total_cost).toFixed(2)}</div><div>ต้นทุนรวม</div></span>` : ''}
+        ${cost?.fc_pct_dine_in ? `<span><div class="val">${cost.fc_pct_dine_in}%</div><div>FC% dine-in</div></span>` : ''}
+        ${cost?.sell_price_dine_in ? `<span><div class="val">฿${cost.sell_price_dine_in}</div><div>ราคา dine-in</div></span>` : ''}
+      </div>
+    </div>`;
+
+  if (ingRows.length) {
+    html += `<div class="section-title">Ingredients (${ingRows.length} รายการ)</div><div class="bom-card">`;
+    ingRows.forEach(b => {
+      const ing = b.ingredients;
+      const factor = ing ? unitFactor(ing.unit) : 1;
+      const lineCost = ing?.cost_per_unit ? (b.qty_g * parseFloat(ing.cost_per_unit) * factor / (ing.yield_pct || 1)).toFixed(2) : null;
+      html += `<div class="bom-row">
+        <span class="line-no">${b.line_no || ''}</span>
+        <div style="flex:1">
+          <div class="bom-name">${ing?.name || '—'}</div>
+          <div class="bom-sku">${ing?.sp_code || ''} · ${ing?.unit || ''}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="bom-qty">${b.qty_g}${b.unit||'g'}</div>
+          ${lineCost ? `<div class="bom-cost">฿${lineCost}</div>` : ''}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  if (subRows.length) {
+    html += `<div class="section-title">Sub-Recipes (${subRows.length} รายการ)</div><div class="bom-card">`;
+    subRows.forEach(b => {
+      const subRcp = allRecipes.find(r => r.id === b.sub_recipe_id);
+      html += `<div class="bom-row">
+        <span class="line-no">${b.line_no || ''}</span>
+        <div style="flex:1">
+          <div class="bom-name">${subRcp?.name || 'Sub-recipe'} <span class="sub-badge">${subRcp?.rcp_code||''}</span></div>
+        </div>
+        <div class="bom-qty">${b.qty_g}${b.unit||'g'}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  if (cost) {
+    html += `<div class="summary">
+      <div class="summary-row"><span>ingredient cost</span><span>฿${parseFloat(cost.ingredient_cost||0).toFixed(2)}</span></div>
+      <div class="summary-row"><span>overhead</span><span>฿${parseFloat(cost.overhead_per_unit||0).toFixed(2)}</span></div>
+      <div class="summary-row total"><span>รวมต้นทุน</span><span>฿${parseFloat(cost.total_cost||0).toFixed(2)}</span></div>
+    </div>`;
+  }
+
+  document.getElementById('content').innerHTML = html;
+}
+
+init();
+</script>
+</body>
+</html>

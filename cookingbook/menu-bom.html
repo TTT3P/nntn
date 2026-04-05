@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Menu BOM + FC% — CookingBook</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: #f5f5f5; }
+    header {
+      background: #1B5E20; color: white; padding: 16px 20px;
+      display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10;
+    }
+    header a { color: white; text-decoration: none; font-size: 20px; opacity: 0.8; }
+    header h1 { flex: 1; font-size: 1.1rem; font-weight: 700; }
+    .search-bar { padding: 12px 16px; background: white; border-bottom: 1px solid #e0e0e0; }
+    .search-bar input {
+      width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;
+      font-family: 'Sarabun', sans-serif; font-size: 0.9rem;
+    }
+    .count { padding: 8px 16px; font-size: 0.78rem; color: #888; background: #fafafa; border-bottom: 1px solid #eee; }
+    .card-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+    .menu-card { background: white; border-radius: 10px; border: 1px solid #e0e0e0; overflow: hidden; cursor: pointer; }
+    .menu-card-header { padding: 14px 16px; display: flex; align-items: flex-start; gap: 10px; }
+    .menu-info { flex: 1; }
+    .menu-name { font-size: 0.95rem; font-weight: 700; color: #1a1a1a; }
+    .menu-code { font-size: 0.7rem; font-family: monospace; color: #aaa; margin-top: 2px; }
+    .fc-block { text-align: right; min-width: 80px; }
+    .fc-value { font-size: 1.1rem; font-weight: 700; }
+    .fc-good { color: #2e7d32; }
+    .fc-warn { color: #e65100; }
+    .fc-bad  { color: #c62828; }
+    .fc-null { color: #aaa; }
+    .fc-label { font-size: 0.65rem; color: #aaa; }
+    .price-row { padding: 0 16px 12px; display: flex; gap: 12px; font-size: 0.8rem; color: #666; }
+    .price-item { display: flex; flex-direction: column; gap: 2px; }
+    .price-item .val { font-weight: 600; color: #333; }
+    .bom-list { border-top: 1px solid #f0f0f0; padding: 10px 16px; display: none; background: #fafafa; }
+    .bom-list.open { display: block; }
+    .bom-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 0.82rem; border-bottom: 1px solid #f0f0f0; }
+    .bom-row:last-child { border-bottom: none; }
+    .bom-cost { color: #E65100; font-weight: 600; font-size: 0.78rem; }
+    .loading { text-align: center; padding: 40px; color: #999; }
+    .toggle-icon { font-size: 0.8rem; color: #ccc; margin-top: 4px; transition: transform 0.2s; }
+    .toggle-icon.open { transform: rotate(180deg); }
+    .divider { height: 1px; background: #eee; margin: 4px 0; }
+  </style>
+</head>
+<body>
+<header>
+  <a href="./index.html">‹</a>
+  <h1>📋 Menu BOM + FC%</h1>
+  <span id="total" style="font-size:0.8rem;opacity:0.8"></span>
+</header>
+
+<div class="search-bar">
+  <input type="text" id="search" placeholder="ค้นหาเมนู..." oninput="filterList()">
+</div>
+<div class="count" id="count"></div>
+
+<div class="card-list" id="list">
+  <div class="loading">กำลังโหลด...</div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'cookingbook' } });
+
+let allMenus = [];
+let allBOM = [];
+
+async function load() {
+  const [costsRes, bomRes] = await Promise.all([
+    sb.from('recipe_costs').select('*').eq('type', 'menu').order('rcp_code'),
+    sb.from('bom_items').select('*, ingredients(name, unit, sp_code)').order('line_no')
+  ]);
+  allMenus = costsRes.data || [];
+  allBOM = bomRes.data || [];
+  document.getElementById('total').textContent = allMenus.length + ' เมนู';
+  filterList();
+}
+
+function fcClass(pct) {
+  if (!pct) return 'fc-null';
+  if (pct <= 30) return 'fc-good';
+  if (pct <= 40) return 'fc-warn';
+  return 'fc-bad';
+}
+
+function filterList() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const filtered = q ? allMenus.filter(r => r.name.toLowerCase().includes(q) || r.rcp_code.toLowerCase().includes(q)) : allMenus;
+  document.getElementById('count').textContent = `แสดง ${filtered.length} เมนู`;
+  renderList(filtered);
+}
+
+function renderList(menus) {
+  if (!menus.length) { document.getElementById('list').innerHTML = '<div class="loading">ไม่พบข้อมูล</div>'; return; }
+  document.getElementById('list').innerHTML = menus.map(r => {
+    const bom = allBOM.filter(b => b.recipe_id === r.id);
+    const fcDine = r.fc_pct_dine_in;
+    const fcDeli = r.fc_pct_delivery;
+    const fcClass_ = fcClass(fcDine);
+    return `
+    <div class="menu-card">
+      <div class="menu-card-header" onclick="toggleBOM(${r.id})">
+        <div class="menu-info">
+          <div class="menu-name">${r.name}</div>
+          <div class="menu-code">${r.rcp_code} · ต้นทุน ฿${parseFloat(r.total_cost||0).toFixed(1)}</div>
+        </div>
+        <div class="fc-block">
+          <div class="fc-value ${fcClass_}">${fcDine ? fcDine+'%' : '—'}</div>
+          <div class="fc-label">FC% (dine-in)</div>
+          <div class="toggle-icon" id="icon-${r.id}">▼</div>
+        </div>
+      </div>
+      <div class="price-row">
+        <div class="price-item"><div class="val">${r.sell_price_dine_in ? '฿'+r.sell_price_dine_in : '—'}</div><div>ราคา dine-in</div></div>
+        <div class="price-item"><div class="val">${r.sell_price_delivery ? '฿'+r.sell_price_delivery : '—'}</div><div>ราคา delivery</div></div>
+        <div class="price-item"><div class="val ${fcClass(fcDeli)}">${fcDeli ? fcDeli+'%' : '—'}</div><div>FC% delivery</div></div>
+      </div>
+      <div class="bom-list" id="bom-${r.id}">
+        ${bom.length ? bom.map(b => `
+          <div class="bom-row">
+            <span>${b.ingredients?.name || (b.sub_recipe_id ? '[sub-recipe]' : '—')}</span>
+            <span class="bom-cost">${b.qty_g}${b.unit||'g'}</span>
+          </div>`).join('') : '<div style="color:#aaa;font-size:0.8rem">ไม่มี BOM</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleBOM(id) {
+  const el = document.getElementById('bom-'+id);
+  const icon = document.getElementById('icon-'+id);
+  el.classList.toggle('open');
+  icon.classList.toggle('open');
+}
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>CookingBook — NNTN</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: #1a1a1a; min-height: 100vh; }
+    header {
+      background: #111; padding: 20px; text-align: center;
+      border-bottom: 2px solid #E65100;
+      display: flex; align-items: center; gap: 12px;
+    }
+    header a { color: #888; text-decoration: none; font-size: 20px; }
+    header h1 { flex: 1; font-size: 1.3rem; color: #fff; }
+    header .sub { font-size: 0.75rem; color: #666; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 20px 16px; max-width: 480px; margin: 0 auto; }
+    .card {
+      background: #222; border-radius: 10px; padding: 20px 16px;
+      text-decoration: none; border: 1px solid #333;
+      display: flex; flex-direction: column; gap: 6px;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .card:hover { border-color: #E65100; transform: translateY(-2px); }
+    .card .icon { font-size: 1.6rem; }
+    .card .label { font-size: 0.95rem; font-weight: 700; color: #fff; }
+    .card .desc { font-size: 0.75rem; color: #888; line-height: 1.4; }
+  </style>
+</head>
+<body>
+<header>
+  <a href="../hub.html">‹</a>
+  <div>
+    <h1>📖 CookingBook</h1>
+    <div class="sub">สูตรอาหาร · ต้นทุน · BOM</div>
+  </div>
+</header>
+<div class="grid">
+  <a class="card" href="./ingredients.html">
+    <div class="icon">🧂</div>
+    <div class="label">Ingredients</div>
+    <div class="desc">วัตถุดิบทั้งหมด ราคา/หน่วย yield</div>
+  </a>
+  <a class="card" href="./prep-rcp.html">
+    <div class="icon">🍲</div>
+    <div class="label">Prep Recipes</div>
+    <div class="desc">ซอส น้ำซุป เครื่องปรุงสำเร็จ</div>
+  </a>
+  <a class="card" href="./menu-bom.html">
+    <div class="icon">📋</div>
+    <div class="label">Menu BOM + FC%</div>
+    <div class="desc">ต้นทุน FC% ราคาขาย ต่อเมนู</div>
+  </a>
+  <a class="card" href="./bom-detail.html">
+    <div class="icon">🔍</div>
+    <div class="label">BOM Detail</div>
+    <div class="desc">ดู BOM รายวัตถุดิบต่อ recipe</div>
+  </a>
+</div>
+</body>
+</html>
