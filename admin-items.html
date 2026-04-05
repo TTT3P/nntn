@@ -314,7 +314,7 @@ function renderList() {
 
   // Filter
   if (activeFilter === 'no-price') {
-    active = active.filter(i => !i.cost_per_pack);
+    active = active.filter(i => !i.cost_per_pack && i.category !== 'srcp' && i.category !== 'pkg');
   } else if (activeFilter !== 'all') {
     active = active.filter(i => i.category === activeFilter);
   }
