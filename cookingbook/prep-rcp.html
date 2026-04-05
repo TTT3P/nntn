@@ -72,7 +72,7 @@ let allIngredients = [];
 async function load() {
   const [rcpRes, bomRes, ingRes] = await Promise.all([
     sb.from('recipes').select('*').in('type', ['prep','sub','kitchen']).order('rcp_code'),
-    sb.from('bom_items').select('*, ingredients(name, unit)'),
+    sb.from('bom_items').select('*'),
     sb.from('ingredients').select('id, name, unit')
   ]);
   allRecipes = rcpRes.data || [];
@@ -110,7 +110,7 @@ function renderList(recipes) {
       <div class="bom-list" id="bom-${r.id}">
         ${bom.length ? bom.map(b => `
           <div class="bom-row">
-            <span class="bom-ing">${b.ingredients?.name || '—'}</span>
+            <span class="bom-ing">${allIngredients.find(i => i.id === b.ingredient_id)?.name || '—'}</span>
             <span class="bom-qty">${b.qty_g}${b.unit||'g'}</span>
           </div>`).join('') : '<div style="color:#aaa;font-size:0.8rem">ไม่มี BOM</div>'}
       </div>

@@ -100,7 +100,7 @@ async function loadBOM() {
 
   const rcp = allRecipes.find(r => r.id == id);
   const [bomRes, costRes] = await Promise.all([
-    sb.from('bom_items').select('*, ingredients(name, unit, sp_code, cost_per_unit, yield_pct)').eq('recipe_id', id).order('line_no'),
+    sb.from('bom_items').select('*').eq('recipe_id', id).order('line_no'),
     sb.from('recipe_costs').select('*').eq('id', id).single()
   ]);
 
@@ -108,6 +108,12 @@ async function loadBOM() {
   const cost = costRes.data;
 
   const ingRows = bom.filter(b => b.ingredient_id);
+  const ingIds = ingRows.map(b => b.ingredient_id);
+  let ingMap = {};
+  if (ingIds.length) {
+    const { data: ings } = await sb.from('ingredients').select('id, name, unit, sp_code, cost_per_unit, yield_pct').in('id', ingIds);
+    (ings || []).forEach(i => { ingMap[i.id] = i; });
+  }
   const subRows = bom.filter(b => b.sub_recipe_id);
 
   const unitFactor = (unit) => (unit === 'กก.' || unit === 'ลิตร') ? 0.001 : 1;
@@ -126,7 +132,7 @@ async function loadBOM() {
   if (ingRows.length) {
     html += `<div class="section-title">Ingredients (${ingRows.length} รายการ)</div><div class="bom-card">`;
     ingRows.forEach(b => {
-      const ing = b.ingredients;
+      const ing = ingMap[b.ingredient_id];
       const factor = ing ? unitFactor(ing.unit) : 1;
       const lineCost = ing?.cost_per_unit ? (b.qty_g * parseFloat(ing.cost_per_unit) * factor / (ing.yield_pct || 1)).toFixed(2) : null;
       html += `<div class="bom-row">
