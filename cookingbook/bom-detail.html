@@ -90,6 +90,8 @@ async function init() {
     });
     sel.appendChild(og);
   });
+  const urlId = new URLSearchParams(location.search).get('id');
+  if (urlId) { sel.value = urlId; loadBOM(); }
 }
 
 async function loadBOM() {

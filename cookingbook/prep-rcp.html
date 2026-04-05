@@ -110,7 +110,7 @@ function renderList(recipes) {
       <div class="bom-list" id="bom-${r.id}">
         ${bom.length ? bom.map(b => `
           <div class="bom-row">
-            <span class="bom-ing">${allIngredients.find(i => i.id === b.ingredient_id)?.name || (b.sub_recipe_id ? '⤷ ' + (allRecipes.find(r => r.id === b.sub_recipe_id)?.name || 'sub-recipe') : '—')}</span>
+            <span class="bom-ing">${allIngredients.find(i => i.id === b.ingredient_id)?.name || (b.sub_recipe_id ? `<a href="./bom-detail.html?id=${b.sub_recipe_id}" style="color:#4527A0;text-decoration:none">⤷ ${allRecipes.find(r => r.id === b.sub_recipe_id)?.name || 'sub-recipe'}</a>` : '—')}</span>
             <span class="bom-qty">${b.qty_g}${b.unit||'g'}</span>
           </div>`).join('') : '<div style="color:#aaa;font-size:0.8rem">ไม่มี BOM</div>'}
       </div>
