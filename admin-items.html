@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>จัดการ Ingredients — NNTN</title>
+  <title>ทะเบียนวัตถุดิบ — NNTN</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -35,11 +35,12 @@
     .group-header { background: #E8F5E9; padding: 8px 16px; font-size: 13px; font-weight: bold; color: var(--green-dark); border-top: 1px solid #C8E6C9; border-bottom: 1px solid #C8E6C9; }
 
     .item-row { background: white; padding: 12px 16px; border-bottom: 1px solid #f5f5f5; display: flex; align-items: center; gap: 10px; }
-    .item-row.editing { background: #FFFDE7; }
-
     .item-info { flex: 1; }
     .item-name { font-size: 15px; font-weight: 500; }
     .item-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .item-meta-2 { font-size: 11px; color: #aaa; margin-top: 1px; }
+    .supplier-tag { display: inline-block; background: #E8F5E9; color: var(--green-dark); font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: 4px; }
+    .cost-tag { display: inline-block; background: #FFF3E0; color: var(--orange); font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: 4px; }
 
     .item-actions { display: flex; gap: 8px; flex-shrink: 0; }
     .btn-edit { padding: 7px 14px; background: #E3F2FD; color: #1565C0; border: none; border-radius: 8px; font-size: 13px; font-family: inherit; cursor: pointer; }
@@ -48,8 +49,9 @@
     /* Modal */
     .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50; align-items: flex-end; }
     .overlay.open { display: flex; }
-    .modal { background: white; width: 100%; border-radius: 20px 20px 0 0; padding: 20px 16px 32px; max-height: 90vh; overflow-y: auto; }
+    .modal { background: white; width: 100%; border-radius: 20px 20px 0 0; padding: 20px 16px 32px; max-height: 92vh; overflow-y: auto; }
     .modal h2 { font-size: 18px; font-weight: bold; margin-bottom: 16px; }
+    .section-label { font-size: 11px; font-weight: 700; color: var(--green-dark); text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 0 8px; border-top: 1px solid #e8f5e9; margin-top: 4px; }
 
     .field { margin-bottom: 14px; }
     .field label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 5px; }
@@ -59,6 +61,7 @@
       font-family: inherit; background: white;
     }
     .field input:focus, .field select:focus { outline: none; border-color: var(--green); }
+    .field .hint { font-size: 11px; color: #aaa; margin-top: 4px; }
 
     .field-row { display: flex; gap: 10px; }
     .field-row .field { flex: 1; }
@@ -89,14 +92,14 @@
 <body>
 
 <header>
-  <h1>🧩 จัดการ Ingredients</h1>
-  <p>เพิ่ม / แก้ / ลบ รายการวัตถุดิบ</p>
+  <h1>📦 ทะเบียนวัตถุดิบ</h1>
+  <p>ยี่ห้อ · ผู้ขาย · ราคา · Par Level</p>
 </header>
 
 <nav>
   <a href="index.html">🏠 หน้าหลัก</a>
   <a href="admin-config.html">⚙️ ตั้งค่า Par</a>
-  <a href="admin-items.html" class="active">🧩 Ingredients</a>
+  <a href="admin-items.html" class="active">📦 วัตถุดิบ</a>
   <a href="admin-bom.html">📋 BOM</a>
 </nav>
 
@@ -115,6 +118,7 @@
     <h2 id="modal-title">เพิ่มรายการใหม่</h2>
     <input type="hidden" id="edit-id">
 
+    <div class="section-label">ข้อมูลทั่วไป</div>
     <div class="field">
       <label>SKU <span style="font-size:11px;color:var(--muted);font-weight:400">(กำหนดอัตโนมัติตามหมวด)</span></label>
       <input type="text" id="f-sku" placeholder="← เลือกหมวดก่อน" readonly
@@ -144,6 +148,38 @@
         </select>
       </div>
     </div>
+
+    <div class="section-label">ยี่ห้อ & ผู้ขาย</div>
+    <div class="field">
+      <label>ยี่ห้อ / แบรนด์</label>
+      <input type="text" id="f-brand" placeholder="เช่น Makro, ARO, ง่วนสูน">
+    </div>
+    <div class="field">
+      <label>ผู้ขายหลัก</label>
+      <select id="f-supplier">
+        <option value="">— ยังไม่ระบุ —</option>
+      </select>
+    </div>
+
+    <div class="section-label">ราคา & ต้นทุน BOM</div>
+    <div class="field-row">
+      <div class="field">
+        <label>ราคาต่อแพ็ก (บาท)</label>
+        <input type="number" id="f-cost" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label>ปริมาณต่อแพ็ก (กก./ลิตร)</label>
+        <input type="number" id="f-qty-pack" min="0" step="0.001" placeholder="เช่น 0.85">
+        <div class="hint">850g ใส่ 0.85 · 3L ใส่ 3.0</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Yield % (ส่วนที่ใช้ได้จริง)</label>
+      <input type="number" id="f-yield" min="0" max="100" step="1" placeholder="100">
+      <div class="hint">ถ้าไม่มีการสูญเสีย ใส่ 100</div>
+    </div>
+
+    <div class="section-label">สต๊อก</div>
     <div class="field-row">
       <div class="field">
         <label>Par Level (ขั้นต่ำ)</label>
@@ -193,6 +229,8 @@ const CAT_LABELS = {
 };
 
 let items = [];
+let suppliers = [];
+let itemSuppliers = [];  // [{item_id, supplier_id, is_preferred}]
 let pendingDeleteId = null;
 
 function showToast(msg, type) {
@@ -204,21 +242,42 @@ function showToast(msg, type) {
 }
 
 // ---- Load ----
-async function loadItems() {
-  const { data, error } = await sb
-    .from('items')
-    .select('id, sku, name, category, unit, par_level, max_level, is_active')
-    .order('category').order('sku');
-    // โหลดทุกรายการรวม inactive เพื่อให้ suggestSku() ไม่ซ้ำ SKU ที่ถูกลบไปแล้ว
+async function loadAll() {
+  const [itemsRes, suppRes, linkRes] = await Promise.all([
+    sb.from('items')
+      .select('id, sku, name, category, unit, par_level, max_level, is_active, brand, cost_per_pack, qty_per_pack, yield_pct')
+      .order('category').order('sku'),
+    sb.from('suppliers').select('id, name').eq('is_active', true).order('name'),
+    sb.from('item_suppliers').select('item_id, supplier_id, is_preferred')
+  ]);
 
-  if (error) {
+  if (itemsRes.error) {
     document.getElementById('list-container').innerHTML =
       '<div class="loading" style="color:#C62828">❌ โหลดไม่ได้ ลองรีเฟรช</div>';
     return;
   }
 
-  items = data || [];
+  items = itemsRes.data || [];
+  suppliers = suppRes.data || [];
+  itemSuppliers = linkRes.data || [];
+
+  // Populate supplier dropdown
+  const sel = document.getElementById('f-supplier');
+  sel.innerHTML = '<option value="">— ยังไม่ระบุ —</option>';
+  suppliers.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+
   renderList();
+}
+
+function getPreferredSupplier(itemId) {
+  const link = itemSuppliers.find(l => l.item_id === itemId && l.is_preferred);
+  if (!link) return null;
+  return suppliers.find(s => s.id === link.supplier_id) || null;
 }
 
 function renderList() {
@@ -233,11 +292,21 @@ function renderList() {
       lastCat = item.category;
       html += `<div class="group-header">${CAT_LABELS[item.category] || item.category}</div>`;
     }
+
+    const sup = getPreferredSupplier(item.id);
+    const supTag = sup ? `<span class="supplier-tag">${sup.name}</span>` : '';
+    const brandTag = item.brand ? `<span style="font-size:11px;color:#555">${item.brand}</span>` : '';
+    const costInfo = item.cost_per_pack
+      ? `฿${parseFloat(item.cost_per_pack).toFixed(0)}${item.qty_per_pack ? ` / ${item.qty_per_pack}${item.qty_per_pack < 5 ? 'kg' : ''}` : ''}`
+      : '';
+    const costTag = costInfo ? `<span class="cost-tag">${costInfo}</span>` : '';
+
     html += `
       <div class="item-row" id="row-${item.id}">
         <div class="item-info">
           <div class="item-name">${item.name}</div>
-          <div class="item-meta">${item.sku} · ${item.unit} · Par: ${item.par_level} / Max: ${item.max_level}</div>
+          <div class="item-meta">${item.sku} · ${item.unit} · Par: ${item.par_level ?? '—'} / Max: ${item.max_level ?? '—'}</div>
+          ${(brandTag || supTag || costTag) ? `<div class="item-meta-2">${brandTag}${supTag}${costTag}</div>` : ''}
         </div>
         <div class="item-actions">
           <button class="btn-edit" onclick="openEdit('${item.id}')">✏️ แก้</button>
@@ -259,7 +328,6 @@ function getPrefix(category) {
 function suggestSku(category) {
   if (!category) { document.getElementById('f-sku').value = ''; return; }
   const prefix = getPrefix(category);
-  // หา SKU สูงสุดของ prefix นั้น (รวม inactive ด้วย เพื่อไม่ให้ซ้ำ)
   const nums = items
     .filter(i => i.sku.startsWith(prefix + '-'))
     .map(i => parseInt(i.sku.replace(prefix + '-', ''), 10))
@@ -273,34 +341,47 @@ function openModal() {
   document.getElementById('modal-title').textContent = 'เพิ่มรายการใหม่';
   document.getElementById('edit-id').value = '';
   document.getElementById('f-sku').value = '';
+  document.getElementById('f-sku').disabled = false;
   document.getElementById('f-name').value = '';
   document.getElementById('f-unit').value = '';
   document.getElementById('f-category').value = '';
+  document.getElementById('f-brand').value = '';
+  document.getElementById('f-supplier').value = '';
+  document.getElementById('f-cost').value = '';
+  document.getElementById('f-qty-pack').value = '';
+  document.getElementById('f-yield').value = '';
   document.getElementById('f-par').value = '';
   document.getElementById('f-max').value = '';
-  document.getElementById('f-sku').disabled = false;
   document.getElementById('overlay').classList.add('open');
   setTimeout(() => document.getElementById('f-name').focus(), 150);
 }
 
-// เมื่อเลือก category → suggest SKU อัตโนมัติ
 document.getElementById('f-category').addEventListener('change', function() {
   const editId = document.getElementById('edit-id').value;
-  if (!editId) suggestSku(this.value); // เฉพาะตอนเพิ่มใหม่
+  if (!editId) suggestSku(this.value);
 });
 
 function openEdit(id) {
   const item = items.find(i => i.id === id);
   if (!item) return;
+
   document.getElementById('modal-title').textContent = 'แก้ไขรายการ';
   document.getElementById('edit-id').value = id;
   document.getElementById('f-sku').value = item.sku;
-  document.getElementById('f-sku').disabled = true; // SKU ไม่ให้แก้
+  document.getElementById('f-sku').disabled = true;
   document.getElementById('f-name').value = item.name;
   document.getElementById('f-unit').value = item.unit;
   document.getElementById('f-category').value = item.category;
-  document.getElementById('f-par').value = item.par_level;
-  document.getElementById('f-max').value = item.max_level;
+  document.getElementById('f-brand').value = item.brand || '';
+  document.getElementById('f-cost').value = item.cost_per_pack || '';
+  document.getElementById('f-qty-pack').value = item.qty_per_pack || '';
+  document.getElementById('f-yield').value = item.yield_pct != null ? Math.round(item.yield_pct * 100) : '';
+  document.getElementById('f-par').value = item.par_level || '';
+  document.getElementById('f-max').value = item.max_level || '';
+
+  const sup = getPreferredSupplier(id);
+  document.getElementById('f-supplier').value = sup ? sup.id : '';
+
   document.getElementById('overlay').classList.add('open');
 }
 
@@ -309,16 +390,21 @@ function closeModal() {
 }
 
 async function saveItem() {
-  const editId = document.getElementById('edit-id').value;
+  const editId   = document.getElementById('edit-id').value;
   const sku      = document.getElementById('f-sku').value.trim().toUpperCase();
   const name     = document.getElementById('f-name').value.trim();
   const unit     = document.getElementById('f-unit').value.trim();
   const category = document.getElementById('f-category').value;
+  const brand    = document.getElementById('f-brand').value.trim() || null;
+  const suppId   = document.getElementById('f-supplier').value || null;
+  const costRaw  = document.getElementById('f-cost').value;
+  const qtyRaw   = document.getElementById('f-qty-pack').value;
+  const yieldRaw = document.getElementById('f-yield').value;
   const par      = parseFloat(document.getElementById('f-par').value) || 0;
   const max      = parseFloat(document.getElementById('f-max').value) || 0;
 
   if (!name || !unit || !category) {
-    showToast('⚠️ กรุณากรอกข้อมูลให้ครบ', 'error'); return;
+    showToast('⚠️ กรุณากรอก ชื่อ, หน่วย, และหมวด', 'error'); return;
   }
   if (!editId && !sku) {
     showToast('⚠️ กรุณาระบุ SKU', 'error'); return;
@@ -327,31 +413,49 @@ async function saveItem() {
     showToast('⚠️ Max ต้องมากกว่าหรือเท่ากับ Par', 'error'); return;
   }
 
+  const cost_per_pack = costRaw ? parseFloat(costRaw) : null;
+  const qty_per_pack  = qtyRaw  ? parseFloat(qtyRaw)  : null;
+  const yield_pct     = yieldRaw ? parseFloat(yieldRaw) / 100 : null;
+
   const btn = document.getElementById('modal-save-btn');
   btn.disabled = true;
   btn.textContent = '⏳ กำลังบันทึก...';
 
-  let error;
+  const payload = { name, unit, category, brand, cost_per_pack, qty_per_pack, yield_pct, par_level: par, max_level: max };
+  let error, savedId;
+
   if (editId) {
-    ({ error } = await sb.from('items')
-      .update({ name, unit, category, par_level: par, max_level: max })
-      .eq('id', editId));
+    ({ error } = await sb.from('items').update(payload).eq('id', editId));
+    savedId = editId;
   } else {
-    ({ error } = await sb.from('items')
-      .insert({ sku, name, unit, category, par_level: par, max_level: max, is_active: true }));
+    const { data: inserted, error: insertErr } = await sb.from('items')
+      .insert({ sku, ...payload, is_active: true })
+      .select('id').single();
+    error = insertErr;
+    savedId = inserted?.id;
   }
 
-  btn.disabled = false;
-  btn.textContent = '💾 บันทึก';
-
   if (error) {
+    btn.disabled = false;
+    btn.textContent = '💾 บันทึก';
     showToast('❌ บันทึกไม่สำเร็จ: ' + (error.message || 'ลองใหม่'), 'error');
     return;
   }
 
+  // Save preferred supplier
+  if (savedId) {
+    // Remove old preferred for this item
+    await sb.from('item_suppliers').delete().eq('item_id', savedId).eq('is_preferred', true);
+    if (suppId) {
+      await sb.from('item_suppliers').upsert({ item_id: savedId, supplier_id: suppId, is_preferred: true });
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = '💾 บันทึก';
   closeModal();
   showToast(editId ? '✅ แก้ไขแล้ว' : '✅ เพิ่มรายการแล้ว', 'success');
-  await loadItems();
+  await loadAll();
 }
 
 // ---- Delete ----
@@ -373,21 +477,17 @@ async function confirmDelete() {
   if (!pendingDeleteId) return;
   const id = pendingDeleteId;
   closeConfirm();
-
-  // Soft delete — ปิด is_active แทนลบจริง
   const { error } = await sb.from('items').update({ is_active: false }).eq('id', id);
   if (error) { showToast('❌ ลบไม่สำเร็จ', 'error'); return; }
-
   showToast('✅ ลบรายการแล้ว', 'success');
-  await loadItems();
+  await loadAll();
 }
 
-// Close overlay on outside tap
 document.getElementById('overlay').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
 
-loadItems();
+loadAll();
 </script>
 </body>
 </html>
