@@ -109,7 +109,7 @@ function renderList(menus) {
       <div class="menu-card-header" onclick="toggleBOM(${r.id})">
         <div class="menu-info">
           <div class="menu-name">${r.name}</div>
-          <div class="menu-code">${r.rcp_code} · ต้นทุน ฿${parseFloat(r.total_cost||0).toFixed(1)}</div>
+          <div class="menu-code">${r.rcp_code} · ต้นทุน ฿${parseFloat(r.total_cost||0).toFixed(1)}${r.batch_size_g ? ' / '+r.batch_size_g+'g batch' : ''}</div>
         </div>
         <div class="fc-block">
           <div class="fc-value ${fcClass_}">${fcDine ? fcDine+'%' : '—'}</div>
