@@ -465,11 +465,12 @@
     if (!supplierId) return;
     const supplierName = suppliers.find(s => s.id === supplierId)?.name || '';
 
-    // Fetch latest PO for this supplier (by supplier_name)
+    // Fetch latest non-cancelled PO for this supplier (by supplier_id)
     const { data: pos } = await sb
       .from('purchase_orders')
       .select('id,supplier_name,created_at')
-      .eq('supplier_name', supplierName)
+      .eq('supplier_id', supplierId)
+      .neq('status', 'cancelled')
       .order('created_at', { ascending: false })
       .limit(1);
 
@@ -617,6 +618,7 @@
       .from('purchase_orders')
       .insert({
         po_number:     poNum,
+        supplier_id:   supplierId,
         supplier_name: supplierName,
         status:        'ordered',
         ordered_at:    new Date().toISOString(),
