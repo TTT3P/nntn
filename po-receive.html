@@ -749,19 +749,40 @@
 
     if (receives.length === 0) return toast('ไม่มีรายการที่รับได้');
 
-    // UPDATE purchase_order_items qty_received
+    const now = new Date().toISOString();
+
     for (const r of receives) {
+      // UPDATE purchase_order_items qty_received
       await sb.from('purchase_order_items')
         .update({ qty_received: r.qty_received })
         .eq('id', r.line_id);
+
+      // อ่าน stock ปัจจุบัน (latest stock_counts)
+      const { data: latest } = await sb.from('stock_counts')
+        .select('qty')
+        .eq('item_id', r.item_id)
+        .order('counted_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const currentQty = latest?.qty ?? 0;
+
+      // INSERT stock_counts — บวกของที่รับเข้าสต๊อก
+      await sb.from('stock_counts').insert({
+        item_id:    r.item_id,
+        qty:        currentQty + r.qty_received,
+        counted_by: 'PO-receive',
+        counted_at: now,
+        note:       `รับของจาก PO (${r.qty_received} หน่วย)`
+      });
     }
 
     // UPDATE PO status → received
     await sb.from('purchase_orders')
-      .update({ status: 'received', received_at: new Date().toISOString() })
+      .update({ status: 'received', received_at: now })
       .eq('id', poId);
 
-    toast(`✅ รับของแล้ว — stock อัปเดตอัตโนมัติ (${receives.length} รายการ)`);
+    toast(`✅ รับของแล้ว — stock +${receives.length} รายการ`);
     setTimeout(() => loadPOList(currentFilter), 1200);
   }
 
