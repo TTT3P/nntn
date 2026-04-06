@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ฟอร์มครัว — NNTN</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', sans-serif;
+      font-size: 13px;
+      color: #212121;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    /* ── Screen nav ── */
+    .screen-nav {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .nav-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #1B5E20;
+      color: white;
+    }
+    .nav-btn:hover { background: #2E7D32; }
+    .nav-btn.orange { background: #E65100; }
+    .nav-btn.orange:hover { background: #BF360C; }
+    .nav-btn.red { background: #B71C1C; }
+    .nav-btn.red:hover { background: #7F0000; }
+    .nav-btn.blue { background: #1565C0; }
+    .nav-btn.blue:hover { background: #0D47A1; }
+
+    /* ── Form sheet ── */
+    .form-sheet {
+      background: white;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      max-width: 800px;
+    }
+
+    /* ── Header ── */
+    .form-header {
+      border-bottom: 3px solid #1B5E20;
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .form-header.orange { border-bottom-color: #E65100; }
+    .form-header.red    { border-bottom-color: #B71C1C; }
+    .form-header.blue   { border-bottom-color: #1565C0; }
+
+    .header-left h2 { font-size: 17px; font-weight: 700; color: #1B5E20; }
+    .header-left h2.orange { color: #E65100; }
+    .header-left h2.red    { color: #B71C1C; }
+    .header-left h2.blue   { color: #1565C0; }
+    .header-left p  { font-size: 11px; color: #555; margin-top: 2px; }
+
+    .header-right { font-size: 12px; text-align: right; }
+    .field-row {
+      display: flex; align-items: center;
+      gap: 6px; margin-bottom: 5px;
+      justify-content: flex-end;
+    }
+    .field-row label { color: #555; white-space: nowrap; }
+    .field-line {
+      border-bottom: 1px solid #333;
+      width: 130px; height: 18px;
+      display: inline-block;
+    }
+    .field-line.short { width: 80px; }
+    .field-line.long  { width: 180px; }
+
+    /* ── Table ── */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    thead th {
+      font-size: 11px; font-weight: 700;
+      padding: 5px 6px; text-align: left;
+      border: 1px solid #C8E6C9;
+      background: #E8F5E9; color: #1B5E20;
+    }
+    thead th.orange-head { background: #FBE9E7; color: #E65100; border-color: #FFCCBC; }
+    thead th.red-head    { background: #FFEBEE; color: #B71C1C; border-color: #FFCDD2; }
+    thead th.blue-head   { background: #E3F2FD; color: #1565C0; border-color: #BBDEFB; }
+    thead th.center { text-align: center; }
+    tbody td {
+      padding: 5px 6px; border: 1px solid #E0E0E0;
+      font-size: 12px; height: 28px;
+      vertical-align: middle;
+    }
+    tbody tr:nth-child(even) { background: #FAFAFA; }
+    .td-no   { width: 28px; text-align: center; color: #9E9E9E; font-size: 11px; }
+    .td-name { }
+    .td-unit { width: 44px; text-align: center; color: #555; }
+    .td-qty  { width: 64px; background: #FFFDE7; border: 1px solid #F9A825 !important; }
+    .td-qty-ordered { width: 64px; text-align: center; color: #555; }
+    .td-qty-recv    { width: 64px; background: #E3F2FD; border: 1px solid #90CAF9 !important; }
+    .td-reason { width: 130px; }
+    .td-note  { width: 110px; background: #F5F5F5; }
+    .reason-checks {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      font-size: 10px; color: #555;
+    }
+    .reason-checks span { white-space: nowrap; }
+
+    /* ── Footer ── */
+    .form-footer {
+      margin-top: 16px;
+      border-top: 1px solid #CCC;
+      padding-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .footer-note { font-size: 11px; color: #555; }
+    .footer-note p { margin-bottom: 4px; }
+    .sign-row { display: flex; gap: 28px; }
+    .sign-box { text-align: center; width: 150px; }
+    .sign-line { border-bottom: 1px solid #333; height: 28px; margin-bottom: 4px; }
+    .sign-label { font-size: 11px; color: #555; }
+
+    /* ── Print ── */
+    @media print {
+      body { background: white; padding: 8px; }
+      .screen-nav { display: none; }
+      .form-sheet {
+        box-shadow: none; border-radius: 0;
+        padding: 12px 16px; margin-bottom: 0;
+        page-break-after: always;
+      }
+      .form-sheet:last-child { page-break-after: avoid; }
+      thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .td-qty, .td-qty-recv { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Screen nav -->
+<div class="screen-nav no-print">
+  <button class="nav-btn orange" onclick="window.print()">🖨️ พิมพ์ทุกฟอร์ม</button>
+  <a href="index.html" style="text-decoration:none">
+    <button class="nav-btn blue">← กลับหน้าหลัก</button>
+  </a>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     ฟอร์ม 1: ใบเบิกของ
+════════════════════════════════════════════════ -->
+<div class="form-sheet">
+  <div class="form-header orange">
+    <div class="header-left">
+      <h2 class="orange">📦 ใบเบิกของ</h2>
+      <p>ครัวเนื้อในตำนาน (NNTN) — วิชรธรรม 53</p>
+    </div>
+    <div class="header-right">
+      <div class="field-row">
+        <label>วันที่:</label>
+        <span class="field-line" id="d1-date"></span>
+      </div>
+      <div class="field-row">
+        <label>ผู้เบิก:</label>
+        <span class="field-line"></span>
+      </div>
+      <div class="field-row">
+        <label>อนุมัติโดย:</label>
+        <span class="field-line"></span>
+      </div>
+    </div>
+  </div>
+
+  <p style="font-size:11px;color:#555;margin-bottom:6px;">
+    ★ กรอกจำนวนที่เบิกจริงลงช่อง <span style="color:#F57F17;font-weight:bold;">จำนวนเบิก</span>
+  </p>
+
+  <table>
+    <thead><tr>
+      <th class="center orange-head">#</th>
+      <th class="orange-head">ชื่อวัตถุดิบ</th>
+      <th class="center orange-head">หน่วย</th>
+      <th class="center orange-head">จำนวนเบิก</th>
+      <th class="orange-head">หมายเหตุ</th>
+    </tr></thead>
+    <tbody>
+      <!-- 12 rows -->
+      <tr><td class="td-no">1</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">2</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">3</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">4</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">5</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">6</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">7</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">8</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">9</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">10</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">11</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">12</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty"></td><td class="td-note"></td></tr>
+    </tbody>
+  </table>
+
+  <div class="form-footer">
+    <div class="footer-note">
+      <p>หมายเหตุ: _________________________________</p>
+      <p>_____________________________________________</p>
+    </div>
+    <div class="sign-row">
+      <div class="sign-box">
+        <div class="sign-line"></div>
+        <div class="sign-label">ผู้เบิก</div>
+      </div>
+      <div class="sign-box">
+        <div class="sign-line"></div>
+        <div class="sign-label">ผู้อนุมัติ</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     ฟอร์ม 2: ใบรับของ (GR)
+════════════════════════════════════════════════ -->
+<div class="form-sheet">
+  <div class="form-header blue">
+    <div class="header-left">
+      <h2 class="blue">🛒 ใบรับของเข้า (GR)</h2>
+      <p>ครัวเนื้อในตำนาน (NNTN) — วิชรธรรม 53</p>
+    </div>
+    <div class="header-right">
+      <div class="field-row">
+        <label>วันที่รับ:</label>
+        <span class="field-line" id="d2-date"></span>
+      </div>
+      <div class="field-row">
+        <label>Supplier:</label>
+        <span class="field-line long"></span>
+      </div>
+      <div class="field-row">
+        <label>PO No.:</label>
+        <span class="field-line short"></span>
+      </div>
+    </div>
+  </div>
+
+  <p style="font-size:11px;color:#555;margin-bottom:6px;">
+    ★ กรอกจำนวนที่รับจริงลงช่อง <span style="color:#1565C0;font-weight:bold;">รับจริง</span> &nbsp;|&nbsp; ถ้าไม่ครบ ระบุหมายเหตุ
+  </p>
+
+  <table>
+    <thead><tr>
+      <th class="center blue-head">#</th>
+      <th class="blue-head">ชื่อวัตถุดิบ</th>
+      <th class="center blue-head">หน่วย</th>
+      <th class="center blue-head">สั่ง</th>
+      <th class="center blue-head">รับจริง</th>
+      <th class="blue-head">หมายเหตุ</th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="td-no">1</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty-ordered"></td><td class="td-qty-recv"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">2</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty-ordered"></td><td class="td-qty-recv"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">3</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty-ordered"></td><td class="td-qty-recv"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">4</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty-ordered"></td><td class="td-qty-recv"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">5</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty-ordered"></td><td class="td-qty-recv"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">6</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty-ordered"></td><td class="td-qty-recv"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">7</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty-ordered"></td><td class="td-qty-recv"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">8</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty-ordered"></td><td class="td-qty-recv"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">9</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty-ordered"></td><td class="td-qty-recv"></td><td class="td-note"></td></tr>
+      <tr><td class="td-no">10</td><td class="td-name"></td><td class="td-unit"></td><td class="td-qty-ordered"></td><td class="td-qty-recv"></td><td class="td-note"></td></tr>
+    </tbody>
+  </table>
+
+  <div class="form-footer">
+    <div class="footer-note">
+      <p>หมายเหตุ: _________________________________</p>
+      <p>_____________________________________________</p>
+    </div>
+    <div class="sign-row">
+      <div class="sign-box">
+        <div class="sign-line"></div>
+        <div class="sign-label">ผู้รับของ</div>
+      </div>
+      <div class="sign-box">
+        <div class="sign-line"></div>
+        <div class="sign-label">ผู้ตรวจสอบ</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     ฟอร์ม 3: ใบบันทึก Loss / Waste
+════════════════════════════════════════════════ -->
+<div class="form-sheet">
+  <div class="form-header red">
+    <div class="header-left">
+      <h2 class="red">⚠️ ใบบันทึก Loss / Waste</h2>
+      <p>ครัวเนื้อในตำนาน (NNTN) — วิชรธรรม 53</p>
+    </div>
+    <div class="header-right">
+      <div class="field-row">
+        <label>วันที่:</label>
+        <span class="field-line" id="d3-date"></span>
+      </div>
+      <div class="field-row">
+        <label>ผู้บันทึก:</label>
+        <span class="field-line"></span>
+      </div>
+    </div>
+  </div>
+
+  <p style="font-size:11px;color:#555;margin-bottom:6px;">
+    ★ กรอกจำนวนและ <span style="font-weight:bold;">✓ ติ๊กเหตุผล</span> ให้ครบทุกรายการ
+  </p>
+
+  <table>
+    <thead><tr>
+      <th class="center red-head">#</th>
+      <th class="red-head">ชื่อวัตถุดิบ</th>
+      <th class="center red-head">หน่วย</th>
+      <th class="center red-head">จำนวน</th>
+      <th class="red-head">เหตุผล</th>
+      <th class="red-head">หมายเหตุ</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="td-no">1</td>
+        <td class="td-name"></td>
+        <td class="td-unit"></td>
+        <td class="td-qty" style="background:#FFEBEE;border-color:#EF9A9A !important;"></td>
+        <td class="td-reason"><div class="reason-checks"><span>☐ หมดอายุ</span><span>☐ เสียหาย</span><span>☐ หกหาย</span><span>☐ นับไม่ตรง</span><span>☐ อื่นๆ</span></div></td>
+        <td class="td-note"></td>
+      </tr>
+      <tr>
+        <td class="td-no">2</td>
+        <td class="td-name"></td>
+        <td class="td-unit"></td>
+        <td class="td-qty" style="background:#FFEBEE;border-color:#EF9A9A !important;"></td>
+        <td class="td-reason"><div class="reason-checks"><span>☐ หมดอายุ</span><span>☐ เสียหาย</span><span>☐ หกหาย</span><span>☐ นับไม่ตรง</span><span>☐ อื่นๆ</span></div></td>
+        <td class="td-note"></td>
+      </tr>
+      <tr>
+        <td class="td-no">3</td>
+        <td class="td-name"></td>
+        <td class="td-unit"></td>
+        <td class="td-qty" style="background:#FFEBEE;border-color:#EF9A9A !important;"></td>
+        <td class="td-reason"><div class="reason-checks"><span>☐ หมดอายุ</span><span>☐ เสียหาย</span><span>☐ หกหาย</span><span>☐ นับไม่ตรง</span><span>☐ อื่นๆ</span></div></td>
+        <td class="td-note"></td>
+      </tr>
+      <tr>
+        <td class="td-no">4</td>
+        <td class="td-name"></td>
+        <td class="td-unit"></td>
+        <td class="td-qty" style="background:#FFEBEE;border-color:#EF9A9A !important;"></td>
+        <td class="td-reason"><div class="reason-checks"><span>☐ หมดอายุ</span><span>☐ เสียหาย</span><span>☐ หกหาย</span><span>☐ นับไม่ตรง</span><span>☐ อื่นๆ</span></div></td>
+        <td class="td-note"></td>
+      </tr>
+      <tr>
+        <td class="td-no">5</td>
+        <td class="td-name"></td>
+        <td class="td-unit"></td>
+        <td class="td-qty" style="background:#FFEBEE;border-color:#EF9A9A !important;"></td>
+        <td class="td-reason"><div class="reason-checks"><span>☐ หมดอายุ</span><span>☐ เสียหาย</span><span>☐ หกหาย</span><span>☐ นับไม่ตรง</span><span>☐ อื่นๆ</span></div></td>
+        <td class="td-note"></td>
+      </tr>
+      <tr>
+        <td class="td-no">6</td>
+        <td class="td-name"></td>
+        <td class="td-unit"></td>
+        <td class="td-qty" style="background:#FFEBEE;border-color:#EF9A9A !important;"></td>
+        <td class="td-reason"><div class="reason-checks"><span>☐ หมดอายุ</span><span>☐ เสียหาย</span><span>☐ หกหาย</span><span>☐ นับไม่ตรง</span><span>☐ อื่นๆ</span></div></td>
+        <td class="td-note"></td>
+      </tr>
+      <tr>
+        <td class="td-no">7</td>
+        <td class="td-name"></td>
+        <td class="td-unit"></td>
+        <td class="td-qty" style="background:#FFEBEE;border-color:#EF9A9A !important;"></td>
+        <td class="td-reason"><div class="reason-checks"><span>☐ หมดอายุ</span><span>☐ เสียหาย</span><span>☐ หกหาย</span><span>☐ นับไม่ตรง</span><span>☐ อื่นๆ</span></div></td>
+        <td class="td-note"></td>
+      </tr>
+      <tr>
+        <td class="td-no">8</td>
+        <td class="td-name"></td>
+        <td class="td-unit"></td>
+        <td class="td-qty" style="background:#FFEBEE;border-color:#EF9A9A !important;"></td>
+        <td class="td-reason"><div class="reason-checks"><span>☐ หมดอายุ</span><span>☐ เสียหาย</span><span>☐ หกหาย</span><span>☐ นับไม่ตรง</span><span>☐ อื่นๆ</span></div></td>
+        <td class="td-note"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="form-footer">
+    <div class="footer-note">
+      <p>หมายเหตุ: _________________________________</p>
+      <p>_____________________________________________</p>
+    </div>
+    <div class="sign-row">
+      <div class="sign-box">
+        <div class="sign-line"></div>
+        <div class="sign-label">ผู้บันทึก</div>
+      </div>
+      <div class="sign-box">
+        <div class="sign-line"></div>
+        <div class="sign-label">ผู้ตรวจสอบ</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Pre-fill วันที่วันนี้ทุกฟอร์ม
+  var dateStr = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+  ['d1-date','d2-date','d3-date'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = dateStr;
+  });
+</script>
+</body>
+</html>
