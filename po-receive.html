@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>ใบสั่งซื้อ & รับของ — NNTN</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-dark: #1B5E20;
+      --green: #4CAF50;
+      --blue: #1565C0;
+      --blue-light: #E3F2FD;
+      --orange: #E65100;
+      --red: #C62828;
+      --bg: #F1F8E9;
+      --border: #e0e0e0;
+      --muted: #757575;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--bg);
+      color: #212121;
+      font-size: 16px;
+      padding-bottom: 40px;
+    }
+
+    header {
+      background: var(--green-dark);
+      color: white;
+      padding: 14px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    header h1 { font-size: 19px; font-weight: bold; }
+    header p  { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+    .back-link {
+      display: inline-block;
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      margin-bottom: 6px;
+    }
+    .back-link:hover { color: #fff; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: #fff;
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 68px;
+      z-index: 9;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px 8px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      color: var(--blue);
+      border-bottom-color: var(--blue);
+    }
+
+    .tab-pane { display: none; padding: 16px; }
+    .tab-pane.active { display: block; }
+
+    /* Form elements */
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 4px;
+    }
+    select, input[type="text"], input[type="number"], input[type="date"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 15px;
+      background: #fff;
+    }
+    select:focus, input:focus { outline: none; border-color: var(--green); }
+
+    .form-group { margin-bottom: 14px; }
+
+    /* PO Line item */
+    .line-items { margin-bottom: 12px; }
+    .line-item {
+      display: grid;
+      grid-template-columns: 1fr 80px 36px;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .line-item select { font-size: 14px; }
+    .btn-remove {
+      background: #ffebee;
+      border: none;
+      border-radius: 6px;
+      color: var(--red);
+      font-size: 18px;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+    }
+    .btn-add-line {
+      width: 100%;
+      padding: 10px;
+      background: #e8f5e9;
+      border: 1px dashed var(--green);
+      border-radius: 8px;
+      color: var(--green-dark);
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 16px;
+    }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary:disabled { background: #90a4ae; cursor: default; }
+    .btn-success { background: var(--green-dark); color: #fff; }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: #555;
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    /* PO Card (receive tab) */
+    .po-card {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .po-card-header {
+      padding: 12px 14px;
+      background: var(--blue-light);
+      border-bottom: 1px solid #bbdefb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .po-number { font-weight: 700; font-size: 15px; color: var(--blue); }
+    .po-supplier { font-size: 13px; color: #555; }
+    .po-date { font-size: 12px; color: var(--muted); }
+
+    .po-lines { padding: 10px 14px; }
+    .po-line-row {
+      display: grid;
+      grid-template-columns: 1fr 70px 90px;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .po-line-row:last-child { border-bottom: none; }
+    .item-name { font-size: 14px; font-weight: 600; }
+    .item-unit { font-size: 12px; color: var(--muted); }
+    .qty-ordered { font-size: 13px; color: var(--muted); text-align: center; }
+    .qty-received-input {
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      text-align: center;
+      width: 100%;
+    }
+
+    .po-footer { padding: 10px 14px; border-top: 1px solid var(--border); }
+
+    /* Status badge */
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+    .badge-ordered  { background: #fff3e0; color: #e65100; }
+    .badge-received { background: #e8f5e9; color: #2e7d32; }
+    .badge-draft    { background: #f5f5f5; color: #757575; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #212121;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s;
+      max-width: 90vw;
+      text-align: center;
+    }
+    .toast.show { opacity: 1; }
+
+    /* Empty state */
+    .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+
+    /* Section label */
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin: 16px 0 8px;
+    }
+
+    /* Filter tabs */
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .filter-pill {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+      color: #555;
+    }
+    .filter-pill.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="back-link" href="./index.html">← กลับหน้าหลัก</a>
+  <h1>ใบสั่งซื้อ & รับของ</h1>
+  <p>Non-Meat Stock — NNTN</p>
+</header>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('create')">+ สร้าง PO</button>
+  <button class="tab-btn" onclick="switchTab('receive')">รับของ</button>
+  <button class="tab-btn" onclick="switchTab('history')">ประวัติ</button>
+</div>
+
+<!-- ═══════════════════ TAB: สร้าง PO ═══════════════════ -->
+<div id="tab-create" class="tab-pane active">
+
+  <div class="form-group">
+    <label>Supplier</label>
+    <select id="sel-supplier">
+      <option value="">— เลือก supplier —</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label>วันที่สั่ง</label>
+    <input type="date" id="inp-date" />
+  </div>
+
+  <div class="form-group">
+    <label>หมายเหตุ (optional)</label>
+    <input type="text" id="inp-note" placeholder="เช่น ขอราคา bulk" />
+  </div>
+
+  <div class="section-label">รายการที่สั่ง</div>
+
+  <div class="line-items" id="line-items"></div>
+  <button class="btn-add-line" onclick="addLine()">+ เพิ่มรายการ</button>
+
+  <button class="btn btn-primary" id="btn-save-po" onclick="savePO()">บันทึกใบสั่งซื้อ</button>
+
+</div>
+
+<!-- ═══════════════════ TAB: รับของ ═══════════════════ -->
+<div id="tab-receive" class="tab-pane">
+
+  <div class="filter-row">
+    <button class="filter-pill active" onclick="filterPO('ordered', this)">รอรับของ</button>
+    <button class="filter-pill" onclick="filterPO('draft', this)">Draft</button>
+  </div>
+
+  <div id="po-list">
+    <div class="empty">กำลังโหลด...</div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════ TAB: ประวัติ ═══════════════════ -->
+<div id="tab-history" class="tab-pane">
+  <div id="po-history">
+    <div class="empty">กำลังโหลด...</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+  const sb    = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const sbStock = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'stock' } });
+
+  let items = [];
+  let suppliers = [];
+  let currentFilter = 'ordered';
+
+  // ─── Init ─────────────────────────────────────────────
+  (async function init() {
+    // Set today's date
+    document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
+
+    // Load suppliers (public schema)
+    const { data: sup } = await sb.from('suppliers').select('id,name').eq('is_active', true).order('name');
+    suppliers = sup || [];
+    const selSup = document.getElementById('sel-supplier');
+    suppliers.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.name;
+      selSup.appendChild(opt);
+    });
+
+    // Load non-meat items (public schema)
+    const { data: itm } = await sb.from('items').select('id,name,unit,category')
+      .eq('is_active', true)
+      .not('category', 'in', '("srcp","pkg")')
+      .order('category').order('name');
+    items = itm || [];
+
+    // Add first line
+    addLine();
+
+    // Load PO list
+    loadPOList('ordered');
+    loadHistory();
+  })();
+
+  // ─── Tabs ─────────────────────────────────────────────
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    event.target.classList.add('active');
+    if (tab === 'receive') loadPOList(currentFilter);
+    if (tab === 'history') loadHistory();
+  }
+
+  function filterPO(status, el) {
+    currentFilter = status;
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    loadPOList(status);
+  }
+
+  // ─── Line items (create PO) ───────────────────────────
+  function addLine() {
+    const container = document.getElementById('line-items');
+    const div = document.createElement('div');
+    div.className = 'line-item';
+
+    const sel = document.createElement('select');
+    sel.innerHTML = '<option value="">— เลือกรายการ —</option>';
+    items.forEach(i => {
+      const opt = document.createElement('option');
+      opt.value = i.id;
+      opt.dataset.unit = i.unit;
+      opt.textContent = i.name;
+      sel.appendChild(opt);
+    });
+
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.min = '0.01';
+    inp.step = '0.01';
+    inp.placeholder = 'จำนวน';
+    inp.style.padding = '8px';
+    inp.style.border = '1px solid #ddd';
+    inp.style.borderRadius = '6px';
+    inp.style.fontFamily = 'Sarabun, sans-serif';
+    inp.style.fontSize = '14px';
+    inp.style.width = '100%';
+
+    const btn = document.createElement('button');
+    btn.className = 'btn-remove';
+    btn.textContent = '×';
+    btn.onclick = () => div.remove();
+
+    div.appendChild(sel);
+    div.appendChild(inp);
+    div.appendChild(btn);
+    container.appendChild(div);
+  }
+
+  // ─── Save PO ──────────────────────────────────────────
+  async function savePO() {
+    const supplierId = document.getElementById('sel-supplier').value;
+    const date       = document.getElementById('inp-date').value;
+    const note       = document.getElementById('inp-note').value.trim();
+
+    if (!supplierId) return toast('เลือก supplier ก่อนครับ');
+    if (!date)       return toast('ระบุวันที่สั่งด้วยครับ');
+
+    // Collect lines
+    const lines = [];
+    document.querySelectorAll('#line-items .line-item').forEach(div => {
+      const sel = div.querySelector('select');
+      const inp = div.querySelector('input');
+      const qty = parseFloat(inp.value);
+      if (sel.value && qty > 0) {
+        lines.push({ item_id: sel.value, qty_ordered: qty });
+      }
+    });
+
+    if (lines.length === 0) return toast('เพิ่มรายการก่อนครับ');
+
+    const btn = document.getElementById('btn-save-po');
+    btn.disabled = true;
+    btn.textContent = 'กำลังบันทึก...';
+
+    // Generate PO number
+    const dateStr = date.replace(/-/g, '');
+    const { count } = await sbStock.from('purchase_orders').select('id', { count: 'exact', head: true });
+    const poNum = `PO-${dateStr}-${String((count || 0) + 1).padStart(2, '0')}`;
+
+    const supplierName = suppliers.find(s => s.id === supplierId)?.name || '';
+
+    // Insert PO
+    const { data: po, error: poErr } = await sbStock
+      .from('purchase_orders')
+      .insert({
+        po_number:     poNum,
+        supplier_name: supplierName,
+        status:        'ordered',
+        ordered_at:    new Date().toISOString(),
+        created_by:    'ไทน์',
+        note:          note || null
+      })
+      .select('id')
+      .single();
+
+    if (poErr) {
+      console.error(poErr);
+      toast('❌ บันทึก PO ไม่ได้: ' + poErr.message);
+      btn.disabled = false;
+      btn.textContent = 'บันทึกใบสั่งซื้อ';
+      return;
+    }
+
+    // Get default location (SHOP)
+    const { data: loc } = await sbStock.from('locations').select('id').eq('code', 'SHOP').single();
+
+    // Insert PO items
+    const poItems = lines.map(l => ({
+      po_id:       po.id,
+      item_id:     l.item_id,
+      location_id: loc.id,
+      qty_ordered: l.qty_ordered
+    }));
+    await sbStock.from('purchase_order_items').insert(poItems);
+
+    toast(`✅ บันทึก ${poNum} แล้ว (${lines.length} รายการ)`);
+
+    // Reset form
+    document.getElementById('sel-supplier').value = '';
+    document.getElementById('inp-note').value = '';
+    document.getElementById('line-items').innerHTML = '';
+    addLine();
+
+    btn.disabled = false;
+    btn.textContent = 'บันทึกใบสั่งซื้อ';
+  }
+
+  // ─── Load PO list (receive tab) ───────────────────────
+  async function loadPOList(status) {
+    const container = document.getElementById('po-list');
+    container.innerHTML = '<div class="empty">กำลังโหลด...</div>';
+
+    const { data: pos } = await sbStock
+      .from('purchase_orders')
+      .select(`id, po_number, supplier_name, status, ordered_at, note,
+               purchase_order_items(
+                 id, qty_ordered, qty_received,
+                 items(id, name, unit)
+               )`)
+      .eq('status', status)
+      .order('ordered_at', { ascending: false });
+
+    if (!pos || pos.length === 0) {
+      container.innerHTML = `<div class="empty">ไม่มี PO ที่ ${status === 'ordered' ? 'รอรับของ' : 'เป็น Draft'}</div>`;
+      return;
+    }
+
+    container.innerHTML = '';
+    pos.forEach(po => container.appendChild(buildPOCard(po)));
+  }
+
+  function buildPOCard(po) {
+    const card = document.createElement('div');
+    card.className = 'po-card';
+
+    const orderedDate = po.ordered_at ? new Date(po.ordered_at).toLocaleDateString('th-TH') : '-';
+    const badgeClass  = { ordered: 'badge-ordered', received: 'badge-received', draft: 'badge-draft' }[po.status] || '';
+    const badgeLabel  = { ordered: 'รอรับของ', received: 'รับแล้ว', draft: 'Draft' }[po.status] || po.status;
+
+    const lines = po.purchase_order_items || [];
+
+    card.innerHTML = `
+      <div class="po-card-header">
+        <div>
+          <div class="po-number">${po.po_number}</div>
+          <div class="po-supplier">${po.supplier_name}</div>
+        </div>
+        <div style="text-align:right">
+          <span class="badge ${badgeClass}">${badgeLabel}</span>
+          <div class="po-date">${orderedDate}</div>
+        </div>
+      </div>
+      <div class="po-lines" id="lines-${po.id}">
+        ${lines.map(l => `
+          <div class="po-line-row">
+            <div>
+              <div class="item-name">${l.items?.name || '-'}</div>
+              <div class="item-unit">${l.items?.unit || ''}</div>
+            </div>
+            <div class="qty-ordered">สั่ง: ${l.qty_ordered}</div>
+            ${po.status === 'ordered' ? `
+              <input class="qty-received-input" type="number" min="0" step="0.01"
+                     placeholder="${l.qty_ordered}" value="${l.qty_ordered}"
+                     data-line-id="${l.id}" data-item-id="${l.items?.id}" data-qty-ordered="${l.qty_ordered}" />
+            ` : `<div style="text-align:center;font-size:13px;color:var(--green-dark);font-weight:700">
+                   รับ ${l.qty_received || 0}
+                 </div>`}
+          </div>
+        `).join('')}
+      </div>
+      ${po.status === 'ordered' ? `
+        <div class="po-footer">
+          ${po.note ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">หมายเหตุ: ${po.note}</div>` : ''}
+          <button class="btn btn-success" onclick="confirmReceive('${po.id}')">✅ ยืนยันรับของแล้ว</button>
+        </div>
+      ` : ''}
+    `;
+    return card;
+  }
+
+  // ─── Confirm Receive ──────────────────────────────────
+  async function confirmReceive(poId) {
+    const linesDiv = document.getElementById('lines-' + poId);
+    const inputs   = linesDiv.querySelectorAll('.qty-received-input');
+
+    const receives = [];
+    inputs.forEach(inp => {
+      const qty = parseFloat(inp.value);
+      if (inp.dataset.itemId && qty > 0) {
+        receives.push({
+          line_id:     inp.dataset.lineId,
+          item_id:     inp.dataset.itemId,
+          qty_received: qty
+        });
+      }
+    });
+
+    if (receives.length === 0) return toast('ไม่มีรายการที่รับได้');
+
+    // Get SHOP location
+    const { data: loc } = await sbStock.from('locations').select('id').eq('code', 'SHOP').single();
+
+    // INSERT movements (receive)
+    const movements = receives.map(r => ({
+      item_id:       r.item_id,
+      location_id:   loc.id,
+      qty_delta:     r.qty_received,
+      movement_type: 'receive',
+      ref_type:      'po',
+      created_by:    'ไทน์',
+      moved_at:      new Date().toISOString()
+    }));
+
+    const { error: mvErr } = await sbStock.from('movements').insert(movements);
+    if (mvErr) {
+      console.error(mvErr);
+      return toast('❌ บันทึก movements ไม่ได้: ' + mvErr.message);
+    }
+
+    // UPDATE purchase_order_items qty_received
+    for (const r of receives) {
+      await sbStock.from('purchase_order_items')
+        .update({ qty_received: r.qty_received })
+        .eq('id', r.line_id);
+    }
+
+    // UPDATE PO status → received
+    await sbStock.from('purchase_orders')
+      .update({ status: 'received', received_at: new Date().toISOString() })
+      .eq('id', poId);
+
+    toast(`✅ รับของแล้ว — stock อัปเดตอัตโนมัติ (${receives.length} รายการ)`);
+    setTimeout(() => loadPOList(currentFilter), 1200);
+  }
+
+  // ─── History ──────────────────────────────────────────
+  async function loadHistory() {
+    const container = document.getElementById('po-history');
+    container.innerHTML = '<div class="empty">กำลังโหลด...</div>';
+
+    const { data: pos } = await sbStock
+      .from('purchase_orders')
+      .select('id, po_number, supplier_name, status, ordered_at, received_at')
+      .order('ordered_at', { ascending: false })
+      .limit(50);
+
+    if (!pos || pos.length === 0) {
+      container.innerHTML = '<div class="empty">ยังไม่มี PO</div>';
+      return;
+    }
+
+    const badgeClass  = { ordered: 'badge-ordered', received: 'badge-received', draft: 'badge-draft' };
+    const badgeLabel  = { ordered: 'รอรับของ', received: 'รับแล้ว', draft: 'Draft' };
+
+    container.innerHTML = pos.map(po => `
+      <div style="background:#fff;border-radius:8px;border:1px solid var(--border);padding:12px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-weight:700;font-size:14px;">${po.po_number}</div>
+          <div style="font-size:12px;color:var(--muted);">${po.supplier_name} · ${po.ordered_at ? new Date(po.ordered_at).toLocaleDateString('th-TH') : '-'}</div>
+        </div>
+        <span class="badge ${badgeClass[po.status] || ''}">${badgeLabel[po.status] || po.status}</span>
+      </div>
+    `).join('');
+  }
+
+  // ─── Toast ────────────────────────────────────────────
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3000);
+  }
+</script>
+
+</body>
+</html>
