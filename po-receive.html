@@ -590,7 +590,17 @@
       }
     });
 
-    if (lines.length === 0) return toast('เพิ่มรายการก่อนครับ');
+    if (lines.length === 0) {
+      const allDivs = document.querySelectorAll('#line-items .line-item');
+      if (allDivs.length > 0) {
+        const idx0 = allDivs[0].dataset.idx;
+        const id0  = document.getElementById('li-' + idx0)?.value;
+        const q0   = document.getElementById('lq-' + idx0)?.value;
+        if (!id0) return toast('⚠️ เลือกวัตถุดิบจากรายการก่อนครับ (ต้องแตะชื่อจาก dropdown)');
+        if (!q0 || parseFloat(q0) <= 0) return toast('⚠️ กรอกจำนวนด้วยครับ');
+      }
+      return toast('เพิ่มรายการก่อนครับ');
+    }
 
     const btn = document.getElementById('btn-save-po');
     btn.disabled = true;
