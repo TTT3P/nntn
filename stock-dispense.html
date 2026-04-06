@@ -101,6 +101,7 @@
       font-family: 'Sarabun', sans-serif;
     }
     .search-option:hover { background: #f1f8e9; }
+    .search-option.highlighted { background: #c8e6c9; }
     .search-option .opt-name { font-size: 14px; font-weight: 600; }
     .search-option .opt-meta { font-size: 12px; color: var(--muted); margin-top: 1px; }
     .search-selected {
@@ -366,7 +367,8 @@
       <div class="search-wrap">
         <input class="search-input" id="d-search" type="text"
           placeholder="พิมพ์ชื่อวัตถุดิบ (3 ตัวขึ้นไป)..." autocomplete="off"
-          oninput="searchDispense(this.value)" onfocus="searchDispense(this.value)">
+          oninput="searchDispense(this.value)" onfocus="searchDispense(this.value)"
+          onkeydown="handleDispenseKey(event)">
         <input type="hidden" id="d-item-pending">
         <div class="search-drop" id="d-drop"></div>
       </div>
@@ -486,6 +488,7 @@
   let selectedReason = '';
   let logFilter      = 'all';
   let dispenseList   = [];   // [{id, name, unit, category}]
+  let dropIndex      = -1;   // keyboard highlight index for d-drop
 
   const REASON_LABELS = {
     expired: 'หมดอายุ', damaged: 'เสียหาย',
@@ -526,10 +529,52 @@
     if (tab === 'log') loadLog();
   }
 
+  // ─── Dispense: keyboard navigation ──────────────────
+  function handleDispenseKey(e) {
+    var drop = document.getElementById('d-drop');
+    var isOpen = drop.classList.contains('open');
+    var opts = drop.querySelectorAll('.search-option');
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!isOpen) return;
+      dropIndex = Math.min(dropIndex + 1, opts.length - 1);
+      highlightDrop(opts);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!isOpen) return;
+      dropIndex = Math.max(dropIndex - 1, 0);
+      highlightDrop(opts);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (isOpen && opts.length > 0) {
+        // เลือก item ที่ highlight อยู่ (ถ้าไม่มี ใช้ตัวแรก)
+        var idx = dropIndex >= 0 ? dropIndex : 0;
+        opts[idx].click();
+      } else if (document.getElementById('d-item-pending').value) {
+        // item pending แล้ว → เพิ่มเข้า list ทันที
+        addToList();
+      }
+    } else if (e.key === 'Escape') {
+      drop.classList.remove('open');
+      dropIndex = -1;
+    }
+  }
+
+  function highlightDrop(opts) {
+    opts.forEach(function(o, i) {
+      o.classList.toggle('highlighted', i === dropIndex);
+    });
+    if (opts[dropIndex]) {
+      opts[dropIndex].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
   // ─── Dispense: search ────────────────────────────────
   function searchDispense(val) {
     var drop = document.getElementById('d-drop');
     var q = val.trim();
+    dropIndex = -1;  // reset highlight เมื่อพิมพ์ใหม่
     if (q.length < 3) { drop.classList.remove('open'); return; }
 
     var matches = items.filter(function(i) {
