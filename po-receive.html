@@ -584,9 +584,10 @@
     document.querySelectorAll('#line-items .line-item').forEach(div => {
       const idx    = div.dataset.idx;
       const itemId = document.getElementById('li-' + idx)?.value;
-      const qty    = parseFloat(document.getElementById('lq-' + idx)?.value);
-      if (itemId && qty > 0) {
-        lines.push({ item_id: itemId, qty_ordered: qty });
+      const qtyRaw = document.getElementById('lq-' + idx)?.value;
+      const qty    = qtyRaw ? parseFloat(qtyRaw) : null;   // qty optional
+      if (itemId) {
+        lines.push({ item_id: itemId, qty_ordered: qty || null });
       }
     });
 
@@ -595,9 +596,7 @@
       if (allDivs.length > 0) {
         const idx0 = allDivs[0].dataset.idx;
         const id0  = document.getElementById('li-' + idx0)?.value;
-        const q0   = document.getElementById('lq-' + idx0)?.value;
         if (!id0) return toast('⚠️ เลือกวัตถุดิบจากรายการก่อนครับ (ต้องแตะชื่อจาก dropdown)');
-        if (!q0 || parseFloat(q0) <= 0) return toast('⚠️ กรอกจำนวนด้วยครับ');
       }
       return toast('เพิ่มรายการก่อนครับ');
     }
