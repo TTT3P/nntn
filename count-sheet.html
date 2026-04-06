@@ -85,7 +85,8 @@
     .td-unit  { width: 40px; text-align: center; color: #555; }
     .td-par   { width: 36px; text-align: center; font-weight: 600; color: #1B5E20; }
     .td-count { width: 60px; background: #FFFDE7; border: 1px solid #F9A825 !important; }
-    .td-note  { width: 100px; background: #F5F5F5; }
+    .td-order { width: 56px; background: #E3F2FD; border: 1px solid #90CAF9 !important; text-align: center; font-weight: 600; color: #1565C0; font-size: 11px; }
+    .td-note  { width: 90px; background: #F5F5F5; }
 
     /* ── Footer ── */
     .footer {
@@ -177,7 +178,7 @@
 
 <!-- คำอธิบาย -->
 <p style="font-size:11px; color:#555; margin-bottom:8px;">
-  ★ นับจำนวน <u>แพ็ก/ขวด/ถุง</u> ที่ยังปิดอยู่ + ที่เปิดใช้อยู่ กรอกลงช่อง <span style="color:#F57F17;font-weight:bold;">ยอดนับ</span> &nbsp;|&nbsp; <span style="color:#1B5E20;font-weight:bold;">Par</span> = จำนวนขั้นต่ำที่ต้องมี
+  ★ นับจำนวน <u>แพ็ก/ขวด/ถุง</u> กรอกช่อง <span style="color:#F57F17;font-weight:bold;">ยอดนับ</span> &nbsp;|&nbsp; <span style="color:#1B5E20;font-weight:bold;">Par</span> = ขั้นต่ำที่ต้องมี &nbsp;|&nbsp; <span style="color:#1565C0;font-weight:bold;">สั่งเพิ่ม</span> = Par − ยอดนับ (ถ้าติดลบ = ไม่ต้องสั่ง)
 </p>
 
 <!-- Content area -->
@@ -260,6 +261,7 @@
         <th class="center">หน่วย</th>
         <th class="center">Par</th>
         <th class="center">ยอดนับ</th>
+        <th class="center">สั่งเพิ่ม</th>
         <th>หมายเหตุ</th>
       </tr></thead>
     `;
@@ -280,6 +282,7 @@
           <td class="td-unit">${item.unit || ''}</td>
           <td class="td-par">${item.par_level ?? ''}</td>
           <td class="td-count"></td>
+          <td class="td-order"></td>
           <td class="td-note"></td>
         </tr>
       `).join('');
