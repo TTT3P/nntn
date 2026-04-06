@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เข้าสู่ระบบ — NNTN</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: #F1F8E9;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      padding: 36px 28px;
+      width: 100%; max-width: 340px;
+      text-align: center;
+    }
+    .logo { font-size: 2.4rem; margin-bottom: 8px; }
+    h1 { font-size: 1.2rem; font-weight: 700; color: #1B5E20; }
+    .sub { font-size: 0.78rem; color: #757575; margin-top: 4px; margin-bottom: 28px; }
+
+    label { display: block; text-align: left; font-size: 0.82rem; font-weight: 600; color: #424242; margin-bottom: 6px; }
+    input[type="password"] {
+      width: 100%; padding: 13px 14px;
+      border: 1.5px solid #C8E6C9; border-radius: 10px;
+      font-size: 1rem; font-family: inherit;
+      outline: none; transition: border-color 0.15s;
+    }
+    input[type="password"]:focus { border-color: #4CAF50; }
+    input[type="password"].error { border-color: #C62828; }
+
+    .error-msg {
+      font-size: 0.8rem; color: #C62828;
+      margin-top: 8px; min-height: 18px; text-align: left;
+    }
+
+    button {
+      margin-top: 20px; width: 100%;
+      background: #1B5E20; color: white;
+      border: none; border-radius: 10px;
+      padding: 14px; font-size: 1rem; font-weight: 700;
+      font-family: inherit; cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover { background: #2E7D32; }
+    button:active { background: #1B5E20; transform: scale(0.98); }
+
+    .footer { margin-top: 24px; font-size: 0.7rem; color: #BDBDBD; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">🥬</div>
+  <h1>NNTN สต๊อกครัว</h1>
+  <div class="sub">ครัวเนื้อในตำนาน — กรุณาใส่รหัสผ่าน</div>
+
+  <label for="pwd">รหัสผ่าน</label>
+  <input type="password" id="pwd" placeholder="••••••••" autocomplete="current-password">
+  <div class="error-msg" id="err"></div>
+
+  <button onclick="doLogin()">เข้าสู่ระบบ</button>
+  <div class="footer">NNTN Stock v2 • สำหรับทีมงานเท่านั้น</div>
+</div>
+
+<script>
+  var AUTH_KEY   = 'nntn_auth_v1';
+  var AUTH_TOKEN = 'bm50bjIwMjY='; // ต้องตรงกับ auth.js
+
+  // ถ้า login อยู่แล้ว → ไปหน้าหลักเลย
+  if (localStorage.getItem(AUTH_KEY) === AUTH_TOKEN) {
+    var next = new URLSearchParams(location.search).get('next');
+    location.replace(next || '/nntn/index.html');
+  }
+
+  function doLogin() {
+    var pwd = document.getElementById('pwd').value;
+    var input = document.getElementById('pwd');
+    var err = document.getElementById('err');
+
+    if (!pwd) {
+      err.textContent = 'กรุณาใส่รหัสผ่าน';
+      input.classList.add('error');
+      return;
+    }
+
+    if (btoa(pwd) === AUTH_TOKEN) {
+      localStorage.setItem(AUTH_KEY, AUTH_TOKEN);
+      var next = new URLSearchParams(location.search).get('next');
+      location.replace(next || '/nntn/index.html');
+    } else {
+      err.textContent = 'รหัสผ่านไม่ถูกต้อง';
+      input.classList.add('error');
+      input.value = '';
+      input.focus();
+    }
+  }
+
+  // Enter key
+  document.getElementById('pwd').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+    document.getElementById('pwd').classList.remove('error');
+    document.getElementById('err').textContent = '';
+  });
+</script>
+</body>
+</html>
