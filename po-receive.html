@@ -466,7 +466,7 @@
     const supplierName = suppliers.find(s => s.id === supplierId)?.name || '';
 
     // Fetch latest PO for this supplier (by supplier_name)
-    const { data: pos } = await sbStock
+    const { data: pos } = await sb
       .from('purchase_orders')
       .select('id,supplier_name,created_at')
       .eq('supplier_name', supplierName)
@@ -475,7 +475,7 @@
 
     if (!pos || pos.length === 0) return toast('ไม่พบ PO ล่าสุดของ supplier นี้');
 
-    const { data: lines } = await sbStock
+    const { data: lines } = await sb
       .from('purchase_order_items')
       .select('item_id,qty_ordered')
       .eq('po_id', pos[0].id);
@@ -598,13 +598,13 @@
 
     // Generate PO number
     const dateStr = date.replace(/-/g, '');
-    const { count } = await sbStock.from('purchase_orders').select('id', { count: 'exact', head: true });
+    const { count } = await sb.from('purchase_orders').select('id', { count: 'exact', head: true });
     const poNum = `PO-${dateStr}-${String((count || 0) + 1).padStart(2, '0')}`;
 
     const supplierName = suppliers.find(s => s.id === supplierId)?.name || '';
 
     // Insert PO
-    const { data: po, error: poErr } = await sbStock
+    const { data: po, error: poErr } = await sb
       .from('purchase_orders')
       .insert({
         po_number:     poNum,
@@ -625,17 +625,13 @@
       return;
     }
 
-    // Get default location (SHOP)
-    const { data: loc } = await sbStock.from('locations').select('id').eq('code', 'SHOP').single();
-
     // Insert PO items
     const poItems = lines.map(l => ({
       po_id:       po.id,
       item_id:     l.item_id,
-      location_id: loc.id,
       qty_ordered: l.qty_ordered
     }));
-    await sbStock.from('purchase_order_items').insert(poItems);
+    await sb.from('purchase_order_items').insert(poItems);
 
     toast(`✅ บันทึก ${poNum} แล้ว (${lines.length} รายการ)`);
 
@@ -654,7 +650,7 @@
     const container = document.getElementById('po-list');
     container.innerHTML = '<div class="empty">กำลังโหลด...</div>';
 
-    const { data: pos } = await sbStock
+    const { data: pos } = await sb
       .from('purchase_orders')
       .select(`id, po_number, supplier_name, status, ordered_at, note,
                purchase_order_items(
@@ -741,35 +737,15 @@
 
     if (receives.length === 0) return toast('ไม่มีรายการที่รับได้');
 
-    // Get SHOP location
-    const { data: loc } = await sbStock.from('locations').select('id').eq('code', 'SHOP').single();
-
-    // INSERT movements (receive)
-    const movements = receives.map(r => ({
-      item_id:       r.item_id,
-      location_id:   loc.id,
-      qty_delta:     r.qty_received,
-      movement_type: 'receive',
-      ref_type:      'po',
-      created_by:    'ไทน์',
-      moved_at:      new Date().toISOString()
-    }));
-
-    const { error: mvErr } = await sbStock.from('movements').insert(movements);
-    if (mvErr) {
-      console.error(mvErr);
-      return toast('❌ บันทึก movements ไม่ได้: ' + mvErr.message);
-    }
-
     // UPDATE purchase_order_items qty_received
     for (const r of receives) {
-      await sbStock.from('purchase_order_items')
+      await sb.from('purchase_order_items')
         .update({ qty_received: r.qty_received })
         .eq('id', r.line_id);
     }
 
     // UPDATE PO status → received
-    await sbStock.from('purchase_orders')
+    await sb.from('purchase_orders')
       .update({ status: 'received', received_at: new Date().toISOString() })
       .eq('id', poId);
 
@@ -782,7 +758,7 @@
     const container = document.getElementById('po-history');
     container.innerHTML = '<div class="empty">กำลังโหลด...</div>';
 
-    const { data: pos } = await sbStock
+    const { data: pos } = await sb
       .from('purchase_orders')
       .select('id, po_number, supplier_name, status, ordered_at, received_at')
       .order('ordered_at', { ascending: false })
