@@ -77,6 +77,38 @@
     .tab-pane.active { display: block; }
     .tab-pane.loss-pane { background: var(--bg-loss); min-height: calc(100vh - 120px); }
 
+    /* Search input */
+    .search-wrap { position: relative; }
+    .search-input {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid var(--border); border-radius: 8px;
+      font-family: 'Sarabun', sans-serif; font-size: 15px;
+      background: #fff;
+    }
+    .search-input:focus { outline: none; border-color: var(--green); }
+    .search-drop {
+      display: none; position: absolute; z-index: 100;
+      width: 100%; background: #fff;
+      border: 1px solid var(--border); border-top: none;
+      border-radius: 0 0 8px 8px;
+      max-height: 240px; overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .search-drop.open { display: block; }
+    .search-option {
+      padding: 10px 14px; cursor: pointer;
+      border-bottom: 1px solid #f5f5f5;
+      font-family: 'Sarabun', sans-serif;
+    }
+    .search-option:hover { background: #f1f8e9; }
+    .search-option .opt-name { font-size: 14px; font-weight: 600; }
+    .search-option .opt-meta { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .search-selected {
+      font-size: 13px; color: var(--green-dark); font-weight: 600;
+      padding: 4px 2px; display: none;
+    }
+    .search-selected.show { display: block; }
+
     /* Form */
     label {
       display: block;
@@ -250,7 +282,7 @@
 <header>
   <a class="back-link" href="./index.html">← กลับหน้าหลัก</a>
   <h1>เบิกของ & บันทึก Loss</h1>
-  <p>Non-Meat Stock — NNTN</p>
+  <p>สต๊อกครัว — NNTN</p>
 </header>
 
 <div class="tabs">
@@ -269,9 +301,12 @@
 
   <div class="form-group">
     <label>รายการที่เบิก</label>
-    <select id="d-item" onchange="onItemChange('d')">
-      <option value="">— เลือกรายการ —</option>
-    </select>
+    <div class="search-wrap">
+      <input class="search-input" id="d-search" type="text" placeholder="พิมพ์ชื่อวัตถุดิบ (3 ตัวขึ้นไป)..." autocomplete="off" oninput="searchItems('d',this.value)" onfocus="searchItems('d',this.value)">
+      <input type="hidden" id="d-item">
+      <div class="search-drop" id="d-drop"></div>
+    </div>
+    <div class="search-selected" id="d-selected"></div>
   </div>
 
   <div id="d-stock-display" style="display:none" class="qty-display">
@@ -311,9 +346,12 @@
 
   <div class="form-group">
     <label>รายการที่เสีย/สูญหาย</label>
-    <select id="l-item" onchange="onItemChange('l')">
-      <option value="">— เลือกรายการ —</option>
-    </select>
+    <div class="search-wrap">
+      <input class="search-input" id="l-search" type="text" placeholder="พิมพ์ชื่อวัตถุดิบ (3 ตัวขึ้นไป)..." autocomplete="off" oninput="searchItems('l',this.value)" onfocus="searchItems('l',this.value)">
+      <input type="hidden" id="l-item">
+      <div class="search-drop" id="l-drop"></div>
+    </div>
+    <div class="search-selected" id="l-selected"></div>
   </div>
 
   <div id="l-stock-display" style="display:none" class="qty-display">
@@ -401,29 +439,17 @@
     document.getElementById('d-date').value = today;
     document.getElementById('l-date').value = today;
 
-    // Load non-meat items
+    // Load non-meat items only
     const { data: itm } = await sb.from('items')
       .select('id,name,unit,category')
       .eq('is_active', true)
-      .not('category', 'in', '("srcp","pkg")')
+      .not('category', 'in', '("srcp","pkg","meat","raw_meat")')
       .order('category').order('name');
     items = itm || [];
 
     // Load locations
     const { data: locs } = await sbStock.from('locations').select('id,code,name').eq('is_active', true);
     locations = locs || [];
-
-    // Populate dropdowns
-    const selD = document.getElementById('d-item');
-    const selL = document.getElementById('l-item');
-    items.forEach(i => {
-      [selD, selL].forEach(sel => {
-        const opt = document.createElement('option');
-        opt.value = i.id;
-        opt.textContent = `${i.name} (${i.unit})`;
-        sel.appendChild(opt);
-      });
-    });
 
     const selLoc = document.getElementById('d-location');
     locations.forEach(l => {
@@ -451,6 +477,51 @@
     el.classList.add('active');
     if (tab === 'log') loadLog();
   }
+
+  // ─── Search items ────────────────────────────────────
+  function searchItems(prefix, val) {
+    const drop = document.getElementById(prefix + '-drop');
+    const q = val.trim();
+    if (q.length < 3) { drop.classList.remove('open'); return; }
+
+    const matches = items.filter(i =>
+      i.name.toLowerCase().includes(q.toLowerCase()) ||
+      (i.category || '').toLowerCase().includes(q.toLowerCase())
+    ).slice(0, 20);
+
+    if (matches.length === 0) {
+      drop.innerHTML = '<div class="search-option"><div class="opt-name" style="color:#999">ไม่พบรายการ</div></div>';
+    } else {
+      drop.innerHTML = matches.map(i => `
+        <div class="search-option" onclick="selectItem('${prefix}','${i.id}','${i.name.replace(/'/g,"\\'")}','${i.unit}','${i.category||''}')">
+          <div class="opt-name">${i.name}</div>
+          <div class="opt-meta">${i.unit} · ${i.category || '-'}</div>
+        </div>
+      `).join('');
+    }
+    drop.classList.add('open');
+  }
+
+  function selectItem(prefix, id, name, unit, category) {
+    document.getElementById(prefix + '-item').value = id;
+    document.getElementById(prefix + '-search').value = name;
+    const sel = document.getElementById(prefix + '-selected');
+    sel.textContent = `✓ ${name} · ${unit}`;
+    sel.classList.add('show');
+    document.getElementById(prefix + '-drop').classList.remove('open');
+    onItemChange(prefix);
+  }
+
+  // Close dropdowns on outside click
+  document.addEventListener('click', function(e) {
+    ['d','l'].forEach(prefix => {
+      const wrap = document.getElementById(prefix + '-search');
+      const drop = document.getElementById(prefix + '-drop');
+      if (drop && wrap && !wrap.parentElement.contains(e.target)) {
+        drop.classList.remove('open');
+      }
+    });
+  });
 
   // ─── Item stock display ───────────────────────────────
   function onItemChange(prefix) {
@@ -511,6 +582,9 @@
 
     toast('✅ เบิกแล้ว — stock อัปเดตอัตโนมัติ');
     document.getElementById('d-item').value = '';
+    document.getElementById('d-search').value = '';
+    const dSel = document.getElementById('d-selected');
+    dSel.textContent = ''; dSel.classList.remove('show');
     document.getElementById('d-qty').value = '';
     document.getElementById('d-note').value = '';
     document.getElementById('d-stock-display').style.display = 'none';
@@ -562,6 +636,9 @@
 
     toast(`✅ บันทึก ${type === 'loss' ? 'Loss' : 'Waste'} แล้ว`);
     document.getElementById('l-item').value = '';
+    document.getElementById('l-search').value = '';
+    const lSel = document.getElementById('l-selected');
+    lSel.textContent = ''; lSel.classList.remove('show');
     document.getElementById('l-qty').value = '';
     document.getElementById('l-note').value = '';
     document.getElementById('l-stock-display').style.display = 'none';
