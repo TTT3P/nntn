@@ -162,7 +162,7 @@
   <div class="header-right">
     <div class="field-row">
       <label>วันที่นับ:</label>
-      <span class="field-line"></span>
+      <span class="field-line" id="date-fill" style="display:inline-flex;align-items:flex-end;padding-bottom:1px;font-size:12px;color:#212121;"></span>
     </div>
     <div class="field-row">
       <label>ผู้นับ:</label>
@@ -296,6 +296,12 @@
 
     document.getElementById('content').innerHTML = html;
     document.getElementById('footer').style.display = 'flex';
+  }
+
+  // Pre-fill today's date
+  var dateEl = document.getElementById('date-fill');
+  if (dateEl) {
+    dateEl.textContent = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   loadItems();

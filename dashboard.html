@@ -2,8 +2,9 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard สต๊อก — NNTN</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -164,6 +165,16 @@
     .chip-ORDER_NOW  { background: #FFF3E0; color: var(--orange); }
     .chip-LOW        { background: #FFFDE7; color: var(--yellow); }
     .chip-OK         { background: #E8F5E9; color: var(--green-dark); }
+    .badge-stale {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #FFF9C4;
+      color: #827717;
+      margin-left: 4px;
+    }
 
     /* Nav links */
     .nav-links {
@@ -205,7 +216,7 @@
 
 <header>
   <div style="display:flex; align-items:center; gap:12px;">
-    <a href="/" style="color:white; opacity:0.8; text-decoration:none; font-size:20px; line-height:1;">‹</a>
+    <a href="index.html" style="color:white; opacity:0.8; text-decoration:none; font-size:20px; line-height:1; min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center;">‹</a>
     <div>
       <h1>📊 Dashboard สต๊อก Non-Meat</h1>
       <p id="date-display"></p>
@@ -230,11 +241,11 @@
 
 <!-- Filter tabs -->
 <div class="filter-tabs">
-  <button class="tab active" onclick="setFilter('all')">ทั้งหมด</button>
-  <button class="tab" onclick="setFilter('OUT')">🔴 หมด</button>
-  <button class="tab" onclick="setFilter('ORDER_NOW')">🟠 ต้องสั่ง</button>
-  <button class="tab" onclick="setFilter('LOW')">🟡 ใกล้หมด</button>
-  <button class="tab" onclick="setFilter('OK')">🟢 ปกติ</button>
+  <button class="tab active" onclick="setFilter('all',this)">ทั้งหมด</button>
+  <button class="tab" onclick="setFilter('OUT',this)">🔴 หมด</button>
+  <button class="tab" onclick="setFilter('ORDER_NOW',this)">🟠 ต้องสั่ง</button>
+  <button class="tab" onclick="setFilter('LOW',this)">🟡 ใกล้หมด</button>
+  <button class="tab" onclick="setFilter('OK',this)">🟢 ปกติ</button>
 </div>
 
 <!-- Category chips -->
@@ -278,10 +289,21 @@ const d = new Date();
 document.getElementById('date-display').textContent =
   d.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-function setFilter(f) {
+function setFilter(f, triggerEl) {
   activeFilter = f;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  event.target.classList.add('active');
+  // triggerEl = element clicked (from onclick), or find by data if called programmatically
+  if (triggerEl) {
+    triggerEl.classList.add('active');
+  } else {
+    // find and activate the right tab button
+    document.querySelectorAll('.tab').forEach(t => {
+      if ((f === 'all' && t.textContent.startsWith('ทั้งหมด')) ||
+          t.getAttribute('onclick') === "setFilter('" + f + "')") {
+        t.classList.add('active');
+      }
+    });
+  }
   renderStock();
 }
 
@@ -395,9 +417,13 @@ function renderStock() {
 
     const qtyClass = item.current_qty === 0 ? 'zero' : (item.status === 'ORDER_NOW' || item.status === 'LOW') ? 'low' : 'ok';
     const chipClass = `chip-${item.status}`;
+    const isStale = item.last_counted
+      ? (Date.now() - new Date(item.last_counted).getTime()) > 3 * 24 * 60 * 60 * 1000
+      : true;
+    const staleTag = isStale ? '<span class="badge-stale">⚠️ ข้อมูลอาจไม่ up-to-date</span>' : '';
     const lastInfo = item.last_counted
-      ? `นับล่าสุด: ${fmtDateTime(item.last_counted)} โดย ${item.last_counted_by}`
-      : 'ยังไม่มีการนับ';
+      ? `นับล่าสุด: ${fmtDateTime(item.last_counted)} โดย ${item.last_counted_by}${staleTag}`
+      : `ยังไม่มีการนับ${staleTag}`;
 
     html += `
       <div class="stock-row status-${item.status}">
@@ -419,6 +445,10 @@ function renderStock() {
 
   document.getElementById('stock-container').innerHTML = html;
 }
+
+// Apply ?filter= URL param if present
+const urlFilter = new URLSearchParams(location.search).get('filter');
+if (urlFilter) setFilter(urlFilter);
 
 loadStock();
 </script>

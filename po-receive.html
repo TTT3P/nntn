@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ใบสั่งซื้อ & รับของ — NNTN</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -35,17 +35,25 @@
       top: 0;
       z-index: 10;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
     header h1 { font-size: 19px; font-weight: bold; }
     header p  { font-size: 12px; opacity: 0.7; margin-top: 2px; }
-    .back-link {
-      display: inline-block;
-      font-size: 12px;
-      color: rgba(255,255,255,0.7);
+    .back-arrow {
+      color: rgba(255,255,255,0.8);
       text-decoration: none;
-      margin-bottom: 6px;
+      font-size: 28px;
+      line-height: 1;
+      flex-shrink: 0;
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .back-link:hover { color: #fff; }
+    .back-arrow:hover { color: #fff; }
 
     /* Tabs */
     .tabs {
@@ -114,10 +122,29 @@
       border-radius: 6px;
       color: var(--red);
       font-size: 18px;
-      width: 36px;
-      height: 36px;
+      width: 44px;
+      height: 44px;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
+    .btn-copy-po {
+      width: 100%;
+      padding: 9px 12px;
+      background: #E3F2FD;
+      border: 1px dashed var(--blue);
+      border-radius: 8px;
+      color: var(--blue);
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 14px;
+      display: none;
+    }
+    .btn-copy-po:hover { background: #BBDEFB; }
     .btn-add-line {
       width: 100%;
       padding: 10px;
@@ -298,9 +325,11 @@
 <body>
 
 <header>
-  <a class="back-link" href="./index.html">← กลับหน้าหลัก</a>
-  <h1>ใบสั่งซื้อ & รับของ</h1>
-  <p>สต๊อกครัว — NNTN</p>
+  <a class="back-arrow" href="./index.html">‹</a>
+  <div>
+    <h1>ใบสั่งซื้อ & รับของ</h1>
+    <p>สต๊อกครัว — NNTN</p>
+  </div>
 </header>
 
 <!-- Tabs -->
@@ -315,10 +344,12 @@
 
   <div class="form-group">
     <label>Supplier</label>
-    <select id="sel-supplier">
+    <select id="sel-supplier" onchange="onSupplierChange()">
       <option value="">— เลือก supplier —</option>
     </select>
   </div>
+
+  <button class="btn-copy-po" id="btn-copy-po" onclick="copyLastPO()">📋 Copy จาก PO ล่าสุด (supplier นี้)</button>
 
   <div class="form-group">
     <label>วันที่สั่ง</label>
@@ -421,6 +452,67 @@
     loadPOList(status);
   }
 
+  // ─── Copy last PO ────────────────────────────────────
+  function onSupplierChange() {
+    const supplierId = document.getElementById('sel-supplier').value;
+    const btn = document.getElementById('btn-copy-po');
+    btn.style.display = supplierId ? 'block' : 'none';
+  }
+
+  async function copyLastPO() {
+    const supplierId = document.getElementById('sel-supplier').value;
+    if (!supplierId) return;
+    const supplierName = suppliers.find(s => s.id === supplierId)?.name || '';
+
+    // Fetch latest PO for this supplier (by supplier_name)
+    const { data: pos } = await sbStock
+      .from('purchase_orders')
+      .select('id,supplier_name,created_at')
+      .eq('supplier_name', supplierName)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (!pos || pos.length === 0) return toast('ไม่พบ PO ล่าสุดของ supplier นี้');
+
+    const { data: lines } = await sbStock
+      .from('purchase_order_items')
+      .select('item_id,qty_ordered')
+      .eq('po_id', pos[0].id);
+
+    if (!lines || lines.length === 0) return toast('PO ล่าสุดไม่มีรายการ');
+
+    // Clear existing lines
+    document.getElementById('line-items').innerHTML = '';
+    lineCount = 0;
+
+    // Add each line pre-filled
+    lines.forEach(l => {
+      const container = document.getElementById('line-items');
+      const idx = lineCount++;
+      const item = items.find(i => i.id === l.item_id);
+      const div = document.createElement('div');
+      div.className = 'line-item';
+      div.dataset.idx = idx;
+      div.innerHTML = `
+        <div class="search-wrap">
+          <input class="search-input" id="ls-${idx}" type="text"
+            placeholder="พิมพ์ชื่อวัตถุดิบ..." autocomplete="off"
+            value="${item ? item.name.replace(/"/g,'&quot;') : ''}"
+            oninput="searchLine(${idx},this.value)" onfocus="searchLine(${idx},this.value)">
+          <input type="hidden" id="li-${idx}" value="${l.item_id}">
+          <div class="search-drop" id="ld-${idx}"></div>
+        </div>
+        <input type="number" id="lq-${idx}" min="0.01" step="0.01" placeholder="จำนวน"
+          value="${l.qty_ordered}"
+          style="padding:8px;border:1px solid #ddd;border-radius:6px;font-family:'Sarabun',sans-serif;font-size:14px;width:100%;">
+        <button class="btn-remove" onclick="this.closest('.line-item').remove()">×</button>
+      `;
+      container.appendChild(div);
+    });
+
+    toast('✅ Copy ' + lines.length + ' รายการจาก PO ล่าสุดแล้ว');
+  }
+
   // ─── Line items (create PO) ───────────────────────────
   function addLine() {
     const container = document.getElementById('line-items');
@@ -431,7 +523,7 @@
     div.innerHTML = `
       <div class="search-wrap">
         <input class="search-input" id="ls-${idx}" type="text"
-          placeholder="พิมพ์ชื่อวัตถุดิบ (3+)..." autocomplete="off"
+          placeholder="พิมพ์ชื่อวัตถุดิบ..." autocomplete="off"
           oninput="searchLine(${idx},this.value)" onfocus="searchLine(${idx},this.value)">
         <input type="hidden" id="li-${idx}">
         <div class="search-drop" id="ld-${idx}"></div>
@@ -446,7 +538,7 @@
   function searchLine(idx, val) {
     const drop = document.getElementById('ld-' + idx);
     const q = val.trim();
-    if (q.length < 3) { drop.classList.remove('open'); return; }
+    if (q.length < 1) { drop.classList.remove('open'); return; }
 
     const matches = items.filter(i =>
       i.name.toLowerCase().includes(q.toLowerCase()) ||
@@ -611,7 +703,7 @@
             <div class="qty-ordered">สั่ง: ${l.qty_ordered}</div>
             ${po.status === 'ordered' ? `
               <input class="qty-received-input" type="number" min="0" step="0.01"
-                     placeholder="${l.qty_ordered}" value="${l.qty_ordered}"
+                     placeholder="${l.qty_ordered}" value=""
                      data-line-id="${l.id}" data-item-id="${l.items?.id}" data-qty-ordered="${l.qty_ordered}" />
             ` : `<div style="text-align:center;font-size:13px;color:var(--green-dark);font-weight:700">
                    รับ ${l.qty_received || 0}

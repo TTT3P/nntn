@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>สต๊อกครัว — NNTN</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -101,13 +101,13 @@
 </header>
 
 <div class="status-bar" id="status-bar">
-  <div class="status-item red">   <div class="num" id="s-out">—</div>  <div class="lbl">🔴 หมด</div></div>
+  <a href="dashboard.html?filter=OUT"       class="status-item red"    style="text-decoration:none;color:inherit;"><div class="num" id="s-out">—</div>  <div class="lbl">🔴 หมด</div></a>
   <div class="divider"></div>
-  <div class="status-item orange"><div class="num" id="s-order">—</div><div class="lbl">🟠 ต้องสั่ง</div></div>
+  <a href="dashboard.html?filter=ORDER_NOW" class="status-item orange" style="text-decoration:none;color:inherit;"><div class="num" id="s-order">—</div><div class="lbl">🟠 ต้องสั่ง</div></a>
   <div class="divider"></div>
-  <div class="status-item yellow"><div class="num" id="s-low">—</div>  <div class="lbl">🟡 ใกล้หมด</div></div>
+  <a href="dashboard.html?filter=LOW"       class="status-item yellow" style="text-decoration:none;color:inherit;"><div class="num" id="s-low">—</div>  <div class="lbl">🟡 ใกล้หมด</div></a>
   <div class="divider"></div>
-  <div class="status-item green"> <div class="num" id="s-ok">—</div>   <div class="lbl">🟢 ปกติ</div></div>
+  <a href="dashboard.html?filter=OK"        class="status-item green"  style="text-decoration:none;color:inherit;"><div class="num" id="s-ok">—</div>   <div class="lbl">🟢 ปกติ</div></a>
 </div>
 
 <div class="date-bar" id="date-bar">กำลังโหลด...</div>
