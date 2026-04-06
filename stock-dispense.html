@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>เบิกของ & บันทึก Loss — NNTN</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-dark: #1B5E20;
+      --green: #4CAF50;
+      --orange-dark: #E65100;
+      --orange: #FF6D00;
+      --red-dark: #B71C1C;
+      --red: #E53935;
+      --bg: #F1F8E9;
+      --bg-loss: #FFF3E0;
+      --border: #e0e0e0;
+      --muted: #757575;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--bg);
+      color: #212121;
+      font-size: 16px;
+      padding-bottom: 40px;
+    }
+
+    header {
+      background: var(--green-dark);
+      color: white;
+      padding: 14px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    header h1 { font-size: 19px; font-weight: bold; }
+    header p  { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+    .back-link {
+      display: inline-block;
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      margin-bottom: 6px;
+    }
+    .back-link:hover { color: #fff; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: #fff;
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 68px;
+      z-index: 9;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px 8px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+    }
+    .tab-btn.dispense.active { color: var(--green-dark); border-bottom-color: var(--green); }
+    .tab-btn.loss.active     { color: var(--orange-dark); border-bottom-color: var(--orange); }
+    .tab-btn.log.active      { color: #1565C0; border-bottom-color: #1565C0; }
+
+    .tab-pane { display: none; padding: 16px; }
+    .tab-pane.active { display: block; }
+    .tab-pane.loss-pane { background: var(--bg-loss); min-height: calc(100vh - 120px); }
+
+    /* Form */
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 4px;
+    }
+    select, input[type="text"], input[type="number"], input[type="date"], textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 15px;
+      background: #fff;
+    }
+    textarea { resize: vertical; min-height: 72px; }
+    .form-group { margin-bottom: 14px; }
+
+    /* Reason pills */
+    .reason-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .reason-pill {
+      padding: 10px 8px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .reason-pill:hover { border-color: var(--orange); color: var(--orange-dark); }
+    .reason-pill.selected {
+      background: var(--orange-dark);
+      border-color: var(--orange-dark);
+      color: #fff;
+    }
+    .reason-pill .pill-icon { font-size: 1.3rem; display: block; margin-bottom: 2px; }
+
+    /* Qty display */
+    .qty-display {
+      background: #fff;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .qty-display .item-info { flex: 1; }
+    .qty-display .item-name { font-weight: 700; font-size: 15px; }
+    .qty-display .item-stock { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .qty-display.warn { border-color: var(--orange); }
+    .qty-display.danger { border-color: var(--red); background: #fff5f5; }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn-dispense { background: var(--green-dark); color: #fff; }
+    .btn-loss     { background: var(--orange-dark); color: #fff; }
+    .btn:disabled { background: #90a4ae; cursor: default; }
+
+    /* Log */
+    .log-filter {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .filter-pill {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+      color: #555;
+    }
+    .filter-pill.active { background: #1565C0; color: #fff; border-color: #1565C0; }
+
+    .log-card {
+      background: #fff;
+      border-radius: 10px;
+      border-left: 4px solid var(--border);
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .log-card.dispense { border-left-color: var(--green); }
+    .log-card.loss     { border-left-color: var(--orange); }
+    .log-card.waste    { border-left-color: var(--red); }
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 4px;
+    }
+    .log-item-name { font-weight: 700; font-size: 14px; }
+    .log-qty { font-size: 14px; font-weight: 700; color: var(--red-dark); }
+    .log-qty.dispense { color: var(--green-dark); }
+    .log-meta { font-size: 12px; color: var(--muted); }
+    .log-reason {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-top: 4px;
+      background: #fff3e0;
+      color: var(--orange-dark);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #212121;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s;
+      max-width: 90vw;
+      text-align: center;
+    }
+    .toast.show { opacity: 1; }
+
+    .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin: 6px 0 10px;
+    }
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="back-link" href="./index.html">← กลับหน้าหลัก</a>
+  <h1>เบิกของ & บันทึก Loss</h1>
+  <p>Non-Meat Stock — NNTN</p>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn dispense active" onclick="switchTab('dispense', this)">📦 เบิกของ</button>
+  <button class="tab-btn loss"            onclick="switchTab('loss', this)">⚠️ Loss / Waste</button>
+  <button class="tab-btn log"             onclick="switchTab('log', this)">📋 Log วันนี้</button>
+</div>
+
+<!-- ═══════════ TAB: เบิกของ ═══════════ -->
+<div id="tab-dispense" class="tab-pane active">
+
+  <div class="form-group">
+    <label>วันที่เบิก</label>
+    <input type="date" id="d-date" />
+  </div>
+
+  <div class="form-group">
+    <label>รายการที่เบิก</label>
+    <select id="d-item" onchange="onItemChange('d')">
+      <option value="">— เลือกรายการ —</option>
+    </select>
+  </div>
+
+  <div id="d-stock-display" style="display:none" class="qty-display">
+    <div class="item-info">
+      <div class="item-name" id="d-stock-name"></div>
+      <div class="item-stock">สต๊อกปัจจุบัน: <span id="d-stock-qty" style="font-weight:700"></span></div>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>จำนวนที่เบิก</label>
+    <input type="number" id="d-qty" min="0.01" step="0.01" placeholder="0" />
+  </div>
+
+  <div class="form-group">
+    <label>Location</label>
+    <select id="d-location">
+      <option value="">— เลือก location —</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label>หมายเหตุ (optional)</label>
+    <input type="text" id="d-note" placeholder="เช่น เบิกไปใช้พรุ่งนี้" />
+  </div>
+
+  <button class="btn btn-dispense" onclick="submitDispense()">📦 ยืนยันเบิกของ</button>
+</div>
+
+<!-- ═══════════ TAB: Loss / Waste ═══════════ -->
+<div id="tab-loss" class="tab-pane loss-pane">
+
+  <div class="form-group">
+    <label>วันที่</label>
+    <input type="date" id="l-date" />
+  </div>
+
+  <div class="form-group">
+    <label>รายการที่เสีย/สูญหาย</label>
+    <select id="l-item" onchange="onItemChange('l')">
+      <option value="">— เลือกรายการ —</option>
+    </select>
+  </div>
+
+  <div id="l-stock-display" style="display:none" class="qty-display">
+    <div class="item-info">
+      <div class="item-name" id="l-stock-name"></div>
+      <div class="item-stock">สต๊อกปัจจุบัน: <span id="l-stock-qty" style="font-weight:700"></span></div>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>จำนวน</label>
+    <input type="number" id="l-qty" min="0.01" step="0.01" placeholder="0" />
+  </div>
+
+  <div class="form-group">
+    <label>ประเภท</label>
+    <select id="l-type">
+      <option value="loss">Loss — เสียหาย/สูญหาย</option>
+      <option value="waste">Waste — ของเหลือทิ้ง</option>
+    </select>
+  </div>
+
+  <div class="section-label">เหตุผล (บังคับเลือก)</div>
+  <div class="reason-grid" id="reason-grid">
+    <button class="reason-pill" data-reason="expired"    onclick="selectReason(this)">
+      <span class="pill-icon">🗓️</span>หมดอายุ
+    </button>
+    <button class="reason-pill" data-reason="damaged"    onclick="selectReason(this)">
+      <span class="pill-icon">💥</span>เสียหาย
+    </button>
+    <button class="reason-pill" data-reason="spilled"    onclick="selectReason(this)">
+      <span class="pill-icon">💧</span>หกหาย
+    </button>
+    <button class="reason-pill" data-reason="count_diff" onclick="selectReason(this)">
+      <span class="pill-icon">📊</span>นับไม่ตรง
+    </button>
+    <button class="reason-pill" data-reason="other"      onclick="selectReason(this)" style="grid-column: span 2;">
+      <span class="pill-icon">📝</span>อื่นๆ (ระบุในหมายเหตุ)
+    </button>
+  </div>
+
+  <div class="form-group">
+    <label>หมายเหตุ <span id="l-note-req" style="color:var(--red);display:none">*บังคับ</span></label>
+    <textarea id="l-note" placeholder="อธิบายเพิ่มเติม..."></textarea>
+  </div>
+
+  <button class="btn btn-loss" onclick="submitLoss()">⚠️ บันทึก Loss/Waste</button>
+</div>
+
+<!-- ═══════════ TAB: Log ═══════════ -->
+<div id="tab-log" class="tab-pane">
+
+  <div class="log-filter">
+    <button class="filter-pill active" onclick="filterLog('all', this)">ทั้งหมด</button>
+    <button class="filter-pill" onclick="filterLog('dispense', this)">เบิก</button>
+    <button class="filter-pill" onclick="filterLog('loss', this)">Loss</button>
+    <button class="filter-pill" onclick="filterLog('waste', this)">Waste</button>
+  </div>
+
+  <div id="log-list"><div class="empty">กำลังโหลด...</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+  const sb      = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const sbStock = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'stock' } });
+
+  let items     = [];   // public.items
+  let locations = [];   // stock.locations
+  let stockMap  = {};   // item_id → current_qty (from stock.current_stock)
+  let selectedReason = '';
+  let logFilter = 'all';
+
+  const REASON_LABELS = {
+    expired: 'หมดอายุ', damaged: 'เสียหาย',
+    spilled: 'หกหาย', count_diff: 'นับไม่ตรง', other: 'อื่นๆ'
+  };
+
+  // ─── Init ────────────────────────────────────────────
+  (async function init() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('d-date').value = today;
+    document.getElementById('l-date').value = today;
+
+    // Load non-meat items
+    const { data: itm } = await sb.from('items')
+      .select('id,name,unit,category')
+      .eq('is_active', true)
+      .not('category', 'in', '("srcp","pkg")')
+      .order('category').order('name');
+    items = itm || [];
+
+    // Load locations
+    const { data: locs } = await sbStock.from('locations').select('id,code,name').eq('is_active', true);
+    locations = locs || [];
+
+    // Populate dropdowns
+    const selD = document.getElementById('d-item');
+    const selL = document.getElementById('l-item');
+    items.forEach(i => {
+      [selD, selL].forEach(sel => {
+        const opt = document.createElement('option');
+        opt.value = i.id;
+        opt.textContent = `${i.name} (${i.unit})`;
+        sel.appendChild(opt);
+      });
+    });
+
+    const selLoc = document.getElementById('d-location');
+    locations.forEach(l => {
+      const opt = document.createElement('option');
+      opt.value = l.id;
+      opt.textContent = `${l.code} — ${l.name}`;
+      selLoc.appendChild(opt);
+    });
+    // Default SHOP
+    const shop = locations.find(l => l.code === 'SHOP');
+    if (shop) selLoc.value = shop.id;
+
+    // Load current stock snapshot
+    const { data: cs } = await sbStock.from('current_stock').select('item_id,current_qty');
+    (cs || []).forEach(r => { stockMap[r.item_id] = parseFloat(r.current_qty || 0); });
+
+    loadLog();
+  })();
+
+  // ─── Tabs ────────────────────────────────────────────
+  function switchTab(tab, el) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    el.classList.add('active');
+    if (tab === 'log') loadLog();
+  }
+
+  // ─── Item stock display ───────────────────────────────
+  function onItemChange(prefix) {
+    const itemId = document.getElementById(prefix + '-item').value;
+    const display = document.getElementById(prefix + '-stock-display');
+    if (!itemId) { display.style.display = 'none'; return; }
+
+    const item = items.find(i => i.id === itemId);
+    const qty  = stockMap[itemId] ?? null;
+
+    document.getElementById(prefix + '-stock-name').textContent = item?.name || '';
+    document.getElementById(prefix + '-stock-qty').textContent =
+      qty !== null ? `${qty} ${item?.unit || ''}` : 'ไม่ทราบ';
+
+    display.className = 'qty-display';
+    if (qty !== null && qty <= 0) display.classList.add('danger');
+    else if (qty !== null && qty < 2) display.classList.add('warn');
+
+    display.style.display = 'flex';
+  }
+
+  // ─── Reason select ───────────────────────────────────
+  function selectReason(el) {
+    document.querySelectorAll('.reason-pill').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedReason = el.dataset.reason;
+    const noteReq = document.getElementById('l-note-req');
+    noteReq.style.display = selectedReason === 'other' ? 'inline' : 'none';
+  }
+
+  // ─── Submit Dispense ─────────────────────────────────
+  async function submitDispense() {
+    const itemId   = document.getElementById('d-item').value;
+    const qty      = parseFloat(document.getElementById('d-qty').value);
+    const locId    = document.getElementById('d-location').value;
+    const note     = document.getElementById('d-note').value.trim();
+    const movedAt  = document.getElementById('d-date').value;
+
+    if (!itemId) return toast('เลือกรายการก่อนครับ');
+    if (!qty || qty <= 0) return toast('ใส่จำนวนด้วยครับ');
+    if (!locId) return toast('เลือก location ด้วยครับ');
+
+    const { error } = await sbStock.from('movements').insert({
+      item_id:       itemId,
+      location_id:   locId,
+      qty_delta:     -qty,
+      movement_type: 'dispense',
+      ref_type:      'manual',
+      note:          note || null,
+      created_by:    'ไทน์',
+      moved_at:      movedAt + 'T00:00:00+07:00'
+    });
+
+    if (error) { console.error(error); return toast('❌ ' + error.message); }
+
+    // Update local stock map
+    if (stockMap[itemId] !== undefined) stockMap[itemId] -= qty;
+
+    toast('✅ เบิกแล้ว — stock อัปเดตอัตโนมัติ');
+    document.getElementById('d-item').value = '';
+    document.getElementById('d-qty').value = '';
+    document.getElementById('d-note').value = '';
+    document.getElementById('d-stock-display').style.display = 'none';
+  }
+
+  // ─── Submit Loss/Waste ───────────────────────────────
+  async function submitLoss() {
+    const itemId  = document.getElementById('l-item').value;
+    const qty     = parseFloat(document.getElementById('l-qty').value);
+    const type    = document.getElementById('l-type').value;
+    const note    = document.getElementById('l-note').value.trim();
+    const movedAt = document.getElementById('l-date').value;
+
+    if (!itemId)         return toast('เลือกรายการก่อนครับ');
+    if (!qty || qty <= 0) return toast('ใส่จำนวนด้วยครับ');
+    if (!selectedReason) return toast('เลือกเหตุผลด้วยครับ');
+    if (selectedReason === 'other' && !note) return toast('กรณีอื่นๆ ต้องระบุหมายเหตุครับ');
+
+    // Get SHOP location for loss default
+    const loc = locations.find(l => l.code === 'SHOP');
+    if (!loc) return toast('ไม่พบ location');
+
+    // INSERT movement
+    const { error: mvErr } = await sbStock.from('movements').insert({
+      item_id:       itemId,
+      location_id:   loc.id,
+      qty_delta:     -qty,
+      movement_type: type,
+      ref_type:      'manual',
+      note:          `[${selectedReason}] ${note}`.trim(),
+      created_by:    'ไทน์',
+      moved_at:      movedAt + 'T00:00:00+07:00'
+    });
+    if (mvErr) { console.error(mvErr); return toast('❌ ' + mvErr.message); }
+
+    // INSERT stock_adjustments
+    await sbStock.from('stock_adjustments').insert({
+      item_id:     itemId,
+      date:        movedAt,
+      direction:   'loss',
+      reason:      selectedReason,
+      delta_g:     null,
+      recorded_by: 'ไทน์',
+      note:        note || null
+    });
+
+    // Update local stock map
+    if (stockMap[itemId] !== undefined) stockMap[itemId] -= qty;
+
+    toast(`✅ บันทึก ${type === 'loss' ? 'Loss' : 'Waste'} แล้ว`);
+    document.getElementById('l-item').value = '';
+    document.getElementById('l-qty').value = '';
+    document.getElementById('l-note').value = '';
+    document.getElementById('l-stock-display').style.display = 'none';
+    document.querySelectorAll('.reason-pill').forEach(p => p.classList.remove('selected'));
+    selectedReason = '';
+    document.getElementById('l-note-req').style.display = 'none';
+  }
+
+  // ─── Load Log ────────────────────────────────────────
+  async function loadLog() {
+    const container = document.getElementById('log-list');
+    container.innerHTML = '<div class="empty">กำลังโหลด...</div>';
+
+    const today = new Date().toISOString().split('T')[0];
+    let query = sbStock.from('movements')
+      .select('id,item_id,qty_delta,movement_type,note,moved_at,created_by')
+      .gte('moved_at', today + 'T00:00:00+00:00')
+      .in('movement_type', logFilter === 'all' ? ['dispense','loss','waste'] : [logFilter])
+      .order('moved_at', { ascending: false });
+
+    const { data: mvs } = await query;
+
+    if (!mvs || mvs.length === 0) {
+      container.innerHTML = '<div class="empty">ไม่มีรายการวันนี้</div>';
+      return;
+    }
+
+    // Build item name map
+    const itemNameMap = {};
+    items.forEach(i => { itemNameMap[i.id] = i.name; });
+
+    container.innerHTML = mvs.map(m => {
+      const name = itemNameMap[m.item_id] || m.item_id;
+      const time = new Date(m.moved_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+      const absQty = Math.abs(m.qty_delta);
+      const typeLabel = { dispense: 'เบิกออก', loss: 'Loss', waste: 'Waste' }[m.movement_type] || m.movement_type;
+
+      // Parse reason from note
+      const reasonMatch = (m.note || '').match(/^\[(\w+)\]/);
+      const reason = reasonMatch ? (REASON_LABELS[reasonMatch[1]] || reasonMatch[1]) : null;
+
+      return `
+        <div class="log-card ${m.movement_type}">
+          <div class="log-header">
+            <div class="log-item-name">${name}</div>
+            <div class="log-qty ${m.movement_type === 'dispense' ? 'dispense' : ''}">
+              ${m.movement_type === 'dispense' ? '-' : '-'}${absQty}
+            </div>
+          </div>
+          <div class="log-meta">${typeLabel} · ${time} · ${m.created_by || '-'}</div>
+          ${reason ? `<span class="log-reason">${reason}</span>` : ''}
+          ${m.note && !reasonMatch ? `<div class="log-meta" style="margin-top:4px">${m.note}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function filterLog(type, el) {
+    logFilter = type;
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    loadLog();
+  }
+
+  // ─── Toast ───────────────────────────────────────────
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>
