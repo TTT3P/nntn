@@ -77,8 +77,8 @@
     .tab-pane.active { display: block; }
     .tab-pane.loss-pane { background: var(--bg-loss); min-height: calc(100vh - 120px); }
 
-    /* Search input */
-    .search-wrap { position: relative; }
+    /* Search */
+    .search-wrap { position: relative; flex: 1; }
     .search-input {
       width: 100%; padding: 10px 12px;
       border: 1px solid var(--border); border-radius: 8px;
@@ -108,6 +108,71 @@
       padding: 4px 2px; display: none;
     }
     .search-selected.show { display: block; }
+
+    /* Dispense list (new) */
+    .d-search-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+    .btn-add-item {
+      padding: 10px 16px;
+      background: var(--green-dark);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      height: 43px;
+    }
+    .btn-add-item:disabled { background: #90a4ae; cursor: default; }
+    .d-pending-label {
+      font-size: 13px; color: var(--green-dark); font-weight: 600;
+      padding: 4px 2px; display: none; margin-top: 4px;
+    }
+    .dispense-list {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    .dispense-row {
+      display: grid;
+      grid-template-columns: 1fr 76px 36px;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .dispense-row:last-child { border-bottom: none; }
+    .dr-name { font-size: 14px; font-weight: 600; }
+    .dr-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .dr-qty-input {
+      padding: 7px 6px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      text-align: center;
+      width: 100%;
+    }
+    .dr-qty-input:focus { outline: none; border-color: var(--green); }
+    .btn-del {
+      background: #ffebee;
+      border: none;
+      border-radius: 6px;
+      color: var(--red);
+      font-size: 18px;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
 
     /* Form */
     label {
@@ -157,7 +222,7 @@
     }
     .reason-pill .pill-icon { font-size: 1.3rem; display: block; margin-bottom: 2px; }
 
-    /* Qty display */
+    /* Stock qty display (loss tab) */
     .qty-display {
       background: #fff;
       border: 2px solid var(--border);
@@ -261,7 +326,7 @@
     }
     .toast.show { opacity: 1; }
 
-    .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+    .empty { text-align: center; padding: 28px 20px; color: var(--muted); font-size: 14px; }
     .section-label {
       font-size: 12px;
       font-weight: 700;
@@ -291,49 +356,42 @@
   <button class="tab-btn log"             onclick="switchTab('log', this)">📋 Log วันนี้</button>
 </div>
 
-<!-- ═══════════ TAB: เบิกของ ═══════════ -->
+<!-- ═══════════ TAB: เบิกของ (LIST FLOW) ═══════════ -->
 <div id="tab-dispense" class="tab-pane active">
 
+  <!-- Search + Add button -->
   <div class="form-group">
+    <label>เพิ่มวัตถุดิบ</label>
+    <div class="d-search-row">
+      <div class="search-wrap">
+        <input class="search-input" id="d-search" type="text"
+          placeholder="พิมพ์ชื่อวัตถุดิบ (3 ตัวขึ้นไป)..." autocomplete="off"
+          oninput="searchDispense(this.value)" onfocus="searchDispense(this.value)">
+        <input type="hidden" id="d-item-pending">
+        <div class="search-drop" id="d-drop"></div>
+      </div>
+      <button class="btn-add-item" id="btn-add-item" onclick="addToList()">+ เพิ่ม</button>
+    </div>
+    <div class="d-pending-label" id="d-pending-label"></div>
+  </div>
+
+  <!-- List -->
+  <div class="section-label">รายการที่เบิก <span id="d-count" style="font-weight:400;text-transform:none;letter-spacing:0"></span></div>
+  <div class="dispense-list" id="dispense-list">
+    <div class="empty">ยังไม่มีรายการ — ค้นหาแล้วกด + เพิ่ม</div>
+  </div>
+
+  <!-- Meta -->
+  <div class="form-group" style="margin-top:14px">
     <label>วันที่เบิก</label>
     <input type="date" id="d-date" />
   </div>
-
-  <div class="form-group">
-    <label>รายการที่เบิก</label>
-    <div class="search-wrap">
-      <input class="search-input" id="d-search" type="text" placeholder="พิมพ์ชื่อวัตถุดิบ (3 ตัวขึ้นไป)..." autocomplete="off" oninput="searchItems('d',this.value)" onfocus="searchItems('d',this.value)">
-      <input type="hidden" id="d-item">
-      <div class="search-drop" id="d-drop"></div>
-    </div>
-    <div class="search-selected" id="d-selected"></div>
-  </div>
-
-  <div id="d-stock-display" style="display:none" class="qty-display">
-    <div class="item-info">
-      <div class="item-name" id="d-stock-name"></div>
-      <div class="item-stock">สต๊อกปัจจุบัน: <span id="d-stock-qty" style="font-weight:700"></span></div>
-    </div>
-  </div>
-
-  <div class="form-group">
-    <label>จำนวนที่เบิก</label>
-    <input type="number" id="d-qty" min="0.01" step="0.01" placeholder="0" />
-  </div>
-
-  <div class="form-group">
-    <label>Location</label>
-    <select id="d-location">
-      <option value="">— เลือก location —</option>
-    </select>
-  </div>
-
   <div class="form-group">
     <label>หมายเหตุ (optional)</label>
     <input type="text" id="d-note" placeholder="เช่น เบิกไปใช้พรุ่งนี้" />
   </div>
 
-  <button class="btn btn-dispense" onclick="submitDispense()">📦 ยืนยันเบิกของ</button>
+  <button class="btn btn-dispense" id="btn-submit-dispense" onclick="submitDispense()">📦 ยืนยันเบิกของทั้งหมด</button>
 </div>
 
 <!-- ═══════════ TAB: Loss / Waste ═══════════ -->
@@ -422,11 +480,12 @@
   const sb      = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   const sbStock = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'stock' } });
 
-  let items     = [];   // public.items
-  let locations = [];   // stock.locations
-  let stockMap  = {};   // item_id → current_qty (from stock.current_stock)
+  let items          = [];   // public.items (non-meat)
+  let locations      = [];   // stock.locations
+  let stockMap       = {};   // item_id → current_qty
   let selectedReason = '';
-  let logFilter = 'all';
+  let logFilter      = 'all';
+  let dispenseList   = [];   // [{id, name, unit, category}]
 
   const REASON_LABELS = {
     expired: 'หมดอายุ', damaged: 'เสียหาย',
@@ -451,53 +510,186 @@
     const { data: locs } = await sbStock.from('locations').select('id,code,name').eq('is_active', true);
     locations = locs || [];
 
-    const selLoc = document.getElementById('d-location');
-    locations.forEach(l => {
-      const opt = document.createElement('option');
-      opt.value = l.id;
-      opt.textContent = `${l.code} — ${l.name}`;
-      selLoc.appendChild(opt);
-    });
-    // Default SHOP
-    const shop = locations.find(l => l.code === 'SHOP');
-    if (shop) selLoc.value = shop.id;
-
     // Load current stock snapshot
     const { data: cs } = await sbStock.from('current_stock').select('item_id,current_qty');
-    (cs || []).forEach(r => { stockMap[r.item_id] = parseFloat(r.current_qty || 0); });
+    (cs || []).forEach(function(r) { stockMap[r.item_id] = parseFloat(r.current_qty || 0); });
 
     loadLog();
   })();
 
   // ─── Tabs ────────────────────────────────────────────
   function switchTab(tab, el) {
-    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
     document.getElementById('tab-' + tab).classList.add('active');
     el.classList.add('active');
     if (tab === 'log') loadLog();
   }
 
-  // ─── Search items ────────────────────────────────────
-  function searchItems(prefix, val) {
-    const drop = document.getElementById(prefix + '-drop');
-    const q = val.trim();
+  // ─── Dispense: search ────────────────────────────────
+  function searchDispense(val) {
+    var drop = document.getElementById('d-drop');
+    var q = val.trim();
     if (q.length < 3) { drop.classList.remove('open'); return; }
 
-    const matches = items.filter(i =>
-      i.name.toLowerCase().includes(q.toLowerCase()) ||
-      (i.category || '').toLowerCase().includes(q.toLowerCase())
-    ).slice(0, 20);
+    var matches = items.filter(function(i) {
+      return i.name.toLowerCase().indexOf(q.toLowerCase()) !== -1 ||
+             (i.category || '').toLowerCase().indexOf(q.toLowerCase()) !== -1;
+    }).slice(0, 20);
 
     if (matches.length === 0) {
       drop.innerHTML = '<div class="search-option"><div class="opt-name" style="color:#999">ไม่พบรายการ</div></div>';
     } else {
-      drop.innerHTML = matches.map(i => `
-        <div class="search-option" onclick="selectItem('${prefix}','${i.id}','${i.name.replace(/'/g,"\\'")}','${i.unit}','${i.category||''}')">
-          <div class="opt-name">${i.name}</div>
-          <div class="opt-meta">${i.unit} · ${i.category || '-'}</div>
-        </div>
-      `).join('');
+      drop.innerHTML = matches.map(function(i) {
+        return '<div class="search-option" onclick="pickDispenseItem(\'' + i.id + '\',\'' + i.name.replace(/'/g,"\\'") + '\',\'' + i.unit + '\',\'' + (i.category||'') + '\')">'
+          + '<div class="opt-name">' + i.name + '</div>'
+          + '<div class="opt-meta">' + i.unit + ' · ' + (i.category || '-') + '</div>'
+          + '</div>';
+      }).join('');
+    }
+    drop.classList.add('open');
+  }
+
+  function pickDispenseItem(id, name, unit, category) {
+    document.getElementById('d-item-pending').value = id;
+    document.getElementById('d-search').value = name;
+    document.getElementById('d-drop').classList.remove('open');
+    var lbl = document.getElementById('d-pending-label');
+    lbl.textContent = '✓ เลือก: ' + name + ' · ' + unit;
+    lbl.style.display = 'block';
+  }
+
+  // ─── Dispense: add to list ────────────────────────────
+  function addToList() {
+    var id = document.getElementById('d-item-pending').value;
+    if (!id) return toast('ค้นหาและเลือกวัตถุดิบก่อนครับ');
+
+    var item = items.find(function(i) { return i.id === id; });
+    if (!item) return;
+
+    // Prevent duplicate
+    var exists = dispenseList.some(function(r) { return r.id === id; });
+    if (exists) { toast('มี ' + item.name + ' ในรายการแล้วครับ'); return; }
+
+    dispenseList.push({ id: item.id, name: item.name, unit: item.unit, category: item.category || '' });
+    renderDispenseList();
+
+    // Reset search
+    document.getElementById('d-item-pending').value = '';
+    document.getElementById('d-search').value = '';
+    document.getElementById('d-pending-label').style.display = 'none';
+  }
+
+  function removeDispenseLine(idx) {
+    dispenseList.splice(idx, 1);
+    renderDispenseList();
+  }
+
+  function renderDispenseList() {
+    var container = document.getElementById('dispense-list');
+    var countEl   = document.getElementById('d-count');
+    if (dispenseList.length === 0) {
+      container.innerHTML = '<div class="empty">ยังไม่มีรายการ — ค้นหาแล้วกด + เพิ่ม</div>';
+      countEl.textContent = '';
+      return;
+    }
+    countEl.textContent = '(' + dispenseList.length + ' รายการ)';
+    container.innerHTML = dispenseList.map(function(r, i) {
+      var stockQty = stockMap[r.id] !== undefined ? stockMap[r.id] : null;
+      var stockNote = stockQty !== null ? 'สต๊อก: ' + stockQty + ' ' + r.unit : '';
+      var warnStyle = (stockQty !== null && stockQty <= 0) ? 'color:var(--red);' : (stockQty !== null && stockQty < 2 ? 'color:var(--orange-dark);' : 'color:var(--muted);');
+      return '<div class="dispense-row">'
+        + '<div><div class="dr-name">' + r.name + '</div>'
+        + '<div class="dr-meta" style="' + warnStyle + '">' + r.unit + (stockNote ? ' · ' + stockNote : '') + '</div></div>'
+        + '<input class="dr-qty-input" type="number" id="dq-' + i + '" value="1" min="0.01" step="0.01">'
+        + '<button class="btn-del" onclick="removeDispenseLine(' + i + ')">×</button>'
+        + '</div>';
+    }).join('');
+  }
+
+  // ─── Dispense: submit all ─────────────────────────────
+  async function submitDispense() {
+    var movedAt = document.getElementById('d-date').value;
+    var note    = document.getElementById('d-note').value.trim();
+
+    if (dispenseList.length === 0) return toast('เพิ่มรายการก่อนครับ');
+    if (!movedAt) return toast('ระบุวันที่ด้วยครับ');
+
+    // Collect rows + validate qty
+    var rows = [];
+    var hasErr = false;
+    dispenseList.forEach(function(r, i) {
+      var inp = document.getElementById('dq-' + i);
+      var qty = inp ? parseFloat(inp.value) : NaN;
+      if (!qty || qty <= 0) { hasErr = true; }
+      else rows.push({ id: r.id, name: r.name, qty: qty });
+    });
+    if (hasErr) return toast('กรอกจำนวนให้ครบทุกรายการครับ');
+
+    // Default location: STORAGE → fallback SHOP
+    var loc = locations.find(function(l) { return l.code === 'STORAGE'; })
+           || locations.find(function(l) { return l.code === 'SHOP'; });
+    if (!loc) return toast('ไม่พบ location');
+
+    var btn = document.getElementById('btn-submit-dispense');
+    btn.disabled = true;
+    btn.textContent = 'กำลังบันทึก...';
+
+    var movements = rows.map(function(r) {
+      return {
+        item_id:       r.id,
+        location_id:   loc.id,
+        qty_delta:     -r.qty,
+        movement_type: 'dispense',
+        ref_type:      'manual',
+        note:          note || null,
+        created_by:    'ไทน์',
+        moved_at:      movedAt + 'T00:00:00+07:00'
+      };
+    });
+
+    var result = await sbStock.from('movements').insert(movements);
+    if (result.error) {
+      console.error(result.error);
+      toast('❌ ' + result.error.message);
+      btn.disabled = false;
+      btn.textContent = '📦 ยืนยันเบิกของทั้งหมด';
+      return;
+    }
+
+    // Update local stockMap
+    rows.forEach(function(r) {
+      if (stockMap[r.id] !== undefined) stockMap[r.id] -= r.qty;
+    });
+
+    toast('✅ เบิกแล้ว ' + rows.length + ' รายการ');
+    dispenseList = [];
+    renderDispenseList();
+    document.getElementById('d-note').value = '';
+    btn.disabled = false;
+    btn.textContent = '📦 ยืนยันเบิกของทั้งหมด';
+  }
+
+  // ─── Loss tab: search ─────────────────────────────────
+  function searchItems(prefix, val) {
+    var drop = document.getElementById(prefix + '-drop');
+    var q = val.trim();
+    if (q.length < 3) { drop.classList.remove('open'); return; }
+
+    var matches = items.filter(function(i) {
+      return i.name.toLowerCase().indexOf(q.toLowerCase()) !== -1 ||
+             (i.category || '').toLowerCase().indexOf(q.toLowerCase()) !== -1;
+    }).slice(0, 20);
+
+    if (matches.length === 0) {
+      drop.innerHTML = '<div class="search-option"><div class="opt-name" style="color:#999">ไม่พบรายการ</div></div>';
+    } else {
+      drop.innerHTML = matches.map(function(i) {
+        return '<div class="search-option" onclick="selectItem(\'' + prefix + '\',\'' + i.id + '\',\'' + i.name.replace(/'/g,"\\'") + '\',\'' + i.unit + '\',\'' + (i.category||'') + '\')">'
+          + '<div class="opt-name">' + i.name + '</div>'
+          + '<div class="opt-meta">' + i.unit + ' · ' + (i.category || '-') + '</div>'
+          + '</div>';
+      }).join('');
     }
     drop.classList.add('open');
   }
@@ -505,8 +697,8 @@
   function selectItem(prefix, id, name, unit, category) {
     document.getElementById(prefix + '-item').value = id;
     document.getElementById(prefix + '-search').value = name;
-    const sel = document.getElementById(prefix + '-selected');
-    sel.textContent = `✓ ${name} · ${unit}`;
+    var sel = document.getElementById(prefix + '-selected');
+    sel.textContent = '✓ ' + name + ' · ' + unit;
     sel.classList.add('show');
     document.getElementById(prefix + '-drop').classList.remove('open');
     onItemChange(prefix);
@@ -514,113 +706,72 @@
 
   // Close dropdowns on outside click
   document.addEventListener('click', function(e) {
-    ['d','l'].forEach(prefix => {
-      const wrap = document.getElementById(prefix + '-search');
-      const drop = document.getElementById(prefix + '-drop');
-      if (drop && wrap && !wrap.parentElement.contains(e.target)) {
-        drop.classList.remove('open');
-      }
-    });
+    // Dispense drop
+    var dSearch = document.getElementById('d-search');
+    var dDrop   = document.getElementById('d-drop');
+    if (dDrop && dSearch && !dSearch.parentElement.contains(e.target)) dDrop.classList.remove('open');
+    // Loss drop
+    var lSearch = document.getElementById('l-search');
+    var lDrop   = document.getElementById('l-drop');
+    if (lDrop && lSearch && !lSearch.parentElement.contains(e.target)) lDrop.classList.remove('open');
   });
 
-  // ─── Item stock display ───────────────────────────────
+  // ─── Loss tab: stock display ──────────────────────────
   function onItemChange(prefix) {
-    const itemId = document.getElementById(prefix + '-item').value;
-    const display = document.getElementById(prefix + '-stock-display');
+    var itemId  = document.getElementById(prefix + '-item').value;
+    var display = document.getElementById(prefix + '-stock-display');
     if (!itemId) { display.style.display = 'none'; return; }
 
-    const item = items.find(i => i.id === itemId);
-    const qty  = stockMap[itemId] ?? null;
+    var item = items.find(function(i) { return i.id === itemId; });
+    var qty  = stockMap[itemId] !== undefined ? stockMap[itemId] : null;
 
-    document.getElementById(prefix + '-stock-name').textContent = item?.name || '';
-    document.getElementById(prefix + '-stock-qty').textContent =
-      qty !== null ? `${qty} ${item?.unit || ''}` : 'ไม่ทราบ';
+    document.getElementById(prefix + '-stock-name').textContent = item ? item.name : '';
+    document.getElementById(prefix + '-stock-qty').textContent  =
+      qty !== null ? qty + ' ' + (item ? item.unit : '') : 'ไม่ทราบ';
 
     display.className = 'qty-display';
     if (qty !== null && qty <= 0) display.classList.add('danger');
     else if (qty !== null && qty < 2) display.classList.add('warn');
-
     display.style.display = 'flex';
   }
 
-  // ─── Reason select ───────────────────────────────────
+  // ─── Reason pills ─────────────────────────────────────
   function selectReason(el) {
-    document.querySelectorAll('.reason-pill').forEach(p => p.classList.remove('selected'));
+    document.querySelectorAll('.reason-pill').forEach(function(p) { p.classList.remove('selected'); });
     el.classList.add('selected');
     selectedReason = el.dataset.reason;
-    const noteReq = document.getElementById('l-note-req');
-    noteReq.style.display = selectedReason === 'other' ? 'inline' : 'none';
+    document.getElementById('l-note-req').style.display = selectedReason === 'other' ? 'inline' : 'none';
   }
 
-  // ─── Submit Dispense ─────────────────────────────────
-  async function submitDispense() {
-    const itemId   = document.getElementById('d-item').value;
-    const qty      = parseFloat(document.getElementById('d-qty').value);
-    const locId    = document.getElementById('d-location').value;
-    const note     = document.getElementById('d-note').value.trim();
-    const movedAt  = document.getElementById('d-date').value;
-
-    if (!itemId) return toast('เลือกรายการก่อนครับ');
-    if (!qty || qty <= 0) return toast('ใส่จำนวนด้วยครับ');
-    if (!locId) return toast('เลือก location ด้วยครับ');
-
-    const { error } = await sbStock.from('movements').insert({
-      item_id:       itemId,
-      location_id:   locId,
-      qty_delta:     -qty,
-      movement_type: 'dispense',
-      ref_type:      'manual',
-      note:          note || null,
-      created_by:    'ไทน์',
-      moved_at:      movedAt + 'T00:00:00+07:00'
-    });
-
-    if (error) { console.error(error); return toast('❌ ' + error.message); }
-
-    // Update local stock map
-    if (stockMap[itemId] !== undefined) stockMap[itemId] -= qty;
-
-    toast('✅ เบิกแล้ว — stock อัปเดตอัตโนมัติ');
-    document.getElementById('d-item').value = '';
-    document.getElementById('d-search').value = '';
-    const dSel = document.getElementById('d-selected');
-    dSel.textContent = ''; dSel.classList.remove('show');
-    document.getElementById('d-qty').value = '';
-    document.getElementById('d-note').value = '';
-    document.getElementById('d-stock-display').style.display = 'none';
-  }
-
-  // ─── Submit Loss/Waste ───────────────────────────────
+  // ─── Submit Loss/Waste ────────────────────────────────
   async function submitLoss() {
-    const itemId  = document.getElementById('l-item').value;
-    const qty     = parseFloat(document.getElementById('l-qty').value);
-    const type    = document.getElementById('l-type').value;
-    const note    = document.getElementById('l-note').value.trim();
-    const movedAt = document.getElementById('l-date').value;
+    var itemId  = document.getElementById('l-item').value;
+    var qty     = parseFloat(document.getElementById('l-qty').value);
+    var type    = document.getElementById('l-type').value;
+    var note    = document.getElementById('l-note').value.trim();
+    var movedAt = document.getElementById('l-date').value;
 
-    if (!itemId)         return toast('เลือกรายการก่อนครับ');
+    if (!itemId)          return toast('เลือกรายการก่อนครับ');
     if (!qty || qty <= 0) return toast('ใส่จำนวนด้วยครับ');
-    if (!selectedReason) return toast('เลือกเหตุผลด้วยครับ');
+    if (!selectedReason)  return toast('เลือกเหตุผลด้วยครับ');
     if (selectedReason === 'other' && !note) return toast('กรณีอื่นๆ ต้องระบุหมายเหตุครับ');
 
-    // Get SHOP location for loss default
-    const loc = locations.find(l => l.code === 'SHOP');
+    var loc = locations.find(function(l) { return l.code === 'SHOP'; })
+           || locations.find(function(l) { return l.code === 'STORAGE'; });
     if (!loc) return toast('ไม่พบ location');
 
-    // INSERT movement
-    const { error: mvErr } = await sbStock.from('movements').insert({
+    var mvResult = await sbStock.from('movements').insert({
       item_id:       itemId,
       location_id:   loc.id,
       qty_delta:     -qty,
       movement_type: type,
       ref_type:      'manual',
-      note:          `[${selectedReason}] ${note}`.trim(),
+      note:          '[' + selectedReason + '] ' + note,
       created_by:    'ไทน์',
       moved_at:      movedAt + 'T00:00:00+07:00'
     });
-    if (mvErr) { console.error(mvErr); return toast('❌ ' + mvErr.message); }
+    if (mvResult.error) { console.error(mvResult.error); return toast('❌ ' + mvResult.error.message); }
 
-    // INSERT stock_adjustments
     await sbStock.from('stock_adjustments').insert({
       item_id:     itemId,
       date:        movedAt,
@@ -631,84 +782,77 @@
       note:        note || null
     });
 
-    // Update local stock map
     if (stockMap[itemId] !== undefined) stockMap[itemId] -= qty;
 
-    toast(`✅ บันทึก ${type === 'loss' ? 'Loss' : 'Waste'} แล้ว`);
+    toast('✅ บันทึก ' + (type === 'loss' ? 'Loss' : 'Waste') + ' แล้ว');
     document.getElementById('l-item').value = '';
     document.getElementById('l-search').value = '';
-    const lSel = document.getElementById('l-selected');
+    var lSel = document.getElementById('l-selected');
     lSel.textContent = ''; lSel.classList.remove('show');
     document.getElementById('l-qty').value = '';
     document.getElementById('l-note').value = '';
     document.getElementById('l-stock-display').style.display = 'none';
-    document.querySelectorAll('.reason-pill').forEach(p => p.classList.remove('selected'));
+    document.querySelectorAll('.reason-pill').forEach(function(p) { p.classList.remove('selected'); });
     selectedReason = '';
     document.getElementById('l-note-req').style.display = 'none';
   }
 
-  // ─── Load Log ────────────────────────────────────────
+  // ─── Log ──────────────────────────────────────────────
   async function loadLog() {
-    const container = document.getElementById('log-list');
+    var container = document.getElementById('log-list');
     container.innerHTML = '<div class="empty">กำลังโหลด...</div>';
 
-    const today = new Date().toISOString().split('T')[0];
-    let query = sbStock.from('movements')
+    var today = new Date().toISOString().split('T')[0];
+    var types = logFilter === 'all' ? ['dispense','loss','waste'] : [logFilter];
+
+    var result = await sbStock.from('movements')
       .select('id,item_id,qty_delta,movement_type,note,moved_at,created_by')
       .gte('moved_at', today + 'T00:00:00+00:00')
-      .in('movement_type', logFilter === 'all' ? ['dispense','loss','waste'] : [logFilter])
+      .in('movement_type', types)
       .order('moved_at', { ascending: false });
 
-    const { data: mvs } = await query;
-
+    var mvs = result.data;
     if (!mvs || mvs.length === 0) {
       container.innerHTML = '<div class="empty">ไม่มีรายการวันนี้</div>';
       return;
     }
 
-    // Build item name map
-    const itemNameMap = {};
-    items.forEach(i => { itemNameMap[i.id] = i.name; });
+    var itemNameMap = {};
+    items.forEach(function(i) { itemNameMap[i.id] = i.name; });
 
-    container.innerHTML = mvs.map(m => {
-      const name = itemNameMap[m.item_id] || m.item_id;
-      const time = new Date(m.moved_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-      const absQty = Math.abs(m.qty_delta);
-      const typeLabel = { dispense: 'เบิกออก', loss: 'Loss', waste: 'Waste' }[m.movement_type] || m.movement_type;
+    container.innerHTML = mvs.map(function(m) {
+      var name = itemNameMap[m.item_id] || m.item_id;
+      var time = new Date(m.moved_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+      var absQty = Math.abs(m.qty_delta);
+      var typeLabel = { dispense: 'เบิกออก', loss: 'Loss', waste: 'Waste' }[m.movement_type] || m.movement_type;
+      var reasonMatch = (m.note || '').match(/^\[(\w+)\]/);
+      var reason = reasonMatch ? (REASON_LABELS[reasonMatch[1]] || reasonMatch[1]) : null;
 
-      // Parse reason from note
-      const reasonMatch = (m.note || '').match(/^\[(\w+)\]/);
-      const reason = reasonMatch ? (REASON_LABELS[reasonMatch[1]] || reasonMatch[1]) : null;
-
-      return `
-        <div class="log-card ${m.movement_type}">
-          <div class="log-header">
-            <div class="log-item-name">${name}</div>
-            <div class="log-qty ${m.movement_type === 'dispense' ? 'dispense' : ''}">
-              ${m.movement_type === 'dispense' ? '-' : '-'}${absQty}
-            </div>
-          </div>
-          <div class="log-meta">${typeLabel} · ${time} · ${m.created_by || '-'}</div>
-          ${reason ? `<span class="log-reason">${reason}</span>` : ''}
-          ${m.note && !reasonMatch ? `<div class="log-meta" style="margin-top:4px">${m.note}</div>` : ''}
-        </div>
-      `;
+      return '<div class="log-card ' + m.movement_type + '">'
+        + '<div class="log-header">'
+        + '<div class="log-item-name">' + name + '</div>'
+        + '<div class="log-qty' + (m.movement_type === 'dispense' ? ' dispense' : '') + '">-' + absQty + '</div>'
+        + '</div>'
+        + '<div class="log-meta">' + typeLabel + ' · ' + time + ' · ' + (m.created_by || '-') + '</div>'
+        + (reason ? '<span class="log-reason">' + reason + '</span>' : '')
+        + (m.note && !reasonMatch ? '<div class="log-meta" style="margin-top:4px">' + m.note + '</div>' : '')
+        + '</div>';
     }).join('');
   }
 
   function filterLog(type, el) {
     logFilter = type;
-    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.filter-pill').forEach(function(p) { p.classList.remove('active'); });
     el.classList.add('active');
     loadLog();
   }
 
-  // ─── Toast ───────────────────────────────────────────
+  // ─── Toast ────────────────────────────────────────────
   function toast(msg) {
-    const el = document.getElementById('toast');
+    var el = document.getElementById('toast');
     el.textContent = msg;
     el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 3000);
+    setTimeout(function() { el.classList.remove('show'); }, 3000);
   }
 </script>
 </body>
