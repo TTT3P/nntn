@@ -505,9 +505,14 @@
     var locsResult = await sbStock.from('locations').select('id,code,name').eq('is_active', true);
     locations = locsResult.data || [];
 
-    // Load current stock snapshot
-    var csResult = await sbStock.from('current_stock').select('item_id,current_qty');
-    (csResult.data || []).forEach(function(r) { stockMap[r.item_id] = parseFloat(r.current_qty || 0); });
+    // Load current stock from stock_counts (latest row per item)
+    var csResult = await sb.from('stock_counts')
+      .select('item_id,qty')
+      .order('counted_at', { ascending: false });
+    var _seen = {};
+    (csResult.data || []).forEach(function(r) {
+      if (!_seen[r.item_id]) { _seen[r.item_id] = true; stockMap[r.item_id] = parseFloat(r.qty || 0); }
+    });
 
     loadLog();
   })();
@@ -646,7 +651,7 @@
     var qty = parseFloat(val) || 0;
     var inp  = document.getElementById('dq-' + idx);
     var warn = document.getElementById('dw-' + idx);
-    if (stock !== null && qty > stock && stock > 0) {
+    if (stock !== null && qty > stock) {
       if (inp)  inp.classList.add('over');
       if (warn) warn.style.display = 'block';
     } else {
@@ -673,6 +678,15 @@
     });
     if (hasErr) return toast('กรอกจำนวนให้ครบทุกรายการครับ');
 
+    // hard block: ห้ามเบิกเกินสต๊อก
+    var overItems = rows.filter(function(r) {
+      var stock = stockMap[r.id] !== undefined ? stockMap[r.id] : null;
+      return stock !== null && r.qty > stock;
+    });
+    if (overItems.length > 0) {
+      return toast('❌ ' + overItems.map(function(r) { return r.name; }).join(', ') + ' — สต๊อกไม่พอ');
+    }
+
     var loc = locations.find(function(l) { return l.code === 'STORAGE'; })
            || locations.find(function(l) { return l.code === 'SHOP'; });
     if (!loc) return toast('ไม่พบ location');
@@ -682,19 +696,16 @@
     btn.textContent = 'กำลังบันทึก...';
 
     var movements = rows.map(function(r) {
+      var currentQty = stockMap[r.id] !== undefined ? stockMap[r.id] : 0;
       return {
-        item_id:       r.id,
-        location_id:   loc.id,
-        qty_delta:     -r.qty,
-        movement_type: 'dispense',
-        ref_type:      'manual',
-        note:          note || null,
-        created_by:    'ไทน์',
-        moved_at:      movedAt + 'T00:00:00+07:00'
+        item_id:    r.id,
+        qty:        Math.max(0, currentQty - r.qty),
+        counted_by: 'dispense',
+        note:       'เบิก ' + r.qty + ' ' + r.unit + (note ? ' · ' + note : '')
       };
     });
 
-    var result = await sbStock.from('movements').insert(movements);
+    var result = await sb.from('stock_counts').insert(movements);
     if (result.error) {
       console.error(result.error);
       toast('❌ ' + result.error.message);
