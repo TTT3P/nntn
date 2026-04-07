@@ -464,7 +464,11 @@ async function submitCount() {
   const visibleIds = new Set(
     Array.from(document.querySelectorAll('[id^="qty-"]')).map(el => el.id.replace('qty-', ''))
   );
-  const rows = items.filter(item => visibleIds.has(item.id)).map(item => ({
+  const rows = items.filter(item => {
+    if (!visibleIds.has(item.id)) return false;
+    const val = document.getElementById(`qty-${item.id}`).value;
+    return val !== '' && val !== null;  // ข้ามรายการที่ไม่ได้กรอก
+  }).map(item => ({
     item_id:    item.id,
     qty:        parseFloat(document.getElementById(`qty-${item.id}`).value) || 0,
     counted_by: countedBy,
