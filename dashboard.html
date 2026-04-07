@@ -267,7 +267,8 @@
 <script>
 const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb      = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sbStock = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'stock' } });
 
 const CAT_LABELS = {
   seasoning:  '🧂 เครื่องปรุง',
@@ -337,48 +338,16 @@ function fmtDateTime(iso) {
 async function loadStock() {
   document.getElementById('stock-container').innerHTML = '<div class="loading">⏳ กำลังโหลด...</div>';
 
-  // Load items
-  const { data: itemData, error: itemErr } = await sb
-    .from('items')
-    .select('id, sku, name, category, unit, par_level, max_level')
-    .eq('is_active', true)
-    .order('category').order('sku');
+  // Use current_stock VIEW directly — same source as index.html
+  const { data, error } = await sbStock
+    .from('current_stock')
+    .select('sku, name, category, unit, par_level, current_qty, status, last_counted, last_counted_by');
 
-  if (itemErr) {
+  if (error || !data || data.length === 0) {
     document.getElementById('stock-container').innerHTML =
       '<div class="loading" style="color:#C62828">❌ โหลดไม่ได้ ลองรีเฟรช</div>';
     return;
   }
-
-  // Load latest stock count per item
-  const { data: countData } = await sb
-    .from('stock_counts')
-    .select('item_id, qty, counted_at, counted_by')
-    .order('counted_at', { ascending: false });
-
-  // Build latest count map (first occurrence = latest)
-  const latestMap = {};
-  (countData || []).forEach(row => {
-    if (!latestMap[row.item_id]) latestMap[row.item_id] = row;
-  });
-
-  // Build allData with computed status
-  const data = itemData.map(item => {
-    const latest = latestMap[item.id];
-    const qty = latest ? latest.qty : 0;
-    let status;
-    if (qty === 0)              status = 'OUT';
-    else if (qty < item.par_level)       status = 'ORDER_NOW';
-    else if (qty < item.par_level * 1.5) status = 'LOW';
-    else                                 status = 'OK';
-    return {
-      ...item,
-      current_qty: qty,
-      status,
-      last_counted: latest ? latest.counted_at : null,
-      last_counted_by: latest ? latest.counted_by : null,
-    };
-  });
 
   allData = data;
   buildCatChips();

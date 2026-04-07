@@ -237,9 +237,42 @@
       padding: 2px 8px;
       border-radius: 12px;
     }
-    .badge-ordered  { background: #fff3e0; color: #e65100; }
-    .badge-received { background: #e8f5e9; color: #2e7d32; }
-    .badge-draft    { background: #f5f5f5; color: #757575; }
+    .badge-ordered   { background: #fff3e0; color: #e65100; }
+    .badge-received  { background: #e8f5e9; color: #2e7d32; }
+    .badge-draft     { background: #f5f5f5; color: #757575; }
+    .badge-cancelled { background: #ffebee; color: #c62828; }
+
+    /* History expandable card */
+    .po-hist-card {
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .po-hist-header {
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .po-hist-header:hover { background: #fafafa; }
+    .po-hist-body {
+      display: none;
+      border-top: 1px solid var(--border);
+      padding: 4px 14px 10px;
+      background: #fafafa;
+    }
+    .po-hist-body.open { display: block; }
+    .po-hist-expand {
+      font-size: 16px;
+      color: var(--muted);
+      transition: transform 0.2s;
+      line-height: 1;
+    }
+    .po-hist-expand.open { transform: rotate(180deg); }
 
     /* Toast */
     .toast {
@@ -793,7 +826,7 @@
 
     const { data: pos } = await sb
       .from('purchase_orders')
-      .select('id, po_number, supplier_name, status, ordered_at, received_at')
+      .select('id, po_number, supplier_name, status, ordered_at, received_at, note')
       .order('ordered_at', { ascending: false })
       .limit(50);
 
@@ -802,18 +835,60 @@
       return;
     }
 
-    const badgeClass  = { ordered: 'badge-ordered', received: 'badge-received', draft: 'badge-draft' };
-    const badgeLabel  = { ordered: 'รอรับของ', received: 'รับแล้ว', draft: 'Draft' };
+    const badgeClass = { ordered: 'badge-ordered', received: 'badge-received', draft: 'badge-draft', cancelled: 'badge-cancelled' };
+    const badgeLabel = { ordered: 'รอรับของ', received: 'รับแล้ว', draft: 'Draft', cancelled: 'ยกเลิก' };
 
     container.innerHTML = pos.map(po => `
-      <div style="background:#fff;border-radius:8px;border:1px solid var(--border);padding:12px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <div style="font-weight:700;font-size:14px;">${po.po_number}</div>
-          <div style="font-size:12px;color:var(--muted);">${po.supplier_name} · ${po.ordered_at ? new Date(po.ordered_at).toLocaleDateString('th-TH') : '-'}</div>
+      <div class="po-hist-card" id="hcard-${po.id}">
+        <div class="po-hist-header" onclick="toggleHistPO('${po.id}')">
+          <div>
+            <div style="font-weight:700;font-size:14px;">${po.po_number}</div>
+            <div style="font-size:12px;color:var(--muted);">${po.supplier_name} · ${po.ordered_at ? new Date(po.ordered_at).toLocaleDateString('th-TH') : '-'}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span class="badge ${badgeClass[po.status] || ''}">${badgeLabel[po.status] || po.status}</span>
+            <span class="po-hist-expand" id="hexp-${po.id}">▾</span>
+          </div>
         </div>
-        <span class="badge ${badgeClass[po.status] || ''}">${badgeLabel[po.status] || po.status}</span>
+        <div class="po-hist-body" id="hbody-${po.id}">
+          <div style="font-size:12px;color:var(--muted);padding:8px 0;">กำลังโหลดรายการ...</div>
+        </div>
       </div>
     `).join('');
+  }
+
+  async function toggleHistPO(poId) {
+    const body = document.getElementById('hbody-' + poId);
+    const exp  = document.getElementById('hexp-'  + poId);
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open');
+    exp.classList.toggle('open');
+
+    if (!isOpen && body.dataset.loaded !== '1') {
+      body.dataset.loaded = '1';
+      const { data: lines } = await sb
+        .from('purchase_order_items')
+        .select('qty_ordered, qty_received, items(name, unit)')
+        .eq('po_id', poId);
+
+      if (!lines || lines.length === 0) {
+        body.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:6px 0;">ไม่มีรายการ</div>';
+        return;
+      }
+
+      body.innerHTML = lines.map(l => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #eeeeee;font-size:13px;">
+          <div>
+            <span style="font-weight:600;">${l.items?.name || '-'}</span>
+            <span style="color:var(--muted);margin-left:4px;font-size:12px;">${l.items?.unit || ''}</span>
+          </div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px;">
+            <span style="color:var(--muted);">สั่ง ${l.qty_ordered ?? '—'}</span>
+            ${l.qty_received != null ? `<span style="color:var(--green-dark);margin-left:8px;font-weight:700;">รับ ${l.qty_received}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
   }
 
   // ─── Cancel PO ───────────────────────────────────────
