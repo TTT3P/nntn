@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NNTN Supabase Architecture Diagram</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a2e; }
+
+  .page { max-width: 1400px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 22px; font-weight: 800; color: #1a1a2e; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 32px; }
+
+  .section { margin-bottom: 48px; }
+  .section-title {
+    font-size: 15px; font-weight: 700; color: #555;
+    letter-spacing: 1px; text-transform: uppercase;
+    margin-bottom: 16px; padding-bottom: 8px;
+    border-bottom: 2px solid #e0e0e0;
+  }
+
+  /* ── ARCHITECTURE DIAGRAM ── */
+  .arch-wrap { overflow-x: auto; }
+
+  /* ── ER DIAGRAM ── */
+  .er-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .er-table {
+    background: #fff;
+    border-radius: 10px;
+    border: 1.5px solid #e0e0e0;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .er-header {
+    padding: 10px 14px;
+    font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .er-schema-badge {
+    font-size: 10px; font-weight: 600;
+    padding: 2px 6px; border-radius: 4px;
+    opacity: 0.9;
+  }
+  .er-col {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 14px;
+    font-size: 12px;
+    border-top: 1px solid #f5f5f5;
+  }
+  .er-col-name { color: #333; font-weight: 500; }
+  .er-col-type { color: #999; font-size: 10px; font-family: monospace; }
+  .er-col.pk .er-col-name::before { content: "🔑 "; }
+  .er-col.fk .er-col-name { color: #1565C0; }
+  .er-col.fk .er-col-name::before { content: "→ "; }
+
+  /* schema colors */
+  .s-public .er-header { background: #E8F5E9; color: #1B5E20; }
+  .s-public .er-schema-badge { background: #A5D6A7; color: #1B5E20; }
+  .s-stock .er-header { background: #E3F2FD; color: #0D47A1; }
+  .s-stock .er-schema-badge { background: #90CAF9; color: #0D47A1; }
+  .s-view .er-header { background: #FFF8E1; color: #E65100; }
+  .s-view .er-schema-badge { background: #FFE082; color: #E65100; }
+
+  /* ── FLOW DIAGRAM ── */
+  .flow-svg-wrap { overflow-x: auto; background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+  /* ── LEGEND ── */
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .ld-public { background: #A5D6A7; }
+  .ld-stock { background: #90CAF9; }
+  .ld-view { background: #FFE082; }
+
+  @media print {
+    body { background: white; }
+    .page { padding: 12px; }
+    .section { margin-bottom: 32px; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>🗄️ NNTN Supabase — Architecture & Schema Diagram</h1>
+  <div class="subtitle">Project: emjqulzikpxorvpaaiww · อัปเดต 07/04/2026 · ใช้สำหรับ onboarding และ cross-team coordination</div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECTION 1: ARCHITECTURE OVERVIEW
+  ══════════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">1 · Architecture Overview</div>
+    <div class="arch-wrap">
+      <svg width="1200" height="500" viewBox="0 0 1200 500" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, sans-serif">
+        <!-- Background -->
+        <rect width="1200" height="500" fill="#f8f9fa" rx="12"/>
+
+        <!-- Title box -->
+        <rect x="20" y="16" width="340" height="52" rx="8" fill="#1a1a2e"/>
+        <text x="36" y="36" font-size="13" font-weight="700" fill="white">Supabase Project: emjqulzikpxorvpaaiww</text>
+        <text x="36" y="55" font-size="11" fill="#aaa">Single source of truth — NNTN Stock System</text>
+
+        <!-- ── schema: public ── -->
+        <rect x="20" y="90" width="520" height="390" rx="10" fill="#E8F5E9" stroke="#81C784" stroke-width="2"/>
+        <text x="36" y="114" font-size="13" font-weight="700" fill="#1B5E20">schema: public</text>
+        <text x="36" y="130" font-size="11" fill="#388E3C">Non-Meat Stock + Master Catalog + Meat Yield</text>
+
+        <!-- items -->
+        <rect x="36" y="142" width="200" height="130" rx="8" fill="white" stroke="#A5D6A7" stroke-width="1.5"/>
+        <rect x="36" y="142" width="200" height="28" rx="8" fill="#1B5E20"/>
+        <text x="136" y="161" text-anchor="middle" font-size="12" font-weight="700" fill="white">items</text>
+        <text x="48" y="186" font-size="10" fill="#444">🔑 id (uuid)</text>
+        <text x="48" y="200" font-size="10" fill="#444">sku, name, category, unit</text>
+        <text x="48" y="214" font-size="10" fill="#444">par_level, max_level</text>
+        <text x="48" y="228" font-size="10" fill="#444">purchase_price_per_kg</text>
+        <text x="48" y="242" font-size="10" fill="#444">yield_expected_min/max</text>
+        <text x="48" y="256" font-size="10" fill="#888">category: vegetable/meat/srcp/pkg...</text>
+
+        <!-- suppliers -->
+        <rect x="252" y="142" width="170" height="90" rx="8" fill="white" stroke="#A5D6A7" stroke-width="1.5"/>
+        <rect x="252" y="142" width="170" height="28" rx="8" fill="#1B5E20"/>
+        <text x="337" y="161" text-anchor="middle" font-size="12" font-weight="700" fill="white">suppliers</text>
+        <text x="264" y="186" font-size="10" fill="#444">🔑 id · name · contact</text>
+        <text x="264" y="200" font-size="10" fill="#444">lead_time_days · is_active</text>
+        <text x="264" y="214" font-size="10" fill="#888">ตลาดสด / Makro / Shopee</text>
+
+        <!-- purchase_orders -->
+        <rect x="36" y="290" width="180" height="90" rx="8" fill="white" stroke="#A5D6A7" stroke-width="1.5"/>
+        <rect x="36" y="290" width="180" height="28" rx="8" fill="#2E7D32"/>
+        <text x="126" y="309" text-anchor="middle" font-size="11" font-weight="700" fill="white">purchase_orders</text>
+        <text x="48" y="334" font-size="10" fill="#444">🔑 id · po_number</text>
+        <text x="48" y="348" font-size="10" fill="#1565C0">→ supplier_id</text>
+        <text x="48" y="362" font-size="10" fill="#444">status: draft/ordered/received</text>
+
+        <!-- purchase_order_items -->
+        <rect x="232" y="290" width="190" height="80" rx="8" fill="white" stroke="#A5D6A7" stroke-width="1.5"/>
+        <rect x="232" y="290" width="190" height="28" rx="8" fill="#2E7D32"/>
+        <text x="327" y="309" text-anchor="middle" font-size="11" font-weight="700" fill="white">purchase_order_items</text>
+        <text x="244" y="334" font-size="10" fill="#1565C0">→ po_id · → item_id</text>
+        <text x="244" y="348" font-size="10" fill="#444">qty_ordered · qty_received</text>
+
+        <!-- stock_counts -->
+        <rect x="36" y="398" width="175" height="70" rx="8" fill="white" stroke="#A5D6A7" stroke-width="1.5"/>
+        <rect x="36" y="398" width="175" height="28" rx="8" fill="#388E3C"/>
+        <text x="123" y="417" text-anchor="middle" font-size="11" font-weight="700" fill="white">stock_counts</text>
+        <text x="48" y="441" font-size="10" fill="#1565C0">→ item_id</text>
+        <text x="48" y="455" font-size="10" fill="#444">qty · counted_at · counted_by</text>
+
+        <!-- yield_batches -->
+        <rect x="228" y="386" width="190" height="82" rx="8" fill="white" stroke="#A5D6A7" stroke-width="1.5"/>
+        <rect x="228" y="386" width="190" height="28" rx="8" fill="#388E3C"/>
+        <text x="323" y="405" text-anchor="middle" font-size="11" font-weight="700" fill="white">yield_batches</text>
+        <text x="240" y="429" font-size="10" fill="#1565C0">→ item_id (cooked) · → raw_item_id</text>
+        <text x="240" y="443" font-size="10" fill="#444">raw_kg · cooked_kg</text>
+        <text x="240" y="457" font-size="10" fill="#444">yield_pct (GENERATED) · bag_count</text>
+
+        <!-- prep_log / portion_log -->
+        <rect x="430" y="142" width="95" height="80" rx="8" fill="white" stroke="#A5D6A7" stroke-width="1.5"/>
+        <rect x="430" y="142" width="95" height="24" rx="8" fill="#43A047"/>
+        <text x="477" y="158" text-anchor="middle" font-size="10" font-weight="700" fill="white">prep_log</text>
+        <text x="440" y="178" font-size="9" fill="#444">srcp_code/name</text>
+        <text x="440" y="190" font-size="9" fill="#444">batch_count</text>
+        <text x="440" y="202" font-size="9" fill="#444">yield_grams</text>
+
+        <rect x="430" y="232" width="95" height="80" rx="8" fill="white" stroke="#A5D6A7" stroke-width="1.5"/>
+        <rect x="430" y="232" width="95" height="24" rx="8" fill="#43A047"/>
+        <text x="477" y="248" text-anchor="middle" font-size="10" font-weight="700" fill="white">portion_log</text>
+        <text x="440" y="268" font-size="9" fill="#444">srcp→pkg</text>
+        <text x="440" y="280" font-size="9" fill="#444">grams_used</text>
+        <text x="440" y="292" font-size="9" fill="#444">bags_out</text>
+
+        <!-- bom_items -->
+        <rect x="430" y="326" width="95" height="72" rx="8" fill="white" stroke="#A5D6A7" stroke-width="1.5"/>
+        <rect x="430" y="326" width="95" height="24" rx="8" fill="#43A047"/>
+        <text x="477" y="342" text-anchor="middle" font-size="10" font-weight="700" fill="white">bom_items</text>
+        <text x="440" y="362" font-size="9" fill="#444">rcp_code/name</text>
+        <text x="440" y="374" font-size="9" fill="#444">ingredient · qty</text>
+        <text x="440" y="386" font-size="9" fill="#444">sp_code</text>
+
+        <!-- ── schema: stock ── -->
+        <rect x="560" y="90" width="480" height="390" rx="10" fill="#E3F2FD" stroke="#64B5F6" stroke-width="2"/>
+        <text x="576" y="114" font-size="13" font-weight="700" fill="#0D47A1">schema: stock</text>
+        <text x="576" y="130" font-size="11" fill="#1565C0">Meat Stock (catch weight FIFO) — Parallel Run กับ Excel</text>
+
+        <!-- stock.items -->
+        <rect x="576" y="142" width="175" height="105" rx="8" fill="white" stroke="#90CAF9" stroke-width="1.5"/>
+        <rect x="576" y="142" width="175" height="28" rx="8" fill="#0D47A1"/>
+        <text x="663" y="161" text-anchor="middle" font-size="12" font-weight="700" fill="white">stock.items</text>
+        <text x="588" y="186" font-size="10" fill="#444">🔑 id · sku · name</text>
+        <text x="588" y="200" font-size="10" fill="#444">category · unit</text>
+        <text x="588" y="214" font-size="10" fill="#444">par_level · max_level</text>
+        <text x="588" y="228" font-size="10" fill="#888">[75G]สามชั้น, [75G]เอ็น ...</text>
+
+        <!-- catch_weight -->
+        <rect x="768" y="142" width="255" height="120" rx="8" fill="white" stroke="#90CAF9" stroke-width="1.5"/>
+        <rect x="768" y="142" width="255" height="28" rx="8" fill="#0D47A1"/>
+        <text x="895" y="161" text-anchor="middle" font-size="12" font-weight="700" fill="white">catch_weight  ⭐ Core</text>
+        <text x="780" y="186" font-size="10" fill="#444">🔑 id · legacy_cw_row</text>
+        <text x="780" y="200" font-size="10" fill="#1565C0">→ item_id</text>
+        <text x="780" y="214" font-size="10" fill="#444">lot_date · weight_g · warehouse</text>
+        <text x="780" y="228" font-size="10" fill="#444">status: In Stock / Out / Delivered</text>
+        <text x="780" y="242" font-size="10" fill="#888">334 ถุง · sync กับ CW sheet ทุกวัน</text>
+
+        <!-- catch_weight_events -->
+        <rect x="768" y="276" width="255" height="70" rx="8" fill="white" stroke="#90CAF9" stroke-width="1.5"/>
+        <rect x="768" y="276" width="255" height="24" rx="8" fill="#1565C0"/>
+        <text x="895" y="292" text-anchor="middle" font-size="11" font-weight="700" fill="white">catch_weight_events</text>
+        <text x="780" y="316" font-size="10" fill="#1565C0">→ bag_id</text>
+        <text x="780" y="330" font-size="10" fill="#444">from_status → to_status · changed_at</text>
+
+        <!-- deliveries -->
+        <rect x="576" y="268" width="175" height="80" rx="8" fill="white" stroke="#90CAF9" stroke-width="1.5"/>
+        <rect x="576" y="268" width="175" height="24" rx="8" fill="#1565C0"/>
+        <text x="663" y="284" text-anchor="middle" font-size="11" font-weight="700" fill="white">deliveries</text>
+        <text x="588" y="308" font-size="10" fill="#444">bill_no · branch (NT/FS)</text>
+        <text x="588" y="322" font-size="10" fill="#444">date · created_by</text>
+
+        <!-- delivery_lines -->
+        <rect x="576" y="362" width="175" height="80" rx="8" fill="white" stroke="#90CAF9" stroke-width="1.5"/>
+        <rect x="576" y="362" width="175" height="24" rx="8" fill="#1565C0"/>
+        <text x="663" y="378" text-anchor="middle" font-size="11" font-weight="700" fill="white">delivery_lines</text>
+        <text x="588" y="402" font-size="10" fill="#1565C0">→ delivery_id · → catch_weight_id</text>
+        <text x="588" y="416" font-size="10" fill="#444">qty · weight_g</text>
+        <text x="588" y="430" font-size="10" fill="#888">⏳ Phase 3: Lot Traceability</text>
+
+        <!-- stock_snapshots -->
+        <rect x="768" y="362" width="180" height="80" rx="8" fill="white" stroke="#90CAF9" stroke-width="1.5"/>
+        <rect x="768" y="362" width="180" height="24" rx="8" fill="#1565C0"/>
+        <text x="858" y="378" text-anchor="middle" font-size="11" font-weight="700" fill="white">stock_snapshots</text>
+        <text x="780" y="402" font-size="10" fill="#1565C0">→ item_id · → location_id</text>
+        <text x="780" y="416" font-size="10" fill="#444">snapshot_date · qty_counted</text>
+
+        <!-- ── VIEWS ── -->
+        <rect x="20" y="490" width="1160" height="0" rx="0" fill="none"/>
+
+        <!-- Arrows (relationships) -->
+        <!-- suppliers → purchase_orders -->
+        <line x1="252" y1="195" x2="214" y2="305" stroke="#81C784" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-g)"/>
+        <!-- purchase_orders → purchase_order_items -->
+        <line x1="216" y1="335" x2="232" y2="335" stroke="#81C784" stroke-width="1.5" marker-end="url(#arr-g)"/>
+        <!-- items → purchase_order_items -->
+        <line x1="200" y1="200" x2="250" y2="320" stroke="#81C784" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr-g)"/>
+        <!-- items → stock_counts -->
+        <line x1="100" y1="272" x2="100" y2="398" stroke="#81C784" stroke-width="1.5" marker-end="url(#arr-g)"/>
+        <!-- items → yield_batches -->
+        <line x1="200" y1="250" x2="240" y2="400" stroke="#81C784" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr-g)"/>
+        <!-- catch_weight → catch_weight_events -->
+        <line x1="895" y1="262" x2="895" y2="276" stroke="#64B5F6" stroke-width="1.5" marker-end="url(#arr-b)"/>
+        <!-- deliveries → delivery_lines -->
+        <line x1="663" y1="348" x2="663" y2="362" stroke="#64B5F6" stroke-width="1.5" marker-end="url(#arr-b)"/>
+        <!-- delivery_lines → catch_weight -->
+        <line x1="751" y1="395" x2="768" y2="210" stroke="#64B5F6" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr-b)"/>
+
+        <!-- Arrow markers -->
+        <defs>
+          <marker id="arr-g" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#81C784"/>
+          </marker>
+          <marker id="arr-b" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#64B5F6"/>
+          </marker>
+        </defs>
+
+        <!-- Web UI Box -->
+        <rect x="1060" y="90" width="120" height="200" rx="10" fill="#FFF8E1" stroke="#FFB300" stroke-width="2"/>
+        <text x="1120" y="110" text-anchor="middle" font-size="11" font-weight="700" fill="#E65100">Web UI</text>
+        <text x="1120" y="124" text-anchor="middle" font-size="9" fill="#888">GitHub Pages</text>
+        <text x="1072" y="148" font-size="9" fill="#555">📊 Dashboard</text>
+        <text x="1072" y="163" font-size="9" fill="#555">📦 PO Receive</text>
+        <text x="1072" y="178" font-size="9" fill="#555">📋 นับสต๊อก</text>
+        <text x="1072" y="193" font-size="9" fill="#555">🛒 เบิกของ</text>
+        <text x="1072" y="208" font-size="9" fill="#555">⚙️ Admin Items</text>
+        <text x="1072" y="225" font-size="9" fill="#888">password: nntn2026</text>
+        <text x="1072" y="243" font-size="9" fill="#1565C0">ttt3p.github.io/nntn/</text>
+        <text x="1072" y="278" font-size="9" fill="#555">🔒 RLS enabled</text>
+        <text x="1072" y="292" font-size="9" fill="#555">all 23 tables ✅</text>
+
+        <!-- Script Box -->
+        <rect x="1060" y="310" width="120" height="120" rx="10" fill="#F3E5F5" stroke="#CE93D8" stroke-width="2"/>
+        <text x="1120" y="330" text-anchor="middle" font-size="11" font-weight="700" fill="#6A1B9A">Scripts</text>
+        <text x="1072" y="352" font-size="9" fill="#555">supabase_cw_sync.py</text>
+        <text x="1072" y="366" font-size="9" fill="#888">sync CW sheet→DB</text>
+        <text x="1072" y="385" font-size="9" fill="#555">section_b_template.py</text>
+        <text x="1072" y="399" font-size="9" fill="#888">auto yield sync</text>
+        <text x="1072" y="418" font-size="9" fill="#888">รัน: ปิดงานทุกวัน</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECTION 2: DATA FLOW
+  ══════════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">2 · Data Flow — วันทำงานปกติ</div>
+    <div class="flow-svg-wrap">
+      <svg width="1100" height="380" viewBox="0 0 1100 380" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, sans-serif">
+
+        <!-- MEAT FLOW -->
+        <text x="20" y="24" font-size="13" font-weight="700" fill="#0D47A1">🥩 Meat Flow (เนื้อตุ๋น)</text>
+
+        <!-- boxes -->
+        <rect x="20" y="40" width="130" height="55" rx="8" fill="#E3F2FD" stroke="#64B5F6" stroke-width="1.5"/>
+        <text x="85" y="62" text-anchor="middle" font-size="11" font-weight="700" fill="#0D47A1">รับเนื้อสด</text>
+        <text x="85" y="77" text-anchor="middle" font-size="10" fill="#555">Sheet 1 → คลัง A</text>
+        <text x="85" y="90" text-anchor="middle" font-size="9" fill="#888">CW row insert</text>
+
+        <rect x="190" y="40" width="130" height="55" rx="8" fill="#E3F2FD" stroke="#64B5F6" stroke-width="1.5"/>
+        <text x="255" y="62" text-anchor="middle" font-size="11" font-weight="700" fill="#0D47A1">ผลิตตุ๋น (Section B)</text>
+        <text x="255" y="77" text-anchor="middle" font-size="10" fill="#555">เข้าหม้อ → PACK</text>
+        <text x="255" y="90" text-anchor="middle" font-size="9" fill="#888">yield_batches insert</text>
+
+        <rect x="360" y="40" width="130" height="55" rx="8" fill="#E3F2FD" stroke="#64B5F6" stroke-width="1.5"/>
+        <text x="425" y="62" text-anchor="middle" font-size="11" font-weight="700" fill="#0D47A1">เข้าคลัง B/C</text>
+        <text x="425" y="77" text-anchor="middle" font-size="10" fill="#555">catch_weight</text>
+        <text x="425" y="90" text-anchor="middle" font-size="9" fill="#888">status: In Stock ✅</text>
+
+        <rect x="530" y="40" width="130" height="55" rx="8" fill="#E3F2FD" stroke="#64B5F6" stroke-width="1.5"/>
+        <text x="595" y="62" text-anchor="middle" font-size="11" font-weight="700" fill="#0D47A1">ส่งออก</text>
+        <text x="595" y="77" text-anchor="middle" font-size="10" fill="#555">NT / FS bill</text>
+        <text x="595" y="90" text-anchor="middle" font-size="9" fill="#888">deliveries + lines</text>
+
+        <rect x="700" y="40" width="130" height="55" rx="8" fill="#E3F2FD" stroke="#64B5F6" stroke-width="1.5"/>
+        <text x="765" y="62" text-anchor="middle" font-size="11" font-weight="700" fill="#0D47A1">Sync Script</text>
+        <text x="765" y="77" text-anchor="middle" font-size="10" fill="#555">supabase_cw_sync.py</text>
+        <text x="765" y="90" text-anchor="middle" font-size="9" fill="#888">รันปิดงานทุกวัน</text>
+
+        <rect x="870" y="40" width="130" height="55" rx="8" fill="#E8F5E9" stroke="#81C784" stroke-width="1.5"/>
+        <text x="935" y="62" text-anchor="middle" font-size="11" font-weight="700" fill="#1B5E20">Supabase</text>
+        <text x="935" y="77" text-anchor="middle" font-size="10" fill="#555">stock.catch_weight</text>
+        <text x="935" y="90" text-anchor="middle" font-size="9" fill="#388E3C">334 ถุง ✅ MATCH</text>
+
+        <!-- arrows meat -->
+        <line x1="150" y1="67" x2="190" y2="67" stroke="#64B5F6" stroke-width="2" marker-end="url(#a1)"/>
+        <line x1="320" y1="67" x2="360" y2="67" stroke="#64B5F6" stroke-width="2" marker-end="url(#a1)"/>
+        <line x1="490" y1="67" x2="530" y2="67" stroke="#64B5F6" stroke-width="2" marker-end="url(#a1)"/>
+        <line x1="660" y1="67" x2="700" y2="67" stroke="#64B5F6" stroke-width="2" marker-end="url(#a1)"/>
+        <line x1="830" y1="67" x2="870" y2="67" stroke="#64B5F6" stroke-width="2" marker-end="url(#a1)"/>
+
+        <!-- NON-MEAT FLOW -->
+        <text x="20" y="150" font-size="13" font-weight="700" fill="#1B5E20">🥬 Non-Meat Flow (วัตถุดิบครัว)</text>
+
+        <rect x="20" y="168" width="130" height="55" rx="8" fill="#E8F5E9" stroke="#81C784" stroke-width="1.5"/>
+        <text x="85" y="190" text-anchor="middle" font-size="11" font-weight="700" fill="#1B5E20">สั่งซื้อ</text>
+        <text x="85" y="205" text-anchor="middle" font-size="10" fill="#555">สร้าง PO ใน Web</text>
+        <text x="85" y="218" text-anchor="middle" font-size="9" fill="#888">purchase_orders</text>
+
+        <rect x="190" y="168" width="130" height="55" rx="8" fill="#E8F5E9" stroke="#81C784" stroke-width="1.5"/>
+        <text x="255" y="190" text-anchor="middle" font-size="11" font-weight="700" fill="#1B5E20">รับของ</text>
+        <text x="255" y="205" text-anchor="middle" font-size="10" fill="#555">ยืนยันรับของ</text>
+        <text x="255" y="218" text-anchor="middle" font-size="9" fill="#888">stock_counts +qty</text>
+
+        <rect x="360" y="168" width="130" height="55" rx="8" fill="#E8F5E9" stroke="#81C784" stroke-width="1.5"/>
+        <text x="425" y="190" text-anchor="middle" font-size="11" font-weight="700" fill="#1B5E20">เบิกใช้</text>
+        <text x="425" y="205" text-anchor="middle" font-size="10" fill="#555">หน้าเบิกของ</text>
+        <text x="425" y="218" text-anchor="middle" font-size="9" fill="#888">stock_counts -qty</text>
+
+        <rect x="530" y="168" width="130" height="55" rx="8" fill="#E8F5E9" stroke="#81C784" stroke-width="1.5"/>
+        <text x="595" y="190" text-anchor="middle" font-size="11" font-weight="700" fill="#1B5E20">นับสต๊อก</text>
+        <text x="595" y="205" text-anchor="middle" font-size="10" fill="#555">เช็คยอดจริง</text>
+        <text x="595" y="218" text-anchor="middle" font-size="9" fill="#888">stock_counts (override)</text>
+
+        <rect x="700" y="168" width="130" height="55" rx="8" fill="#FFF8E1" stroke="#FFB300" stroke-width="1.5"/>
+        <text x="765" y="190" text-anchor="middle" font-size="11" font-weight="700" fill="#E65100">Dashboard</text>
+        <text x="765" y="205" text-anchor="middle" font-size="10" fill="#555">ยอดสต๊อก + Alert</text>
+        <text x="765" y="218" text-anchor="middle" font-size="9" fill="#888">OUT / ORDER_NOW / LOW / OK</text>
+
+        <!-- arrows non-meat -->
+        <line x1="150" y1="195" x2="190" y2="195" stroke="#81C784" stroke-width="2" marker-end="url(#a2)"/>
+        <line x1="320" y1="195" x2="360" y2="195" stroke="#81C784" stroke-width="2" marker-end="url(#a2)"/>
+        <line x1="490" y1="195" x2="530" y2="195" stroke="#81C784" stroke-width="2" marker-end="url(#a2)"/>
+        <line x1="660" y1="195" x2="700" y2="195" stroke="#81C784" stroke-width="2" marker-end="url(#a2)"/>
+
+        <!-- YIELD FLOW -->
+        <text x="20" y="275" font-size="13" font-weight="700" fill="#6A1B9A">📊 Yield Tracking Flow</text>
+
+        <rect x="20" y="292" width="130" height="55" rx="8" fill="#F3E5F5" stroke="#CE93D8" stroke-width="1.5"/>
+        <text x="85" y="314" text-anchor="middle" font-size="11" font-weight="700" fill="#6A1B9A">ผลิตตุ๋น</text>
+        <text x="85" y="329" text-anchor="middle" font-size="10" fill="#555">raw_kg → cooked_kg</text>
+        <text x="85" y="342" text-anchor="middle" font-size="9" fill="#888">section_b_template.py</text>
+
+        <rect x="190" y="292" width="130" height="55" rx="8" fill="#F3E5F5" stroke="#CE93D8" stroke-width="1.5"/>
+        <text x="255" y="314" text-anchor="middle" font-size="11" font-weight="700" fill="#6A1B9A">yield_batches</text>
+        <text x="255" y="329" text-anchor="middle" font-size="10" fill="#555">yield_pct auto-calc</text>
+        <text x="255" y="342" text-anchor="middle" font-size="9" fill="#888">GENERATED ALWAYS</text>
+
+        <rect x="360" y="292" width="130" height="55" rx="8" fill="#F3E5F5" stroke="#CE93D8" stroke-width="1.5"/>
+        <text x="425" y="314" text-anchor="middle" font-size="11" font-weight="700" fill="#6A1B9A">yield_summary</text>
+        <text x="425" y="329" text-anchor="middle" font-size="10" fill="#555">VIEW</text>
+        <text x="425" y="342" text-anchor="middle" font-size="9" fill="#888">alert: LOW/OK/HIGH</text>
+
+        <rect x="530" y="292" width="130" height="55" rx="8" fill="#F3E5F5" stroke="#CE93D8" stroke-width="1.5"/>
+        <text x="595" y="314" text-anchor="middle" font-size="11" font-weight="700" fill="#6A1B9A">v_cost_per_bag</text>
+        <text x="595" y="329" text-anchor="middle" font-size="10" fill="#555">VIEW</text>
+        <text x="595" y="342" text-anchor="middle" font-size="9" fill="#888">ต้นทุน/กก./ถุง</text>
+
+        <!-- arrows yield -->
+        <line x1="150" y1="319" x2="190" y2="319" stroke="#CE93D8" stroke-width="2" marker-end="url(#a3)"/>
+        <line x1="320" y1="319" x2="360" y2="319" stroke="#CE93D8" stroke-width="2" marker-end="url(#a3)"/>
+        <line x1="490" y1="319" x2="530" y2="319" stroke="#CE93D8" stroke-width="2" marker-end="url(#a3)"/>
+
+        <defs>
+          <marker id="a1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#64B5F6"/></marker>
+          <marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#81C784"/></marker>
+          <marker id="a3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#CE93D8"/></marker>
+        </defs>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECTION 3: ER TABLES
+  ══════════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">3 · ER — Tables & Key Columns</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot ld-public"></div>schema: public (Non-Meat)</div>
+      <div class="legend-item"><div class="legend-dot ld-stock"></div>schema: stock (Meat)</div>
+      <div class="legend-item"><div class="legend-dot ld-view"></div>VIEW (computed)</div>
+    </div>
+    <div class="er-grid">
+
+      <!-- items (public) -->
+      <div class="er-table s-public">
+        <div class="er-header">items <span class="er-schema-badge">public</span></div>
+        <div class="er-col pk"><span class="er-col-name">id</span><span class="er-col-type">uuid PK</span></div>
+        <div class="er-col"><span class="er-col-name">sku</span><span class="er-col-type">text UNIQUE</span></div>
+        <div class="er-col"><span class="er-col-name">name</span><span class="er-col-type">text</span></div>
+        <div class="er-col"><span class="er-col-name">category</span><span class="er-col-type">text</span></div>
+        <div class="er-col"><span class="er-col-name">unit</span><span class="er-col-type">text</span></div>
+        <div class="er-col"><span class="er-col-name">par_level / max_level</span><span class="er-col-type">numeric</span></div>
+        <div class="er-col"><span class="er-col-name">purchase_price_per_kg</span><span class="er-col-type">numeric</span></div>
+        <div class="er-col"><span class="er-col-name">yield_expected_min/max</span><span class="er-col-type">numeric</span></div>
+        <div class="er-col"><span class="er-col-name">is_active</span><span class="er-col-type">bool</span></div>
+      </div>
+
+      <!-- stock_counts -->
+      <div class="er-table s-public">
+        <div class="er-header">stock_counts <span class="er-schema-badge">public</span></div>
+        <div class="er-col pk"><span class="er-col-name">id</span><span class="er-col-type">uuid PK</span></div>
+        <div class="er-col fk"><span class="er-col-name">item_id</span><span class="er-col-type">uuid FK→items</span></div>
+        <div class="er-col"><span class="er-col-name">qty</span><span class="er-col-type">numeric (absolute)</span></div>
+        <div class="er-col"><span class="er-col-name">counted_at</span><span class="er-col-type">timestamptz</span></div>
+        <div class="er-col"><span class="er-col-name">counted_by</span><span class="er-col-type">text</span></div>
+        <div class="er-col"><span class="er-col-name">note</span><span class="er-col-type">text?</span></div>
+        <div class="er-col" style="background:#fffde7;font-size:10px;color:#888;padding:6px 14px;">⚠️ latest row = ยอดปัจจุบัน</div>
+      </div>
+
+      <!-- purchase_orders -->
+      <div class="er-table s-public">
+        <div class="er-header">purchase_orders <span class="er-schema-badge">public</span></div>
+        <div class="er-col pk"><span class="er-col-name">id</span><span class="er-col-type">uuid PK</span></div>
+        <div class="er-col"><span class="er-col-name">po_number</span><span class="er-col-type">text</span></div>
+        <div class="er-col fk"><span class="er-col-name">supplier_id</span><span class="er-col-type">uuid FK→suppliers</span></div>
+        <div class="er-col"><span class="er-col-name">supplier_name</span><span class="er-col-type">text</span></div>
+        <div class="er-col"><span class="er-col-name">status</span><span class="er-col-type">draft/ordered/received/cancelled</span></div>
+        <div class="er-col"><span class="er-col-name">ordered_at / received_at</span><span class="er-col-type">timestamptz</span></div>
+      </div>
+
+      <!-- purchase_order_items -->
+      <div class="er-table s-public">
+        <div class="er-header">purchase_order_items <span class="er-schema-badge">public</span></div>
+        <div class="er-col pk"><span class="er-col-name">id</span><span class="er-col-type">uuid PK</span></div>
+        <div class="er-col fk"><span class="er-col-name">po_id</span><span class="er-col-type">uuid FK→purchase_orders</span></div>
+        <div class="er-col fk"><span class="er-col-name">item_id</span><span class="er-col-type">uuid FK→items</span></div>
+        <div class="er-col"><span class="er-col-name">qty_ordered</span><span class="er-col-type">numeric? (optional)</span></div>
+        <div class="er-col"><span class="er-col-name">qty_received</span><span class="er-col-type">numeric?</span></div>
+      </div>
+
+      <!-- suppliers -->
+      <div class="er-table s-public">
+        <div class="er-header">suppliers <span class="er-schema-badge">public</span></div>
+        <div class="er-col pk"><span class="er-col-name">id</span><span class="er-col-type">uuid PK</span></div>
+        <div class="er-col"><span class="er-col-name">name</span><span class="er-col-type">text</span></div>
+        <div class="er-col"><span class="er-col-name">lead_time_days</span><span class="er-col-type">int</span></div>
+        <div class="er-col"><span class="er-col-name">is_active</span><span class="er-col-type">bool</span></div>
+        <div class="er-col" style="font-size:10px;color:#888;padding:6px 14px;">ตลาดสด / Makro / Shopee</div>
+      </div>
+
+      <!-- yield_batches -->
+      <div class="er-table s-public">
+        <div class="er-header">yield_batches <span class="er-schema-badge">public</span></div>
+        <div class="er-col pk"><span class="er-col-name">id</span><span class="er-col-type">uuid PK</span></div>
+        <div class="er-col"><span class="er-col-name">prod_date</span><span class="er-col-type">date</span></div>
+        <div class="er-col fk"><span class="er-col-name">item_id</span><span class="er-col-type">uuid FK→items (cooked)</span></div>
+        <div class="er-col fk"><span class="er-col-name">raw_item_id</span><span class="er-col-type">uuid FK→items (raw)</span></div>
+        <div class="er-col"><span class="er-col-name">raw_kg / cooked_kg</span><span class="er-col-type">numeric</span></div>
+        <div class="er-col"><span class="er-col-name">yield_pct</span><span class="er-col-type">GENERATED STORED</span></div>
+        <div class="er-col"><span class="er-col-name">bag_count</span><span class="er-col-type">int</span></div>
+        <div class="er-col" style="font-size:10px;color:#888;padding:6px 14px;">UNIQUE(prod_date, item_id)</div>
+      </div>
+
+      <!-- yield_summary VIEW -->
+      <div class="er-table s-view">
+        <div class="er-header">yield_summary <span class="er-schema-badge">VIEW</span></div>
+        <div class="er-col"><span class="er-col-name">prod_date · item_name</span><span class="er-col-type"></span></div>
+        <div class="er-col"><span class="er-col-name">raw_kg · cooked_kg · yield_pct</span><span class="er-col-type"></span></div>
+        <div class="er-col"><span class="er-col-name">yield_expected_min/max</span><span class="er-col-type"></span></div>
+        <div class="er-col"><span class="er-col-name">yield_status</span><span class="er-col-type">LOW / OK / HIGH</span></div>
+      </div>
+
+      <!-- v_cost_per_bag VIEW -->
+      <div class="er-table s-view">
+        <div class="er-header">v_cost_per_bag <span class="er-schema-badge">VIEW</span></div>
+        <div class="er-col"><span class="er-col-name">item_name · raw_item_name</span><span class="er-col-type"></span></div>
+        <div class="er-col"><span class="er-col-name">price_per_kg · yield_pct</span><span class="er-col-type"></span></div>
+        <div class="er-col"><span class="er-col-name">raw_material_cost</span><span class="er-col-type">ต้นทุนรวม batch</span></div>
+        <div class="er-col"><span class="er-col-name">material_cost_per_kg_cooked</span><span class="er-col-type"></span></div>
+        <div class="er-col"><span class="er-col-name">material_cost_per_bag</span><span class="er-col-type">ต้นทุน/ถุง</span></div>
+      </div>
+
+      <!-- stock.catch_weight -->
+      <div class="er-table s-stock">
+        <div class="er-header">catch_weight <span class="er-schema-badge">stock</span></div>
+        <div class="er-col pk"><span class="er-col-name">id</span><span class="er-col-type">uuid PK</span></div>
+        <div class="er-col"><span class="er-col-name">legacy_cw_row</span><span class="er-col-type">text (sync key)</span></div>
+        <div class="er-col fk"><span class="er-col-name">item_id</span><span class="er-col-type">uuid FK→stock.items</span></div>
+        <div class="er-col"><span class="er-col-name">lot_date</span><span class="er-col-type">date</span></div>
+        <div class="er-col"><span class="er-col-name">weight_g</span><span class="er-col-type">numeric</span></div>
+        <div class="er-col"><span class="er-col-name">warehouse</span><span class="er-col-type">A/B/C</span></div>
+        <div class="er-col"><span class="er-col-name">status</span><span class="er-col-type">In Stock/Out/Delivered</span></div>
+        <div class="er-col" style="font-size:10px;color:#888;padding:6px 14px;">334 ถุง · parallel run กับ xlsx</div>
+      </div>
+
+      <!-- stock.deliveries -->
+      <div class="er-table s-stock">
+        <div class="er-header">deliveries <span class="er-schema-badge">stock</span></div>
+        <div class="er-col pk"><span class="er-col-name">id</span><span class="er-col-type">uuid PK</span></div>
+        <div class="er-col"><span class="er-col-name">bill_no</span><span class="er-col-type">NT-YYYYMMDD-XX</span></div>
+        <div class="er-col"><span class="er-col-name">branch</span><span class="er-col-type">NT / FS</span></div>
+        <div class="er-col"><span class="er-col-name">date</span><span class="er-col-type">date</span></div>
+      </div>
+
+      <!-- stock.delivery_lines -->
+      <div class="er-table s-stock">
+        <div class="er-header">delivery_lines <span class="er-schema-badge">stock</span></div>
+        <div class="er-col pk"><span class="er-col-name">id</span><span class="er-col-type">uuid PK</span></div>
+        <div class="er-col fk"><span class="er-col-name">delivery_id</span><span class="er-col-type">uuid FK→deliveries</span></div>
+        <div class="er-col fk"><span class="er-col-name">catch_weight_id</span><span class="er-col-type">uuid FK→catch_weight</span></div>
+        <div class="er-col"><span class="er-col-name">qty · weight_g</span><span class="er-col-type"></span></div>
+        <div class="er-col" style="background:#fffde7;font-size:10px;color:#888;padding:6px 14px;">⏳ Phase 3: Lot Traceability</div>
+      </div>
+
+      <!-- stock.stock_snapshots -->
+      <div class="er-table s-stock">
+        <div class="er-header">stock_snapshots <span class="er-schema-badge">stock</span></div>
+        <div class="er-col fk"><span class="er-col-name">item_id</span><span class="er-col-type">uuid FK</span></div>
+        <div class="er-col fk"><span class="er-col-name">location_id</span><span class="er-col-type">uuid FK</span></div>
+        <div class="er-col"><span class="er-col-name">snapshot_date</span><span class="er-col-type">date</span></div>
+        <div class="er-col"><span class="er-col-name">qty_counted / qty_expected</span><span class="er-col-type">numeric</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECTION 4: ROADMAP
+  ══════════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">4 · Roadmap</div>
+    <div class="flow-svg-wrap">
+      <svg width="1000" height="160" viewBox="0 0 1000 160" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, sans-serif">
+        <rect x="0" y="0" width="1000" height="160" fill="white" rx="0"/>
+
+        <!-- Phase boxes -->
+        <rect x="20" y="30" width="180" height="100" rx="8" fill="#E8F5E9" stroke="#81C784" stroke-width="2"/>
+        <text x="110" y="55" text-anchor="middle" font-size="12" font-weight="700" fill="#1B5E20">✅ Phase 1+2 — Done</text>
+        <text x="110" y="74" text-anchor="middle" font-size="10" fill="#555">yield_batches</text>
+        <text x="110" y="89" text-anchor="middle" font-size="10" fill="#555">yield_summary VIEW</text>
+        <text x="110" y="104" text-anchor="middle" font-size="10" fill="#555">v_cost_per_bag VIEW</text>
+        <text x="110" y="119" text-anchor="middle" font-size="10" fill="#555">Non-Meat Web UI</text>
+
+        <rect x="230" y="30" width="180" height="100" rx="8" fill="#E3F2FD" stroke="#64B5F6" stroke-width="2"/>
+        <text x="320" y="55" text-anchor="middle" font-size="12" font-weight="700" fill="#0D47A1">🔄 Parallel Run</text>
+        <text x="320" y="74" text-anchor="middle" font-size="10" fill="#555">06/04 – 20/04/2026</text>
+        <text x="320" y="89" text-anchor="middle" font-size="10" fill="#555">supabase_cw_sync.py</text>
+        <text x="320" y="104" text-anchor="middle" font-size="10" fill="#555">verify ยอดตรง 2 สัปดาห์</text>
+        <text x="320" y="119" text-anchor="middle" font-size="10" fill="#0D47A1">ก่อน switch primary</text>
+
+        <rect x="440" y="30" width="180" height="100" rx="8" fill="#FFF3E0" stroke="#FFB74D" stroke-width="2"/>
+        <text x="530" y="55" text-anchor="middle" font-size="12" font-weight="700" fill="#E65100">⏳ Phase 3</text>
+        <text x="530" y="74" text-anchor="middle" font-size="10" fill="#555">Lot Traceability</text>
+        <text x="530" y="89" text-anchor="middle" font-size="10" fill="#555">v_lot_traceability VIEW</text>
+        <text x="530" y="104" text-anchor="middle" font-size="10" fill="#555">populate delivery_lines</text>
+        <text x="530" y="119" text-anchor="middle" font-size="10" fill="#888">trace ถุง → NT/FS bill</text>
+
+        <rect x="650" y="30" width="180" height="100" rx="8" fill="#F3E5F5" stroke="#CE93D8" stroke-width="2"/>
+        <text x="740" y="55" text-anchor="middle" font-size="12" font-weight="700" fill="#6A1B9A">🔮 Future</text>
+        <text x="740" y="74" text-anchor="middle" font-size="10" fill="#555">cookingbook schema</text>
+        <text x="740" y="89" text-anchor="middle" font-size="10" fill="#555">hr schema</text>
+        <text x="740" y="104" text-anchor="middle" font-size="10" fill="#555">sales_ops cross-schema</text>
+        <text x="740" y="119" text-anchor="middle" font-size="10" fill="#888">views + analytics</text>
+
+        <rect x="860" y="30" width="120" height="100" rx="8" fill="#ECEFF1" stroke="#B0BEC5" stroke-width="2"/>
+        <text x="920" y="55" text-anchor="middle" font-size="12" font-weight="700" fill="#455A64">🎯 Goal</text>
+        <text x="920" y="74" text-anchor="middle" font-size="10" fill="#555">Single Source</text>
+        <text x="920" y="89" text-anchor="middle" font-size="10" fill="#555">of Truth</text>
+        <text x="920" y="104" text-anchor="middle" font-size="10" fill="#555">แทน Airtable</text>
+        <text x="920" y="119" text-anchor="middle" font-size="10" fill="#888">ทุก domain</text>
+
+        <!-- arrows -->
+        <line x1="200" y1="80" x2="230" y2="80" stroke="#888" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="410" y1="80" x2="440" y2="80" stroke="#888" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="620" y1="80" x2="650" y2="80" stroke="#888" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="830" y1="80" x2="860" y2="80" stroke="#888" stroke-width="2" marker-end="url(#ar)"/>
+        <defs>
+          <marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#888"/></marker>
+        </defs>
+      </svg>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
