@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NNTN Meat Stock</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --red: #8B0000; --red-light: #c62828; --red-bg: #fff5f5;
+  --green: #1B5E20; --green-light: #4CAF50;
+  --blue: #1565C0; --blue-light: #1976D2; --blue-bg: #E3F2FD;
+  --orange: #E65100;
+  --bg: #f5f5f5; --card: #fff; --border: #e0e0e0;
+  --text: #212121; --muted: #757575;
+  --header-bg: #1a1a2e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; padding-bottom: 80px; }
+
+/* Header */
+header {
+  background: var(--header-bg);
+  color: white; padding: 12px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+header .brand { display: flex; align-items: center; gap: 8px; }
+header .brand h1 { font-size: 1rem; font-weight: 700; }
+header .brand small { font-size: 0.7rem; opacity: 0.6; display: block; margin-top: 1px; }
+header .cw-badge {
+  font-size: 0.78rem; background: rgba(255,255,255,0.1);
+  padding: 4px 10px; border-radius: 20px;
+  display: flex; align-items: center; gap: 4px;
+}
+header .cw-badge span { color: #4CAF50; font-weight: 700; }
+
+/* Tabs */
+.tabs {
+  display: flex; overflow-x: auto; background: white;
+  border-bottom: 2px solid var(--border);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab-btn {
+  flex-shrink: 0; padding: 12px 14px;
+  font-family: inherit; font-size: 0.82rem; font-weight: 600;
+  color: var(--muted); background: none; border: none;
+  border-bottom: 3px solid transparent; cursor: pointer;
+  white-space: nowrap; transition: color .15s;
+}
+.tab-btn.active { color: var(--red-light); border-bottom-color: var(--red-light); }
+.tab-btn:hover:not(.active) { color: var(--text); }
+
+/* Pages */
+.page { display: none; padding: 14px 14px; }
+.page.active { display: block; }
+
+/* Cards */
+.card {
+  background: var(--card); border-radius: 10px;
+  padding: 16px; margin-bottom: 14px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.card-title {
+  font-size: 0.85rem; font-weight: 700; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 6px;
+}
+.tag { font-size: 0.68rem; background: var(--blue-bg); color: var(--blue);
+       padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+.tag-red { background: var(--red-bg); color: var(--red-light); }
+.tag-green { background: #E8F5E9; color: var(--green); }
+
+/* Form elements */
+label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 5px; }
+input, select {
+  width: 100%; padding: 10px 12px;
+  font-family: inherit; font-size: 0.9rem;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  background: white; color: var(--text);
+  transition: border-color .15s;
+}
+input:focus, select:focus { outline: none; border-color: var(--blue-light); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.mb { margin-bottom: 12px; }
+
+/* Buttons */
+.btn {
+  padding: 11px 20px; border-radius: 8px; border: none;
+  font-family: inherit; font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; transition: opacity .15s;
+}
+.btn:active { opacity: 0.8; }
+.btn-primary { background: var(--red-light); color: white; width: 100%; margin-top: 4px; }
+.btn-outline { background: none; border: 1.5px dashed; padding: 9px 14px; font-size: 0.82rem; }
+.btn-outline-green { color: var(--green); border-color: var(--green); }
+.btn-outline-blue { color: var(--blue); border-color: var(--blue); }
+.btn-sm { padding: 6px 12px; font-size: 0.78rem; border-radius: 6px; }
+.btn-danger { background: none; border: none; color: #ef5350; cursor: pointer; padding: 4px; font-size: 1rem; }
+
+/* Bag rows */
+.bag-row {
+  display: grid; grid-template-columns: 32px 1fr 60px 28px;
+  gap: 8px; align-items: center; margin-bottom: 8px;
+}
+.bag-no {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #f5f5f5; display: flex; align-items: center; justify-content: center;
+  font-size: 0.78rem; font-weight: 700; color: var(--muted); flex-shrink: 0;
+}
+.bag-kg { font-size: 0.78rem; color: var(--muted); text-align: right; }
+.sum-row {
+  text-align: right; font-size: 0.82rem; color: var(--muted);
+  padding-top: 6px; border-top: 1px solid var(--border); margin-top: 4px;
+}
+.sum-row b { color: var(--text); font-size: 0.9rem; }
+
+/* Yield box */
+.yield-box {
+  background: #fafafa; border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 14px; margin-top: 12px;
+}
+.yield-row {
+  display: flex; justify-content: space-between;
+  padding: 5px 0; font-size: 0.88rem;
+  border-bottom: 1px solid var(--border);
+}
+.yield-row:last-child { border-bottom: none; }
+.yield-row .val { font-weight: 700; }
+.yield-ok { color: var(--green); }
+.yield-warn { color: #E65100; }
+.yield-bad { color: var(--red-light); }
+
+/* Lot chips */
+.lot-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.lot-chip {
+  padding: 8px 12px; border-radius: 8px;
+  border: 2px solid var(--border); cursor: pointer;
+  font-size: 0.82rem; background: white; transition: all .15s;
+}
+.lot-chip.selected { border-color: var(--blue-light); background: var(--blue-bg); color: var(--blue); }
+.lot-chip .lot-name { font-weight: 700; }
+.lot-chip .lot-kg { font-size: 0.72rem; color: var(--muted); }
+
+/* Stock table */
+.stock-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.stock-table th { background: #f5f5f5; padding: 8px 10px; text-align: left;
+                  font-size: 0.72rem; text-transform: uppercase; letter-spacing: .05em;
+                  color: var(--muted); border-bottom: 2px solid var(--border); }
+.stock-table td { padding: 10px; border-bottom: 1px solid #f0f0f0; }
+.stock-table tr:hover td { background: #fafafa; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 700; }
+.badge-ok { background: #E8F5E9; color: var(--green); }
+.badge-low { background: var(--red-bg); color: var(--red-light); }
+.badge-warn { background: #FFF3E0; color: var(--orange); }
+
+/* Info banner */
+.info-banner {
+  background: var(--blue-bg); border-left: 3px solid var(--blue-light);
+  padding: 10px 12px; border-radius: 6px; font-size: 0.82rem; margin-bottom: 12px;
+  color: var(--blue);
+}
+.warn-banner {
+  background: #FFF8E1; border-left: 3px solid #FFA000;
+  padding: 10px 12px; border-radius: 6px; font-size: 0.82rem; margin-bottom: 12px;
+  color: #E65100;
+}
+
+/* KPI grid */
+.kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.kpi-card { background: white; border-radius: 10px; padding: 14px; border: 1px solid var(--border); }
+.kpi-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing:.05em; }
+.kpi-val { font-size: 1.6rem; font-weight: 700; margin-top: 2px; }
+
+.loading { color: var(--muted); font-style: italic; font-size: 0.85rem; }
+.divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+/* Stock expand */
+.stock-group-row { cursor: pointer; }
+.stock-group-row td { font-weight: 600; }
+.stock-group-row:hover td { background: #f0f4ff !important; }
+.stock-expand-row td { padding: 0; background: #fafafa; }
+.stock-bag-list { padding: 6px 8px 10px 8px; }
+.stock-bag-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; border-radius: 6px; margin-bottom: 4px;
+  background: white; border: 1px solid var(--border); font-size: 0.82rem;
+}
+.stock-bag-item .bag-cw { min-width: 42px; font-weight: 700; color: var(--muted); font-size: 0.72rem; }
+.stock-bag-item .bag-lot { color: var(--muted); font-size: 0.75rem; flex:1; }
+.stock-bag-item .bag-wt { font-weight: 700; min-width: 60px; text-align: right; }
+.stock-bag-item .btn-adj {
+  background: none; border: 1.5px solid var(--border); border-radius: 6px;
+  padding: 3px 9px; font-size: 0.72rem; font-weight: 600; cursor: pointer;
+  color: var(--muted); flex-shrink: 0; font-family: inherit;
+  transition: all .15s;
+}
+.stock-bag-item .btn-adj:hover { border-color: var(--red-light); color: var(--red-light); }
+
+/* Modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.5); align-items: flex-end; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: white; border-radius: 16px 16px 0 0;
+  padding: 20px 16px 32px; width: 100%; max-width: 480px;
+  max-height: 85vh; overflow-y: auto;
+}
+.modal-title { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+.modal-sub { font-size: 0.78rem; color: var(--muted); margin-bottom: 16px; }
+.modal-section { margin-bottom: 14px; }
+.modal-section label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; }
+.radio-row { display: flex; gap: 10px; }
+.radio-btn {
+  flex: 1; padding: 10px 8px; border-radius: 8px; text-align: center;
+  border: 2px solid var(--border); cursor: pointer; font-size: 0.85rem; font-weight: 600;
+  transition: all .15s; user-select: none;
+}
+.radio-btn.selected-loss { border-color: var(--red-light); background: var(--red-bg); color: var(--red-light); }
+.radio-btn.selected-gain { border-color: var(--green-light); background: #E8F5E9; color: var(--green); }
+.reason-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.reason-chip {
+  padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border);
+  font-size: 0.78rem; cursor: pointer; font-family: inherit; background: white;
+  transition: all .15s;
+}
+.reason-chip.selected { border-color: var(--blue-light); background: var(--blue-bg); color: var(--blue); font-weight: 600; }
+.adj-type-row { display: flex; gap: 10px; margin-bottom: 10px; }
+.adj-type-btn {
+  flex:1; padding: 8px; border-radius: 8px; border: 2px solid var(--border);
+  font-size: 0.82rem; font-weight: 600; cursor: pointer; text-align: center;
+  font-family: inherit; background: white; transition: all .15s;
+}
+.adj-type-btn.selected { border-color: var(--blue-light); background: var(--blue-bg); color: var(--blue); }
+.modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+.modal-actions .btn-cancel {
+  flex:1; padding: 11px; border-radius: 8px; border: 1.5px solid var(--border);
+  background: none; font-family: inherit; font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; color: var(--muted);
+}
+.modal-actions .btn-confirm {
+  flex:2; padding: 11px; border-radius: 8px; border: none;
+  background: var(--red-light); color: white;
+  font-family: inherit; font-size: 0.9rem; font-weight: 700; cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div>
+      <h1>🥩 NNTN Meat Stock</h1>
+      <small>ระบบจัดการสต๊อกเนื้อตุ๋น</small>
+    </div>
+  </div>
+  <div class="cw-badge" id="header-cw">⏳ โหลด...</div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('receive')">🛒 รับเนื้อสด</button>
+  <button class="tab-btn" onclick="switchTab('produce')">🫕 บันทึกผลผลิต</button>
+  <button class="tab-btn" onclick="switchTab('process')">♻️ แปรรูป</button>
+  <button class="tab-btn" onclick="switchTab('export')">🚛 ส่งออก</button>
+  <button class="tab-btn" onclick="switchTab('stock')">📊 สต๊อกปัจจุบัน</button>
+</div>
+
+<!-- ════ รับเนื้อสด ════ -->
+<div class="page active" id="page-receive">
+  <div class="card">
+    <div class="card-title">🛒 รับเนื้อสดเข้าคลัง A</div>
+    <div class="row2">
+      <div><label>วันที่รับเข้า</label><input type="date" id="recv-date"></div>
+      <div><label>เลขที่ใบซื้อ/ใบส่ง</label><input type="text" id="recv-bill" placeholder="เช่น PO-001"></div>
+    </div>
+  </div>
+
+  <div id="recv-items"></div>
+
+  <button class="btn btn-outline btn-outline-green" style="width:100%;margin-bottom:14px" onclick="addRecvItem()">
+    + เพิ่มรายการเนื้อ
+  </button>
+
+  <button class="btn btn-primary" onclick="submitReceive()">✅ บันทึกรับเนื้อสด</button>
+</div>
+
+<!-- ════ บันทึกผลผลิต ════ -->
+<div class="page" id="page-produce">
+  <div class="card">
+    <div class="card-title">🫕 บันทึกผลผลิตตุ๋น <span class="tag">Section B</span></div>
+    <div class="row2">
+      <div><label>วันที่ผลิต</label><input type="date" id="prod-date"></div>
+      <div><label>ผู้บันทึก</label><input type="text" id="prod-user" placeholder="ชื่อ"></div>
+    </div>
+  </div>
+
+  <div id="prod-items"></div>
+
+  <button class="btn btn-outline btn-outline-green" style="width:100%;margin-bottom:14px" onclick="addProdItem()">
+    + เพิ่มรายการตุ๋น
+  </button>
+  <button class="btn btn-primary" onclick="submitProduce()">✅ บันทึกผลผลิต</button>
+</div>
+
+<!-- ════ แปรรูป ════ -->
+<div class="page" id="page-process">
+  <div class="card">
+    <div class="card-title">♻️ แปรรูป / รีแพ็ค <span class="tag tag-red">ครัวกลาง</span></div>
+    <div class="row2">
+      <div><label>วันที่</label><input type="date" id="proc-date"></div>
+      <div><label>ประเภท</label>
+        <select id="proc-type" onchange="onProcTypeChange()">
+          <option value="kitchen">ครัวกลาง — ตัดแบ่ง/แพ็ค SKU</option>
+          <option value="repack">รีแพ็ค — เปลี่ยนขนาดถุง</option>
+          <option value="mix">ผสม — รวม lot</option>
+        </select>
+      </div>
+    </div>
+    <div class="info-banner">📦 เลือกถุงต้นทาง (📋) → ระบุ SKU output + น้ำหนักรายถุง</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 เนื้อต้นทาง (Input)</div>
+    <div class="warn-banner">⚠️ ถุงที่เลือกจะถูกเปลี่ยนสถานะเป็น ♻️ Repacked</div>
+    <div id="proc-inputs"></div>
+    <button class="btn btn-outline btn-outline-green btn-sm" onclick="addProcInput()" style="margin-top:4px">
+      + เพิ่มถุงต้นทาง
+    </button>
+    <div class="sum-row">รวม input: <b id="proc-input-sum">0.000</b> กก.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📦 ผลผลิต (Output)</div>
+    <!-- ครัวกลาง: เลือก SKU ใหม่ -->
+    <div id="proc-out-sku-row" class="row2">
+      <div><label>SKU output</label>
+        <select id="proc-sku-out">
+          <option value="">— เลือก SKU —</option>
+        </select>
+      </div>
+      <div><label>จำนวนถุง</label>
+        <input type="number" id="proc-out-bags" min="1" placeholder="0" oninput="updateProcBagRows()">
+      </div>
+    </div>
+    <!-- รีแพ็ค: item เดิม auto -->
+    <div id="proc-out-repack-row" style="display:none;margin-bottom:12px">
+      <div class="info-banner" id="proc-repack-item-label">⏳ เลือกถุงต้นทางก่อน</div>
+      <label style="margin-top:8px">จำนวนถุงใหม่</label>
+      <input type="number" id="proc-out-bags-repack" min="1" placeholder="0" oninput="updateProcBagRows()">
+    </div>
+    <div id="proc-bag-rows"><div class="loading">ระบุจำนวนถุงก่อน</div></div>
+    <div class="sum-row">รวม output: <b id="proc-output-sum">0.000</b> กก.</div>
+
+    <div class="yield-box" id="proc-yield-box" style="margin-top:10px">
+      <div class="yield-row"><span>Input</span><span class="val" id="pyb-input">—</span></div>
+      <div class="yield-row"><span>Output</span><span class="val" id="pyb-output">—</span></div>
+      <div class="yield-row"><span>Yield</span><span class="val" id="pyb-pct">—</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🗑️ เศษจากการแปรรูป (ถ้ามี)</div>
+    <div id="proc-scraps">
+      <button class="btn btn-outline btn-outline-blue btn-sm" onclick="addScrap()">+ เพิ่มรายการเศษ</button>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="submitProcess()">✅ บันทึกแปรรูป</button>
+</div>
+
+<!-- ════ ส่งออก ════ -->
+<div class="page" id="page-export">
+  <div class="card">
+    <div class="card-title">🚛 สร้างใบนำส่ง</div>
+    <div class="row2">
+      <div><label>วันที่ส่ง</label><input type="date" id="exp-date"></div>
+      <div><label>ปลายทาง</label>
+        <select id="exp-dest">
+          <option>ครัวกลาง (NT)</option>
+          <option>หน้าร้าน (FS)</option>
+          <option>อื่นๆ</option>
+        </select>
+      </div>
+    </div>
+    <div class="mb"><label>เลขที่ใบนำส่ง</label>
+      <input type="text" id="exp-bill" placeholder="NT-20260407-01">
+    </div>
+  </div>
+
+  <div id="exp-items"></div>
+  <button class="btn btn-outline btn-outline-red btn-sm" onclick="addExpItem()"
+          style="width:100%;margin-bottom:14px;color:#c62828;border-color:#c62828">
+    + เพิ่มรายการส่ง
+  </button>
+
+  <div class="card" id="exp-preview" style="display:none">
+    <div class="card-title">📋 Preview ใบนำส่ง</div>
+    <div id="exp-preview-content"></div>
+  </div>
+
+  <button class="btn btn-primary" onclick="submitExport()">🚛 ยืนยันส่งออก</button>
+</div>
+
+<!-- ════ สต๊อกปัจจุบัน ════ -->
+<div class="page" id="page-stock">
+  <div class="kpi-grid" id="stock-kpis">
+    <div class="kpi-card"><div class="kpi-label">✅ In Stock</div><div class="kpi-val" id="sk-total">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">น้ำหนักรวม</div><div class="kpi-val" id="sk-kg" style="font-size:1.2rem">—</div></div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">คลัง A (สด)</div><div class="kpi-val" id="sk-a">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">คลัง B (ตุ๋น)</div><div class="kpi-val" id="sk-b">—</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 รายการ In Stock <span style="font-size:.72rem;color:var(--muted);font-weight:400">คลิกแถวเพื่อดูรายถุง</span></div>
+    <table class="stock-table">
+      <thead><tr><th>รายการ</th><th>lot</th><th style="text-align:right">กก.</th><th>สถานะ</th></tr></thead>
+      <tbody id="stock-rows"><tr><td colspan="4" class="loading">กำลังโหลด...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📈 Yield Summary</div>
+    <table class="stock-table">
+      <thead><tr><th>รายการ</th><th style="text-align:right">yield%</th><th>range</th><th>status</th></tr></thead>
+      <tbody id="yield-rows"><tr><td colspan="4" class="loading">กำลังโหลด...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════ Modal ปรับยอด ════ -->
+<div class="modal-overlay" id="adj-modal" onclick="closeAdjModal(event)">
+  <div class="modal-box">
+    <div class="modal-title">⚙️ ปรับยอด</div>
+    <div class="modal-sub" id="adj-bag-info">—</div>
+
+    <div class="modal-section">
+      <label>ทิศทาง</label>
+      <div class="radio-row">
+        <div class="radio-btn selected-loss" id="adj-dir-loss" onclick="setAdjDir('loss')">📉 ลด (loss)</div>
+        <div class="radio-btn" id="adj-dir-gain" onclick="setAdjDir('gain')">📈 เพิ่ม (งอก)</div>
+      </div>
+    </div>
+
+    <div class="modal-section" id="adj-reason-section">
+      <label id="adj-reason-label">เหตุผล</label>
+      <div class="reason-chips" id="adj-reason-chips"></div>
+    </div>
+
+    <div class="modal-section">
+      <label>การปรับ</label>
+      <div class="adj-type-row">
+        <button class="adj-type-btn selected" id="adjt-weight" onclick="setAdjType('weight')">⚖️ ปรับน้ำหนัก (กรัม)</button>
+        <button class="adj-type-btn" id="adjt-remove" onclick="setAdjType('remove')">❌ ตัดออกจากสต๊อก</button>
+      </div>
+      <div id="adj-weight-input">
+        <input type="number" id="adj-delta-g" placeholder="กรัม ± (ใส่เป็นบวก ระบบคำนวณเอง)" style="margin-bottom:4px">
+        <div style="font-size:.72rem;color:var(--muted)">loss → ลบออก | งอก → บวกเพิ่ม</div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label>หมายเหตุ</label>
+      <input type="text" id="adj-note" placeholder="(ไม่บังคับ)">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAdjModal()">ยกเลิก</button>
+      <button class="btn-confirm" onclick="submitAdj()">✅ ยืนยันปรับยอด</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SB = 'https://emjqulzikpxorvpaaiww.supabase.co'
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M'
+const H = { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' }
+
+const get = (path, params={}) =>
+  fetch(`${SB}/rest/v1/${path}?${new URLSearchParams(params)}`, { headers: H }).then(r => r.json())
+const post = (path, body) =>
+  fetch(`${SB}/rest/v1/${path}`, { method: 'POST', headers: {...H, Prefer:'return=representation'}, body: JSON.stringify(body) }).then(r => r.json())
+
+function today() { return new Date().toISOString().split('T')[0] }
+function fmtDate(d) { if(!d) return ''; const dt=new Date(d); return `${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}/${dt.getFullYear()}` }
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) =>
+    b.classList.toggle('active', ['receive','produce','process','export','stock'][i]===name))
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.getElementById('page-'+name).classList.add('active')
+  if(name==='stock') loadStock()
+}
+
+// ── Global data ──
+let items = [], cwStock = []
+let recvItemCount = 0, expItemCount = 0, procInputCount = 0
+
+// ── Init ──
+async function init() {
+  const [its, cw] = await Promise.all([
+    get('items', { select:'id,name,sku,category', order:'name' }),
+    get('catch_weight', { 'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name)', 'status':'eq.in_stock', 'limit':1000 })
+  ])
+  items = Array.isArray(its) ? its : []
+  // normalize item_name จาก join
+  cwStock = Array.isArray(cw) ? cw.map(r => ({...r, item_name: r.items?.name || ''})) : []
+
+  // Header CW count
+  const d = new Date(); const ds = `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`
+  document.getElementById('header-cw').innerHTML =
+    `${ds} | CW <span>✅ ${cwStock.length} ถุง</span>`
+
+  // Process SKU dropdown
+  const skuSel = document.getElementById('proc-sku-out')
+  items.filter(i=>i.sku).forEach(i => { const o=document.createElement('option'); o.value=i.id; o.textContent=`${i.sku} | ${i.name}`; skuSel.appendChild(o) })
+
+  // Set today dates
+  ;['recv-date','prod-date','proc-date','exp-date'].forEach(id => {
+    const el=document.getElementById(id); if(el) el.value=today()
+  })
+
+  // Add first items
+  addRecvItem()
+  addProdItem()
+  addProcInput()
+  addExpItem()
+}
+
+// ════ รับเนื้อสด ════
+function addRecvItem() {
+  recvItemCount++
+  const n = recvItemCount
+  const rawItems = items.filter(i => i.category==='meat_raw' || (!i.category && !i.name.includes('ตุ๋น')))
+  const opts = rawItems.map(i=>`<option value="${i.id}">${i.name}</option>`).join('')
+
+  const div = document.createElement('div')
+  div.className = 'card'; div.id = `recv-item-${n}`
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="card-title" style="margin:0">รายการที่ ${n}</div>
+      ${n>1?`<button class="btn-danger" onclick="this.closest('.card').remove()">✕</button>`:''}
+    </div>
+    <div class="row3">
+      <div><label>ประเภทเนื้อ</label>
+        <select onchange="updateRecvBags(${n})">${opts||'<option>โหลดไม่ได้</option>'}</select>
+      </div>
+      <div><label>วัน Lot</label><input type="date" value="${today()}" id="recv-lot-${n}"></div>
+      <div><label>จำนวนถุง</label>
+        <input type="number" id="recv-bags-${n}" min="1" value="1" oninput="updateRecvBags(${n})">
+      </div>
+    </div>
+    <div id="recv-bag-rows-${n}"></div>
+    <div class="sum-row">รวม: <b id="recv-sum-${n}">0.000</b> กก.</div>
+  `
+  document.getElementById('recv-items').appendChild(div)
+  updateRecvBags(n)
+}
+
+function updateRecvBags(n) {
+  const cnt = parseInt(document.getElementById(`recv-bags-${n}`)?.value) || 1
+  const cont = document.getElementById(`recv-bag-rows-${n}`)
+  if (!cont) return
+  // Keep existing values
+  const existing = []
+  cont.querySelectorAll('input[type=number]').forEach(i => existing.push(i.value))
+  cont.innerHTML = ''
+  for (let i=1; i<=cnt; i++) {
+    const row = document.createElement('div'); row.className='bag-row'
+    row.innerHTML = `
+      <div class="bag-no">${i}</div>
+      <input type="number" placeholder="กรัม" min="1"
+             value="${existing[i-1]||''}"
+             oninput="updateRecvSum(${n})" style="text-align:right">
+      <div class="bag-kg" id="recv-bkg-${n}-${i}">—</div>
+      <div></div>
+    `
+    cont.appendChild(row)
+  }
+  updateRecvSum(n)
+}
+
+function updateRecvSum(n) {
+  const cont = document.getElementById(`recv-bag-rows-${n}`)
+  let total = 0
+  cont.querySelectorAll('input[type=number]').forEach((inp, idx) => {
+    const g = parseFloat(inp.value)||0
+    const kg = g/1000
+    total += kg
+    const kgEl = document.getElementById(`recv-bkg-${n}-${idx+1}`)
+    if(kgEl) kgEl.textContent = g>0 ? kg.toFixed(3)+' กก.' : '—'
+  })
+  document.getElementById(`recv-sum-${n}`).textContent = total.toFixed(3)
+}
+
+function submitReceive() { alert('🚧 ฟีเจอร์นี้กำลังพัฒนา — จะ save ลง Supabase catch_weight') }
+
+// ════ บันทึกผลผลิต (multi-card) ════
+let prodItemCount = 0
+
+function addProdItem() {
+  prodItemCount++
+  const n = prodItemCount
+  const rawItems = items.filter(i => i.category === 'meat_raw')
+  const rawOpts = rawItems.map(i => `<option value="${i.id}" data-name="${i.name}">${i.name}</option>`).join('')
+  const cookedItems = items.filter(i => i.category === 'meat_cooked')
+  const cookedOpts = cookedItems.map(i => `<option value="${i.id}">${i.name}</option>`).join('')
+
+  const div = document.createElement('div')
+  div.className = 'card'; div.id = `prod-item-${n}`; div.style.borderLeft = '4px solid var(--red-light)'
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="card-title" style="margin:0">รายการที่ ${n}</div>
+      ${n>1?`<button class="btn-danger" onclick="document.getElementById('prod-item-${n}').remove()">✕ ลบ</button>`:''}
+    </div>
+    <div style="background:#f9f9f9;border-radius:8px;padding:12px;margin-bottom:10px">
+      <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">เนื้อสดที่เบิก (INPUT)</div>
+      <div class="row2">
+        <div><label>ประเภทเนื้อสด</label>
+          <select id="prod-raw-${n}" onchange="updateProdLots(${n})">
+            <option value="">— เลือก —</option>${rawOpts}
+          </select>
+        </div>
+        <div><label>Lot ที่ใช้</label>
+          <div id="prod-lots-${n}" class="lot-chips" style="margin-top:2px"><div class="loading" style="font-size:.78rem">เลือกเนื้อสดก่อน</div></div>
+        </div>
+      </div>
+      <div id="prod-lot-hint-${n}" style="font-size:.78rem;color:var(--blue);margin-bottom:8px"></div>
+      <div><label>น้ำหนักเนื้อดิบที่ใช้ (กก.)</label>
+        <input type="number" id="prod-raw-kg-${n}" step="0.001" placeholder="0.000" oninput="calcProdYield(${n})">
+      </div>
+    </div>
+    <div style="background:#e8f4fd;border-radius:8px;padding:12px;margin-bottom:10px">
+      <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">ผลผลิตที่ได้ (OUTPUT)</div>
+      <div class="row2">
+        <div><label>ชื่อเนื้อตุ๋น</label>
+          <select id="prod-cooked-${n}">
+            <option value="">— เลือก —</option>${cookedOpts}
+          </select>
+        </div>
+        <div><label>จำนวนถุง</label>
+          <input type="number" id="prod-bags-${n}" min="1" placeholder="0" oninput="updateProdBagRows(${n})">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:40px 1fr 70px;gap:6px;font-size:.78rem;color:var(--muted);padding:6px 0;margin-bottom:4px">
+        <span>ถุง</span><span>น้ำหนัก (กรัม)</span><span>กก.</span>
+      </div>
+      <div id="prod-bag-rows-${n}"><div class="loading">ระบุจำนวนถุงก่อน</div></div>
+      <div class="sum-row">รวม output: <b id="prod-cooked-sum-${n}">0.000</b> กก.</div>
+    </div>
+    <div class="yield-box" id="prod-yield-box-${n}" style="display:none">
+      <div class="yield-row"><span>Input</span><span class="val" id="yb-in-${n}">—</span></div>
+      <div class="yield-row"><span>Output</span><span class="val" id="yb-out-${n}">—</span></div>
+      <div class="yield-row"><span>Yield%</span><span class="val" id="yb-pct-${n}">—</span></div>
+    </div>`
+  document.getElementById('prod-items').appendChild(div)
+}
+
+function updateProdLots(n) {
+  const sel = document.getElementById(`prod-raw-${n}`)
+  const rawName = sel.selectedOptions[0]?.dataset?.name || ''
+  const cont = document.getElementById(`prod-lots-${n}`)
+  if (!rawName) { cont.innerHTML = '<div class="loading">เลือกประเภทเนื้อก่อน</div>'; return }
+  const keyword = rawName.split(' ')[0]
+  const matching = cwStock.filter(r => r.item_name && r.item_name.includes(keyword))
+  if (!matching.length) {
+    cont.innerHTML = `<div class="loading" style="color:var(--red-light)">ไม่มีสต๊อก ${rawName} ในคลัง</div>`; return
+  }
+  // group by lot_date, เรียง FIFO
+  const lots = {}
+  matching.forEach(r => {
+    const lot = r.lot_date ? r.lot_date.split('T')[0] : 'unknown'
+    if (!lots[lot]) lots[lot] = { count:0, kg:0, bags:[] }
+    lots[lot].count++
+    lots[lot].kg += (parseFloat(r.weight_g)||0)/1000
+    lots[lot].bags.push(r)
+  })
+  const sortedLots = Object.entries(lots).sort(([a],[b]) => a < b ? -1 : 1)
+  cont.innerHTML = sortedLots.map(([lot, d]) => `
+    <div class="lot-chip" id="plc-${n}-${lot.replace(/-/g,'')}"
+         onclick="expandProdLot(${n},'${lot}')">
+      <div class="lot-name">${fmtDate(lot)}</div>
+      <div class="lot-kg">${d.count} ถุง | ${d.kg.toFixed(3)} กก.</div>
+    </div>`).join('')
+  // bag area
+  cont.insertAdjacentHTML('afterend',
+    `<div id="prod-bags-area-${n}" style="margin-top:8px"></div>`)
+  document.getElementById(`prod-lot-hint-${n}`).textContent = ''
+  document.getElementById(`prod-raw-kg-${n}`).value = ''
+  calcProdYield(n)
+}
+
+function expandProdLot(n, lot) {
+  // highlight selected lot chip
+  document.querySelectorAll(`#prod-lots-${n} .lot-chip`).forEach(c => c.classList.remove('selected'))
+  document.getElementById(`plc-${n}-${lot.replace(/-/g,'')}`)?.classList.add('selected')
+  // แสดง bag chips ของ lot นี้
+  const keyword = document.getElementById(`prod-raw-${n}`)?.selectedOptions[0]?.dataset?.name?.split(' ')?.[0] || ''
+  const bags = cwStock.filter(r => r.item_name?.includes(keyword) && (r.lot_date||'').startsWith(lot))
+  const area = document.getElementById(`prod-bags-area-${n}`)
+  if (!area) return
+  area.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <span style="font-size:.75rem;color:var(--muted)">เลือกถุงที่เข้าหม้อ — lot ${fmtDate(lot)}</span>
+      <button class="btn btn-outline btn-outline-green btn-sm" onclick="selectAllProdBags(${n})">เลือกทั้งหมด</button>
+    </div>
+    <div class="lot-chips" id="prod-bag-chips-${n}">
+      ${bags.map(r => {
+        const kg = ((parseFloat(r.weight_g)||0)/1000).toFixed(3)
+        const rowNo = r.legacy_cw_row || `#${r.id}`
+        return `<div class="lot-chip" id="pbag-${n}-${r.id}" onclick="toggleProdBag(${n},${r.id})">
+          <div class="lot-name">${rowNo}</div>
+          <div class="lot-kg">${kg} กก.</div>
+        </div>`
+      }).join('')}
+    </div>`
+  recalcProdRawKg(n)
+}
+
+function selectAllProdBags(n) {
+  document.querySelectorAll(`#prod-bag-chips-${n} .lot-chip`).forEach(c => c.classList.add('selected'))
+  recalcProdRawKg(n)
+}
+
+function toggleProdBag(n, bagId) {
+  document.getElementById(`pbag-${n}-${bagId}`)?.classList.toggle('selected')
+  recalcProdRawKg(n)
+}
+
+function recalcProdRawKg(n) {
+  let total = 0; const selected = []
+  document.querySelectorAll(`#prod-bag-chips-${n} .lot-chip.selected`).forEach(c => {
+    const cid = c.id.replace(`pbag-${n}-`,'')
+    total += (parseFloat(cwStock.find(r=>r.id==cid)?.weight_g)||0)/1000
+    selected.push(c.querySelector('.lot-name').textContent)
+  })
+  document.getElementById(`prod-raw-kg-${n}`).value = total > 0 ? total.toFixed(3) : ''
+  document.getElementById(`prod-lot-hint-${n}`).textContent =
+    selected.length ? `เลือก ${selected.length} ถุง → ${total.toFixed(3)} กก.` : ''
+  calcProdYield(n)
+}
+
+function updateProdBagRows(n) {
+  const cnt = parseInt(document.getElementById(`prod-bags-${n}`)?.value)||0
+  const cont = document.getElementById(`prod-bag-rows-${n}`)
+  const existing = []; cont.querySelectorAll('input[type=number]').forEach(i => existing.push(i.value))
+  cont.innerHTML = ''
+  for (let i=1; i<=cnt; i++) {
+    const row = document.createElement('div'); row.className = 'bag-row'
+    row.innerHTML = `
+      <div class="bag-no">${i}</div>
+      <input type="number" placeholder="กรัม" value="${existing[i-1]||''}"
+             oninput="updateProdBagSum(${n})" style="text-align:right">
+      <div class="bag-kg" id="pbk-${n}-${i}">—</div>
+      <div></div>`
+    cont.appendChild(row)
+  }
+  if (!cnt) cont.innerHTML = '<div class="loading">ระบุจำนวนถุงก่อน</div>'
+  updateProdBagSum(n)
+}
+
+function updateProdBagSum(n) {
+  let total = 0
+  document.querySelectorAll(`#prod-bag-rows-${n} input[type=number]`).forEach((inp, idx) => {
+    const g = parseFloat(inp.value)||0; total += g/1000
+    const el = document.getElementById(`pbk-${n}-${idx+1}`)
+    if (el) el.textContent = g > 0 ? (g/1000).toFixed(3)+' กก.' : '—'
+  })
+  document.getElementById(`prod-cooked-sum-${n}`).textContent = total.toFixed(3)
+  calcProdYield(n)
+}
+
+function calcProdYield(n) {
+  const raw = parseFloat(document.getElementById(`prod-raw-kg-${n}`)?.value)||0
+  const cooked = parseFloat(document.getElementById(`prod-cooked-sum-${n}`)?.textContent)||0
+  const box = document.getElementById(`prod-yield-box-${n}`)
+  if (!box) return
+  if (raw > 0 && cooked > 0) {
+    const pct = cooked/raw*100
+    box.style.display = 'block'
+    document.getElementById(`yb-in-${n}`).textContent = raw.toFixed(3)+' กก.'
+    document.getElementById(`yb-out-${n}`).textContent = cooked.toFixed(3)+' กก.'
+    const el = document.getElementById(`yb-pct-${n}`)
+    el.textContent = pct.toFixed(1)+'%'
+    el.className = 'val '+(pct<30?'yield-bad':pct<50?'yield-warn':'yield-ok')
+  } else { box.style.display = 'none' }
+}
+
+function submitProduce() {
+  const cards = document.querySelectorAll('[id^=prod-item-]')
+  const out = []; let valid = true
+  cards.forEach(card => {
+    const n = card.id.replace('prod-item-','')
+    const rawKg = parseFloat(document.getElementById(`prod-raw-kg-${n}`)?.value)||0
+    const cookedKg = parseFloat(document.getElementById(`prod-cooked-sum-${n}`)?.textContent)||0
+    const cookedId = document.getElementById(`prod-cooked-${n}`)?.value
+    const bags = parseInt(document.getElementById(`prod-bags-${n}`)?.value)||0
+    if (!cookedId || !rawKg || bags < 1) { valid = false; return }
+    out.push({ rawKg, cookedKg, cookedId, bags, yieldPct: (cookedKg/rawKg*100).toFixed(1) })
+  })
+  if (!valid) { alert('กรุณากรอกข้อมูลให้ครบทุกรายการ'); return }
+  alert(`🚧 จะ save ${out.length} รายการลง yield_batches\n(กำลังพัฒนา)`)
+}
+
+// ════ แปรรูป ════
+function onProcTypeChange() {
+  const type = document.getElementById('proc-type').value
+  document.getElementById('proc-out-sku-row').style.display   = type === 'repack' ? 'none' : ''
+  document.getElementById('proc-out-repack-row').style.display = type === 'repack' ? 'block' : 'none'
+  updateRepackItemLabel()
+}
+
+function updateRepackItemLabel() {
+  const type = document.getElementById('proc-type').value
+  if (type !== 'repack') return
+  const firstSel = document.querySelector('[id^=proc-in-sel-]')
+  const opt = firstSel?.selectedOptions?.[0]
+  const label = document.getElementById('proc-repack-item-label')
+  if (opt?.value && opt.dataset?.name) {
+    label.textContent = `📦 ถุงใหม่จะเป็น: ${opt.dataset.name} (item เดิม)`
+    label.style.background = '#E8F5E9'; label.style.borderLeftColor = 'var(--green)'
+  } else {
+    label.textContent = '⏳ เลือกถุงต้นทางก่อน'
+    label.style.background = ''; label.style.borderLeftColor = ''
+  }
+}
+
+function addProcInput() {
+  procInputCount++
+  const n = procInputCount
+  const cwOpts = cwStock.map(r=>`<option value="${r.id}" data-kg="${(r.weight_g||0)/1000}" data-name="${r.item_name||''}" data-item-id="${r.item_id||''}" data-lot="${r.lot_date?r.lot_date.split('T')[0]:''}">${r.item_name||'?'} | ${r.legacy_cw_row||'#'+r.id.substring(0,6)} | lot ${r.lot_date?fmtDate(r.lot_date):''} | ${((r.weight_g||0)/1000).toFixed(3)}กก.</option>`).join('')
+
+  const div=document.createElement('div'); div.style.marginBottom='10px'
+  div.innerHTML=`
+    <div class="bag-row" style="grid-template-columns:1fr 80px 80px 28px">
+      <select onchange="onProcInChange(${n})" id="proc-in-sel-${n}">
+        <option value="">— CW row / ชื่อ —</option>${cwOpts}
+      </select>
+      <input type="text" id="proc-in-lot-${n}" placeholder="lot" style="text-align:center">
+      <input type="number" id="proc-in-kg-${n}" placeholder="กก." step="0.001" oninput="updateProcSum()">
+      <button class="btn-danger" onclick="this.closest('div').remove();updateProcSum();updateRepackItemLabel()">✕</button>
+    </div>`
+  document.getElementById('proc-inputs').appendChild(div)
+}
+
+function onProcInChange(n) {
+  const opt = document.getElementById(`proc-in-sel-${n}`)?.selectedOptions?.[0]
+  if (opt?.value) {
+    const kg = opt.dataset.kg
+    const lot = opt.dataset.lot
+    if (kg) document.getElementById(`proc-in-kg-${n}`).value = parseFloat(kg).toFixed(3)
+    if (lot) document.getElementById(`proc-in-lot-${n}`).value = fmtDate(lot)
+  }
+  updateProcSum()
+  updateRepackItemLabel()
+}
+
+function updateProcSum() {
+  let total=0
+  document.querySelectorAll('[id^=proc-in-kg-]').forEach(inp=>{ total+=parseFloat(inp.value)||0 })
+  document.getElementById('proc-input-sum').textContent=total.toFixed(3)
+  updateProcYield()
+}
+
+function updateProcBagRows() {
+  const type = document.getElementById('proc-type').value
+  const bagEl = type === 'repack'
+    ? document.getElementById('proc-out-bags-repack')
+    : document.getElementById('proc-out-bags')
+  const cnt = parseInt(bagEl?.value)||0
+  const cont=document.getElementById('proc-bag-rows')
+  const existing=[]; cont.querySelectorAll('input[type=number]').forEach(i=>existing.push(i.value))
+  cont.innerHTML=''
+  for(let i=1;i<=cnt;i++){
+    const row=document.createElement('div'); row.className='bag-row'
+    row.innerHTML=`
+      <div class="bag-no">${i}</div>
+      <input type="number" placeholder="กรัม" value="${existing[i-1]||''}"
+             oninput="updateProcOutputSum()" style="text-align:right">
+      <div class="bag-kg" id="pcb-kg-${i}">—</div>
+      <div></div>`
+    cont.appendChild(row)
+  }
+  if(cnt===0) cont.innerHTML='<div class="loading">ระบุจำนวนถุงก่อน</div>'
+  updateProcOutputSum()
+}
+
+function updateProcOutputSum() {
+  let total=0
+  document.querySelectorAll('#proc-bag-rows input[type=number]').forEach((inp,idx)=>{
+    const g=parseFloat(inp.value)||0; total+=g/1000
+    const el=document.getElementById(`pcb-kg-${idx+1}`)
+    if(el) el.textContent=g>0?(g/1000).toFixed(3)+' กก.':'—'
+  })
+  document.getElementById('proc-output-sum').textContent=total.toFixed(3)
+  updateProcYield()
+}
+
+function updateProcYield() {
+  const inp=parseFloat(document.getElementById('proc-input-sum').textContent)||0
+  const out=parseFloat(document.getElementById('proc-output-sum').textContent)||0
+  document.getElementById('pyb-input').textContent=inp.toFixed(3)+' กก.'
+  document.getElementById('pyb-output').textContent=out.toFixed(3)+' กก.'
+  const pctEl=document.getElementById('pyb-pct')
+  if(inp>0&&out>0){
+    const pct=out/inp*100
+    pctEl.textContent=pct.toFixed(1)+'%'
+    pctEl.className='val '+(pct<50?'yield-bad':pct<75?'yield-warn':'yield-ok')
+  } else { pctEl.textContent='—'; pctEl.className='val' }
+}
+
+function addScrap() {
+  const div=document.createElement('div'); div.style.marginBottom='8px'
+  div.innerHTML=`<div class="row2">
+    <div><input type="text" placeholder="ชื่อเศษ เช่น กระดูก"></div>
+    <div style="display:flex;gap:6px">
+      <input type="number" placeholder="กรัม">
+      <button class="btn-danger" onclick="this.closest('.row2').remove()">✕</button>
+    </div></div>`
+  const btn=document.querySelector('#proc-scraps .btn')
+  document.getElementById('proc-scraps').insertBefore(div,btn)
+}
+
+function submitProcess() { alert('🚧 ฟีเจอร์นี้กำลังพัฒนา — จะ save ลง Supabase') }
+
+// ════ ส่งออก ════
+function addExpItem() {
+  expItemCount++
+  const n=expItemCount
+  const opts=items.map(i=>`<option value="${i.id}">${i.sku?i.sku+' | ':''} ${i.name}</option>`).join('')
+  const div=document.createElement('div'); div.className='card'; div.id=`exp-item-${n}`
+  div.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="card-title" style="margin:0">รายการที่ ${n}</div>
+      ${n>1?`<button class="btn-danger" onclick="this.closest('.card').remove()">✕</button>`:''}
+    </div>
+    <div class="mb"><label>SKU / รายการ</label><select>${opts}</select></div>
+    <div class="row3">
+      <div><label>Lot</label><input type="date" value="${today()}"></div>
+      <div><label>จำนวนถุง</label><input type="number" min="1" value="1"></div>
+      <div><label>น้ำหนักรวม (กก.)</label><input type="number" step="0.001"></div>
+    </div>`
+  document.getElementById('exp-items').appendChild(div)
+}
+
+function submitExport() { alert('🚧 ฟีเจอร์นี้กำลังพัฒนา — จะสร้างใบนำส่งและ update สถานะ CW') }
+
+// ════ สต๊อกปัจจุบัน ════
+async function loadStock() {
+  try {
+    const [cw, ys] = await Promise.all([
+      get('catch_weight', { 'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name)', 'status':'eq.in_stock', 'limit':1000 }),
+      get('yield_summary', { select:'item_name,yield_pct,yield_expected_min,yield_expected_max,yield_status', order:'yield_pct.desc' })
+    ])
+
+    const rows=Array.isArray(cw)?cw:[]
+    const totalKg=rows.reduce((s,r)=>s+(parseFloat(r.weight_g)||0),0)/1000
+    const byWh={A:0,B:0,C:0}
+    rows.forEach(r=>{ if(r.warehouse && byWh[r.warehouse]!==undefined) byWh[r.warehouse]++ })
+
+    document.getElementById('sk-total').textContent=rows.length+' ถุง'
+    document.getElementById('sk-kg').textContent=totalKg.toFixed(2)+' กก.'
+    document.getElementById('sk-a').textContent=byWh.A+' ถุง'
+    document.getElementById('sk-b').textContent=byWh.B+' ถุง'
+
+    // Group by item — store bags per group for expand
+    const grouped={}
+    rows.forEach(r=>{
+      const nm = r.items?.name || r.item_name || '?'
+      if(!grouped[nm]) grouped[nm]={count:0,kg:0,lots:new Set(),bags:[]}
+      grouped[nm].count++
+      grouped[nm].kg+=(parseFloat(r.weight_g)||0)/1000
+      if(r.lot_date) grouped[nm].lots.add(r.lot_date.split('T')[0])
+      grouped[nm].bags.push(r)
+    })
+    // Store globally for expand/modal
+    window._stockGrouped = grouped
+
+    document.getElementById('stock-rows').innerHTML=Object.entries(grouped)
+      .sort((a,b)=>b[1].kg-a[1].kg)
+      .map(([name,d])=>`
+        <tr class="stock-group-row" onclick="toggleStockExpand('${name.replace(/'/g,"\\'")}')">
+          <td>${name}</td>
+          <td style="color:var(--muted);font-size:.8rem">${[...d.lots].map(fmtDate).join(', ')}</td>
+          <td style="text-align:right;font-weight:600">${d.kg.toFixed(3)}</td>
+          <td><span class="badge badge-ok">✅ ${d.count} ถุง</span></td>
+        </tr>
+        <tr class="stock-expand-row" id="expand-${name.replace(/[^a-zA-Z0-9ก-๙]/g,'_')}" style="display:none">
+          <td colspan="4">
+            <div class="stock-bag-list">
+              ${d.bags.sort((a,b)=>new Date(a.lot_date)-new Date(b.lot_date)).map(bag=>`
+                <div class="stock-bag-item">
+                  <span class="bag-cw">${bag.legacy_cw_row||'#'+bag.id.substring(0,6)}</span>
+                  <span class="bag-lot">${bag.lot_date?fmtDate(bag.lot_date.split('T')[0]):''} · ${bag.warehouse||'?'}</span>
+                  <span class="bag-wt">${((parseFloat(bag.weight_g)||0)/1000).toFixed(3)} กก.</span>
+                  <button class="btn-adj" onclick="event.stopPropagation();openAdjModal(${JSON.stringify(bag).replace(/"/g,'&quot;')})">⚙️ ปรับยอด</button>
+                </div>`).join('')}
+            </div>
+          </td>
+        </tr>`).join('')||'<tr><td colspan="4" class="loading">ไม่มีข้อมูล</td></tr>'
+
+    // Yield summary
+    const ysRows=Array.isArray(ys)?ys:[]
+    document.getElementById('yield-rows').innerHTML=ysRows.map(r=>{
+      const icon=r.yield_status==='OK'?'✅':r.yield_status==='LOW'?'🔴':'🟡'
+      const cls=r.yield_status==='OK'?'badge-ok':r.yield_status==='LOW'?'badge-low':'badge-warn'
+      const rng=`${r.yield_expected_min?.toFixed(0)||'?'}–${r.yield_expected_max?.toFixed(0)||'?'}%`
+      return `<tr>
+        <td>${r.item_name}</td>
+        <td style="text-align:right;font-weight:600">${parseFloat(r.yield_pct).toFixed(1)}%</td>
+        <td style="color:var(--muted);font-size:.8rem">${rng}</td>
+        <td><span class="badge ${cls}">${icon} ${r.yield_status}</span></td>
+      </tr>`
+    }).join('')||'<tr><td colspan="4" class="loading">ไม่มีข้อมูล</td></tr>'
+
+  } catch(e){ console.error(e) }
+}
+
+// ── Stock expand ───────────────────────────────────────
+function toggleStockExpand(name) {
+  const key = name.replace(/[^a-zA-Z0-9ก-๙]/g,'_')
+  const row = document.getElementById('expand-'+key)
+  if (!row) return
+  row.style.display = row.style.display==='none' ? 'table-row' : 'none'
+}
+
+// ── Modal state ─────────────────────────────────────────
+let _adjBag = null, _adjDir = 'loss', _adjType = 'weight'
+
+const LOSS_REASONS = ['เสีย','หาย','นับไม่ครบ','หมดอายุ','อื่นๆ']
+const GAIN_REASONS = ['ดูดน้ำซุป','ถุงตกค้าง','แก้ไขข้อมูล','อื่นๆ']
+
+function openAdjModal(bag) {
+  _adjBag = bag
+  _adjDir = 'loss'
+  _adjType = 'weight'
+  const nm = bag.items?.name || bag.item_name || '?'
+  const cw = bag.legacy_cw_row || '#'+bag.id.substring(0,6)
+  const lot = bag.lot_date ? fmtDate(bag.lot_date.split('T')[0]) : '?'
+  const wt = ((parseFloat(bag.weight_g)||0)/1000).toFixed(3)
+  document.getElementById('adj-bag-info').textContent = `${nm} | ${cw} | lot ${lot} | ${wt} กก.`
+  setAdjDir('loss')
+  setAdjType('weight')
+  document.getElementById('adj-delta-g').value = ''
+  document.getElementById('adj-note').value = ''
+  document.getElementById('adj-modal').classList.add('open')
+}
+
+function closeAdjModal(e) {
+  if (e && e.target !== document.getElementById('adj-modal')) return
+  document.getElementById('adj-modal').classList.remove('open')
+}
+
+function setAdjDir(dir) {
+  _adjDir = dir
+  document.getElementById('adj-dir-loss').className = 'radio-btn' + (dir==='loss'?' selected-loss':'')
+  document.getElementById('adj-dir-gain').className = 'radio-btn' + (dir==='gain'?' selected-gain':'')
+  const reasons = dir==='loss' ? LOSS_REASONS : GAIN_REASONS
+  document.getElementById('adj-reason-label').textContent = dir==='loss' ? 'เหตุผล (loss)' : 'เหตุผล (งอก)'
+  document.getElementById('adj-reason-chips').innerHTML = reasons.map(r=>
+    `<button class="reason-chip" onclick="toggleReason(this)">${r}</button>`
+  ).join('')
+}
+
+function toggleReason(el) {
+  document.querySelectorAll('#adj-reason-chips .reason-chip').forEach(c=>c.classList.remove('selected'))
+  el.classList.add('selected')
+}
+
+function setAdjType(type) {
+  _adjType = type
+  document.getElementById('adjt-weight').className = 'adj-type-btn' + (type==='weight'?' selected':'')
+  document.getElementById('adjt-remove').className = 'adj-type-btn' + (type==='remove'?' selected':'')
+  document.getElementById('adj-weight-input').style.display = type==='weight' ? 'block' : 'none'
+}
+
+async function submitAdj() {
+  if (!_adjBag) return
+  const reason = document.querySelector('#adj-reason-chips .reason-chip.selected')?.textContent || ''
+  if (!reason) { alert('เลือกเหตุผลก่อน'); return }
+  const note = document.getElementById('adj-note').value.trim()
+  const btn = document.querySelector('#adj-modal .btn-confirm')
+  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'
+
+  try {
+    let deltaG = 0
+    let newStatus = null
+
+    if (_adjType === 'remove') {
+      newStatus = _adjDir === 'loss' ? 'lost' : 'adjusted'
+      deltaG = _adjDir === 'loss' ? -(parseFloat(_adjBag.weight_g)||0) : (parseFloat(_adjBag.weight_g)||0)
+    } else {
+      const raw = parseFloat(document.getElementById('adj-delta-g').value)
+      if (!raw || isNaN(raw)) { alert('ระบุน้ำหนักที่ปรับ'); btn.disabled=false; btn.textContent='✅ ยืนยันปรับยอด'; return }
+      deltaG = _adjDir === 'loss' ? -Math.abs(raw) : Math.abs(raw)
+    }
+
+    // 1. บันทึก stock_adjustments
+    const adjRow = {
+      date: today(),
+      bag_id: _adjBag.id,
+      item_id: _adjBag.item_id,
+      lot_date: _adjBag.lot_date?.split('T')[0] || null,
+      direction: _adjDir,
+      reason: reason,
+      delta_g: deltaG,
+      note: note || null,
+      adj_type: _adjType
+    }
+    await post('stock_adjustments', adjRow)
+
+    // 2. ถ้า ตัดออก → PATCH catch_weight status
+    if (_adjType === 'remove') {
+      await fetch(`${SB}/rest/v1/catch_weight?id=eq.${_adjBag.id}`, {
+        method: 'PATCH',
+        headers: {...H, Prefer:'return=minimal'},
+        body: JSON.stringify({ status: newStatus })
+      })
+    }
+
+    document.getElementById('adj-modal').classList.remove('open')
+    alert(`✅ บันทึกแล้ว: ${_adjDir==='loss'?'ลด':'เพิ่ม'} ${Math.abs(deltaG)}g (${reason})`)
+    await loadStock() // reload
+
+  } catch(e) {
+    console.error(e)
+    alert('❌ เกิดข้อผิดพลาด: ' + e.message)
+  } finally {
+    btn.disabled=false; btn.textContent='✅ ยืนยันปรับยอด'
+  }
+}
+
+init()
+</script>
+</body>
+</html>
