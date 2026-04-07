@@ -37,9 +37,14 @@ header .cw-badge {
 header .cw-badge span { color: #4CAF50; font-weight: 700; }
 
 /* Tabs */
+.tabs-wrap { position: relative; background: white; border-bottom: 2px solid var(--border); }
+.tabs-wrap::after {
+  content:''; position:absolute; right:0; top:0; bottom:0; width:28px;
+  background: linear-gradient(to right, transparent, white);
+  pointer-events: none; z-index:1;
+}
 .tabs {
-  display: flex; overflow-x: auto; background: white;
-  border-bottom: 2px solid var(--border);
+  display: flex; overflow-x: auto; background: transparent;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -263,12 +268,14 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
   <div class="cw-badge" id="header-cw">⏳ โหลด...</div>
 </header>
 
+<div class="tabs-wrap">
 <div class="tabs">
   <button class="tab-btn active" onclick="switchTab('receive')">🛒 รับเนื้อสด</button>
   <button class="tab-btn" onclick="switchTab('produce')">🫕 บันทึกผลผลิต</button>
   <button class="tab-btn" onclick="switchTab('process')">♻️ แปรรูป</button>
   <button class="tab-btn" onclick="switchTab('export')">🚛 ส่งออก</button>
   <button class="tab-btn" onclick="switchTab('stock')">📊 สต๊อกปัจจุบัน</button>
+</div>
 </div>
 
 <!-- ════ รับเนื้อสด ════ -->
@@ -517,9 +524,9 @@ async function init() {
   document.getElementById('header-cw').innerHTML =
     `${ds} | CW <span>✅ ${cwStock.length} ถุง</span>`
 
-  // Process SKU dropdown
+  // Process SKU dropdown (MT items only — คลัง B/C)
   const skuSel = document.getElementById('proc-sku-out')
-  items.filter(i=>i.sku).forEach(i => { const o=document.createElement('option'); o.value=i.id; o.textContent=`${i.sku} | ${i.name}`; skuSel.appendChild(o) })
+  items.filter(i=>i.sku&&i.sku.startsWith('MT')).forEach(i => { const o=document.createElement('option'); o.value=i.id; o.textContent=`${i.sku} | ${i.name}`; skuSel.appendChild(o) })
 
   // Set today dates
   ;['recv-date','prod-date','proc-date','exp-date'].forEach(id => {
@@ -819,11 +826,10 @@ function onProcTypeChange() {
 function updateRepackItemLabel() {
   const type = document.getElementById('proc-type').value
   if (type !== 'repack') return
-  const firstSel = document.querySelector('[id^=proc-in-sel-]')
-  const opt = firstSel?.selectedOptions?.[0]
   const label = document.getElementById('proc-repack-item-label')
-  if (opt?.value && opt.dataset?.name) {
-    label.textContent = `📦 ถุงใหม่จะเป็น: ${opt.dataset.name} (item เดิม)`
+  const firstChip = document.querySelector('[id^=pcbag-].selected')
+  if (firstChip?.dataset?.name) {
+    label.textContent = `📦 ถุงใหม่จะเป็น: ${firstChip.dataset.name} (item เดิม)`
     label.style.background = '#E8F5E9'; label.style.borderLeftColor = 'var(--green)'
   } else {
     label.textContent = '⏳ เลือกถุงต้นทางก่อน'
@@ -834,31 +840,79 @@ function updateRepackItemLabel() {
 function addProcInput() {
   procInputCount++
   const n = procInputCount
-  const cwOpts = cwStock.map(r=>`<option value="${r.id}" data-kg="${(r.weight_g||0)/1000}" data-name="${r.item_name||''}" data-item-id="${r.item_id||''}" data-lot="${r.lot_date?r.lot_date.split('T')[0]:''}">${r.item_name||'?'} | ${r.legacy_cw_row||'#'+r.id.substring(0,6)} | lot ${r.lot_date?fmtDate(r.lot_date):''} | ${((r.weight_g||0)/1000).toFixed(3)}กก.</option>`).join('')
+  const uniqueItems = [...new Set(cwStock.map(r => r.item_name).filter(Boolean))].sort()
+  const itemOpts = uniqueItems.map(nm => `<option value="${nm}">${nm}</option>`).join('')
 
-  const div=document.createElement('div'); div.style.marginBottom='10px'
-  div.innerHTML=`
-    <div class="bag-row" style="grid-template-columns:1fr 80px 80px 28px">
-      <select onchange="onProcInChange(${n})" id="proc-in-sel-${n}">
-        <option value="">— CW row / ชื่อ —</option>${cwOpts}
-      </select>
-      <input type="text" id="proc-in-lot-${n}" placeholder="lot" style="text-align:center">
-      <input type="number" id="proc-in-kg-${n}" placeholder="กก." step="0.001" oninput="updateProcSum()">
-      <button class="btn-danger" onclick="this.closest('div').remove();updateProcSum();updateRepackItemLabel()">✕</button>
+  const div = document.createElement('div')
+  div.style.marginBottom = '10px'
+  div.innerHTML = `
+    <div style="background:#f9f9f9;border-radius:8px;padding:10px;position:relative" id="proc-in-card-${n}">
+      <button class="btn-danger" onclick="document.getElementById('proc-in-card-${n}').remove();updateProcSum();updateRepackItemLabel()"
+              style="position:absolute;top:8px;right:8px">✕</button>
+      <div class="mb">
+        <label>ประเภทเนื้อ</label>
+        <select id="proc-item-sel-${n}" onchange="loadProcBagChips(${n})">
+          <option value="">— เลือก item —</option>${itemOpts}
+        </select>
+      </div>
+      <div id="proc-bag-chips-area-${n}"></div>
+      <div style="margin-top:6px">
+        <label>รวม input (กก.)</label>
+        <input type="number" id="proc-in-kg-${n}" placeholder="0.000" step="0.001"
+               style="background:#f0f0f0" readonly>
+      </div>
     </div>`
   document.getElementById('proc-inputs').appendChild(div)
 }
 
-function onProcInChange(n) {
-  const opt = document.getElementById(`proc-in-sel-${n}`)?.selectedOptions?.[0]
-  if (opt?.value) {
-    const kg = opt.dataset.kg
-    const lot = opt.dataset.lot
-    if (kg) document.getElementById(`proc-in-kg-${n}`).value = parseFloat(kg).toFixed(3)
-    if (lot) document.getElementById(`proc-in-lot-${n}`).value = fmtDate(lot)
-  }
-  updateProcSum()
+function loadProcBagChips(n) {
+  const itemName = document.getElementById(`proc-item-sel-${n}`).value
+  const area = document.getElementById(`proc-bag-chips-area-${n}`)
+  if (!itemName) { area.innerHTML = ''; updateProcSum(); return }
+
+  const bags = cwStock.filter(r => r.item_name === itemName)
+  const lots = {}
+  bags.forEach(r => {
+    const lot = r.lot_date ? r.lot_date.split('T')[0] : 'unknown'
+    if (!lots[lot]) lots[lot] = []
+    lots[lot].push(r)
+  })
+
+  area.innerHTML = Object.entries(lots).sort().map(([lot, lotBags]) => `
+    <div style="margin-bottom:8px">
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">
+        lot ${fmtDate(lot)} — ${lotBags.length} ถุง
+      </div>
+      <div class="lot-chips" style="margin:0">
+        ${lotBags.map(r => {
+          const kg = ((r.weight_g||0)/1000).toFixed(3)
+          const cw = r.legacy_cw_row || '#'+r.id.substring(0,6)
+          return `<div class="lot-chip" id="pcbag-${n}-${r.id}"
+                       data-id="${r.id}" data-kg="${(r.weight_g||0)/1000}"
+                       data-name="${r.item_name||''}" data-item-id="${r.item_id||''}"
+                       onclick="toggleProcBag(${n},'${r.id}')">
+            <div class="lot-name">${cw}</div>
+            <div class="lot-kg">${kg} กก.</div>
+          </div>`
+        }).join('')}
+      </div>
+    </div>`).join('')
+
   updateRepackItemLabel()
+}
+
+function toggleProcBag(n, bagId) {
+  document.getElementById(`pcbag-${n}-${bagId}`)?.classList.toggle('selected')
+  recalcProcInputKg(n)
+  updateRepackItemLabel()
+}
+
+function recalcProcInputKg(n) {
+  let total = 0
+  document.querySelectorAll(`#proc-bag-chips-area-${n} .lot-chip.selected`)
+    .forEach(c => { total += parseFloat(c.dataset.kg) || 0 })
+  document.getElementById(`proc-in-kg-${n}`).value = total > 0 ? total.toFixed(3) : ''
+  updateProcSum()
 }
 
 function updateProcSum() {
@@ -933,7 +987,7 @@ function submitProcess() { alert('🚧 ฟีเจอร์นี้กำล�
 function addExpItem() {
   expItemCount++
   const n=expItemCount
-  const opts=items.map(i=>`<option value="${i.id}">${i.sku?i.sku+' | ':''} ${i.name}</option>`).join('')
+  const opts=items.filter(i=>i.sku&&i.sku.startsWith('MT')).map(i=>`<option value="${i.id}">${i.sku} | ${i.name}</option>`).join('')
   const div=document.createElement('div'); div.className='card'; div.id=`exp-item-${n}`
   div.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
