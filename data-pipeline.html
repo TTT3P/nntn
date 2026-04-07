@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NNTN — ระบบเก็บข้อมูลยอดขาย</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #111;
+      padding: 28px 20px 20px;
+      text-align: center;
+      border-bottom: 2px solid #8B0000;
+    }
+    header .logo {
+      font-size: 0.75rem;
+      letter-spacing: 3px;
+      color: #888;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    header h1 { font-size: 1.6rem; font-weight: 700; color: #fff; }
+    header .sub { font-size: 0.85rem; color: #999; margin-top: 6px; }
+
+    .container { max-width: 860px; margin: 0 auto; padding: 32px 16px 60px; }
+
+    /* Section header */
+    .section-label {
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #8B0000;
+      margin-bottom: 8px;
+    }
+    h2 { font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 20px; }
+
+    /* Source cards */
+    .source-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    .source-card {
+      background: #242424;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .source-card .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+    }
+    .badge-grab  { background: #00b14f22; color: #00b14f; border: 1px solid #00b14f44; }
+    .badge-fs    { background: #1a73e822; color: #4da6ff; border: 1px solid #4da6ff44; }
+    .badge-meat  { background: #8B000022; color: #e05555; border: 1px solid #8B000044; }
+
+    .source-card h3 { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .source-card p  { font-size: 0.85rem; color: #999; line-height: 1.5; }
+    .source-card .data-list {
+      margin-top: 12px;
+      list-style: none;
+    }
+    .source-card .data-list li {
+      font-size: 0.8rem;
+      color: #bbb;
+      padding: 3px 0;
+      border-bottom: 1px solid #2e2e2e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .source-card .data-list li:last-child { border-bottom: none; }
+    .source-card .data-list li::before { content: '→'; color: #555; font-size: 0.7rem; }
+
+    /* Steps */
+    .steps-section { margin-bottom: 40px; }
+    .steps-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .steps-header .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-grab  { background: #00b14f; }
+    .dot-fs    { background: #4da6ff; }
+    .dot-meat  { background: #e05555; }
+
+    .steps-header h3 { font-size: 1rem; font-weight: 700; color: #fff; }
+
+    .step-list { list-style: none; position: relative; padding-left: 24px; }
+    .step-list::before {
+      content: '';
+      position: absolute;
+      left: 10px; top: 8px; bottom: 8px;
+      width: 1px;
+      background: #333;
+    }
+    .step-list li {
+      position: relative;
+      padding: 10px 0 10px 16px;
+      font-size: 0.88rem;
+      color: #ccc;
+      line-height: 1.5;
+    }
+    .step-list li::before {
+      content: '';
+      position: absolute;
+      left: -14px;
+      top: 16px;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #444;
+      border: 2px solid #666;
+    }
+    .step-list .num {
+      display: inline-block;
+      background: #2e2e2e;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-size: 0.75rem;
+      color: #888;
+      margin-right: 6px;
+    }
+    .step-list .warn {
+      display: block;
+      margin-top: 6px;
+      font-size: 0.78rem;
+      color: #e0a020;
+      background: #e0a02010;
+      border-left: 2px solid #e0a020;
+      padding: 4px 8px;
+      border-radius: 0 4px 4px 0;
+    }
+    .step-list code {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      color: #7ec8e3;
+    }
+
+    /* Flow diagram */
+    .flow-section { margin-bottom: 40px; }
+    .flow-diagram {
+      background: #1e1e1e;
+      border: 1px solid #2e2e2e;
+      border-radius: 10px;
+      padding: 24px;
+      overflow-x: auto;
+    }
+    .flow-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: nowrap;
+      margin-bottom: 8px;
+    }
+    .flow-box {
+      background: #2a2a2a;
+      border: 1px solid #3a3a3a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      text-align: center;
+      font-size: 0.8rem;
+      min-width: 110px;
+    }
+    .flow-box .title { font-weight: 700; color: #fff; font-size: 0.82rem; }
+    .flow-box .sub   { color: #888; font-size: 0.72rem; margin-top: 2px; }
+    .flow-box.green  { border-color: #00b14f55; background: #00b14f0d; }
+    .flow-box.blue   { border-color: #4da6ff55; background: #4da6ff0d; }
+    .flow-box.red    { border-color: #e0555555; background: #e055550d; }
+    .flow-box.gold   { border-color: #e0a02055; background: #e0a0200d; }
+    .flow-box.purple { border-color: #a855f755; background: #a855f70d; }
+    .arrow { color: #444; font-size: 1.1rem; padding: 0 6px; flex-shrink: 0; }
+    .arrow-down { text-align: center; color: #444; font-size: 1rem; margin: 4px 0; }
+
+    /* DB Tables */
+    .db-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .db-table {
+      background: #242424;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .db-table .table-name {
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: #7ec8e3;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .db-table .row-count {
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .db-table ul { list-style: none; }
+    .db-table ul li {
+      font-size: 0.75rem;
+      color: #999;
+      padding: 2px 0;
+      border-bottom: 1px solid #2e2e2e;
+    }
+    .db-table ul li:last-child { border-bottom: none; }
+
+    /* KPI cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+    .kpi-card {
+      background: #242424;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+    .kpi-card .label { font-size: 0.75rem; color: #888; margin-bottom: 6px; }
+    .kpi-card .value { font-size: 1.3rem; font-weight: 700; color: #fff; }
+    .kpi-card .unit  { font-size: 0.7rem; color: #666; margin-top: 2px; }
+
+    /* Divider */
+    .divider { border: none; border-top: 1px solid #2a2a2a; margin: 36px 0; }
+
+    /* Warning box */
+    .warn-box {
+      background: #e0a02012;
+      border: 1px solid #e0a02033;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 16px 0;
+      font-size: 0.85rem;
+      color: #e0c070;
+    }
+    .warn-box strong { color: #e0a020; }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: #444;
+      font-size: 0.75rem;
+      border-top: 1px solid #222;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ครัวเนื้อในตำนาน · NNTN</div>
+  <h1>ระบบเก็บข้อมูลยอดขาย</h1>
+  <div class="sub">Sales Data Pipeline — ทีมงานทุกคนอ่านได้เลยครับ</div>
+</header>
+
+<div class="container">
+
+  <!-- KPI snapshot -->
+  <div class="section-label">MAR2026 · Snapshot</div>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="label">Grab Orders</div>
+      <div class="value">547</div>
+      <div class="unit">ออเดอร์</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Grab Revenue</div>
+      <div class="value">114,483</div>
+      <div class="unit">บาท</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">LINE MAN Bills</div>
+      <div class="value">281</div>
+      <div class="unit">บิล</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">LINE MAN Revenue</div>
+      <div class="value">56,927</div>
+      <div class="unit">บาท</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">รวม Delivery</div>
+      <div class="value">171,410</div>
+      <div class="unit">บาท</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">AOV Grab</div>
+      <div class="value">208</div>
+      <div class="unit">บาท/ออเดอร์</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- แหล่งข้อมูล -->
+  <div class="section-label">แหล่งข้อมูล</div>
+  <h2>ข้อมูลมาจาก 3 แหล่งหลัก</h2>
+
+  <div class="source-grid">
+    <div class="source-card">
+      <div class="badge badge-grab">GRAB DELIVERY</div>
+      <h3>Grab Merchant Portal</h3>
+      <p>Export CSV รายเดือนจาก portal ของ Grab</p>
+      <ul class="data-list">
+        <li>เมนูที่ขาย + จำนวน + รายได้</li>
+        <li>Modifier (size M/L, เนื้อไทย/ออส)</li>
+        <li>ยอดรายวัน (orders, revenue)</li>
+        <li>สถิติ cancelled orders</li>
+      </ul>
+    </div>
+    <div class="source-card">
+      <div class="badge badge-fs">LINE MAN DELIVERY</div>
+      <h3>FoodStory (Wongnai POS)</h3>
+      <p>ดึงข้อมูลระดับบิล ผ่าน Console ใน Chrome</p>
+      <ul class="data-list">
+        <li>ทุกรายการสั่งแยกบิล</li>
+        <li>เวลา, ช่องทาง, ประเภทชำระ</li>
+        <li>ราคาจริงหลังส่วนลด</li>
+        <li>Option (size, เนื้อ variant)</li>
+      </ul>
+    </div>
+    <div class="source-card">
+      <div class="badge badge-meat">KITCHEN</div>
+      <h3>บันทึกการใช้เนื้อ</h3>
+      <p>ไทน์/ทีมครัวกรอกเองทุกวัน</p>
+      <ul class="data-list">
+        <li>เนื้อแต่ละประเภท (กรัม/วัน)</li>
+        <li>ชายโครง → โกเบ vs ตุ๋น (yield)</li>
+        <li>หมายเหตุ เช่น เนื้อหมดกี่โมง</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Step by step -->
+  <div class="section-label">ขั้นตอน</div>
+  <h2>วิธีทำงานแต่ละ channel</h2>
+
+  <!-- Grab -->
+  <div class="steps-section">
+    <div class="steps-header">
+      <div class="dot dot-grab"></div>
+      <h3>1. Grab Delivery</h3>
+    </div>
+    <ul class="step-list">
+      <li>
+        <span class="num">1</span>
+        Login <strong>merchant.grab.com</strong>
+      </li>
+      <li>
+        <span class="num">2</span>
+        ไปที่ <strong>Reports</strong> → เลือกเดือนที่ต้องการ
+      </li>
+      <li>
+        <span class="num">3</span>
+        Download <strong>3 ไฟล์</strong>: Menu Item Summary, Modifier Summary, Daily Summary
+      </li>
+      <li>
+        <span class="num">4</span>
+        วางในโฟลเดอร์ <code>nntn-sales-analytics/APR2026_receipts/</code>
+      </li>
+      <li>
+        <span class="num">5</span>
+        รัน <code>python3 nntn_db_build.py</code> → ข้อมูลเข้า DB อัตโนมัติ
+        <span class="warn">⚠️ CSV มีแถว "รวม" ท้ายไฟล์ — script กรองออกให้แล้ว ไม่ต้องลบมือ</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- FoodStory -->
+  <div class="steps-section">
+    <div class="steps-header">
+      <div class="dot dot-fs"></div>
+      <h3>2. FoodStory / LINE MAN</h3>
+    </div>
+    <ul class="step-list">
+      <li>
+        <span class="num">1</span>
+        เปิด Chrome → ไป <strong>owner.foodstory.co/th/summary</strong> → Login
+      </li>
+      <li>
+        <span class="num">2</span>
+        กด <strong>F12</strong> → แท็บ <strong>Console</strong>
+      </li>
+      <li>
+        <span class="num">3</span>
+        พิมพ์คำสั่ง Set วันที่ก่อน (ดึง CSRF token + POST /api/setDate)
+        <span class="warn">⚠️ ต้องส่ง X-CSRF-TOKEN ทุกครั้ง ถ้าขาดจะได้ Error 500</span>
+      </li>
+      <li>
+        <span class="num">4</span>
+        Copy URL จาก Network tab (แท็บ Network → ค้นหา "salebybilldetail") → ดึงข้อมูล
+        <span class="warn">⚠️ URL ต้องมี 29 column params ครบ ห้ามพิมพ์ใหม่เอง ต้อง copy จาก Network tab เท่านั้น</span>
+      </li>
+      <li>
+        <span class="num">5</span>
+        ข้อมูล ~1,000 rows แบ่งเป็น 5 ชุด → Claude อ่านแล้ว import เข้า <code>fs_items</code>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Meat -->
+  <div class="steps-section">
+    <div class="steps-header">
+      <div class="dot dot-meat"></div>
+      <h3>3. บันทึกการใช้เนื้อ (ครัว)</h3>
+    </div>
+    <ul class="step-list">
+      <li>
+        <span class="num">1</span>
+        ทีมครัวชั่งเนื้อแต่ละประเภทตอนสิ้นวัน
+      </li>
+      <li>
+        <span class="num">2</span>
+        ไทน์ส่งข้อมูลมาในรูปแบบ text ให้ Claude
+      </li>
+      <li>
+        <span class="num">3</span>
+        Claude กรอกลง <code>daily_meat_use_report.xlsx</code> อัตโนมัติ (ถูก sheet + row)
+      </li>
+      <li>
+        <span class="num">4</span>
+        ชายโครง: บันทึกแยก โกเบ vs ตุ๋น → คำนวณ yield% ให้อัตโนมัติ
+        <span class="warn">📌 Yield เฉลี่ย: โกเบ 48% / ชายโครงตุ๋น 52% ของน้ำหนักดิบ</span>
+      </li>
+    </ul>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Flow diagram -->
+  <div class="section-label">Data Flow</div>
+  <h2>ข้อมูลไหลมายังไง</h2>
+
+  <div class="flow-diagram">
+    <!-- Row 1: Sources -->
+    <div class="flow-row">
+      <div class="flow-box green">
+        <div class="title">Grab Portal</div>
+        <div class="sub">CSV Export</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="flow-box blue">
+        <div class="title">FoodStory</div>
+        <div class="sub">JS Scrape</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="flow-box red">
+        <div class="title">ทีมครัว</div>
+        <div class="sub">ส่งให้ Claude</div>
+      </div>
+    </div>
+
+    <div class="arrow-down">↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↓</div>
+
+    <!-- Row 2: Processing -->
+    <div class="flow-row">
+      <div class="flow-box gold" style="width:100%;max-width:480px;text-align:center;">
+        <div class="title">nntn_db_build.py — Python Script</div>
+        <div class="sub">clean ข้อมูล, กรอง row ผิดพลาด, import</div>
+      </div>
+    </div>
+
+    <div class="arrow-down">↓</div>
+
+    <!-- Row 3: DB -->
+    <div class="flow-row">
+      <div class="flow-box purple" style="width:100%;max-width:480px;">
+        <div class="title">nntn_sales.db (SQLite)</div>
+        <div class="sub">ไฟล์/nntn-sales-analytics/nntn-sales-db/</div>
+      </div>
+    </div>
+
+    <div class="arrow-down">↓</div>
+
+    <!-- Row 4: Analysis -->
+    <div class="flow-row" style="gap:8px;flex-wrap:wrap;justify-content:center;">
+      <div class="flow-box" style="min-width:90px;font-size:0.75rem;padding:8px 10px;">
+        <div class="title">FC%</div>
+        <div class="sub">ต้นทุน</div>
+      </div>
+      <div class="flow-box" style="min-width:90px;font-size:0.75rem;padding:8px 10px;">
+        <div class="title">Menu Matrix</div>
+        <div class="sub">Star / Dog</div>
+      </div>
+      <div class="flow-box" style="min-width:90px;font-size:0.75rem;padding:8px 10px;">
+        <div class="title">Revenue</div>
+        <div class="sub">by Channel</div>
+      </div>
+      <div class="flow-box" style="min-width:90px;font-size:0.75rem;padding:8px 10px;">
+        <div class="title">Meat Gap</div>
+        <div class="sub">SOP vs จริง</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- DB Tables -->
+  <div class="section-label">Database</div>
+  <h2>ตารางใน nntn_sales.db</h2>
+
+  <div class="db-grid">
+    <div class="db-table">
+      <div class="table-name">grab_items</div>
+      <div class="row-count">36 rows · MAR2026</div>
+      <ul>
+        <li>menu_name</li>
+        <li>qty</li>
+        <li>revenue_thb</li>
+        <li>order_count</li>
+        <li>source_month</li>
+      </ul>
+    </div>
+    <div class="db-table">
+      <div class="table-name">grab_daily</div>
+      <div class="row-count">31 rows · MAR2026</div>
+      <ul>
+        <li>sale_date</li>
+        <li>orders_total</li>
+        <li>completed</li>
+        <li>cancelled</li>
+        <li>revenue_thb</li>
+      </ul>
+    </div>
+    <div class="db-table">
+      <div class="table-name">grab_modifiers</div>
+      <div class="row-count">56 rows · MAR2026</div>
+      <ul>
+        <li>menu_name</li>
+        <li>modifier</li>
+        <li>qty</li>
+        <li>revenue_thb</li>
+      </ul>
+    </div>
+    <div class="db-table">
+      <div class="table-name">fs_items</div>
+      <div class="row-count">982 rows · MAR2026</div>
+      <ul>
+        <li>sale_date / sale_time</li>
+        <li>receipt_no</li>
+        <li>menu_name</li>
+        <li>qty / discounted_price</li>
+        <li>channel_name</li>
+        <li>options_json</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="warn-box" style="margin-top:20px;">
+    <strong>หมายเหตุสำคัญ:</strong> ข้อมูล Wongnai dine-in + takeaway หน้าร้านยังไม่ได้เก็บ — ตัวเลขรายได้ปัจจุบันจึงเป็นเฉพาะ Delivery เท่านั้น
+  </div>
+
+  <hr class="divider">
+
+  <!-- Pending -->
+  <div class="section-label">Status</div>
+  <h2>สิ่งที่ยังค้าง</h2>
+
+  <div style="display:grid;gap:10px;">
+    <div style="background:#242424;border:1px solid #333;border-radius:8px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+      <span style="color:#e0a020;font-size:1rem;flex-shrink:0;">⏳</span>
+      <div>
+        <div style="font-size:0.85rem;color:#fff;font-weight:600;">ราคาซื้อเนื้อรายประเภท</div>
+        <div style="font-size:0.78rem;color:#888;margin-top:3px;">฿/กก. แต่ละ cut — ถ้ามีตัวนี้คำนวณ Food Cost % ได้ทันที</div>
+      </div>
+    </div>
+    <div style="background:#242424;border:1px solid #333;border-radius:8px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+      <span style="color:#e0a020;font-size:1rem;flex-shrink:0;">⏳</span>
+      <div>
+        <div style="font-size:0.85rem;color:#fff;font-weight:600;">Wongnai POS Export (dine-in + takeaway)</div>
+        <div style="font-size:0.78rem;color:#888;margin-top:3px;">ข้อมูลหน้าร้าน — รอ export จาก portal</div>
+      </div>
+    </div>
+    <div style="background:#242424;border:1px solid #333;border-radius:8px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+      <span style="color:#e0a020;font-size:1rem;flex-shrink:0;">⏳</span>
+      <div>
+        <div style="font-size:0.85rem;color:#fff;font-weight:600;">APR2026 Data</div>
+        <div style="font-size:0.78rem;color:#888;margin-top:3px;">ดึง Grab + FoodStory เดือนเมษา — ทำปลายเดือน</div>
+      </div>
+    </div>
+    <div style="background:#00b14f0d;border:1px solid #00b14f33;border-radius:8px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+      <span style="color:#00b14f;font-size:1rem;flex-shrink:0;">✅</span>
+      <div>
+        <div style="font-size:0.85rem;color:#fff;font-weight:600;">Supabase sales_ops Schema Spec</div>
+        <div style="font-size:0.78rem;color:#888;margin-top:3px;">Draft เสร็จแล้ว — รอ COO approve → Platform implement</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  ครัวเนื้อในตำนาน (NNTN) · Sales Data Pipeline · อัปเดต 07/04/2026
+</footer>
+
+</body>
+</html>
