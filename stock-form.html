@@ -369,7 +369,23 @@ function setCat(cat) {
   renderItems();
 }
 
+// draft cache — เก็บค่าที่กรอกไว้ข้ามการสลับ tab
+var draftQty  = {};
+var draftNote = {};
+
+function saveDraft() {
+  document.querySelectorAll('[id^="qty-"]').forEach(el => {
+    var id = el.id.replace('qty-', '');
+    if (el.value !== '') draftQty[id] = el.value;
+  });
+  document.querySelectorAll('[id^="note-"]').forEach(el => {
+    var id = el.id.replace('note-', '');
+    if (el.value !== '') draftNote[id] = el.value;
+  });
+}
+
 function renderItems() {
+  saveDraft();
   const filtered = activeCat === 'all' ? items : items.filter(i => i.category === activeCat);
   let html = '';
   let lastCat = null;
@@ -416,6 +432,16 @@ function renderItems() {
   });
 
   document.getElementById('items-container').innerHTML = html || '<div class="loading">ไม่มีรายการในหมวดนี้</div>';
+
+  // restore ค่าที่กรอกไว้ก่อนสลับ tab
+  Object.keys(draftQty).forEach(id => {
+    var el = document.getElementById('qty-' + id);
+    if (el) el.value = draftQty[id];
+  });
+  Object.keys(draftNote).forEach(id => {
+    var el = document.getElementById('note-' + id);
+    if (el) el.value = draftNote[id];
+  });
 }
 
 function showToast(msg, type) {
@@ -456,6 +482,7 @@ async function submitCount() {
 
   showToast(`✅ บันทึกแล้ว ${rows.length} รายการ`, 'success');
   btn.textContent = '✅ ส่งแล้ว!';
+  draftQty = {}; draftNote = {};
 
   // Show summary of OUT/LOW items
   const criticalItems = rows
