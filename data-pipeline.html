@@ -620,6 +620,429 @@
 
 </div>
 
+  <!-- ═══════════════ SOP เมนูข้าว ═══════════════ -->
+  <hr class="divider">
+
+  <div class="section-label">CookingBook · SOP</div>
+  <h2>SOP ส่วนผสม — เมนูข้าว ครัวกลาง</h2>
+
+  <style>
+    /* SOP Section Styles */
+    .sop-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+    .sop-tab {
+      padding:6px 14px; border-radius:20px; font-size:0.78rem; font-weight:700;
+      cursor:pointer; border:1px solid #333; background:#242424; color:#888;
+      transition:all 0.2s;
+    }
+    .sop-tab.active { background:#8B000033; color:#e05555; border-color:#8B000066; }
+    .sop-tab:hover { border-color:#555; color:#ccc; }
+
+    .sop-panel { display:none; }
+    .sop-panel.active { display:block; }
+
+    .sop-index-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin-bottom:20px; }
+    .sop-index-card {
+      background:#242424; border:1px solid #333; border-radius:8px;
+      padding:12px 14px; border-left:3px solid #8B0000;
+    }
+    .sop-index-card.cat-a { border-left-color:#00b14f; }
+    .sop-index-card.cat-b { border-left-color:#e05555; }
+    .sop-index-card .mn { font-size:0.88rem; font-weight:700; color:#fff; }
+    .sop-index-card .mc { font-size:0.75rem; color:#888; margin-top:3px; }
+    .sop-index-card .mp { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+    .mp-tag { font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:10px; }
+    .mp-tag.deli  { background:#00b14f22; color:#00b14f; border:1px solid #00b14f44; }
+    .mp-tag.cost  { background:#e0a02022; color:#e0a020; border:1px solid #e0a02044; }
+    .mp-tag.fc-g  { background:#00b14f22; color:#00b14f; border:1px solid #00b14f44; }
+    .mp-tag.fc-ok { background:#e0a02022; color:#e0a020; border:1px solid #e0a02044; }
+    .mp-tag.fc-w  { background:#e0555522; color:#e05555; border:1px solid #e0555544; }
+
+    .sop-menu-card { background:#242424; border:1px solid #333; border-radius:10px; margin-bottom:14px; overflow:hidden; }
+    .sop-menu-head { background:#1e1e1e; padding:10px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #2e2e2e; }
+    .sop-menu-head .mn { color:#e05555; font-size:1rem; font-weight:700; }
+    .sop-menu-head .rc { color:#555; font-size:0.75rem; font-family:monospace; }
+    .sop-price-bar { background:#1e1e1e; padding:6px 16px; display:flex; gap:16px; flex-wrap:wrap; border-bottom:1px solid #2e2e2e; }
+    .sop-pi { font-size:0.8rem; }
+    .sop-pi .l { color:#666; }
+    .sop-pi .v { color:#fff; font-weight:700; }
+    .sop-pi .fc-g { color:#00b14f; font-weight:700; }
+    .sop-pi .fc-ok { color:#e0a020; font-weight:700; }
+    .sop-pi .fc-w  { color:#e05555; font-weight:700; }
+    .sop-body { display:flex; gap:0; }
+    .sop-col { flex:1; padding:12px 14px; }
+    .sop-col:first-child { border-right:1px solid #2e2e2e; }
+    .sop-col-title { font-size:0.7rem; letter-spacing:1px; text-transform:uppercase; color:#e05555; font-weight:700; margin-bottom:8px; }
+    .sop-ing-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+    .sop-ing-table th { background:#1e1e1e; padding:4px 8px; text-align:left; font-size:0.72rem; color:#666; font-weight:600; }
+    .sop-ing-table td { padding:3px 8px; border-bottom:1px solid #2e2e2e; color:#ccc; }
+    .sop-ing-table td.amt { text-align:right; color:#888; font-size:0.78rem; }
+    .sop-ing-table .sub { color:#555; font-size:0.72rem; }
+    .sop-ing-total { display:flex; justify-content:space-between; padding:5px 8px; background:#1e1e1e; border-radius:4px; margin-top:6px; font-size:0.82rem; font-weight:700; color:#e0a020; }
+    .sop-step { display:flex; gap:8px; margin-bottom:7px; align-items:flex-start; }
+    .sop-num { background:#8B0000; color:#fff; border-radius:50%; width:18px; height:18px; min-width:18px; display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:700; }
+    .sop-num.pre { background:#4da6ff; }
+    .sop-text { font-size:0.82rem; line-height:1.5; color:#ccc; }
+    .sop-note { font-size:0.75rem; color:#e0a020; display:block; margin-top:2px; }
+    .sop-tip { background:#e0a02010; border-left:2px solid #e0a020; padding:5px 10px; border-radius:0 4px 4px 0; font-size:0.78rem; color:#c8901a; margin-top:8px; }
+    .sop-warn { background:#e0555510; border-left:2px solid #e05555; padding:5px 10px; border-radius:0 4px 4px 0; font-size:0.78rem; color:#c84040; margin-top:8px; }
+  </style>
+
+  <!-- Tabs -->
+  <div class="sop-tabs">
+    <div class="sop-tab active" onclick="sopTab('index')">รายการทั้งหมด</div>
+    <div class="sop-tab" onclick="sopTab('a')">🌿 กะเพราเนื้อวัว (5)</div>
+    <div class="sop-tab" onclick="sopTab('b1')">🍚 ข้าวเมนูหลัก (3)</div>
+    <div class="sop-tab" onclick="sopTab('b2')">🥩 ข้าวพิคานย่า + น้ำตก (3)</div>
+  </div>
+
+  <!-- INDEX PANEL -->
+  <div id="sop-index" class="sop-panel active">
+    <p style="font-size:0.82rem;color:#888;margin-bottom:14px;">11 เมนู | หมวด A กะเพรา 5 variants · หมวด B ข้าว 6 เมนู</p>
+    <div style="font-size:0.75rem;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">🌿 หมวด A — กะเพราเนื้อวัว</div>
+    <div class="sop-index-grid">
+      <div class="sop-index-card cat-a"><div class="mn">กะเพราเนื้อบด</div><div class="mc">RCP-017A · เนื้อบด 75g + ข้าว 180g</div><div class="mp"><span class="mp-tag deli">Deli ฿95</span><span class="mp-tag cost">฿19.53</span><span class="mp-tag fc-g">FC 30.6%</span></div></div>
+      <div class="sop-index-card cat-a"><div class="mn">กะเพราเนื้อสดหมักนุ่ม</div><div class="mc">RCP-017B · เนื้อสด 68g ดิบ + ข้าว 180g</div><div class="mp"><span class="mp-tag deli">Deli ฿95</span><span class="mp-tag cost">฿18.31</span><span class="mp-tag fc-g">FC 28.7%</span></div></div>
+      <div class="sop-index-card cat-a"><div class="mn">กะเพราสามชั้นตุ๋น</div><div class="mc">RCP-017C · สามชั้นตุ๋น 75g + ข้าว 180g</div><div class="mp"><span class="mp-tag deli">Deli ฿119</span><span class="mp-tag cost">฿23.48</span><span class="mp-tag fc-g">FC 29.0%</span></div></div>
+      <div class="sop-index-card cat-a"><div class="mn">กะเพราน่องลายตุ๋น</div><div class="mc">RCP-017D · น่องลาย 114.6g ดิบ + ข้าว 180g</div><div class="mp"><span class="mp-tag deli">Deli ฿99</span><span class="mp-tag cost">฿31.05</span><span class="mp-tag fc-w">FC 46.2% ⚠️</span></div></div>
+      <div class="sop-index-card cat-a"><div class="mn">กะเพราเสือร้องไห้ออส</div><div class="mc">RCP-017E · เสือร้องไห้ 75g + ข้าว 180g</div><div class="mp"><span class="mp-tag deli">Deli ฿99</span><span class="mp-tag cost">฿33.04</span><span class="mp-tag fc-w">FC 49.2% ⚠️</span></div></div>
+    </div>
+    <div style="font-size:0.75rem;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;margin-top:16px;">🍚 หมวด B — เมนูข้าวอื่น</div>
+    <div class="sop-index-grid">
+      <div class="sop-index-card cat-b"><div class="mn">ข้าวเนื้อสับคั่วน้ำปลาไข่ข้น</div><div class="mc">RCP-011 · เนื้อบด 75g + ไข่ข้น 2 ฟอง</div><div class="mp"><span class="mp-tag deli">Deli ฿89</span><span class="mp-tag cost">฿23.89</span><span class="mp-tag fc-g">FC 37.4%</span></div></div>
+      <div class="sop-index-card cat-b"><div class="mn">ข้าวขยำเนื้อแดดเดียว</div><div class="mc">RCP-021 · เนื้อแดด 75g + ข้าว 180g</div><div class="mp"><span class="mp-tag deli">Deli ฿89</span><span class="mp-tag cost">฿22.57</span><span class="mp-tag fc-g">FC 35.3%</span></div></div>
+      <div class="sop-index-card cat-b"><div class="mn">เนื้อตุ๋นรวนกระเทียม</div><div class="mc">RCP-018 · สามชั้น 75g + ข้าว 180g</div><div class="mp"><span class="mp-tag deli">Deli ฿119</span><span class="mp-tag cost">฿24.30</span><span class="mp-tag fc-g">FC 30.0%</span></div></div>
+      <div class="sop-index-card cat-b"><div class="mn">ข้าวผัดเนื้อพิคานย่า</div><div class="mc">RCP-022 · พิคานย่า 75g + ข้าว 150g</div><div class="mp"><span class="mp-tag deli">Deli ฿159</span><span class="mp-tag cost">฿36.71</span><span class="mp-tag fc-g">FC 34.0%</span></div></div>
+      <div class="sop-index-card cat-b"><div class="mn">ข้าวคลุกกะเพราพิคานย่า</div><div class="mc">RCP-023 · พิคานย่า 75g + ข้าว 180g</div><div class="mp"><span class="mp-tag deli">Deli ฿139</span><span class="mp-tag cost">฿29.54</span><span class="mp-tag fc-g">FC 31.3%</span></div></div>
+      <div class="sop-index-card cat-b"><div class="mn">ข้าวน้ำตกเสือแซ่บ</div><div class="mc">RCP-027 · เสือร้องไห้ 75g + ข้าว 200g</div><div class="mp"><span class="mp-tag deli">Deli ฿159</span><span class="mp-tag cost">฿35.47</span><span class="mp-tag fc-g">FC 32.8%</span></div></div>
+    </div>
+  </div>
+
+  <!-- PANEL A: กะเพรา -->
+  <div id="sop-a" class="sop-panel">
+    <!-- 017A -->
+    <div class="sop-menu-card">
+      <div class="sop-menu-head"><span class="mn">กะเพราเนื้อบด</span><span class="rc">RCP-017A</span></div>
+      <div class="sop-price-bar"><div class="sop-pi"><span class="l">Deli </span><span class="v">฿95</span></div><div class="sop-pi"><span class="l">ต้นทุน </span><span class="v">฿19.53</span></div><div class="sop-pi"><span class="l">FC%Deli </span><span class="fc-g">30.6%</span></div></div>
+      <div class="sop-body">
+        <div class="sop-col">
+          <div class="sop-col-title">ส่วนผสม (1 portion)</div>
+          <table class="sop-ing-table"><tr><th>วัตถุดิบ</th><th>ปริมาณ</th></tr>
+            <tr><td>เนื้อบด</td><td class="amt">75g</td></tr>
+            <tr><td>ซอสกะเพรา (RCP-012)</td><td class="amt">30g</td></tr>
+            <tr><td>ใบกะเพราแดง+ขาว</td><td class="amt">10g+5g</td></tr>
+            <tr><td>คนอร์ซุปรสไก่</td><td class="amt">0.45g</td></tr>
+            <tr><td>น้ำมันพืช</td><td class="amt">15ml</td></tr>
+            <tr><td>พริกน้ำปลา (RCP-014)</td><td class="amt">15g</td></tr>
+            <tr><td>ข้าวหอมมะลิ (ดิบ)</td><td class="amt">72g</td></tr>
+          </table>
+          <div class="sop-ing-total"><span>รวมต้นทุน</span><span>฿19.53</span></div>
+        </div>
+        <div class="sop-col">
+          <div class="sop-col-title">ขั้นตอน (Variant เนื้อบด)</div>
+          <div class="sop-step"><div class="sop-num">1</div><div class="sop-text">ตั้งกะทะไฟกลาง-แรง ใส่น้ำมัน 15ml รอร้อน</div></div>
+          <div class="sop-step"><div class="sop-num">2</div><div class="sop-text">ใส่เนื้อบด 75g ทอดให้สีเหลือง กระจายไม่จับก้อน <span class="sop-note">⏱ 1-2 นาที</span></div></div>
+          <div class="sop-step"><div class="sop-num">3</div><div class="sop-text">ใส่ซอสกะเพรา 30g ผัดให้เข้ากัน ชิมรส</div></div>
+          <div class="sop-step"><div class="sop-num">4</div><div class="sop-text">ใส่กะเพราแดง 10g + ขาว 5g ผัดจนสุก <span class="sop-note">⏱ 30 วินาที</span></div></div>
+          <div class="sop-step"><div class="sop-num">5</div><div class="sop-text">ตักข้าว → วางกะเพรา → พริกน้ำปลาข้างจาน</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- 017B -->
+    <div class="sop-menu-card">
+      <div class="sop-menu-head"><span class="mn">กะเพราเนื้อสดหมักนุ่ม</span><span class="rc">RCP-017B</span></div>
+      <div class="sop-price-bar"><div class="sop-pi"><span class="l">Deli </span><span class="v">฿95</span></div><div class="sop-pi"><span class="l">ต้นทุน </span><span class="v">฿18.31</span></div><div class="sop-pi"><span class="l">FC%Deli </span><span class="fc-g">28.7%</span></div></div>
+      <div class="sop-body">
+        <div class="sop-col">
+          <div class="sop-col-title">ส่วนผสม (1 portion)</div>
+          <table class="sop-ing-table"><tr><th>วัตถุดิบ</th><th>ปริมาณ</th></tr>
+            <tr><td>เนื้อสดหั่นชิ้น ดิบ <span class="sub">(yield 110.5%→75g)</span></td><td class="amt">68g</td></tr>
+            <tr><td>ซอสกะเพรา (RCP-012)</td><td class="amt">30g</td></tr>
+            <tr><td>ใบกะเพราแดง+ขาว</td><td class="amt">10g+5g</td></tr>
+            <tr><td>คนอร์ซุปรสไก่</td><td class="amt">0.45g</td></tr>
+            <tr><td>น้ำมันพืช</td><td class="amt">15ml</td></tr>
+            <tr><td>พริกน้ำปลา (RCP-014)</td><td class="amt">15g</td></tr>
+            <tr><td>ข้าวหอมมะลิ (ดิบ)</td><td class="amt">72g</td></tr>
+          </table>
+          <div class="sop-ing-total"><span>รวมต้นทุน</span><span>฿18.31</span></div>
+        </div>
+        <div class="sop-col">
+          <div class="sop-col-title">ขั้นตอน (Variant หมักนุ่ม)</div>
+          <div class="sop-step"><div class="sop-num pre">PRE</div><div class="sop-text"><strong style="color:#fff">ลวกเนื้อก่อน</strong> — น้ำร้อน ~10 วินาที คนไม่ให้ติด สะเด็ดน้ำ <span class="sop-note">⚠️ ห้ามข้ามขั้นตอนนี้</span></div></div>
+          <div class="sop-step"><div class="sop-num">1</div><div class="sop-text">ตั้งกะทะ ใส่น้ำมัน ใส่เนื้อลวกแล้ว ทอดให้ขอบเหลือง</div></div>
+          <div class="sop-step"><div class="sop-num">2</div><div class="sop-text">ใส่ซอสกะเพรา 30g ผัดให้เข้ากัน</div></div>
+          <div class="sop-step"><div class="sop-num">3</div><div class="sop-text">เติมคนอร์ ใส่กะเพรา ผัดให้เข้ากัน <span class="sop-note">⏱ 30 วินาที</span></div></div>
+          <div class="sop-step"><div class="sop-num">4</div><div class="sop-text">ตักข้าว → วางกะเพรา → พริกน้ำปลาข้างจาน</div></div>
+          <div class="sop-tip">💡 เนื้อนุ่มกว่าปกติ — yield 110.5% ดูดซึมน้ำตอนลวก</div>
+        </div>
+      </div>
+    </div>
+    <!-- 017C -->
+    <div class="sop-menu-card">
+      <div class="sop-menu-head"><span class="mn">กะเพราสามชั้นตุ๋น</span><span class="rc">RCP-017C</span></div>
+      <div class="sop-price-bar"><div class="sop-pi"><span class="l">Deli </span><span class="v">฿119</span></div><div class="sop-pi"><span class="l">ต้นทุน </span><span class="v">฿23.48</span></div><div class="sop-pi"><span class="l">FC%Deli </span><span class="fc-g">29.0%</span></div></div>
+      <div class="sop-body">
+        <div class="sop-col">
+          <div class="sop-col-title">ส่วนผสม</div>
+          <table class="sop-ing-table"><tr><th>วัตถุดิบ</th><th>ปริมาณ</th></tr>
+            <tr><td>สามชั้นตุ๋น (สุกแล้ว) <span class="sub">2.5u×฿6.83</span></td><td class="amt">75g</td></tr>
+            <tr><td>ซอสกะเพรา / ใบกะเพรา</td><td class="amt">30g / 15g</td></tr>
+            <tr><td>น้ำมัน + คนอร์</td><td class="amt">15ml / 0.45g</td></tr>
+            <tr><td>พริกน้ำปลา + ข้าว</td><td class="amt">15g / 72g</td></tr>
+          </table>
+          <div class="sop-ing-total"><span>รวมต้นทุน</span><span>฿23.48</span></div>
+          <div class="sop-tip">💡 ใช้เนื้อตุ๋นสุกแล้ว ไม่ต้องต้มเพิ่ม</div>
+        </div>
+        <div class="sop-col">
+          <div class="sop-col-title">ขั้นตอน</div>
+          <div class="sop-step"><div class="sop-num">1</div><div class="sop-text">ใส่น้ำมัน ใส่สามชั้นตุ๋น ทอดขอบเหลือง <span class="sop-note">⏱ 1 นาที ไฟกลาง-แรง</span></div></div>
+          <div class="sop-step"><div class="sop-num">2</div><div class="sop-text">ใส่ซอสกะเพรา 30g ผัดให้เข้ากัน ชิมรส</div></div>
+          <div class="sop-step"><div class="sop-num">3</div><div class="sop-text">เติมคนอร์ ใส่กะเพรา ผัดให้เข้ากัน <span class="sop-note">⏱ 30 วินาที</span></div></div>
+          <div class="sop-step"><div class="sop-num">4</div><div class="sop-text">ตักข้าว → วางกะเพรา → พริกน้ำปลาข้างจาน</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- 017D -->
+    <div class="sop-menu-card">
+      <div class="sop-menu-head"><span class="mn">กะเพราน่องลายตุ๋น</span><span class="rc">RCP-017D</span></div>
+      <div class="sop-price-bar"><div class="sop-pi"><span class="l">Deli </span><span class="v">฿99</span></div><div class="sop-pi"><span class="l">ต้นทุน </span><span class="v">฿31.05</span></div><div class="sop-pi"><span class="l">FC%Deli </span><span class="fc-w">46.2% ⚠️</span></div></div>
+      <div class="sop-body">
+        <div class="sop-col">
+          <div class="sop-col-title">ส่วนผสม</div>
+          <table class="sop-ing-table"><tr><th>วัตถุดิบ</th><th>ปริมาณ</th></tr>
+            <tr><td>น่องลายดิบ <span class="sub">yield 65.5%→75g</span></td><td class="amt">114.6g</td></tr>
+            <tr><td>ซอสกะเพรา / ใบกะเพรา</td><td class="amt">30g / 15g</td></tr>
+            <tr><td>น้ำมัน + คนอร์</td><td class="amt">15ml / 0.45g</td></tr>
+            <tr><td>พริกน้ำปลา + ข้าว</td><td class="amt">15g / 72g</td></tr>
+          </table>
+          <div class="sop-ing-total"><span>รวมต้นทุน</span><span>฿31.05</span></div>
+          <div class="sop-warn">⚠️ FC 46.2% สูง — ควรทบทวนราคาเป็น ฿129</div>
+        </div>
+        <div class="sop-col">
+          <div class="sop-col-title">ขั้นตอน</div>
+          <div class="sop-step"><div class="sop-num">1</div><div class="sop-text">ใส่น้ำมัน ใส่น่องลายตุ๋น ทอดขอบเหลือง <span class="sop-note">⏱ 1 นาที</span></div></div>
+          <div class="sop-step"><div class="sop-num">2</div><div class="sop-text">ใส่ซอสกะเพรา ผัดให้เข้ากัน ชิมรส</div></div>
+          <div class="sop-step"><div class="sop-num">3</div><div class="sop-text">เติมคนอร์ ใส่กะเพรา ผัดให้เข้ากัน</div></div>
+          <div class="sop-step"><div class="sop-num">4</div><div class="sop-text">ตักข้าว → วางกะเพรา → พริกน้ำปลาข้างจาน</div></div>
+          <div class="sop-tip">💡 น่องลาย yield ต่ำ 65.5% — ใช้ดิบ 114.6g → ได้สุก 75g</div>
+        </div>
+      </div>
+    </div>
+    <!-- 017E -->
+    <div class="sop-menu-card">
+      <div class="sop-menu-head"><span class="mn">กะเพราเสือร้องไห้ออสเตรเลีย</span><span class="rc">RCP-017E</span></div>
+      <div class="sop-price-bar"><div class="sop-pi"><span class="l">Deli </span><span class="v">฿99</span></div><div class="sop-pi"><span class="l">ต้นทุน </span><span class="v">฿33.04</span></div><div class="sop-pi"><span class="l">FC%Deli </span><span class="fc-w">49.2% ⚠️</span></div></div>
+      <div class="sop-body">
+        <div class="sop-col">
+          <div class="sop-col-title">ส่วนผสม</div>
+          <table class="sop-ing-table"><tr><th>วัตถุดิบ</th><th>ปริมาณ</th></tr>
+            <tr><td>เสือร้องไห้ออส <span class="sub">yield 100%</span></td><td class="amt">75g</td></tr>
+            <tr><td>ซอสกะเพรา / ใบกะเพรา</td><td class="amt">30g / 15g</td></tr>
+            <tr><td>น้ำมัน + คนอร์</td><td class="amt">15ml / 0.45g</td></tr>
+            <tr><td>พริกน้ำปลา + ข้าว</td><td class="amt">15g / 72g</td></tr>
+          </table>
+          <div class="sop-ing-total"><span>รวมต้นทุน</span><span>฿33.04</span></div>
+          <div class="sop-warn">⚠️ FC 49.2% สูงมาก — ควรปรับราคาเป็น ฿139+</div>
+        </div>
+        <div class="sop-col">
+          <div class="sop-col-title">ขั้นตอน</div>
+          <div class="sop-step"><div class="sop-num">1</div><div class="sop-text">ใส่น้ำมัน ใส่เสือร้องไห้สไลซ์ ทอดขอบเหลือง <span class="sop-note">⏱ 1 นาที</span></div></div>
+          <div class="sop-step"><div class="sop-num">2</div><div class="sop-text">ใส่ซอสกะเพรา ผัดให้เข้ากัน ชิมรส</div></div>
+          <div class="sop-step"><div class="sop-num">3</div><div class="sop-text">เติมคนอร์ ใส่กะเพรา ผัดให้เข้ากัน</div></div>
+          <div class="sop-step"><div class="sop-num">4</div><div class="sop-text">ตักข้าว → วางกะเพรา → พริกน้ำปลาข้างจาน</div></div>
+          <div class="sop-tip">💡 yield 100% — ไม่มี loss ตอนสไลซ์</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL B1 -->
+  <div id="sop-b1" class="sop-panel">
+    <!-- RCP-011 -->
+    <div class="sop-menu-card">
+      <div class="sop-menu-head"><span class="mn">ข้าวเนื้อสับคั่วน้ำปลาไข่ข้น</span><span class="rc">RCP-011</span></div>
+      <div class="sop-price-bar"><div class="sop-pi"><span class="l">Deli </span><span class="v">฿89</span></div><div class="sop-pi"><span class="l">ต้นทุน </span><span class="v">฿23.89</span></div><div class="sop-pi"><span class="l">FC%Deli </span><span class="fc-g">37.4%</span></div></div>
+      <div class="sop-body">
+        <div class="sop-col">
+          <div class="sop-col-title">ส่วนผสม</div>
+          <table class="sop-ing-table"><tr><th>วัตถุดิบ</th><th>ปริมาณ</th></tr>
+            <tr><td>เนื้อบด</td><td class="amt">75g</td></tr>
+            <tr><td>ไข่ข้น 2 ฟอง (RCP-026)</td><td class="amt">1 portion</td></tr>
+            <tr><td>กระเทียมจีนเจียว</td><td class="amt">5g</td></tr>
+            <tr><td>น้ำปลา + น้ำตาลอ้อย</td><td class="amt">5g + 4g</td></tr>
+            <tr><td>ซีอิ๊วดำ + ผงชูรส</td><td class="amt">1g + 1g</td></tr>
+            <tr><td>พริกแดง+เขียวจินดา</td><td class="amt">2.5g+2.5g</td></tr>
+            <tr><td>ข้าวหอมมะลิ (ดิบ)</td><td class="amt">72g</td></tr>
+          </table>
+          <div class="sop-ing-total"><span>รวมต้นทุน</span><span>฿23.89</span></div>
+        </div>
+        <div class="sop-col">
+          <div class="sop-col-title">ขั้นตอน</div>
+          <div class="sop-step"><div class="sop-num">1</div><div class="sop-text">เจียวกระเทียม 5g จนเหลือง</div></div>
+          <div class="sop-step"><div class="sop-num">2</div><div class="sop-text">ใส่เนื้อบด 75g คั่วให้สุกทั่ว กระจายเนื้อ</div></div>
+          <div class="sop-step"><div class="sop-num">3</div><div class="sop-text">ปรุงรส: น้ำปลา+น้ำตาล+ซีอิ๊วดำ+ผงชูรส คนให้เข้ากัน</div></div>
+          <div class="sop-step"><div class="sop-num">4</div><div class="sop-text">ใส่พริก ผัดรวม ชิมรส ปิดไฟ</div></div>
+          <div class="sop-step"><div class="sop-num">5</div><div class="sop-text">ตักข้าว → วางเนื้อสับ → วางไข่ข้น 2 ฟองข้าง</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- RCP-021 -->
+    <div class="sop-menu-card">
+      <div class="sop-menu-head"><span class="mn">ข้าวขยำเนื้อแดดเดียว</span><span class="rc">RCP-021</span></div>
+      <div class="sop-price-bar"><div class="sop-pi"><span class="l">Deli </span><span class="v">฿89</span></div><div class="sop-pi"><span class="l">ต้นทุน </span><span class="v">฿22.57</span></div><div class="sop-pi"><span class="l">FC%Deli </span><span class="fc-g">35.3%</span></div></div>
+      <div class="sop-body">
+        <div class="sop-col">
+          <div class="sop-col-title">ส่วนผสม</div>
+          <table class="sop-ing-table"><tr><th>วัตถุดิบ</th><th>ปริมาณ</th></tr>
+            <tr><td>เนื้อแดดเดียว (RCP-009)</td><td class="amt">75g</td></tr>
+            <tr><td>ข้าวหอมมะลิ (ดิบ)</td><td class="amt">72g</td></tr>
+            <tr><td>หอมแดงซอย</td><td class="amt">10g</td></tr>
+            <tr><td>พริกแดงจินดา</td><td class="amt">8g</td></tr>
+            <tr><td>ผักชีไทย</td><td class="amt">5g</td></tr>
+            <tr><td>กระเทียมกรอบ ARO</td><td class="amt">5g</td></tr>
+            <tr><td>น้ำมะนาว</td><td class="amt">5ml</td></tr>
+            <tr><td>น้ำยำ (RCP-020)</td><td class="amt">15ml</td></tr>
+          </table>
+          <div class="sop-ing-total"><span>รวมต้นทุน</span><span>฿22.57</span></div>
+        </div>
+        <div class="sop-col">
+          <div class="sop-col-title">ขั้นตอน (Assembly)</div>
+          <div class="sop-step"><div class="sop-num pre">PRE</div><div class="sop-text">เตรียมเนื้อแดด RCP-009 ตัดชิ้น 75g</div></div>
+          <div class="sop-step"><div class="sop-num">1</div><div class="sop-text">ตักข้าว 180g ใส่ชาม</div></div>
+          <div class="sop-step"><div class="sop-num">2</div><div class="sop-text">ใส่หอมแดง+พริก+ผักชี+กระเทียมกรอบ</div></div>
+          <div class="sop-step"><div class="sop-num">3</div><div class="sop-text">ราดน้ำยำ 15ml + มะนาว 5ml + ผงชูรส คลุกเบาๆ</div></div>
+          <div class="sop-step"><div class="sop-num">4</div><div class="sop-text">วางเนื้อแดด 75g ด้านบน โรยกระเทียมกรอบ</div></div>
+          <div class="sop-tip">💡 Delivery: น้ำยำ + กระเทียมกรอบ แยกถุงซิป</div>
+        </div>
+      </div>
+    </div>
+    <!-- RCP-018 -->
+    <div class="sop-menu-card">
+      <div class="sop-menu-head"><span class="mn">เนื้อตุ๋นรวนกระเทียม</span><span class="rc">RCP-018</span></div>
+      <div class="sop-price-bar"><div class="sop-pi"><span class="l">Deli </span><span class="v">฿119</span></div><div class="sop-pi"><span class="l">ต้นทุน </span><span class="v">฿24.30</span></div><div class="sop-pi"><span class="l">FC%Deli </span><span class="fc-g">30.0%</span></div></div>
+      <div class="sop-body">
+        <div class="sop-col">
+          <div class="sop-col-title">ส่วนผสม</div>
+          <table class="sop-ing-table"><tr><th>วัตถุดิบ</th><th>ปริมาณ</th></tr>
+            <tr><td>สามชั้นดิบ <span class="sub">yield 74.7%→75g</span></td><td class="amt">100.4g</td></tr>
+            <tr><td>กระเทียมไทยปั่น</td><td class="amt">15g</td></tr>
+            <tr><td>ซอสอเนกประสงค์ (RCP-015)</td><td class="amt">7.5g</td></tr>
+            <tr><td>น้ำมันพืช</td><td class="amt">15ml</td></tr>
+            <tr><td>กระเทียมจีนเจียว</td><td class="amt">3g</td></tr>
+            <tr><td>พริกน้ำปลา + ข้าว</td><td class="amt">15g / 72g</td></tr>
+          </table>
+          <div class="sop-ing-total"><span>รวมต้นทุน</span><span>฿24.30</span></div>
+        </div>
+        <div class="sop-col">
+          <div class="sop-col-title">ขั้นตอน</div>
+          <div class="sop-step"><div class="sop-num">1</div><div class="sop-text">ตั้งกะทะ ใส่น้ำมัน ใส่กระเทียมไทยปั่น 15g รอหอม</div></div>
+          <div class="sop-step"><div class="sop-num">2</div><div class="sop-text">ใส่สามชั้นตุ๋น 75g รวนจนขอบเหลือง <span class="sop-note">⏱ 1-2 นาที</span></div></div>
+          <div class="sop-step"><div class="sop-num">3</div><div class="sop-text">ใส่ซอสอเนกประสงค์ 7.5g คนให้เข้ากัน ชิมรส</div></div>
+          <div class="sop-step"><div class="sop-num">4</div><div class="sop-text">ตักข้าว → วางเนื้อ → กระเทียมเจียว + พริกน้ำปลาข้าง</div></div>
+          <div class="sop-tip">💡 เครื่องเคียง: แตงกวา 3 ชิ้น</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL B2 -->
+  <div id="sop-b2" class="sop-panel">
+    <!-- RCP-022 -->
+    <div class="sop-menu-card">
+      <div class="sop-menu-head"><span class="mn">ข้าวผัดเนื้อพิคานย่า</span><span class="rc">RCP-022</span></div>
+      <div class="sop-price-bar"><div class="sop-pi"><span class="l">Deli </span><span class="v">฿159</span></div><div class="sop-pi"><span class="l">ต้นทุน </span><span class="v">฿36.71</span></div><div class="sop-pi"><span class="l">FC%Deli </span><span class="fc-g">34.0%</span></div></div>
+      <div class="sop-body">
+        <div class="sop-col">
+          <div class="sop-col-title">ส่วนผสม</div>
+          <table class="sop-ing-table"><tr><th>วัตถุดิบ</th><th>ปริมาณ</th></tr>
+            <tr><td>พิคานย่า (สด) <span class="sub">yield 75%→75g</span></td><td class="amt">100g</td></tr>
+            <tr><td>ข้าวหอมมะลิ (ดิบ) <span class="sub">→150g สุก</span></td><td class="amt">60g</td></tr>
+            <tr><td>ไข่ไก่ ARO เบอร์ 2</td><td class="amt">1 ฟอง</td></tr>
+            <tr><td>กระเทียมสับ</td><td class="amt">5g</td></tr>
+            <tr><td>ผงข้าวผัด (RCP-016)</td><td class="amt">10g</td></tr>
+            <tr><td>ซีอิ๊วขาวจีน</td><td class="amt">2.5ml</td></tr>
+            <tr><td>น้ำมันพืช</td><td class="amt">30ml</td></tr>
+            <tr><td>ต้นหอมซอย</td><td class="amt">3g</td></tr>
+          </table>
+          <div class="sop-ing-total"><span>รวมต้นทุน</span><span>฿36.71</span></div>
+        </div>
+        <div class="sop-col">
+          <div class="sop-col-title">ขั้นตอน</div>
+          <div class="sop-step"><div class="sop-num pre">PRE</div><div class="sop-text">สไลซ์พิคานย่า 100g | ตีไข่พักไว้</div></div>
+          <div class="sop-step"><div class="sop-num">1</div><div class="sop-text">กะทะร้อนจัด ใส่น้ำมัน เจียวกระเทียมจนหอม</div></div>
+          <div class="sop-step"><div class="sop-num">2</div><div class="sop-text">ใส่พิคานย่า ผัดจนสุก <span class="sop-note">⏱ 1-2 นาที ไฟแรง</span></div></div>
+          <div class="sop-step"><div class="sop-num">3</div><div class="sop-text">เขี่ยเนื้อออกข้าง ใส่ไข่ตี คนให้สุก</div></div>
+          <div class="sop-step"><div class="sop-num">4</div><div class="sop-text">ใส่ข้าว 150g + ผงข้าวผัด 10g ผัดรวมให้เข้ากัน</div></div>
+          <div class="sop-step"><div class="sop-num">5</div><div class="sop-text">ปรุงรสซีอิ๊วขาว 2.5ml ชิมรส โรยต้นหอม</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- RCP-023 -->
+    <div class="sop-menu-card">
+      <div class="sop-menu-head"><span class="mn">ข้าวคลุกกะเพราเนื้อพิคานย่า</span><span class="rc">RCP-023</span></div>
+      <div class="sop-price-bar"><div class="sop-pi"><span class="l">Deli </span><span class="v">฿139</span></div><div class="sop-pi"><span class="l">ต้นทุน </span><span class="v">฿29.54</span></div><div class="sop-pi"><span class="l">FC%Deli </span><span class="fc-g">31.3%</span></div></div>
+      <div class="sop-body">
+        <div class="sop-col">
+          <div class="sop-col-title">ส่วนผสม</div>
+          <table class="sop-ing-table"><tr><th>วัตถุดิบ</th><th>ปริมาณ</th></tr>
+            <tr><td>พิคานย่า (สด) <span class="sub">yield 75%→75g</span></td><td class="amt">100g</td></tr>
+            <tr><td>ข้าวหอมมะลิ (ดิบ) <span class="sub">→180g สุก</span></td><td class="amt">72g</td></tr>
+            <tr><td>ซอสกะเพรา (RCP-012)</td><td class="amt">15g</td></tr>
+            <tr><td>ใบกะเพราแดง เพิ่ม</td><td class="amt">15g</td></tr>
+            <tr><td>น้ำมันพืช</td><td class="amt">5ml</td></tr>
+          </table>
+          <div class="sop-ing-total"><span>รวมต้นทุน</span><span>฿29.54</span></div>
+          <div class="sop-tip">💡 FC 31.3% ✅ ดีที่สุดในกลุ่มพิคานย่า</div>
+        </div>
+        <div class="sop-col">
+          <div class="sop-col-title">ขั้นตอน</div>
+          <div class="sop-step"><div class="sop-num">1</div><div class="sop-text">ตั้งกะทะ ใส่น้ำมัน ใส่พิคานย่า ผัดจนสุก</div></div>
+          <div class="sop-step"><div class="sop-num">2</div><div class="sop-text">ใส่ซอสกะเพรา 15g + ใบกะเพรา 15g ผัดรวม <span class="sop-note">⏱ 1 นาที</span></div></div>
+          <div class="sop-step"><div class="sop-num">3</div><div class="sop-text">ตักข้าวสุก 180g ใส่ชาม</div></div>
+          <div class="sop-step"><div class="sop-num">4</div><div class="sop-text">วางเนื้อกะเพราบนข้าว คลุกให้เข้ากันก่อนเสิร์ฟ</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- RCP-027 -->
+    <div class="sop-menu-card">
+      <div class="sop-menu-head"><span class="mn">ข้าวน้ำตกเสือแซ่บ</span><span class="rc">RCP-027</span></div>
+      <div class="sop-price-bar"><div class="sop-pi"><span class="l">Deli </span><span class="v">฿159</span></div><div class="sop-pi"><span class="l">ร้าน </span><span class="v">฿99</span></div><div class="sop-pi"><span class="l">ต้นทุน </span><span class="v">฿35.47</span></div><div class="sop-pi"><span class="l">FC%Deli </span><span class="fc-g">32.8%</span></div></div>
+      <div class="sop-body">
+        <div class="sop-col">
+          <div class="sop-col-title">ส่วนผสม</div>
+          <table class="sop-ing-table"><tr><th>วัตถุดิบ</th><th>ปริมาณ</th></tr>
+            <tr><td>เสือร้องไห้ออส</td><td class="amt">75g</td></tr>
+            <tr><td>ข้าวหอมมะลิ (ดิบ) <span class="sub">→200g</span></td><td class="amt">80g</td></tr>
+            <tr><td>น้ำสต๊อกเนื้อ (RCP-029)</td><td class="amt">45ml</td></tr>
+            <tr><td>ข้าวคั่ว</td><td class="amt">5g</td></tr>
+            <tr><td>หอมแขกซอย</td><td class="amt">10g</td></tr>
+            <tr><td>ผักชีฝรั่ง</td><td class="amt">5g</td></tr>
+            <tr><td>ผงลาบรสดี + พริกป่น</td><td class="amt">3g+4g</td></tr>
+            <tr><td>น้ำปลา + ผงชูรส + น้ำยำ</td><td class="amt">5ml+2g+4ml</td></tr>
+          </table>
+          <div class="sop-ing-total"><span>รวมต้นทุน</span><span>฿35.47</span></div>
+        </div>
+        <div class="sop-col">
+          <div class="sop-col-title">ขั้นตอน (SOP-027)</div>
+          <div class="sop-step"><div class="sop-num pre">PRE</div><div class="sop-text">สไลซ์เสือร้องไห้บาง พักไว้</div></div>
+          <div class="sop-step"><div class="sop-num">1</div><div class="sop-text">ย่างเสือร้องไห้ <span class="sop-note">⏱ 2-3 นาที ไม่กดเนื้อ</span></div></div>
+          <div class="sop-step"><div class="sop-num">2</div><div class="sop-text">เติมน้ำสต๊อก 45ml ลงกะทะร้อน รอเดือด เทใส่ชาม</div></div>
+          <div class="sop-step"><div class="sop-num">3</div><div class="sop-text">ใส่เนื้อ → น้ำยำ+ผงลาบ+พริกป่น+ผงชูรส+น้ำปลา คลุกเข้ากัน ชิมรส</div></div>
+          <div class="sop-step"><div class="sop-num">4</div><div class="sop-text">ใส่หอมแขก+ผักชีฝรั่ง+ข้าวคั่ว คลุกเบา</div></div>
+          <div class="sop-step"><div class="sop-num">5</div><div class="sop-text">ตักข้าว → วางเนื้อน้ำตก → โรยข้าวคั่ว+ผักชีตกแต่ง</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function sopTab(tab) {
+      document.querySelectorAll('.sop-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.sop-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('sop-' + tab).classList.add('active');
+      event.target.classList.add('active');
+    }
+  </script>
+
 <footer>
   ครัวเนื้อในตำนาน (NNTN) · Sales Data Pipeline · อัปเดต 07/04/2026
 </footer>
