@@ -506,10 +506,12 @@ async function submitCount() {
     document.getElementById('summary-banner').style.display = 'block';
   }
 
-  // Reset form
+  // Reset form — เช็ค null กันกรณี filter tab ทำให้ element ไม่อยู่ใน DOM
   items.forEach(item => {
-    document.getElementById(`qty-${item.id}`).value = '';
-    document.getElementById(`note-${item.id}`).value = '';
+    const qtyEl  = document.getElementById(`qty-${item.id}`);
+    const noteEl = document.getElementById(`note-${item.id}`);
+    if (qtyEl)  qtyEl.value  = '';
+    if (noteEl) noteEl.value = '';
   });
   document.getElementById('counted-by').value = '';
   setTimeout(() => { btn.disabled = false; btn.textContent = '✅ ส่งยอดนับ'; }, 1500);

@@ -687,21 +687,18 @@
       return toast('❌ ' + overItems.map(function(r) { return r.name; }).join(', ') + ' — สต๊อกไม่พอ');
     }
 
-    var loc = locations.find(function(l) { return l.code === 'STORAGE'; })
-           || locations.find(function(l) { return l.code === 'SHOP'; });
-    if (!loc) return toast('ไม่พบ location');
-
     var btn = document.getElementById('btn-submit-dispense');
     btn.disabled = true;
     btn.textContent = 'กำลังบันทึก...';
 
     var movements = rows.map(function(r) {
       var currentQty = stockMap[r.id] !== undefined ? stockMap[r.id] : 0;
+      var itemUnit = (dispenseList.find(function(d) { return d.id === r.id; }) || {}).unit || '';
       return {
         item_id:    r.id,
         qty:        Math.max(0, currentQty - r.qty),
         counted_by: 'dispense',
-        note:       'เบิก ' + r.qty + ' ' + r.unit + (note ? ' · ' + note : '')
+        note:       'เบิก ' + r.qty + ' ' + itemUnit + (note ? ' · ' + note : '')
       };
     });
 
