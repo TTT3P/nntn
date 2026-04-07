@@ -144,6 +144,72 @@
     .note-field input:focus { outline: none; border-color: var(--green); }
     .note-field input::placeholder { color: #bdbdbd; }
 
+    /* Ingredient dispense section */
+    .dispense-section {
+      margin-top: 10px;
+      border-top: 1px dashed #A5D6A7;
+      padding-top: 10px;
+      display: none;
+    }
+    .dispense-section.has-items { display: block; }
+    .dispense-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .dispense-header span {
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--green-dark);
+    }
+    .dispense-header small {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .dispense-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      background: #F9FBE7;
+      border-radius: 6px;
+      padding: 6px 8px;
+    }
+    .dispense-name {
+      flex: 2;
+      font-size: 13px;
+      color: #333;
+    }
+    .dispense-expected {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .dispense-actual {
+      flex: 1;
+      min-width: 70px;
+    }
+    .dispense-actual input {
+      width: 100%;
+      padding: 5px 6px;
+      font-size: 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      text-align: center;
+      font-family: inherit;
+      -moz-appearance: textfield;
+    }
+    .dispense-actual input::-webkit-outer-spin-button,
+    .dispense-actual input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .dispense-actual input:focus { outline: none; border-color: var(--green); }
+    .dispense-unit {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+      min-width: 28px;
+    }
+
     .remove-btn {
       position: absolute;
       top: 8px; right: 10px;
@@ -259,8 +325,9 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb   = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const sbCB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'cookingbook' } });
 
+// bom cache: { 'RCP-001': [{sp_code, ingredient, qty, unit}, ...] }
+let bomCache = {};
 let rcpOptions = '';
-
 let rowId = 0;
 
 // Set today's date
@@ -269,7 +336,6 @@ const yyyy = today.getFullYear();
 const mm   = String(today.getMonth() + 1).padStart(2, '0');
 const dd   = String(today.getDate()).padStart(2, '0');
 document.getElementById('log-date').value = `${yyyy}-${mm}-${dd}`;
-
 document.getElementById('date-display').textContent =
   today.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -283,14 +349,15 @@ function addRow(rcpCode = '', batchCount = '', type = 'customer') {
     <div class="batch-row-top">
       <div class="batch-field" style="flex:2">
         <label>สูตร (RCP)</label>
-        <select id="rcp-${id}">
+        <select id="rcp-${id}" onchange="onRcpChange(${id})">
           <option value="">— เลือกสูตร —</option>
           ${rcpOptions}
         </select>
       </div>
       <div class="batch-field" style="flex:1">
         <label>จำนวน batch</label>
-        <input type="number" min="0.5" step="0.5" id="batch-${id}" value="1">
+        <input type="number" min="0.5" step="0.5" id="batch-${id}" value="1"
+               oninput="onBatchChange(${id})">
       </div>
     </div>
     <div class="type-toggle">
@@ -301,17 +368,71 @@ function addRow(rcpCode = '', batchCount = '', type = 'customer') {
     </div>
     <div class="note-field">
       <input type="text" id="note-${id}" placeholder="หมายเหตุ (ถ้ามี)">
+    </div>
+    <div class="dispense-section" id="dispense-${id}">
+      <div class="dispense-header">
+        <span>🧂 วัตถุดิบที่ใช้</span>
+        <small>แก้ได้ถ้าจริงต่างจาก BOM</small>
+      </div>
+      <div id="dispense-rows-${id}"></div>
     </div>`;
 
   if (rcpCode) div.querySelector(`#rcp-${id}`).value = rcpCode;
   if (batchCount) div.querySelector(`#batch-${id}`).value = batchCount;
 
   document.getElementById('batch-container').appendChild(div);
+
+  if (rcpCode) onRcpChange(id);
 }
 
 function removeRow(id) {
   const el = document.getElementById(`row-${id}`);
   if (el) el.remove();
+}
+
+function onRcpChange(id) {
+  const rcpCode = document.getElementById(`rcp-${id}`).value;
+  const batchCount = parseFloat(document.getElementById(`batch-${id}`).value) || 1;
+  renderDispenseRows(id, rcpCode, batchCount);
+}
+
+function onBatchChange(id) {
+  const rcpCode = document.getElementById(`rcp-${id}`).value;
+  if (!rcpCode) return;
+  const batchCount = parseFloat(document.getElementById(`batch-${id}`).value) || 1;
+  renderDispenseRows(id, rcpCode, batchCount);
+}
+
+function renderDispenseRows(id, rcpCode, batchCount) {
+  const section = document.getElementById(`dispense-${id}`);
+  const container = document.getElementById(`dispense-rows-${id}`);
+
+  if (!rcpCode || !bomCache[rcpCode] || bomCache[rcpCode].length === 0) {
+    section.classList.remove('has-items');
+    container.innerHTML = '';
+    return;
+  }
+
+  const items = bomCache[rcpCode];
+  section.classList.add('has-items');
+  container.innerHTML = items.map((item, i) => {
+    const expected = Math.round(item.qty * batchCount * 100) / 100;
+    return `
+      <div class="dispense-row">
+        <div class="dispense-name">${item.ingredient}</div>
+        <div class="dispense-expected">BOM: ${item.qty}×${batchCount}</div>
+        <div class="dispense-actual">
+          <input type="number" min="0" step="0.1"
+                 id="disp-${id}-${i}"
+                 data-sp="${item.sp_code}"
+                 data-ingredient="${item.ingredient}"
+                 data-expected="${expected}"
+                 data-unit="${item.unit}"
+                 value="${expected}">
+        </div>
+        <div class="dispense-unit">${item.unit}</div>
+      </div>`;
+  }).join('');
 }
 
 function showToast(msg, type) {
@@ -340,10 +461,8 @@ async function submitLog() {
     const type = document.querySelector(`input[name="type-${id}"]:checked`)?.value || 'customer';
     const note = document.getElementById(`note-${id}`).value.trim() || null;
 
-    if (!rcpCode) { return; } // skip unselected
-    if (!batchCount || batchCount <= 0) { return; } // skip empty batch
-
-    rows.push({ logged_at: logDate, logged_by: loggedBy, rcp_code: rcpCode, rcp_name: rcpName, batch_count: batchCount, type, note });
+    if (!rcpCode || !batchCount || batchCount <= 0) return;
+    rows.push({ id, logged_at: logDate, logged_by: loggedBy, rcp_code: rcpCode, rcp_name: rcpName, batch_count: batchCount, type, note });
   });
 
   if (rows.length === 0) {
@@ -355,37 +474,93 @@ async function submitLog() {
   btn.disabled = true;
   btn.textContent = '⏳ กำลังบันทึก...';
 
-  const { error } = await sb.from('production_log').insert(rows);
-
-  if (error) {
-    showToast('❌ บันทึกไม่สำเร็จ: ' + error.message, 'error');
-    btn.disabled = false;
-    btn.textContent = '✅ บันทึกการผลิต';
-    return;
+  // Insert production_log rows one by one to get IDs
+  const insertedIds = {};
+  for (const row of rows) {
+    const { data, error } = await sb.from('production_log')
+      .insert({ logged_at: row.logged_at, logged_by: row.logged_by, rcp_code: row.rcp_code,
+                rcp_name: row.rcp_name, batch_count: row.batch_count, type: row.type, note: row.note })
+      .select('id').single();
+    if (error) {
+      showToast('❌ บันทึก production_log ไม่สำเร็จ: ' + error.message, 'error');
+      btn.disabled = false;
+      btn.textContent = '✅ บันทึกการผลิต';
+      return;
+    }
+    insertedIds[row.id] = data.id;
   }
 
-  showToast(`✅ บันทึกแล้ว ${rows.length} รายการ`, 'success');
+  // Collect ingredient_dispense rows
+  const dispenseRows = [];
+  document.querySelectorAll('.batch-row').forEach(rowEl => {
+    const id = rowEl.id.replace('row-', '');
+    const prodLogId = insertedIds[id];
+    if (!prodLogId) return;
+
+    const rcpCode = document.getElementById(`rcp-${id}`).value;
+    if (!rcpCode) return;
+
+    rowEl.querySelectorAll('[id^="disp-"]').forEach(input => {
+      const qtyActual = parseFloat(input.value);
+      if (isNaN(qtyActual)) return;
+      dispenseRows.push({
+        production_log_id: prodLogId,
+        logged_at: document.getElementById('log-date').value,
+        rcp_code: rcpCode,
+        sp_code: input.dataset.sp || null,
+        ingredient: input.dataset.ingredient,
+        qty_expected: parseFloat(input.dataset.expected),
+        qty_actual: qtyActual,
+        unit: input.dataset.unit
+      });
+    });
+  });
+
+  if (dispenseRows.length > 0) {
+    const { error: dispErr } = await sb.from('ingredient_dispense').insert(dispenseRows);
+    if (dispErr) {
+      showToast('⚠️ บันทึก production_log ✅ แต่ ingredient_dispense ล้มเหลว: ' + dispErr.message, 'error');
+      btn.disabled = false;
+      btn.textContent = '✅ บันทึกการผลิต';
+      return;
+    }
+  }
+
+  showToast(`✅ บันทึกแล้ว ${rows.length} รายการ (วัตถุดิบ ${dispenseRows.length} รายการ)`, 'success');
   btn.textContent = '✅ บันทึกแล้ว!';
 
-  // Clear rows
   document.getElementById('batch-container').innerHTML = '';
   rowId = 0;
-  addRow(); // start fresh with one empty row
+  addRow();
 
   setTimeout(() => { btn.disabled = false; btn.textContent = '✅ บันทึกการผลิต'; }, 3000);
 }
 
 async function init() {
-  const { data } = await sbCB.from('recipes')
+  // Load recipes
+  const { data: rcpData } = await sbCB.from('recipes')
     .select('rcp_code, name, type')
     .in('type', ['prep', 'sub', 'kitchen'])
     .order('rcp_code');
 
-  if (data && data.length) {
-    rcpOptions = data.map(r =>
+  if (rcpData && rcpData.length) {
+    rcpOptions = rcpData.map(r =>
       `<option value="${r.rcp_code}" data-name="${r.name}">${r.rcp_code} — ${r.name}</option>`
     ).join('');
   }
+
+  // Load all BOM items into cache
+  const { data: bomData } = await sb.from('bom_items')
+    .select('rcp_code, sp_code, ingredient, qty, unit')
+    .order('rcp_code, line_no');
+
+  if (bomData) {
+    bomData.forEach(item => {
+      if (!bomCache[item.rcp_code]) bomCache[item.rcp_code] = [];
+      bomCache[item.rcp_code].push({ sp_code: item.sp_code, ingredient: item.ingredient, qty: item.qty, unit: item.unit });
+    });
+  }
+
   addRow();
 }
 
