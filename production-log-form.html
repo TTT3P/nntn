@@ -537,21 +537,9 @@ async function submitLog() {
 }
 
 async function init() {
-  // Load recipes
-  const { data: rcpData } = await sbCB.from('recipes')
-    .select('rcp_code, name, type')
-    .in('type', ['prep', 'sub', 'kitchen'])
-    .order('rcp_code');
-
-  if (rcpData && rcpData.length) {
-    rcpOptions = rcpData.map(r =>
-      `<option value="${r.rcp_code}" data-name="${r.name}">${r.rcp_code} — ${r.name}</option>`
-    ).join('');
-  }
-
-  // Load all BOM items into cache
+  // Load BOM items first (always available)
   const { data: bomData } = await sb.from('bom_items')
-    .select('rcp_code, sp_code, ingredient, qty, unit')
+    .select('rcp_code, rcp_name, sp_code, ingredient, qty, unit')
     .order('rcp_code, line_no');
 
   if (bomData) {
@@ -560,6 +548,30 @@ async function init() {
       bomCache[item.rcp_code].push({ sp_code: item.sp_code, ingredient: item.ingredient, qty: item.qty, unit: item.unit });
     });
   }
+
+  // Load recipes from cookingbook schema; fallback to bom_items distinct list
+  let rcpList = [];
+  const { data: rcpData, error: rcpErr } = await sbCB.from('recipes')
+    .select('rcp_code, name, type')
+    .in('type', ['prep', 'sub', 'kitchen'])
+    .order('rcp_code');
+
+  if (!rcpErr && rcpData && rcpData.length) {
+    rcpList = rcpData.map(r => ({ rcp_code: r.rcp_code, name: r.name }));
+  } else if (bomData && bomData.length) {
+    // Fallback: derive unique RCPs from bom_items
+    const seen = {};
+    bomData.forEach(item => {
+      if (!seen[item.rcp_code]) {
+        seen[item.rcp_code] = true;
+        rcpList.push({ rcp_code: item.rcp_code, name: item.rcp_name || item.rcp_code });
+      }
+    });
+  }
+
+  rcpOptions = rcpList.map(r =>
+    `<option value="${r.rcp_code}" data-name="${r.name}">${r.rcp_code} — ${r.name}</option>`
+  ).join('');
 
   addRow();
 }
