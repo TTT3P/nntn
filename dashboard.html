@@ -363,9 +363,9 @@ async function loadStock() {
         const qty = c ? (c.qty ?? 0) : 0;
         const par = item.par_level || 1;
         let status = 'OK';
-        if (qty <= 0)           status = 'OUT';
-        else if (qty <= par)    status = 'ORDER_NOW';
-        else if (qty <= par * 1.5) status = 'LOW';
+        if (qty === null || qty === 0) status = 'OUT';
+        else if (qty < par)           status = 'ORDER_NOW';
+        else if (qty < par * 1.5)     status = 'LOW';
         return {
           sku:            item.sku,
           name:           item.name,
