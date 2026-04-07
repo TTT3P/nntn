@@ -473,6 +473,7 @@ async function submitCount() {
     qty:        parseFloat(document.getElementById(`qty-${item.id}`).value) || 0,
     counted_by: countedBy,
     note:       document.getElementById(`note-${item.id}`).value.trim() || null,
+    event_type: 'count',
   }));
 
   const { error } = await sb.from('stock_counts').insert(rows);

@@ -698,6 +698,7 @@
         item_id:    r.id,
         qty:        Math.max(0, currentQty - r.qty),
         counted_by: 'dispense',
+        event_type: 'dispense',
         note:       'เบิก ' + r.qty + ' ' + itemUnit + (note ? ' · ' + note : '')
       };
     });
@@ -828,28 +829,22 @@
     });
     if (hasErr) return toast('กรอกจำนวนให้ครบทุกรายการครับ');
 
-    var loc = locations.find(function(l) { return l.code === 'SHOP'; })
-           || locations.find(function(l) { return l.code === 'STORAGE'; });
-    if (!loc) return toast('ไม่พบ location');
-
     var btn = document.getElementById('btn-submit-loss');
     btn.disabled = true;
     btn.textContent = 'กำลังบันทึก...';
 
     var movements = rows.map(function(r) {
+      var currentQty = stockMap[r.id] !== undefined ? stockMap[r.id] : 0;
       return {
-        item_id:       r.id,
-        location_id:   loc.id,
-        qty_delta:     -r.qty,
-        movement_type: 'loss',
-        ref_type:      'manual',
-        note:          '[' + r.reason + ']' + (noteGlobal ? ' ' + noteGlobal : ''),
-        created_by:    'ไทน์',
-        moved_at:      movedAt + 'T00:00:00+07:00'
+        item_id:    r.id,
+        qty:        Math.max(0, currentQty - r.qty),
+        counted_by: 'loss',
+        event_type: 'loss',
+        note:       '[' + r.reason + '] loss ' + r.qty + ' ' + r.unit + (noteGlobal ? ' · ' + noteGlobal : '')
       };
     });
 
-    var mvResult = await sbStock.from('movements').insert(movements);
+    var mvResult = await sb.from('stock_counts').insert(movements);
     if (mvResult.error) {
       console.error(mvResult.error);
       toast('❌ ' + mvResult.error.message);
@@ -857,19 +852,6 @@
       btn.textContent = '⚠️ บันทึก Loss/Waste ทั้งหมด';
       return;
     }
-
-    var adjustments = rows.map(function(r) {
-      return {
-        item_id:     r.id,
-        date:        movedAt,
-        direction:   'loss',
-        reason:      r.reason,
-        delta_g:     null,
-        recorded_by: 'ไทน์',
-        note:        noteGlobal || null
-      };
-    });
-    await sbStock.from('stock_adjustments').insert(adjustments);
 
     rows.forEach(function(r) {
       if (stockMap[r.id] !== undefined) stockMap[r.id] -= r.qty;
