@@ -109,6 +109,11 @@
       border-radius: 4px;
       font-weight: bold;
     }
+    .conv-hint {
+      font-size: 11px;
+      color: #1565C0;
+      opacity: 0.75;
+    }
     .last-count {
       font-size: 11px;
       color: var(--muted);
@@ -318,7 +323,7 @@ async function loadItems() {
   // Load items
   const { data: itemData, error: itemErr } = await sb
     .from('items')
-    .select('id, sku, name, unit, category, par_level')
+    .select('id, sku, name, unit, category, par_level, qty_per_pack')
     .eq('is_active', true)
     .order('category')
     .order('sku');
@@ -401,8 +406,12 @@ function renderItems() {
     const status  = sc ? sc.status : 'OUT';
     const lastDate = sc ? fmtDate(sc.last_counted) : null;
 
+    const convHtml = item.qty_per_pack
+      ? `<span class="conv-hint">1 ${item.unit} = ${item.qty_per_pack} กก./ลิตร</span>`
+      : '';
+
     const lastCountHtml = prevQty !== null
-      ? `<span class="last-count">ครั้งก่อน: ${prevQty} ${item.unit}${lastDate ? ` (${lastDate})` : ''}</span>`
+      ? `<span class="last-count">ครั้งก่อน: ${prevQty} ${item.unit}${item.qty_per_pack ? ` (${Math.round(prevQty * item.qty_per_pack * 100)/100} กก./ลิตร)` : ''}${lastDate ? ` · ${lastDate}` : ''}</span>`
       : `<span class="last-count">ยังไม่มีข้อมูล</span>`;
 
     const chipClass = `chip-${status}`;
@@ -416,6 +425,7 @@ function renderItems() {
             <span>${item.sku}</span>
           </div>
           <div class="item-meta" style="margin-top:4px">${lastCountHtml}</div>
+          ${convHtml ? `<div class="item-meta" style="margin-top:2px">${convHtml}</div>` : ''}
           <input class="note-input" type="text" id="note-${item.id}"
             placeholder="หมายเหตุ (ถ้ามี)" style="margin-top:6px">
         </div>

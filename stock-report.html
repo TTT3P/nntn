@@ -236,7 +236,7 @@ async function load() {
     new Date().toLocaleDateString('th-TH', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
   const [{ data: items }, { data: evts }] = await Promise.all([
-    sb.from('items').select('id,sku,name,unit,category,par_level')
+    sb.from('items').select('id,sku,name,unit,category,par_level,qty_per_pack')
       .eq('is_active', true).order('category').order('sku'),
     sb.from('stock_counts').select('item_id,qty,event_type,note,counted_at')
       .order('counted_at', { ascending: true }),
@@ -375,7 +375,11 @@ function renderAll() {
     <tr>
       <td><div class="td-name">${i.name}</div><div class="td-sku">${i.sku}</div></td>
       <td>${CAT_LABEL[i.category] || i.category || '—'}</td>
-      <td class="td-r">${i.currentQty !== null ? i.currentQty + ' ' + i.unit : '—'}</td>
+      <td class="td-r">${i.currentQty !== null
+        ? i.currentQty + ' ' + i.unit + (i.qty_per_pack && i.currentQty > 0
+          ? `<div style="font-size:11px;color:#1565C0;opacity:.75;">≈ ${Math.round(i.currentQty * i.qty_per_pack * 100)/100} กก./ลิตร</div>`
+          : '')
+        : '—'}</td>
       <td><span class="sc ${STATUS_CLASS[i.status] || ''}">${STATUS_LABEL[i.status] || '—'}</span></td>
       <td>${fmtDate(i.lastCountAt)}</td>
     </tr>`).join('');
