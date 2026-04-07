@@ -338,12 +338,50 @@ function fmtDateTime(iso) {
 async function loadStock() {
   document.getElementById('stock-container').innerHTML = '<div class="loading">⏳ กำลังโหลด...</div>';
 
-  // Use current_stock VIEW directly — same source as index.html
-  const { data, error } = await sbStock
+  let data = null;
+
+  // Try stock schema current_stock VIEW first
+  const { data: csData, error: csErr } = await sbStock
     .from('current_stock')
     .select('sku, name, category, unit, par_level, current_qty, status, last_counted, last_counted_by');
 
-  if (error || !data || data.length === 0) {
+  if (!csErr && csData && csData.length > 0) {
+    data = csData;
+  } else {
+    // Fallback: build from public.items + public.stock_counts
+    const [{ data: items }, { data: counts }] = await Promise.all([
+      sb.from('items').select('id,sku,name,category,unit,par_level').eq('is_active', true),
+      sb.from('stock_counts').select('item_id,qty,counted_at,counted_by').order('counted_at', { ascending: false })
+    ]);
+
+    if (items && items.length > 0) {
+      const latestMap = {};
+      (counts || []).forEach(r => { if (!latestMap[r.item_id]) latestMap[r.item_id] = r; });
+
+      data = items.map(item => {
+        const c = latestMap[item.id];
+        const qty = c ? (c.qty ?? 0) : 0;
+        const par = item.par_level || 1;
+        let status = 'OK';
+        if (qty <= 0)           status = 'OUT';
+        else if (qty <= par)    status = 'ORDER_NOW';
+        else if (qty <= par * 1.5) status = 'LOW';
+        return {
+          sku:            item.sku,
+          name:           item.name,
+          category:       item.category || 'other',
+          unit:           item.unit,
+          par_level:      item.par_level,
+          current_qty:    qty,
+          status,
+          last_counted:    c?.counted_at || null,
+          last_counted_by: c?.counted_by || null,
+        };
+      });
+    }
+  }
+
+  if (!data || data.length === 0) {
     document.getElementById('stock-container').innerHTML =
       '<div class="loading" style="color:#C62828">❌ โหลดไม่ได้ ลองรีเฟรช</div>';
     return;
