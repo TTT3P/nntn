@@ -152,7 +152,6 @@
           <th onclick="sort('all','name')">ชื่อ</th>
           <th onclick="sort('all','category')">หมวด</th>
           <th onclick="sort('all','qty')" class="td-r">สต๊อก</th>
-          <th onclick="sort('all','par')" class="td-r">Par</th>
           <th onclick="sort('all','status')">สถานะ</th>
           <th onclick="sort('all','date')">นับล่าสุด</th>
         </tr>
@@ -338,7 +337,7 @@ function sort(tab, key) {
   s.key = key;
   // Update header classes
   const colMap = {
-    all:  ['name','category','qty','par','status','date'],
+    all:  ['name','category','qty','status','date'],
     used: ['name','category','total','times','last'],
   };
   const ths = document.querySelectorAll(`#thead-${tab} th`);
@@ -358,7 +357,7 @@ function fmtDate(iso) {
 function renderAll() {
   const q   = document.getElementById('q-all').value.toLowerCase();
   const cat = catFilter.all;
-  const KEY_MAP = { name:'name', category:'category', qty:'currentQty', par:'par_level', status:'status', date:'lastCountAt' };
+  const KEY_MAP = { name:'name', category:'category', qty:'currentQty', status:'status', date:'lastCountAt' };
   const { key, dir } = sortState.all;
   const k = KEY_MAP[key] || 'name';
 
@@ -377,7 +376,6 @@ function renderAll() {
       <td><div class="td-name">${i.name}</div><div class="td-sku">${i.sku}</div></td>
       <td>${CAT_LABEL[i.category] || i.category || '—'}</td>
       <td class="td-r">${i.currentQty !== null ? i.currentQty + ' ' + i.unit : '—'}</td>
-      <td class="td-r">${i.par_level ?? '—'}</td>
       <td><span class="sc ${STATUS_CLASS[i.status] || ''}">${STATUS_LABEL[i.status] || '—'}</span></td>
       <td>${fmtDate(i.lastCountAt)}</td>
     </tr>`).join('');
