@@ -211,6 +211,11 @@
       </div>
     </div>
 
+    <div class="section-label">หมายเหตุ / รายละเอียดเพิ่มเติม</div>
+    <div class="field">
+      <textarea id="f-notes" rows="2" placeholder="เช่น ขนาด 700ml เกรด A · ซื้อแพ็ค 12 · เก็บไว้ในตู้เย็น"></textarea>
+    </div>
+
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">ยกเลิก</button>
       <button class="btn-save" id="modal-save-btn" onclick="saveItem()">💾 บันทึก</button>
@@ -276,7 +281,7 @@ function showToast(msg, type) {
 async function loadAll() {
   const [itemsRes, suppRes, linkRes] = await Promise.all([
     sb.from('items')
-      .select('id, sku, name, category, unit, par_level, max_level, is_active, brand, cost_per_pack, qty_per_pack, yield_pct')
+      .select('id, sku, name, category, unit, par_level, max_level, is_active, brand, cost_per_pack, qty_per_pack, yield_pct, notes')
       .order('category').order('sku'),
     sb.from('suppliers').select('id, name').eq('is_active', true).order('name'),
     sb.from('item_suppliers').select('item_id, supplier_id, is_preferred')
@@ -403,6 +408,7 @@ function openModal() {
   document.getElementById('f-yield').value = '';
   document.getElementById('f-par').value = '';
   document.getElementById('f-max').value = '';
+  document.getElementById('f-notes').value = '';
   document.getElementById('overlay').classList.add('open');
   setTimeout(() => document.getElementById('f-name').focus(), 150);
 }
@@ -427,6 +433,7 @@ function openEdit(id) {
   document.getElementById('f-cost').value = item.cost_per_pack || '';
   document.getElementById('f-qty-pack').value = item.qty_per_pack || '';
   document.getElementById('f-yield').value = item.yield_pct != null ? Math.round(item.yield_pct * 100) : '';
+  document.getElementById('f-notes').value = item.notes || '';
   document.getElementById('f-par').value = item.par_level || '';
   document.getElementById('f-max').value = item.max_level || '';
 
@@ -472,7 +479,8 @@ async function saveItem() {
   btn.disabled = true;
   btn.textContent = '⏳ กำลังบันทึก...';
 
-  const payload = { name, unit, category, brand, cost_per_pack, qty_per_pack, yield_pct, par_level: par, max_level: max };
+  const notes   = document.getElementById('f-notes').value.trim() || null;
+  const payload = { name, unit, category, brand, cost_per_pack, qty_per_pack, yield_pct, par_level: par, max_level: max, notes };
   let error, savedId;
 
   if (editId) {
