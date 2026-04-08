@@ -793,67 +793,84 @@ function updateProdBypSum(n) {
 
 function updateProdLots(n) {
   const sel = document.getElementById(`prod-raw-${n}`)
-  const rawName = sel.selectedOptions[0]?.dataset?.name || ''
+  const opt = sel.selectedOptions[0]
+  const rawName = opt?.dataset?.name || ''
+  // ล้าง bag area เก่า
+  const oldArea = document.getElementById(`prod-bags-area-${n}`)
+  if (oldArea) oldArea.remove()
   const cont = document.getElementById(`prod-lots-${n}`)
-  if (!rawName) { cont.innerHTML = '<div class="loading">เลือกประเภทเนื้อก่อน</div>'; return }
-  const keyword = rawName.split(' ')[0]
-  const matching = cwStock.filter(r => r.item_name && r.item_name.includes(keyword))
+  cont.innerHTML = ''
+  if (!rawName) { cont.innerHTML = '<div class="loading" style="font-size:.78rem">เลือกเนื้อสดก่อน</div>'; return }
+
+  const itemId  = sel.value
+  const matching = cwStock.filter(r => r.item_id === itemId)
   if (!matching.length) {
-    cont.innerHTML = `<div class="loading" style="color:var(--red-light)">ไม่มีสต๊อก ${rawName} ในคลัง</div>`; return
+    cont.innerHTML = `<div class="loading" style="color:var(--red-light);font-size:.78rem">ไม่มีสต๊อก ${rawName} ในคลัง</div>`
+    return
   }
-  // group by lot_date, เรียง FIFO
+
+  // group by lot_date เรียง FIFO
   const lots = {}
   matching.forEach(r => {
     const lot = r.lot_date ? r.lot_date.split('T')[0] : 'unknown'
-    if (!lots[lot]) lots[lot] = { count:0, kg:0, bags:[] }
-    lots[lot].count++
-    lots[lot].kg += (parseFloat(r.weight_g)||0)/1000
-    lots[lot].bags.push(r)
+    if (!lots[lot]) lots[lot] = []
+    lots[lot].push(r)
   })
   const sortedLots = Object.entries(lots).sort(([a],[b]) => a < b ? -1 : 1)
-  cont.innerHTML = sortedLots.map(([lot, d]) => `
-    <div class="lot-chip" id="plc-${n}-${lot.replace(/-/g,'')}"
-         onclick="expandProdLot(${n},'${lot}')">
-      <div class="lot-name">${fmtDate(lot)}</div>
-      <div class="lot-kg">${d.count} ถุง | ${d.kg.toFixed(3)} กก.</div>
-    </div>`).join('')
-  // bag area
-  cont.insertAdjacentHTML('afterend',
-    `<div id="prod-bags-area-${n}" style="margin-top:8px"></div>`)
+
+  // สร้าง bag area ใหม่ — แสดงทุก lot พร้อมกัน
+  const area = document.createElement('div')
+  area.id = `prod-bags-area-${n}`
+  area.style.marginTop = '10px'
+
+  // ปุ่มเลือกทั้งหมด
+  area.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <span style="font-size:.75rem;color:var(--muted)">เลือกถุงที่เข้าหม้อ (ข้ามล็อตได้)</span>
+      <button class="btn btn-outline btn-outline-green btn-sm" onclick="selectAllProdBags(${n})">เลือกทั้งหมด</button>
+    </div>`
+
+  sortedLots.forEach(([lot, bags]) => {
+    const lotKg = bags.reduce((s,r)=>s+(parseFloat(r.weight_g)||0)/1000, 0)
+    const group = document.createElement('div')
+    group.style.marginBottom = '10px'
+    group.innerHTML = `
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center">
+        <span>lot ${fmtDate(lot)} — ${bags.length} ถุง</span>
+        <button class="btn btn-outline btn-outline-blue btn-sm" style="padding:2px 8px;font-size:.68rem"
+                onclick="selectLotBags(${n},'${lot}')">เลือก lot นี้</button>
+      </div>
+      <div class="lot-chips" style="margin:0" id="prod-lot-chips-${n}-${lot.replace(/-/g,'')}">
+        ${bags.map(r => {
+          const kg  = ((parseFloat(r.weight_g)||0)/1000).toFixed(3)
+          const cw  = r.legacy_cw_row ? `r${r.legacy_cw_row}` : '#'+r.id.substring(0,6)
+          return `<div class="lot-chip" id="pbag-${n}-${r.id}"
+                       data-id="${r.id}" data-kg="${(parseFloat(r.weight_g)||0)/1000}" data-lot="${lot}"
+                       onclick="toggleProdBag(${n},'${r.id}')">
+            <div class="lot-name">${cw}</div>
+            <div class="lot-kg">${kg} กก.</div>
+          </div>`
+        }).join('')}
+      </div>`
+    area.appendChild(group)
+  })
+
+  // ใส่ bag area หลัง prod-lots div
+  cont.parentNode.insertBefore(area, cont.nextSibling)
+
   document.getElementById(`prod-lot-hint-${n}`).textContent = ''
   document.getElementById(`prod-raw-kg-${n}`).value = ''
   calcProdYield(n)
 }
 
-function expandProdLot(n, lot) {
-  // highlight selected lot chip
-  document.querySelectorAll(`#prod-lots-${n} .lot-chip`).forEach(c => c.classList.remove('selected'))
-  document.getElementById(`plc-${n}-${lot.replace(/-/g,'')}`)?.classList.add('selected')
-  // แสดง bag chips ของ lot นี้
-  const keyword = document.getElementById(`prod-raw-${n}`)?.selectedOptions[0]?.dataset?.name?.split(' ')?.[0] || ''
-  const bags = cwStock.filter(r => r.item_name?.includes(keyword) && (r.lot_date||'').startsWith(lot))
-  const area = document.getElementById(`prod-bags-area-${n}`)
-  if (!area) return
-  area.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <span style="font-size:.75rem;color:var(--muted)">เลือกถุงที่เข้าหม้อ — lot ${fmtDate(lot)}</span>
-      <button class="btn btn-outline btn-outline-green btn-sm" onclick="selectAllProdBags(${n})">เลือกทั้งหมด</button>
-    </div>
-    <div class="lot-chips" id="prod-bag-chips-${n}">
-      ${bags.map(r => {
-        const kg = ((parseFloat(r.weight_g)||0)/1000).toFixed(3)
-        const rowNo = r.legacy_cw_row || `#${r.id}`
-        return `<div class="lot-chip" id="pbag-${n}-${r.id}" onclick="toggleProdBag(${n},${r.id})">
-          <div class="lot-name">${rowNo}</div>
-          <div class="lot-kg">${kg} กก.</div>
-        </div>`
-      }).join('')}
-    </div>`
+function selectAllProdBags(n) {
+  document.querySelectorAll(`#prod-bags-area-${n} .lot-chip`).forEach(c => c.classList.add('selected'))
   recalcProdRawKg(n)
 }
 
-function selectAllProdBags(n) {
-  document.querySelectorAll(`#prod-bag-chips-${n} .lot-chip`).forEach(c => c.classList.add('selected'))
+function selectLotBags(n, lot) {
+  const lotKey = lot.replace(/-/g,'')
+  document.querySelectorAll(`#prod-lot-chips-${n}-${lotKey} .lot-chip`).forEach(c => c.classList.add('selected'))
   recalcProdRawKg(n)
 }
 
@@ -863,15 +880,14 @@ function toggleProdBag(n, bagId) {
 }
 
 function recalcProdRawKg(n) {
-  let total = 0; const selected = []
-  document.querySelectorAll(`#prod-bag-chips-${n} .lot-chip.selected`).forEach(c => {
-    const cid = c.id.replace(`pbag-${n}-`,'')
-    total += (parseFloat(cwStock.find(r=>r.id==cid)?.weight_g)||0)/1000
-    selected.push(c.querySelector('.lot-name').textContent)
+  let total = 0; let count = 0
+  document.querySelectorAll(`#prod-bags-area-${n} .lot-chip.selected`).forEach(c => {
+    total += parseFloat(c.dataset.kg)||0
+    count++
   })
   document.getElementById(`prod-raw-kg-${n}`).value = total > 0 ? total.toFixed(3) : ''
   document.getElementById(`prod-lot-hint-${n}`).textContent =
-    selected.length ? `เลือก ${selected.length} ถุง → ${total.toFixed(3)} กก.` : ''
+    count ? `เลือก ${count} ถุง → ${total.toFixed(3)} กก.` : ''
   calcProdYield(n)
 }
 
@@ -949,8 +965,8 @@ async function submitProduce() {
     const n = card.id.replace('prod-item-','')
 
     // --- input bags ---
-    document.querySelectorAll(`#prod-bag-chips-${n} .lot-chip.selected`).forEach(chip => {
-      const bagId = chip.id.replace(`pbag-${n}-`,'')
+    document.querySelectorAll(`#prod-bags-area-${n} .lot-chip.selected`).forEach(chip => {
+      const bagId = chip.dataset.id
       if (bagId) inputBagIds.push(bagId)
     })
 
