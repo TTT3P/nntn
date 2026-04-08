@@ -340,13 +340,13 @@ async function loadStock() {
 
   let data = null;
 
-  // Try stock schema current_stock VIEW first
-  const { data: csData, error: csErr } = await sbStock
+  // Query public.current_stock VIEW
+  const { data: csData, error: csErr } = await sb
     .from('current_stock')
-    .select('sku, name, category, unit, par_level, current_qty, status, last_counted, last_counted_by');
+    .select('sku, name, category, unit, par_level, current_qty, status, counted_at, counted_by');
 
   if (!csErr && csData && csData.length > 0) {
-    data = csData;
+    data = csData.map(r => ({ ...r, last_counted: r.counted_at, last_counted_by: r.counted_by }));
   } else {
     // Fallback: build from public.items + public.stock_counts
     const [{ data: items }, { data: counts }] = await Promise.all([
