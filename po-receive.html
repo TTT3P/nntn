@@ -708,7 +708,7 @@
       .from('purchase_orders')
       .select(`id, po_number, supplier_name, status, ordered_at, note,
                purchase_order_items(
-                 id, qty_ordered, qty_received,
+                 id, item_id, qty_ordered, qty_received,
                  items(id, name, unit)
                )`)
       .eq('status', status)
@@ -754,8 +754,8 @@
             <div class="qty-ordered">สั่ง: ${l.qty_ordered ?? '—'}</div>
             ${po.status === 'ordered' ? `
               <input class="qty-received-input" type="number" min="0" step="0.01"
-                     placeholder="${l.qty_ordered ?? ''}" value=""
-                     data-line-id="${l.id}" data-item-id="${l.items?.id}" data-qty-ordered="${l.qty_ordered ?? ''}" />
+                     placeholder="${l.qty_ordered ?? ''}" value="${l.qty_ordered ?? ''}"
+                     data-line-id="${l.id}" data-item-id="${l.item_id || l.items?.id || ''}" data-qty-ordered="${l.qty_ordered ?? ''}" />
             ` : `<div style="text-align:center;font-size:13px;color:var(--green-dark);font-weight:700">
                    รับ ${l.qty_received ?? '—'}
                  </div>`}
