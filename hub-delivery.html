@@ -994,10 +994,12 @@ function renderHistory(groups) {
     listEl.innerHTML = '<div class="hist-empty">ยังไม่มีประวัติการส่ง Non-meat</div>'
     return
   }
+  const effectiveGis = []
   listEl.innerHTML = groups.map((g, gi) => {
     // ใช้ original index จาก historyData เสมอ (กัน filter-then-edit ผิด group)
     const realGi = historyData.indexOf(g)
     const effectiveGi = realGi >= 0 ? realGi : gi
+    effectiveGis.push(effectiveGi)
     const { bill, dest } = parseBillNote(g.note)
     const dateStr = g.counted_at ? fmtDate(g.counted_at) : '—'
     const itemCount = g.rows.length
@@ -1031,6 +1033,8 @@ function renderHistory(groups) {
       </div>
     </div>`
   }).join('')
+  // Apply searchable to each hadd-item select
+  effectiveGis.forEach(gi => makeSearchable(`hadd-item-${gi}`, '— พิมพ์ค้นหา SP item —'))
 }
 
 function renderHistRow(r, gi, ri) {
@@ -1201,13 +1205,17 @@ async function deleteHistRow(gi, ri) {
 // ─── Add a new line item to existing bill ────────────────────────────────────
 function showAddItemForm(gi) {
   document.getElementById(`hadd-form-${gi}`).style.display = 'block'
-  document.getElementById(`hadd-item-${gi}`).focus()
+  // Focus ss-input (searchable wrapper) ถ้ามี ไม่งั้น fallback select
+  const ssInput = document.querySelector(`#hadd-form-${gi} .ss-input`)
+  ;(ssInput || document.getElementById(`hadd-item-${gi}`)).focus()
 }
 
 function cancelAddItemForm(gi) {
   const form = document.getElementById(`hadd-form-${gi}`)
   form.style.display = 'none'
   document.getElementById(`hadd-item-${gi}`).value = ''
+  const ssInput = form.querySelector('.ss-input')
+  if (ssInput) { ssInput.value = ''; form.querySelector('.ss-dropdown').style.display = 'none' }
   document.getElementById(`hadd-qty-${gi}`).value = ''
 }
 
