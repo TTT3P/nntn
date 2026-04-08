@@ -695,11 +695,12 @@
       var currentQty = stockMap[r.id] !== undefined ? stockMap[r.id] : 0;
       var itemUnit = (dispenseList.find(function(d) { return d.id === r.id; }) || {}).unit || '';
       return {
-        item_id:    r.id,
-        qty:        Math.max(0, currentQty - r.qty),
-        counted_by: 'dispense',
-        event_type: 'dispense',
-        note:       'เบิก ' + r.qty + ' ' + itemUnit + (note ? ' · ' + note : '')
+        item_id:      r.id,
+        qty:          Math.max(0, currentQty - r.qty),
+        dispense_qty: r.qty,
+        counted_by:   'dispense',
+        event_type:   'dispense',
+        note:         'เบิก ' + r.qty + ' ' + itemUnit + (note ? ' · ' + note : '')
       };
     });
 
@@ -836,11 +837,12 @@
     var movements = rows.map(function(r) {
       var currentQty = stockMap[r.id] !== undefined ? stockMap[r.id] : 0;
       return {
-        item_id:    r.id,
-        qty:        Math.max(0, currentQty - r.qty),
-        counted_by: 'loss',
-        event_type: 'loss',
-        note:       '[' + r.reason + '] loss ' + r.qty + ' ' + r.unit + (noteGlobal ? ' · ' + noteGlobal : '')
+        item_id:      r.id,
+        qty:          Math.max(0, currentQty - r.qty),
+        dispense_qty: r.qty,
+        counted_by:   'loss',
+        event_type:   'loss',
+        note:         '[' + r.reason + '] loss ' + r.qty + ' ' + r.unit + (noteGlobal ? ' · ' + noteGlobal : '')
       };
     });
 
@@ -903,7 +905,14 @@
     container.innerHTML = mvs.map(function(m) {
       var name = itemNameMap[m.item_id] || m.item_id;
       var time = new Date(m.counted_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-      var absQty = m.dispense_qty !== null && m.dispense_qty !== undefined ? Math.abs(m.dispense_qty) : Math.abs(m.qty);
+      // dispense_qty เป็น null ใน record เก่า → parse จาก note "เบิก X unit" หรือ "loss X unit"
+      var absQty;
+      if (m.dispense_qty !== null && m.dispense_qty !== undefined) {
+        absQty = Math.abs(m.dispense_qty);
+      } else {
+        var noteMatch = (m.note || '').match(/(?:เบิก|loss)\s+([\d.]+)/i);
+        absQty = noteMatch ? parseFloat(noteMatch[1]) : Math.abs(m.qty);
+      }
       var typeLabel = { dispense: 'เบิกออก', loss: 'Loss', waste: 'Waste' }[m.event_type] || m.event_type;
       var reasonMatch = (m.note || '').match(/^\[(\w+)\]/);
       var reason = reasonMatch ? (REASON_LABELS[reasonMatch[1]] || reasonMatch[1]) : null;
