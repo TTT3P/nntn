@@ -506,7 +506,8 @@ async function saveItem() {
     // Remove old preferred for this item
     await sb.from('item_suppliers').delete().eq('item_id', savedId).eq('is_preferred', true);
     if (suppId) {
-      await sb.from('item_suppliers').upsert({ item_id: savedId, supplier_id: suppId, is_preferred: true });
+      const { error: upsertErr } = await sb.from('item_suppliers').upsert({ item_id: savedId, supplier_id: suppId, is_preferred: true });
+      if (upsertErr) showToast('⚠️ บันทึก supplier link ไม่สำเร็จ: ' + upsertErr.message, 'error');
     }
   }
 

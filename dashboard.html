@@ -301,7 +301,7 @@ function setFilter(f, triggerEl) {
     // find and activate the right tab button
     document.querySelectorAll('.tab').forEach(t => {
       if ((f === 'all' && t.textContent.startsWith('ทั้งหมด')) ||
-          t.getAttribute('onclick') === "setFilter('" + f + "')") {
+          t.getAttribute('onclick') === "setFilter('" + f + "',this)") {
         t.classList.add('active');
       }
     });

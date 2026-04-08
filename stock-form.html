@@ -477,7 +477,7 @@ async function submitCount() {
     return val !== '' && val !== null;  // ข้ามรายการที่ไม่ได้กรอก
   }).map(item => ({
     item_id:    item.id,
-    qty:        parseFloat(document.getElementById(`qty-${item.id}`).value) || 0,
+    qty:        Math.max(0, parseFloat(document.getElementById(`qty-${item.id}`).value) || 0),
     counted_by: countedBy,
     note:       document.getElementById(`note-${item.id}`).value.trim() || null,
     event_type: 'count',
