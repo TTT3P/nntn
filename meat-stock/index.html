@@ -273,8 +273,7 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
   <button class="tab-btn active" onclick="switchTab('receive')">🛒 รับเนื้อสด</button>
   <button class="tab-btn" onclick="switchTab('produce')">🫕 บันทึกผลผลิต</button>
   <button class="tab-btn" onclick="switchTab('process')">♻️ แปรรูป</button>
-  <button class="tab-btn" onclick="switchTab('export')">🚛 ส่งออก</button>
-  <button class="tab-btn" onclick="switchTab('stock')">📊 สต๊อกปัจจุบัน</button>
+<button class="tab-btn" onclick="switchTab('stock')">📊 สต๊อกปัจจุบัน</button>
 </div>
 </div>
 
@@ -381,38 +380,6 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
   <button class="btn btn-primary" onclick="submitProcess()">✅ บันทึกแปรรูป</button>
 </div>
 
-<!-- ════ ส่งออก ════ -->
-<div class="page" id="page-export">
-  <div class="card">
-    <div class="card-title">🚛 สร้างใบนำส่ง</div>
-    <div class="row2">
-      <div><label>วันที่ส่ง</label><input type="date" id="exp-date" onchange="updateExpPreview()"></div>
-      <div><label>ปลายทาง</label>
-        <select id="exp-dest" onchange="updateExpPreview()">
-          <option>ครัวกลาง (NT)</option>
-          <option>หน้าร้าน (FS)</option>
-          <option>อื่นๆ</option>
-        </select>
-      </div>
-    </div>
-    <div class="mb"><label>เลขที่ใบนำส่ง</label>
-      <input type="text" id="exp-bill" placeholder="NT-20260407-01" oninput="updateExpPreview()">
-    </div>
-  </div>
-
-  <div id="exp-items"></div>
-  <button class="btn btn-outline btn-outline-red btn-sm" onclick="addExpItem()"
-          style="width:100%;margin-bottom:14px;color:#c62828;border-color:#c62828">
-    + เพิ่มรายการส่ง
-  </button>
-
-  <div class="card" id="exp-preview" style="display:none">
-    <div class="card-title">📋 Preview ใบนำส่ง</div>
-    <div id="exp-preview-content"></div>
-  </div>
-
-  <button class="btn btn-primary" onclick="submitExport()">🚛 ยืนยันส่งออก</button>
-</div>
 
 <!-- ════ สต๊อกปัจจุบัน ════ -->
 <div class="page" id="page-stock">
@@ -442,18 +409,6 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
   </div>
 </div>
 
-<!-- ════ Modal เลือกถุง ส่งออก ════ -->
-<div class="modal-overlay" id="exp-bag-modal" onclick="if(event.target===this)closeExpBagModal()">
-  <div class="modal-box">
-    <div class="modal-title" id="exp-modal-title">📦 เลือกถุง</div>
-    <div style="font-size:.82rem;color:var(--muted);margin-bottom:12px" id="exp-modal-count">ยังไม่ได้เลือก</div>
-    <div id="exp-modal-bags" style="max-height:52vh;overflow-y:auto"></div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeExpBagModal()">ยกเลิก</button>
-      <button class="btn-confirm" onclick="confirmExpBags()">✅ ยืนยัน</button>
-    </div>
-  </div>
-</div>
 
 <!-- ════ Modal ปรับยอด ════ -->
 <div class="modal-overlay" id="adj-modal" onclick="closeAdjModal(event)">
@@ -520,7 +475,7 @@ function switchTab(name) {
 
 // ── Global data ──
 let items = [], cwStock = []
-let recvItemCount = 0, expItemCount = 0, procInputCount = 0
+let recvItemCount = 0, procInputCount = 0
 
 // ── Init ──
 async function init() {
@@ -1151,238 +1106,6 @@ async function submitProcess() {
   }
 }
 
-// ════ ส่งออก ════
-let _expModal_n = null
-const _expSelected = {}  // n → Set of bag IDs
-const _expBagKg = {}     // bagId → kg (cache so DOM overwrite doesn't lose kg)
-
-function addExpItem() {
-  expItemCount++
-  const n = expItemCount
-  _expSelected[n] = new Set()
-  const mtItems = items.filter(i => i.sku && i.sku.startsWith('MT'))
-  const opts = mtItems.map(i => `<option value="${i.id}" data-name="${i.name}">${i.sku} | ${i.name}</option>`).join('')
-  const div = document.createElement('div')
-  div.className = 'card'; div.id = `exp-item-${n}`
-  div.style.marginBottom = '10px'
-  div.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="card-title" style="margin:0">รายการที่ ${n}</div>
-      ${n>1 ? `<button class="btn-danger" onclick="removeExpItem(${n})">✕</button>` : ''}
-    </div>
-    <div class="mb">
-      <label>SKU / รายการ</label>
-      <select id="exp-sku-${n}" onchange="onExpItemChange(${n})">
-        <option value="">— เลือก item —</option>${opts}
-      </select>
-    </div>
-    <button class="btn btn-outline btn-sm" id="exp-pick-btn-${n}"
-            onclick="openExpBagModal(${n})"
-            style="width:100%;display:none;margin-bottom:8px">
-      📦 เลือกถุง
-    </button>
-    <div id="exp-bags-summary-${n}" style="font-size:.82rem;color:var(--muted)"></div>`
-  document.getElementById('exp-items').appendChild(div)
-}
-
-function removeExpItem(n) {
-  document.getElementById(`exp-item-${n}`)?.remove()
-  delete _expSelected[n]
-  updateExpPreview()
-}
-
-function onExpItemChange(n) {
-  const sel = document.getElementById(`exp-sku-${n}`)
-  const itemId = sel.value
-  const btn = document.getElementById(`exp-pick-btn-${n}`)
-  // reset selection when item changes
-  _expSelected[n] = new Set()
-  document.getElementById(`exp-bags-summary-${n}`).textContent = ''
-  if (itemId) {
-    btn.style.display = 'block'
-    const name = sel.options[sel.selectedIndex]?.dataset?.name || ''
-    btn.textContent = `📦 เลือกถุง — ${name}`
-  } else {
-    btn.style.display = 'none'
-  }
-  updateExpPreview()
-}
-
-function openExpBagModal(n) {
-  const sel = document.getElementById(`exp-sku-${n}`)
-  const itemId = sel.value
-  if (!itemId) return
-  const name = sel.options[sel.selectedIndex]?.dataset?.name || ''
-  _expModal_n = n
-
-  // build bag chips grouped by lot
-  const bags = cwStock.filter(r => r.item_id === itemId)
-  bags.forEach(r => { _expBagKg[r.id] = (r.weight_g||0)/1000 })
-  const lots = {}
-  bags.forEach(r => {
-    const lot = r.lot_date ? r.lot_date.split('T')[0] : 'unknown'
-    if (!lots[lot]) lots[lot] = []
-    lots[lot].push(r)
-  })
-
-  document.getElementById('exp-modal-title').textContent = `📦 ${name}`
-  const area = document.getElementById('exp-modal-bags')
-  if (Object.keys(lots).length === 0) {
-    area.innerHTML = `<div style="text-align:center;color:var(--muted);padding:24px">ไม่มีถุง In Stock</div>`
-  } else {
-    area.innerHTML = Object.entries(lots).sort().map(([lot, lotBags]) => `
-      <div style="margin-bottom:12px">
-        <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px">
-          lot ${fmtDate(lot)} — ${lotBags.length} ถุง
-        </div>
-        <div class="lot-chips" style="margin:0">
-          ${lotBags.map(r => {
-            const kg = ((r.weight_g||0)/1000).toFixed(3)
-            const cw = r.legacy_cw_row ? `r${r.legacy_cw_row}` : '#'+r.id.substring(0,6)
-            const sel2 = (_expSelected[n] || new Set()).has(r.id) ? ' selected' : ''
-            return `<div class="lot-chip${sel2}" id="expbag-${r.id}"
-                         data-id="${r.id}" data-kg="${(r.weight_g||0)/1000}"
-                         onclick="toggleExpBag('${r.id}')">
-              <div class="lot-name">${cw}</div>
-              <div class="lot-kg">${kg} กก.</div>
-            </div>`
-          }).join('')}
-        </div>
-      </div>`).join('')
-  }
-
-  updateExpModalCount()
-  document.getElementById('exp-bag-modal').classList.add('open')
-}
-
-function toggleExpBag(bagId) {
-  const n = _expModal_n
-  if (!_expSelected[n]) _expSelected[n] = new Set()
-  const chip = document.getElementById(`expbag-${bagId}`)
-  if (_expSelected[n].has(bagId)) {
-    _expSelected[n].delete(bagId)
-    chip?.classList.remove('selected')
-  } else {
-    _expSelected[n].add(bagId)
-    chip?.classList.add('selected')
-  }
-  updateExpModalCount()
-}
-
-function updateExpModalCount() {
-  const n = _expModal_n
-  const sel2 = _expSelected[n] || new Set()
-  let totalKg = 0
-  sel2.forEach(id => { totalKg += _expBagKg[id] || 0 })
-  const countEl = document.getElementById('exp-modal-count')
-  if (sel2.size === 0) {
-    countEl.textContent = 'ยังไม่ได้เลือก — แตะถุงเพื่อเลือก'
-  } else {
-    countEl.textContent = `เลือกแล้ว ${sel2.size} ถุง / ${totalKg.toFixed(3)} กก.`
-  }
-}
-
-function closeExpBagModal() {
-  document.getElementById('exp-bag-modal').classList.remove('open')
-  _expModal_n = null
-}
-
-function confirmExpBags() {
-  const n = _expModal_n
-  const sel2 = _expSelected[n] || new Set()
-  let totalKg = 0
-  const bagIds = [...sel2]
-  bagIds.forEach(id => { totalKg += _expBagKg[id] || 0 })
-  const sumEl = document.getElementById(`exp-bags-summary-${n}`)
-  if (bagIds.length === 0) {
-    sumEl.textContent = ''
-  } else {
-    sumEl.innerHTML = `<span style="color:var(--green);font-weight:600">✅ ${bagIds.length} ถุง / ${totalKg.toFixed(3)} กก.</span>`
-  }
-  updateExpPreview()
-  closeExpBagModal()
-}
-
-function updateExpPreview() {
-  const previewEl = document.getElementById('exp-preview')
-  const contentEl = document.getElementById('exp-preview-content')
-  const bill = document.getElementById('exp-bill').value.trim()
-  const dest = document.getElementById('exp-dest').value
-  const dateVal = document.getElementById('exp-date').value
-
-  let lines = []
-  let totalBags = 0
-  let totalKg = 0
-
-  Object.entries(_expSelected).forEach(([n, selSet]) => {
-    if (selSet.size === 0) return
-    const skuSel = document.getElementById(`exp-sku-${n}`)
-    if (!skuSel?.value) return
-    const name = skuSel.options[skuSel.selectedIndex]?.dataset?.name || skuSel.value
-    let kg = 0
-    selSet.forEach(id => { kg += _expBagKg[id] || 0 })
-    totalBags += selSet.size
-    totalKg += kg
-    lines.push(`<tr><td>${name}</td><td>${selSet.size} ถุง</td><td style="text-align:right">${kg.toFixed(3)} กก.</td></tr>`)
-  })
-
-  if (lines.length === 0) { previewEl.style.display = 'none'; return }
-  previewEl.style.display = 'block'
-  contentEl.innerHTML = `
-    <div style="font-size:.8rem;color:var(--muted);margin-bottom:8px">
-      ${bill || '(ยังไม่ระบุเลขบิล)'} | ${dest} | ${dateVal || 'วันที่?'}
-    </div>
-    <table class="stock-table">
-      <thead><tr><th>รายการ</th><th>จำนวน</th><th>น้ำหนัก</th></tr></thead>
-      <tbody>${lines.join('')}</tbody>
-      <tfoot><tr style="font-weight:600"><td>รวม</td><td>${totalBags} ถุง</td><td style="text-align:right">${totalKg.toFixed(3)} กก.</td></tr></tfoot>
-    </table>`
-}
-
-async function submitExport() {
-  const bill = document.getElementById('exp-bill').value.trim()
-  const dest = document.getElementById('exp-dest').value
-  const dateVal = document.getElementById('exp-date').value
-  if (!bill) { alert('กรุณาระบุเลขที่ใบนำส่ง'); return }
-  if (!dateVal) { alert('กรุณาเลือกวันที่ส่ง'); return }
-
-  // collect all selected bag IDs
-  const allBagIds = []
-  Object.values(_expSelected).forEach(selSet => selSet.forEach(id => allBagIds.push(id)))
-  if (allBagIds.length === 0) { alert('กรุณาเลือกถุงอย่างน้อย 1 ถุง'); return }
-
-  const confirmMsg = `ยืนยันส่งออก?\n\nบิล: ${bill}\nปลายทาง: ${dest}\nถุง: ${allBagIds.length} ถุง`
-  if (!confirm(confirmMsg)) return
-
-  try {
-    // PATCH all selected bags: status → delivered, notes = bill + dest
-    const patchBody = {
-      status: 'delivered',
-      notes: `${bill} → ${dest} (${dateVal})`
-    }
-    const idList = allBagIds.map(id => `"${id}"`).join(',')
-    const res = await fetch(
-      `${SB}/rest/v1/catch_weight?id=in.(${idList})`,
-      { method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patchBody) }
-    )
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-
-    alert(`✅ ส่งออกสำเร็จ!\n${bill} | ${allBagIds.length} ถุง → ${dest}`)
-
-    // reset form
-    document.getElementById('exp-items').innerHTML = ''
-    document.getElementById('exp-bill').value = ''
-    expItemCount = 0
-    Object.keys(_expSelected).forEach(k => delete _expSelected[k])
-    document.getElementById('exp-preview').style.display = 'none'
-
-    // reload CW stock
-    await loadStock()
-    addExpItem()
-  } catch(e) {
-    alert(`❌ Error: ${e.message}`)
-  }
-}
 
 // ════ สต๊อกปัจจุบัน ════
 async function loadStock() {
