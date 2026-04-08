@@ -778,7 +778,7 @@ async function submitDelivery() {
   // Collect meat bags
   const allBagIds = []
   Object.values(meatSel).forEach(s => s.selectedBags.forEach(id => allBagIds.push(id)))
-  if (allBagIds.length === 0) { alert('กรุณาเลือกถุงเนื้ออย่างน้อย 1 ถุง'); return }
+  // meat is optional — allow non-meat only delivery
 
   // Collect + validate non-meat rows
   const nmWithdrawals = []
