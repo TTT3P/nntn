@@ -391,6 +391,17 @@
   </div>
 
   <div class="form-group">
+    <label>ผู้สั่ง</label>
+    <select id="sel-created-by">
+      <option value="">— เลือกชื่อ —</option>
+      <option>ไทน์</option>
+      <option>อิม</option>
+      <option>แก้ว</option>
+      <option>ทาย</option>
+    </select>
+  </div>
+
+  <div class="form-group">
     <label>หมายเหตุ (optional)</label>
     <input type="text" id="inp-note" placeholder="เช่น ขอราคา bulk" />
   </div>
@@ -655,7 +666,7 @@
         supplier_name: supplierName,
         status:        'ordered',
         ordered_at:    new Date().toISOString(),
-        created_by:    'ไทน์',
+        created_by:    document.getElementById('sel-created-by').value || 'ไทน์',
         note:          note || null
       })
       .select('id')
