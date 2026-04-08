@@ -585,8 +585,8 @@ function makeSearchable(selectId, placeholder) {
     }
   }
 
-  input.addEventListener('focus', () => { render(filtered()); setActive(0) })
-  input.addEventListener('input', () => { render(filtered()); setActive(0) })
+  input.addEventListener('focus', () => { if (input.value.trim()) { render(filtered()); setActive(0) } })
+  input.addEventListener('input', () => { if (input.value.trim()) { render(filtered()); setActive(0) } else { dropdown.style.display = 'none' } })
 
   input.addEventListener('keydown', e => {
     const items = dropdown.querySelectorAll('.ss-item[data-val]')
