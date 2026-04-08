@@ -880,14 +880,16 @@
     var container = document.getElementById('log-list');
     container.innerHTML = '<div class="empty">กำลังโหลด...</div>';
 
-    var today = new Date().toISOString().split('T')[0];
+    // Bangkok date (UTC+7)
+    var nowBkk = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    var today = nowBkk.toISOString().split('T')[0];
     var types = logFilter === 'all' ? ['dispense','loss','waste'] : [logFilter];
 
-    var result = await sbStock.from('movements')
-      .select('id,item_id,qty_delta,movement_type,note,moved_at,created_by')
-      .gte('moved_at', today + 'T00:00:00+00:00')
-      .in('movement_type', types)
-      .order('moved_at', { ascending: false });
+    var result = await sb.from('stock_counts')
+      .select('id,item_id,dispense_qty,qty,event_type,note,counted_at,counted_by')
+      .gte('counted_at', today + 'T00:00:00+07:00')
+      .in('event_type', types)
+      .order('counted_at', { ascending: false });
 
     var mvs = result.data;
     if (!mvs || mvs.length === 0) {
@@ -900,18 +902,18 @@
 
     container.innerHTML = mvs.map(function(m) {
       var name = itemNameMap[m.item_id] || m.item_id;
-      var time = new Date(m.moved_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-      var absQty = Math.abs(m.qty_delta);
-      var typeLabel = { dispense: 'เบิกออก', loss: 'Loss', waste: 'Waste' }[m.movement_type] || m.movement_type;
+      var time = new Date(m.counted_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+      var absQty = m.dispense_qty !== null && m.dispense_qty !== undefined ? Math.abs(m.dispense_qty) : Math.abs(m.qty);
+      var typeLabel = { dispense: 'เบิกออก', loss: 'Loss', waste: 'Waste' }[m.event_type] || m.event_type;
       var reasonMatch = (m.note || '').match(/^\[(\w+)\]/);
       var reason = reasonMatch ? (REASON_LABELS[reasonMatch[1]] || reasonMatch[1]) : null;
 
-      return '<div class="log-card ' + m.movement_type + '">'
+      return '<div class="log-card ' + m.event_type + '">'
         + '<div class="log-header">'
         + '<div class="log-item-name">' + name + '</div>'
-        + '<div class="log-qty' + (m.movement_type === 'dispense' ? ' dispense' : '') + '">-' + absQty + '</div>'
+        + '<div class="log-qty' + (m.event_type === 'dispense' ? ' dispense' : '') + '">-' + absQty + '</div>'
         + '</div>'
-        + '<div class="log-meta">' + typeLabel + ' · ' + time + ' · ' + (m.created_by || '-') + '</div>'
+        + '<div class="log-meta">' + typeLabel + ' · ' + time + ' · ' + (m.counted_by || '-') + '</div>'
         + (reason ? '<span class="log-reason">' + reason + '</span>' : '')
         + (m.note && !reasonMatch ? '<div class="log-meta" style="margin-top:4px">' + m.note + '</div>' : '')
         + '</div>';
