@@ -775,6 +775,10 @@
 
   // ─── Confirm Receive ──────────────────────────────────
   async function confirmReceive(poId) {
+    const btn = document.querySelector(`button[onclick="confirmReceive('${poId}')"]`);
+    if (btn && btn.disabled) return;
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
+
     const linesDiv = document.getElementById('lines-' + poId);
     const inputs   = linesDiv.querySelectorAll('.qty-received-input');
 
@@ -790,7 +794,10 @@
       }
     });
 
-    if (receives.length === 0) return toast('ไม่มีรายการที่รับได้');
+    if (receives.length === 0) {
+      if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันรับของแล้ว'; }
+      return toast('ไม่มีรายการที่รับได้');
+    }
 
     const now = new Date().toISOString();
 
