@@ -102,13 +102,37 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
 }
 .meat-summary b { color: var(--text); }
 
+/* Searchable Select */
+.ss-wrap { position: relative; }
+.ss-input {
+  width: 100%; padding: 10px 12px; font-family: inherit; font-size: 0.9rem;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  background: white; color: var(--text); transition: border-color .15s;
+  box-sizing: border-box;
+}
+.ss-input:focus { outline: none; border-color: var(--blue-light); }
+.ss-dropdown {
+  position: absolute; top: calc(100% + 3px); left: 0; right: 0;
+  background: white; border: 1.5px solid var(--blue-light); border-radius: 8px;
+  max-height: 220px; overflow-y: auto; z-index: 999;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+.ss-item {
+  padding: 9px 12px; cursor: pointer; font-size: 0.88rem;
+  border-bottom: 1px solid #f5f5f5;
+}
+.ss-item:last-child { border-bottom: none; }
+.ss-item:hover, .ss-item.active {
+  background: var(--blue-bg); color: var(--blue);
+}
+
 /* Non-meat rows */
 .nm-row-wrap { margin-bottom: 10px; }
 .nm-row {
   display: grid; grid-template-columns: 1fr 70px 70px 28px;
   gap: 8px; align-items: center;
 }
-.nm-row input, .nm-row select { padding: 8px 10px; font-size: 0.85rem; }
+.nm-row input, .nm-row select, .nm-row .ss-input { padding: 8px 10px; font-size: 0.85rem; }
 .nm-avail {
   font-size: 0.75rem; margin-top: 4px; padding-left: 2px;
   color: var(--muted); min-height: 16px;
@@ -350,6 +374,75 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('dl-bill').addEventListener('input', updatePreview)
 })
 
+// ─── Searchable Select ────────────────────────────────────────────────────────
+function makeSearchable(selectId, placeholder) {
+  const sel = document.getElementById(selectId)
+  if (!sel) return
+  sel.style.display = 'none'
+
+  const wrap = document.createElement('div')
+  wrap.className = 'ss-wrap'
+  wrap.innerHTML = `
+    <input type="text" class="ss-input" placeholder="${placeholder}" autocomplete="off" id="${selectId}-search">
+    <div class="ss-dropdown" id="${selectId}-dd" style="display:none"></div>`
+  sel.parentNode.insertBefore(wrap, sel)
+
+  const input    = wrap.querySelector('.ss-input')
+  const dropdown = wrap.querySelector('.ss-dropdown')
+  let activeIdx  = -1
+
+  const options = Array.from(sel.options).filter(o => o.value)
+
+  function filtered() {
+    const q = input.value.trim().toLowerCase()
+    return q ? options.filter(o => o.text.toLowerCase().includes(q)) : options
+  }
+
+  function render(items) {
+    activeIdx = -1
+    dropdown.innerHTML = items.map((o, i) =>
+      `<div class="ss-item" data-val="${o.value}" data-i="${i}">${o.text}</div>`
+    ).join('') || `<div class="ss-item" style="color:var(--muted);cursor:default">ไม่พบรายการ</div>`
+    dropdown.style.display = 'block'
+    dropdown.querySelectorAll('.ss-item[data-val]').forEach(el =>
+      el.addEventListener('mousedown', e => { e.preventDefault(); pick(el) })
+    )
+  }
+
+  function pick(el) {
+    sel.value = el.dataset.val
+    input.value = el.textContent
+    dropdown.style.display = 'none'
+    activeIdx = -1
+    sel.dispatchEvent(new Event('change'))
+  }
+
+  function setActive(idx) {
+    const items = dropdown.querySelectorAll('.ss-item[data-val]')
+    items.forEach(el => el.classList.remove('active'))
+    if (idx >= 0 && idx < items.length) {
+      items[idx].classList.add('active')
+      items[idx].scrollIntoView({ block: 'nearest' })
+      activeIdx = idx
+    }
+  }
+
+  input.addEventListener('focus', () => { render(filtered()); setActive(0) })
+  input.addEventListener('input', () => { render(filtered()); setActive(0) })
+
+  input.addEventListener('keydown', e => {
+    const items = dropdown.querySelectorAll('.ss-item[data-val]')
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(activeIdx + 1, items.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(activeIdx - 1, 0)) }
+    else if (e.key === 'Enter') { e.preventDefault(); if (activeIdx >= 0 && items[activeIdx]) pick(items[activeIdx]) }
+    else if (e.key === 'Escape') { dropdown.style.display = 'none' }
+  })
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => { dropdown.style.display = 'none' }, 160)
+  })
+}
+
 // ─── Meat Blocks ──────────────────────────────────────────────────────────────
 function addMeatBlock() {
   meatBlockCount++
@@ -383,6 +476,7 @@ function addMeatBlock() {
     <div class="meat-summary" id="mb-sum-${n}" style="display:none"></div>`
 
   document.getElementById('meat-blocks').appendChild(div)
+  makeSearchable(`mb-sku-${n}`, '— พิมพ์ค้นหา MT item —')
 }
 
 function removeMeatBlock(n) {
@@ -547,6 +641,7 @@ function addNmRow() {
     <div class="nm-avail" id="nm-avail-${n}"></div>`
 
   document.getElementById('nm-rows').appendChild(wrap)
+  makeSearchable(`nm-item-${n}`, '— พิมพ์ค้นหา SP item —')
 }
 
 function removeNmRow(n) {
