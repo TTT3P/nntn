@@ -1343,7 +1343,9 @@ async function loadStock() {
     // Infer warehouse from item name (for 0-stock items that have no bags)
     function inferWh(name) {
       const n = name||''
-      if(/\[[\d]+[Gg]\]/.test(n)) return 'C'
+      // [XXG] ขึ้นต้นชื่อเท่านั้น = packed → C (เช่น [75G]เนื้อตุ๋น)
+      // วากิวเสือ3[200g], มันเนื้อออส[500g] = bracket ท้าย = เนื้อสด → A
+      if(/^\[[\d]+[Gg]\]/.test(n)) return 'C'
       if(n.includes('ตุ๋น')||n.includes('หมักนุ่ม')) return 'B'
       return 'A'
     }
