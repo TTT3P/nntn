@@ -316,7 +316,9 @@ function calcStatus(qty, par) {
 function fmtDate(iso) {
   if (!iso) return null;
   const dt = new Date(iso);
-  return dt.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+  const datePart = dt.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+  const timePart = dt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+  return `${datePart} ${timePart}`;
 }
 
 async function loadItems() {
@@ -337,7 +339,7 @@ async function loadItems() {
   // Load latest count per item via current_stock view
   const { data: stockData } = await sb
     .from('current_stock')
-    .select('sku, current_qty, status, last_counted, last_counted_by');
+    .select('sku, current_qty, status, counted_at, counted_by');
 
   if (stockData) {
     stockData.forEach(row => {
@@ -404,7 +406,7 @@ function renderItems() {
     const sc = lastCounts[item.sku];
     const prevQty = sc ? sc.current_qty : null;
     const status  = sc ? sc.status : 'OUT';
-    const lastDate = sc ? fmtDate(sc.last_counted) : null;
+    const lastDate = sc ? fmtDate(sc.counted_at) : null;
 
     const convHtml = item.qty_per_pack
       ? `<span class="conv-hint">1 ${item.unit} = ${item.qty_per_pack} กก./ลิตร</span>`
