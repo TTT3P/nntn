@@ -601,7 +601,7 @@ async function submitReceive() {
         lot_date,
         bag_no:       idx + 1,
         weight_g:     g,
-        warehouse:    'คลัง_A',
+        warehouse:    'A',
         status:       'in_stock',
         date_recorded: date,
         notes:        bill || null,
@@ -981,7 +981,7 @@ async function submitProduce() {
       if (!g || g <= 0) return
       outputRows.push({
         item_id: cookedId, lot_date: date, bag_no: idx+1, weight_g: g,
-        warehouse: 'คลัง_B', status: 'in_stock', date_recorded: date,
+        warehouse: 'B', status: 'in_stock', date_recorded: date,
         notes: user ? `ตุ๋น ${date} โดย ${user}` : `ตุ๋น ${date}`,
         source: 'web-produce'
       })
@@ -996,7 +996,7 @@ async function submitProduce() {
         if (!g || g <= 0) return
         outputRows.push({
           item_id: bypId, lot_date: date, bag_no: idx+1, weight_g: g,
-          warehouse: 'คลัง_B', status: 'in_stock', date_recorded: date,
+          warehouse: 'B', status: 'in_stock', date_recorded: date,
           notes: user ? `by-product ${date} โดย ${user}` : `by-product ${date}`,
           source: 'web-produce'
         })
@@ -1237,12 +1237,12 @@ async function submitProcess() {
   let outItemId, outWarehouse
   if (type === 'repack') {
     outItemId   = inputBags[0].item_id
-    outWarehouse = 'คลัง_B'
+    outWarehouse = 'B'
   } else {
     const sel = document.getElementById('proc-sku-out')
     outItemId = sel.value
     if (!outItemId) { alert('กรุณาเลือก SKU output'); return }
-    outWarehouse = 'คลัง_C'
+    outWarehouse = 'C'
   }
 
   // 3. Output bags
@@ -1331,7 +1331,7 @@ async function loadStock() {
     cwStock = rows.map(r => ({...r, item_name: r.items?.name || ''}))
     const totalKg=rows.reduce((s,r)=>s+(parseFloat(r.weight_g)||0),0)/1000
     const byWh={A:0,B:0,C:0}
-    rows.forEach(r=>{ const k=(r.warehouse||'').replace('คลัง_',''); if(byWh[k]!==undefined) byWh[k]++ })
+    rows.forEach(r=>{ const k=r.warehouse||''; if(byWh[k]!==undefined) byWh[k]++ })
 
     document.getElementById('sk-total').textContent=rows.length+' ถุง'
     document.getElementById('sk-kg').textContent=totalKg.toFixed(2)+' กก.'
