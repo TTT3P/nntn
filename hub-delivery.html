@@ -950,7 +950,7 @@ async function loadHistory() {
   try {
     // Fetch dispense records from hub-delivery, join items
     const rows = await get('stock_counts', {
-      select: 'id,item_id,qty,note,counted_at,items(id,sku,name,unit)',
+      select: 'id,item_id,qty,dispense_qty,note,counted_at,items(id,sku,name,unit)',
       event_type: 'eq.dispense',
       counted_by: 'eq.hub-delivery',
       order: 'counted_at.desc',
@@ -1031,27 +1031,31 @@ function renderHistory(groups) {
 }
 
 function renderHistRow(r, gi, ri) {
-  const item = r.items || {}
-  const name = item.name || r.item_id || '?'
-  const unit = item.unit || ''
-  const qty  = r.qty !== null && r.qty !== undefined ? Number(r.qty) : '?'
+  const item        = r.items || {}
+  const name        = item.name || r.item_id || '?'
+  const unit        = item.unit || ''
+  const dispQty     = r.dispense_qty !== null && r.dispense_qty !== undefined ? Number(r.dispense_qty) : null
+  const remainQty   = r.qty !== null && r.qty !== undefined ? Number(r.qty) : null
+  const displayQty  = dispQty !== null ? dispQty : (remainQty !== null ? remainQty : '?')
+  const editVal     = dispQty !== null ? dispQty : (remainQty !== null ? remainQty : '')
+  const qtyLabel    = dispQty !== null ? 'เบิก' : 'คงเหลือ'
   return `
   <div class="hist-item-row" id="hrow-${gi}-${ri}">
     <div class="hist-item-name">${escHtml(name)}</div>
-    <div class="hist-item-qty">${qty}</div>
+    <div class="hist-item-qty">${displayQty} <span style="font-size:0.75em;color:#888">${qtyLabel}</span></div>
     <div class="hist-item-unit">${escHtml(unit)}</div>
     <button class="hist-edit-btn" onclick="showEditRow(${gi},${ri})">✏️ แก้</button>
     <button class="hist-del-btn" onclick="deleteHistRow(${gi},${ri})" title="ลบรายการนี้">🗑️</button>
   </div>
   <div class="hist-edit-row" id="hedit-${gi}-${ri}" style="display:none">
-    <label>ยอดคงเหลือ:</label>
-    <input type="number" id="hedit-input-${gi}-${ri}" value="${qty}" step="0.01" min="0">
+    <label>จำนวนเบิก:</label>
+    <input type="number" id="hedit-input-${gi}-${ri}" value="${editVal}" step="0.01" min="0">
     <button class="hist-save-btn" onclick="saveHistRow(${gi},${ri})">บันทึก</button>
     <button class="hist-cancel-btn" onclick="cancelEditRow(${gi},${ri})">ยกเลิก</button>
     <div style="flex:1"></div>
   </div>
   <div class="hist-warn" id="hwarn-${gi}-${ri}" style="display:none">
-    ⚠️ แก้ไข qty = ยอดสต๊อกหลังส่ง ณ เวลานั้น
+    ⚠️ แก้ไข = จำนวนที่เบิกจริง (บิลนี้)
   </div>`
 }
 
@@ -1077,7 +1081,9 @@ function cancelEditRow(gi, ri) {
 async function saveHistRow(gi, ri) {
   const group  = historyData[gi]
   const record = group.rows[ri]
-  const oldQty = record.qty !== null && record.qty !== undefined ? Number(record.qty) : null
+  // Edit field = dispense_qty if available, else qty
+  const hasDispQty = record.dispense_qty !== null && record.dispense_qty !== undefined
+  const oldQty = hasDispQty ? Number(record.dispense_qty) : (record.qty !== null ? Number(record.qty) : null)
   const newQty = parseFloat(document.getElementById(`hedit-input-${gi}-${ri}`).value)
 
   if (isNaN(newQty) || newQty < 0) { alert('กรุณากรอกตัวเลขที่ถูกต้อง'); return }
@@ -1087,10 +1093,15 @@ async function saveHistRow(gi, ri) {
   saveBtn.textContent = '⏳...'
 
   try {
+    // If record has dispense_qty: update dispense_qty + recalculate remaining qty (avail = qty + dispense_qty)
+    const patchBody = hasDispQty
+      ? { dispense_qty: newQty, qty: Number(record.qty) + Number(record.dispense_qty) - newQty }
+      : { qty: newQty }
+
     const res = await fetch(`${SB}/rest/v1/stock_counts?id=eq.${record.id}`, {
       method: 'PATCH',
       headers: { ...H, Prefer: 'return=minimal' },
-      body: JSON.stringify({ qty: newQty })
+      body: JSON.stringify(patchBody)
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`)
 
@@ -1106,22 +1117,24 @@ async function saveHistRow(gi, ri) {
     })
 
     // Update local data
-    record.qty = newQty
+    if (hasDispQty) {
+      record.qty = Number(record.qty) + Number(record.dispense_qty) - newQty
+      record.dispense_qty = newQty
+    } else {
+      record.qty = newQty
+    }
 
-    // Re-render just that row
-    const rowEl = document.getElementById(`hrow-${gi}-${ri}`)
-    const editEl = document.getElementById(`hedit-${gi}-${ri}`)
-    const warnEl = document.getElementById(`hwarn-${gi}-${ri}`)
+    // Re-render entire rows container (same approach as deleteHistRow — avoids index/ID mismatch)
+    const rowsEl = document.getElementById(`hg-rows-${gi}`)
+    rowsEl.innerHTML = group.rows.map((r, newRi) => renderHistRow(r, gi, newRi)).join('')
 
-    rowEl.querySelector('.hist-item-qty').textContent = newQty
-    editEl.style.display = 'none'
-    warnEl.style.display = 'none'
-    saveBtn.disabled = false
-    saveBtn.textContent = 'บันทึก'
-
-    // Flash green on the row
-    rowEl.style.background = '#E8F5E9'
-    setTimeout(() => { rowEl.style.background = '' }, 1200)
+    // Flash green on the updated row (find by new index after re-render)
+    const newRi = group.rows.indexOf(record)
+    const newRowEl = document.getElementById(`hrow-${gi}-${newRi}`)
+    if (newRowEl) {
+      newRowEl.style.background = '#E8F5E9'
+      setTimeout(() => { newRowEl.style.background = '' }, 1200)
+    }
 
     // Refresh audit log
     loadAuditLog()
@@ -1446,11 +1459,12 @@ async function submitDelivery() {
     // 2. INSERT stock_counts withdrawal for each non-meat item
     if (nmWithdrawals.length > 0) {
       const inserts = nmWithdrawals.map(w => ({
-        item_id:    w.item_id,
-        qty:        w.avail !== null ? w.avail - w.qty : 0,
-        event_type: 'dispense',
-        counted_by: 'hub-delivery',
-        note:       `${bill} → ${dest}`
+        item_id:      w.item_id,
+        qty:          w.avail !== null ? w.avail - w.qty : 0,
+        dispense_qty: w.qty,
+        event_type:   'dispense',
+        counted_by:   'hub-delivery',
+        note:         `${bill} → ${dest}`
       }))
       const res2 = await fetch(`${SB}/rest/v1/stock_counts`, {
         method: 'POST',
