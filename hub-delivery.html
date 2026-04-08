@@ -287,6 +287,36 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
   border: 1.5px solid var(--border); border-radius: 8px; font-family: inherit;
 }
 .hist-filter-bar input:focus { outline: none; border-color: var(--blue-light); }
+.hist-del-btn {
+  background: none; border: none; cursor: pointer; padding: 3px 5px;
+  font-size: 1rem; line-height: 1; color: #bdbdbd; transition: color .12s;
+}
+.hist-del-btn:hover { color: #ef5350; }
+.hist-add-row-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 8px 0; margin-top: 6px;
+  background: none; border: 1.5px dashed var(--border); border-radius: 8px;
+  font-family: inherit; font-size: 0.82rem; color: var(--muted); cursor: pointer;
+  transition: all .15s;
+}
+.hist-add-row-btn:hover { border-color: var(--blue-light); color: var(--blue); }
+.hist-add-form {
+  display: none; background: var(--blue-bg); border: 1.5px solid var(--blue-light);
+  border-radius: 8px; padding: 10px 12px; margin-top: 8px;
+}
+.hist-add-form .add-form-row {
+  display: grid; grid-template-columns: 1fr 80px; gap: 8px; margin-bottom: 8px;
+}
+.hist-add-form select, .hist-add-form input[type="number"] {
+  padding: 7px 9px; font-size: 0.85rem; border: 1.5px solid var(--border);
+  border-radius: 6px; font-family: inherit; background: white;
+}
+.hist-add-form select:focus, .hist-add-form input[type="number"]:focus {
+  outline: none; border-color: var(--blue-light);
+}
+.hist-add-form .add-form-actions { display: flex; gap: 8px; }
+.hist-add-form .add-form-actions .hist-save-btn { flex: 2; }
+.hist-add-form .add-form-actions .hist-cancel-btn { flex: 1; }
 
 @media print {
   header, .no-print { display: none !important; }
@@ -953,7 +983,23 @@ function renderHistory(groups) {
         <span class="hist-bill-count">${itemCount} รายการ</span>
       </div>
       <div class="hist-bill-body" id="hg-body-${gi}" style="display:none">
-        ${g.rows.map((r, ri) => renderHistRow(r, gi, ri)).join('')}
+        <div id="hg-rows-${gi}">
+          ${g.rows.map((r, ri) => renderHistRow(r, gi, ri)).join('')}
+        </div>
+        <button class="hist-add-row-btn" onclick="showAddItemForm(${gi})">+ เพิ่มรายการ</button>
+        <div class="hist-add-form" id="hadd-form-${gi}">
+          <div class="add-form-row">
+            <select id="hadd-item-${gi}">
+              <option value="">— เลือก SP item —</option>
+              ${spItems.map(i => `<option value="${i.id}" data-sku="${i.sku}" data-unit="${i.unit||''}" data-name="${i.name}">${i.sku} | ${escHtml(i.name)}</option>`).join('')}
+            </select>
+            <input type="number" id="hadd-qty-${gi}" min="0" step="0.01" placeholder="จำนวน">
+          </div>
+          <div class="hist-add-form .add-form-actions" style="display:flex;gap:8px">
+            <button class="hist-save-btn" style="flex:2" onclick="saveNewHistItem(${gi})">บันทึก</button>
+            <button class="hist-cancel-btn" style="flex:1" onclick="cancelAddItemForm(${gi})">ยกเลิก</button>
+          </div>
+        </div>
       </div>
     </div>`
   }).join('')
@@ -970,6 +1016,7 @@ function renderHistRow(r, gi, ri) {
     <div class="hist-item-qty">${qty}</div>
     <div class="hist-item-unit">${escHtml(unit)}</div>
     <button class="hist-edit-btn" onclick="showEditRow(${gi},${ri})">✏️ แก้</button>
+    <button class="hist-del-btn" onclick="deleteHistRow(${gi},${ri})" title="ลบรายการนี้">🗑️</button>
   </div>
   <div class="hist-edit-row" id="hedit-${gi}-${ri}" style="display:none">
     <label>ยอดคงเหลือ:</label>
@@ -1041,6 +1088,133 @@ async function saveHistRow(gi, ri) {
 
   } catch(e) {
     alert(`❌ บันทึกไม่สำเร็จ: ${e.message}`)
+    saveBtn.disabled = false
+    saveBtn.textContent = 'บันทึก'
+  }
+}
+
+// ─── Delete a history row ─────────────────────────────────────────────────────
+async function deleteHistRow(gi, ri) {
+  const group  = historyData[gi]
+  const record = group.rows[ri]
+  const item   = record.items || {}
+  const name   = item.name || record.item_id || '?'
+
+  if (!confirm(`ลบ "${name}" ออกจากบิลนี้?`)) return
+
+  try {
+    const res = await fetch(`${SB}/rest/v1/stock_counts?id=eq.${record.id}`, {
+      method: 'DELETE',
+      headers: { ...H, Prefer: 'return=minimal' }
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`)
+
+    // Remove from local data
+    group.rows.splice(ri, 1)
+
+    // Re-render rows container
+    const rowsEl = document.getElementById(`hg-rows-${gi}`)
+    rowsEl.innerHTML = group.rows.map((r, newRi) => renderHistRow(r, gi, newRi)).join('')
+
+    // Update item count badge
+    const countEl = document.querySelector(`#hg-${gi} .hist-bill-count`)
+    if (countEl) countEl.textContent = `${group.rows.length} รายการ`
+
+    // If no rows left, show empty message
+    if (group.rows.length === 0) {
+      rowsEl.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:8px 0">ไม่มีรายการในบิลนี้</div>'
+    }
+  } catch(e) {
+    alert(`❌ ลบไม่สำเร็จ: ${e.message}`)
+  }
+}
+
+// ─── Add a new line item to existing bill ────────────────────────────────────
+function showAddItemForm(gi) {
+  document.getElementById(`hadd-form-${gi}`).style.display = 'block'
+  document.getElementById(`hadd-item-${gi}`).focus()
+}
+
+function cancelAddItemForm(gi) {
+  const form = document.getElementById(`hadd-form-${gi}`)
+  form.style.display = 'none'
+  document.getElementById(`hadd-item-${gi}`).value = ''
+  document.getElementById(`hadd-qty-${gi}`).value = ''
+}
+
+async function saveNewHistItem(gi) {
+  const group   = historyData[gi]
+  const itemSel = document.getElementById(`hadd-item-${gi}`)
+  const qtyEl   = document.getElementById(`hadd-qty-${gi}`)
+  const itemId  = itemSel.value
+  const dispQty = parseFloat(qtyEl.value)
+
+  if (!itemId) { alert('กรุณาเลือก SP item'); return }
+  if (isNaN(dispQty) || dispQty <= 0) { alert('กรุณากรอกจำนวนที่ถูกต้อง'); return }
+
+  const opt  = itemSel.options[itemSel.selectedIndex]
+  const sku  = opt?.dataset?.sku || ''
+  const unit = opt?.dataset?.unit || ''
+  const name = opt?.dataset?.name || sku
+
+  const saveBtn = document.querySelector(`#hadd-form-${gi} .hist-save-btn`)
+  saveBtn.disabled = true
+  saveBtn.textContent = '⏳...'
+
+  try {
+    // Get current stock for this item (latest stock_counts record)
+    const latest = await get('stock_counts', {
+      select: 'qty',
+      item_id: `eq.${itemId}`,
+      event_type: 'eq.dispense',
+      order: 'counted_at.desc',
+      limit: '1'
+    })
+    const currentStock = (Array.isArray(latest) && latest.length > 0)
+      ? parseFloat(latest[0].qty) || 0
+      : (spStockBySku[sku] ?? 0)
+
+    const newQty = currentStock - dispQty
+
+    // INSERT new stock_counts record
+    const res = await fetch(`${SB}/rest/v1/stock_counts`, {
+      method: 'POST',
+      headers: { ...H, Prefer: 'return=representation' },
+      body: JSON.stringify([{
+        item_id:    itemId,
+        qty:        newQty,
+        event_type: 'dispense',
+        counted_by: 'hub-delivery',
+        note:       group.note,
+        counted_at: new Date().toISOString()
+      }])
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`)
+    const inserted = await res.json()
+    const newRecord = Array.isArray(inserted) ? inserted[0] : inserted
+
+    // Attach items info locally
+    newRecord.items = { name, unit, sku }
+
+    // Add to local data
+    const ri = group.rows.length
+    group.rows.push(newRecord)
+
+    // Append new row to DOM
+    const rowsEl = document.getElementById(`hg-rows-${gi}`)
+    rowsEl.insertAdjacentHTML('beforeend', renderHistRow(newRecord, gi, ri))
+
+    // Update item count badge
+    const countEl = document.querySelector(`#hg-${gi} .hist-bill-count`)
+    if (countEl) countEl.textContent = `${group.rows.length} รายการ`
+
+    // Update local stock cache
+    if (sku) spStockBySku[sku] = newQty
+
+    cancelAddItemForm(gi)
+  } catch(e) {
+    alert(`❌ บันทึกไม่สำเร็จ: ${e.message}`)
+  } finally {
     saveBtn.disabled = false
     saveBtn.textContent = 'บันทึก'
   }
