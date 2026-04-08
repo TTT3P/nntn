@@ -1050,7 +1050,106 @@ function addScrap() {
   document.getElementById('proc-scraps').insertBefore(div,btn)
 }
 
-function submitProcess() { alert('🚧 ฟีเจอร์นี้กำลังพัฒนา — จะ save ลง Supabase') }
+async function submitProcess() {
+  const date = document.getElementById('proc-date').value
+  const type = document.getElementById('proc-type').value
+  if (!date) { alert('กรุณาเลือกวันที่'); return }
+
+  // 1. Input bags (selected chips)
+  const inputBags = []
+  document.querySelectorAll('#proc-inputs .lot-chip.selected').forEach(chip => {
+    inputBags.push({
+      id:      chip.dataset.id,
+      item_id: chip.dataset.itemId,
+      kg:      parseFloat(chip.dataset.kg) || 0,
+      name:    chip.dataset.name
+    })
+  })
+  if (inputBags.length === 0) { alert('กรุณาเลือกถุงต้นทางอย่างน้อย 1 ถุง'); return }
+
+  // 2. Output item ID
+  let outItemId, outWarehouse
+  if (type === 'repack') {
+    outItemId   = inputBags[0].item_id
+    outWarehouse = 'คลัง_B'
+  } else {
+    const sel = document.getElementById('proc-sku-out')
+    outItemId = sel.value
+    if (!outItemId) { alert('กรุณาเลือก SKU output'); return }
+    outWarehouse = 'คลัง_C'
+  }
+
+  // 3. Output bags
+  const outputRows = []
+  document.querySelectorAll('#proc-bag-rows input[type=number]').forEach((inp, idx) => {
+    const g = parseFloat(inp.value)
+    if (!g || g <= 0) return
+    outputRows.push({
+      item_id:      outItemId,
+      lot_date:     date,
+      bag_no:       idx + 1,
+      weight_g:     g,
+      warehouse:    outWarehouse,
+      status:       'in_stock',
+      date_recorded: date,
+      notes:        `แปรรูปจาก ${inputBags.length} ถุง (${type})`,
+      source:       'web-process'
+    })
+  })
+  if (outputRows.length === 0) { alert('กรุณากรอกน้ำหนัก output อย่างน้อย 1 ถุง'); return }
+
+  // 4. Scraps summary (for notes only — no item_id to insert)
+  const scraps = []
+  document.querySelectorAll('#proc-scraps .row2').forEach(row => {
+    const nm = row.querySelector('input[type=text]')?.value?.trim()
+    const g  = parseFloat(row.querySelector('input[type=number]')?.value)
+    if (nm && g > 0) scraps.push(`${nm} ${g}g`)
+  })
+
+  const btn = document.querySelector('#page-process .btn-primary')
+  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'
+
+  try {
+    // PATCH input bags → status='processed'
+    const idList = inputBags.map(b => b.id).join(',')
+    const r1 = await fetch(`${SB}/rest/v1/catch_weight?id=in.(${idList})`, {
+      method: 'PATCH',
+      headers: { ...H, Prefer: 'return=minimal' },
+      body: JSON.stringify({ status: 'processed', notes: `แปรรูป ${date}` })
+    })
+    if (!r1.ok) throw new Error(await r1.text())
+
+    // INSERT output bags
+    const r2 = await fetch(`${SB}/rest/v1/catch_weight`, {
+      method: 'POST',
+      headers: { ...H, Prefer: 'return=minimal' },
+      body: JSON.stringify(outputRows)
+    })
+    if (!r2.ok) throw new Error(await r2.text())
+
+    const inKg  = inputBags.reduce((s,b) => s + b.kg, 0)
+    const outKg = outputRows.reduce((s,r) => s + r.weight_g / 1000, 0)
+    const yPct  = inKg > 0 ? (outKg / inKg * 100).toFixed(1) + '%' : '—'
+
+    let msg = `✅ บันทึกแปรรูปสำเร็จ\nInput: ${inputBags.length} ถุง / ${inKg.toFixed(3)} กก.\nOutput: ${outputRows.length} ถุง / ${outKg.toFixed(3)} กก.\nYield: ${yPct}`
+    if (scraps.length) msg += `\nเศษ: ${scraps.join(', ')}`
+    alert(msg)
+
+    // Reset
+    document.getElementById('proc-inputs').innerHTML = ''
+    document.getElementById('proc-bag-rows').innerHTML = '<div class="loading">ระบุจำนวนถุงก่อน</div>'
+    document.getElementById('proc-output-sum').textContent = '0.000'
+    document.getElementById('proc-input-sum').textContent  = '0.000'
+    document.getElementById('proc-out-bags').value = ''
+    procInputCount = 0
+    addProcInput()
+    loadStock()
+  } catch(e) {
+    alert('❌ เกิดข้อผิดพลาด: ' + e.message)
+  } finally {
+    btn.disabled = false; btn.textContent = '✅ บันทึกแปรรูป'
+  }
+}
 
 // ════ ส่งออก ════
 let _expModal_n = null
