@@ -464,7 +464,8 @@ const H = { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'applic
 const get = (path, params={}) =>
   fetch(`${SB}/rest/v1/${path}?${new URLSearchParams(params)}`, { headers: H }).then(r => r.json())
 const post = (path, body) =>
-  fetch(`${SB}/rest/v1/${path}`, { method: 'POST', headers: {...H, Prefer:'return=representation'}, body: JSON.stringify(body) }).then(r => r.json())
+  fetch(`${SB}/rest/v1/${path}`, { method: 'POST', headers: {...H, Prefer:'return=representation'}, body: JSON.stringify(body) })
+  .then(async r => { if (!r.ok) throw new Error(await r.text()); return r.json(); })
 
 function today() { return new Date().toISOString().split('T')[0] }
 function fmtDate(d) { if(!d) return ''; const dt=new Date(d); return `${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}/${dt.getFullYear()}` }
@@ -1276,7 +1277,7 @@ async function submitProcess() {
 
   try {
     // PATCH input bags → status='processed'
-    const idList = inputBags.map(b => b.id).join(',')
+    const idList = inputBags.map(b => `"${b.id}"`).join(',')
     const r1 = await fetch(`${SB}/rest/v1/catch_weight?id=in.(${idList})`, {
       method: 'PATCH',
       headers: { ...H, Prefer: 'return=minimal' },
@@ -1326,6 +1327,8 @@ async function loadStock() {
     ])
 
     const rows=Array.isArray(cw)?cw:[]
+    // อัปเดต cwStock global ด้วย — ใช้โดย produce/process lot chips
+    cwStock = rows.map(r => ({...r, item_name: r.items?.name || ''}))
     const totalKg=rows.reduce((s,r)=>s+(parseFloat(r.weight_g)||0),0)/1000
     const byWh={A:0,B:0,C:0}
     rows.forEach(r=>{ if(r.warehouse && byWh[r.warehouse]!==undefined) byWh[r.warehouse]++ })
@@ -1385,7 +1388,10 @@ async function loadStock() {
       </tr>`
     }).join('')||'<tr><td colspan="4" class="loading">ไม่มีข้อมูล</td></tr>'
 
-  } catch(e){ console.error(e) }
+  } catch(e){
+    console.error(e)
+    document.getElementById('stock-rows').innerHTML = `<tr><td colspan="4" style="color:red;padding:12px">❌ โหลดสต๊อกไม่ได้: ${e.message}</td></tr>`
+  }
 }
 
 // ── Stock expand ───────────────────────────────────────
@@ -1481,13 +1487,24 @@ async function submitAdj() {
     }
     await post('stock_adjustments', adjRow)
 
-    // 2. ถ้า ตัดออก → PATCH catch_weight status
+    // 2. PATCH catch_weight ตาม adjType
     if (_adjType === 'remove') {
-      await fetch(`${SB}/rest/v1/catch_weight?id=eq.${_adjBag.id}`, {
+      // ตัดออก → เปลี่ยน status
+      const pr = await fetch(`${SB}/rest/v1/catch_weight?id=eq.${_adjBag.id}`, {
         method: 'PATCH',
         headers: {...H, Prefer:'return=minimal'},
         body: JSON.stringify({ status: newStatus })
       })
+      if (!pr.ok) throw new Error(`PATCH status: ${await pr.text()}`)
+    } else {
+      // ปรับน้ำหนัก → อัปเดต weight_g จริง
+      const newWeightG = Math.max(0, (parseFloat(_adjBag.weight_g) || 0) + deltaG)
+      const pr = await fetch(`${SB}/rest/v1/catch_weight?id=eq.${_adjBag.id}`, {
+        method: 'PATCH',
+        headers: {...H, Prefer:'return=minimal'},
+        body: JSON.stringify({ weight_g: newWeightG })
+      })
+      if (!pr.ok) throw new Error(`PATCH weight: ${await pr.text()}`)
     }
 
     document.getElementById('adj-modal').classList.remove('open')
