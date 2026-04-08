@@ -995,34 +995,37 @@ function renderHistory(groups) {
     return
   }
   listEl.innerHTML = groups.map((g, gi) => {
+    // ใช้ original index จาก historyData เสมอ (กัน filter-then-edit ผิด group)
+    const realGi = historyData.indexOf(g)
+    const effectiveGi = realGi >= 0 ? realGi : gi
     const { bill, dest } = parseBillNote(g.note)
     const dateStr = g.counted_at ? fmtDate(g.counted_at) : '—'
     const itemCount = g.rows.length
     return `
-    <div class="hist-bill-card" id="hg-${gi}">
-      <div class="hist-bill-header" onclick="toggleBillCard(${gi})">
+    <div class="hist-bill-card" id="hg-${effectiveGi}">
+      <div class="hist-bill-header" onclick="toggleBillCard(${effectiveGi})">
         <div class="hist-bill-info">
           <div class="hist-bill-num">${escHtml(bill)}</div>
           <div class="hist-bill-meta">${escHtml(dest)} · ${dateStr}</div>
         </div>
         <span class="hist-bill-count">${itemCount} รายการ</span>
       </div>
-      <div class="hist-bill-body" id="hg-body-${gi}" style="display:none">
-        <div id="hg-rows-${gi}">
-          ${g.rows.map((r, ri) => renderHistRow(r, gi, ri)).join('')}
+      <div class="hist-bill-body" id="hg-body-${effectiveGi}" style="display:none">
+        <div id="hg-rows-${effectiveGi}">
+          ${g.rows.map((r, ri) => renderHistRow(r, effectiveGi, ri)).join('')}
         </div>
-        <button class="hist-add-row-btn" onclick="showAddItemForm(${gi})">+ เพิ่มรายการ</button>
-        <div class="hist-add-form" id="hadd-form-${gi}">
+        <button class="hist-add-row-btn" onclick="showAddItemForm(${effectiveGi})">+ เพิ่มรายการ</button>
+        <div class="hist-add-form" id="hadd-form-${effectiveGi}">
           <div class="add-form-row">
-            <select id="hadd-item-${gi}">
+            <select id="hadd-item-${effectiveGi}">
               <option value="">— เลือก SP item —</option>
               ${spItems.map(i => `<option value="${i.id}" data-sku="${i.sku}" data-unit="${i.unit||''}" data-name="${i.name}">${i.sku} | ${escHtml(i.name)}</option>`).join('')}
             </select>
-            <input type="number" id="hadd-qty-${gi}" min="0" step="0.01" placeholder="จำนวน">
+            <input type="number" id="hadd-qty-${effectiveGi}" min="0" step="0.01" placeholder="จำนวน">
           </div>
           <div class="hist-add-form .add-form-actions" style="display:flex;gap:8px">
-            <button class="hist-save-btn" style="flex:2" onclick="saveNewHistItem(${gi})">บันทึก</button>
-            <button class="hist-cancel-btn" style="flex:1" onclick="cancelAddItemForm(${gi})">ยกเลิก</button>
+            <button class="hist-save-btn" style="flex:2" onclick="saveNewHistItem(${effectiveGi})">บันทึก</button>
+            <button class="hist-cancel-btn" style="flex:1" onclick="cancelAddItemForm(${effectiveGi})">ยกเลิก</button>
           </div>
         </div>
       </div>
@@ -1228,11 +1231,10 @@ async function saveNewHistItem(gi) {
   saveBtn.textContent = '⏳...'
 
   try {
-    // Get current stock for this item (latest stock_counts record)
+    // Get current stock for this item (latest stock_counts record — all event types)
     const latest = await get('stock_counts', {
       select: 'qty',
       item_id: `eq.${itemId}`,
-      event_type: 'eq.dispense',
       order: 'counted_at.desc',
       limit: '1'
     })
@@ -1242,17 +1244,18 @@ async function saveNewHistItem(gi) {
 
     const newQty = currentStock - dispQty
 
-    // INSERT new stock_counts record
+    // INSERT new stock_counts record (with dispense_qty for correct history display)
     const res = await fetch(`${SB}/rest/v1/stock_counts`, {
       method: 'POST',
       headers: { ...H, Prefer: 'return=representation' },
       body: JSON.stringify([{
-        item_id:    itemId,
-        qty:        newQty,
-        event_type: 'dispense',
-        counted_by: 'hub-delivery',
-        note:       group.note,
-        counted_at: new Date().toISOString()
+        item_id:      itemId,
+        qty:          newQty,
+        dispense_qty: dispQty,
+        event_type:   'dispense',
+        counted_by:   'hub-delivery',
+        note:         group.note,
+        counted_at:   new Date().toISOString()
       }])
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`)
@@ -1480,6 +1483,9 @@ async function submitDelivery() {
     }
 
     btn.textContent = '✅ บันทึกแล้ว'
+
+    // Reset history so next visit to tab fetches fresh data including this bill
+    historyLoaded = false
 
     // Remove delivered bags from cwBags
     const deliveredSet = new Set(allBagIds)

@@ -828,13 +828,15 @@
         const currentQty = latest?.qty ?? 0;
 
         // INSERT stock_counts — บวกของที่รับเข้าสต๊อก
-        await sb.from('stock_counts').insert({
+        const { error: insertErr } = await sb.from('stock_counts').insert({
           item_id:    r.item_id,
           qty:        currentQty + r.qty_received,
+          event_type: 'receive',
           counted_by: 'PO-receive',
           counted_at: now,
           note:       `รับของจาก PO (${r.qty_received} หน่วย)`
         });
+        if (insertErr) throw new Error(`stock insert ล้มเหลว (${r.item_id}): ${insertErr.message}`);
       }
 
       toast(`✅ รับของแล้ว — stock +${receives.length} รายการ`);
