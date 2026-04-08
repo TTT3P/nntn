@@ -102,12 +102,19 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
 }
 .meat-summary b { color: var(--text); }
 
-/* Non-meat table */
+/* Non-meat rows */
+.nm-row-wrap { margin-bottom: 10px; }
 .nm-row {
   display: grid; grid-template-columns: 1fr 70px 70px 28px;
-  gap: 8px; align-items: center; margin-bottom: 8px;
+  gap: 8px; align-items: center;
 }
 .nm-row input, .nm-row select { padding: 8px 10px; font-size: 0.85rem; }
+.nm-avail {
+  font-size: 0.75rem; margin-top: 4px; padding-left: 2px;
+  color: var(--muted); min-height: 16px;
+}
+.nm-avail.ok   { color: var(--green); }
+.nm-avail.over { color: var(--red-light); font-weight: 600; }
 
 /* Info / warn banners */
 .info-banner {
@@ -268,10 +275,11 @@ const KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const H    = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json' }
 
 // State
-let mtItems  = []   // MT- items from items table
-let spItems  = []   // SP- items from items table
-let cwBags   = []   // catch_weight rows (in_stock)
-let bagCache = {}   // bagId → { weight_g, lot_date, item_id, legacy_cw_row }
+let mtItems       = []   // MT- items from items table
+let spItems       = []   // SP- items from items table
+let cwBags        = []   // catch_weight rows (in_stock)
+let bagCache      = {}   // bagId → { weight_g, lot_date, item_id, legacy_cw_row }
+let spStockBySku  = {}   // sku → current_qty (from current_stock view)
 
 let meatBlockCount = 0
 const meatSel = {}   // blockN → { itemId, selectedBags: Set<id> }
@@ -300,19 +308,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('dl-date').value = new Date().toISOString().split('T')[0]
 
   try {
-    const [allItems, bags] = await Promise.all([
+    const [allItems, bags, stockRows] = await Promise.all([
       get('items', { select: 'id,sku,name,unit', is_active: 'eq.true', order: 'sku.asc', limit: 500 }),
       get('catch_weight', {
         select: 'id,item_id,weight_g,lot_date,warehouse,legacy_cw_row',
         status: 'eq.in_stock',
         order: 'lot_date.asc',
         limit: 2000
-      })
+      }),
+      get('current_stock', { select: 'sku,current_qty', limit: 500 })
     ])
 
     const items = Array.isArray(allItems) ? allItems : []
     mtItems = items.filter(i => i.sku && i.sku.startsWith('MT'))
     spItems = items.filter(i => i.sku && i.sku.startsWith('SP'))
+
+    // Build sku → current_qty map for SP items
+    ;(Array.isArray(stockRows) ? stockRows : []).forEach(r => {
+      if (r.sku && r.sku.startsWith('SP')) {
+        spStockBySku[r.sku] = parseFloat(r.current_qty) || 0
+      }
+    })
 
     cwBags = Array.isArray(bags) ? bags : []
     cwBags.forEach(b => { bagCache[b.id] = b })
@@ -513,21 +529,24 @@ function addNmRow() {
   nmRowCount++
   const n = nmRowCount
   const opts = spItems.map(i =>
-    `<option value="${i.id}" data-unit="${i.unit || ''}" data-name="${i.name}">${i.sku} | ${i.name}</option>`
+    `<option value="${i.id}" data-sku="${i.sku}" data-unit="${i.unit || ''}" data-name="${i.name}">${i.sku} | ${i.name}</option>`
   ).join('')
 
-  const div = document.createElement('div')
-  div.className = 'nm-row'
-  div.id = `nm-row-${n}`
-  div.innerHTML = `
-    <select id="nm-item-${n}" onchange="onNmChange(${n})">
-      <option value="">— เลือก SP item —</option>${opts}
-    </select>
-    <input type="number" id="nm-qty-${n}" min="0" step="0.01" placeholder="qty" oninput="updatePreview()">
-    <input type="text" id="nm-unit-${n}" placeholder="หน่วย" oninput="updatePreview()">
-    <button class="btn-danger" onclick="removeNmRow(${n})">✕</button>`
+  const wrap = document.createElement('div')
+  wrap.className = 'nm-row-wrap'
+  wrap.id = `nm-row-${n}`
+  wrap.innerHTML = `
+    <div class="nm-row">
+      <select id="nm-item-${n}" onchange="onNmChange(${n})">
+        <option value="">— เลือก SP item —</option>${opts}
+      </select>
+      <input type="number" id="nm-qty-${n}" min="0" step="0.01" placeholder="qty" oninput="validateNmQty(${n})">
+      <input type="text" id="nm-unit-${n}" placeholder="หน่วย" oninput="updatePreview()">
+      <button class="btn-danger" onclick="removeNmRow(${n})">✕</button>
+    </div>
+    <div class="nm-avail" id="nm-avail-${n}"></div>`
 
-  document.getElementById('nm-rows').appendChild(div)
+  document.getElementById('nm-rows').appendChild(wrap)
 }
 
 function removeNmRow(n) {
@@ -536,9 +555,43 @@ function removeNmRow(n) {
 }
 
 function onNmChange(n) {
-  const sel = document.getElementById(`nm-item-${n}`)
-  const unit = sel.options[sel.selectedIndex]?.dataset?.unit || ''
-  document.getElementById(`nm-unit-${n}`).value = unit
+  const sel  = document.getElementById(`nm-item-${n}`)
+  const opt  = sel.options[sel.selectedIndex]
+  document.getElementById(`nm-unit-${n}`).value = opt?.dataset?.unit || ''
+  const sku  = opt?.dataset?.sku || ''
+  const avEl = document.getElementById(`nm-avail-${n}`)
+  if (sku && spStockBySku[sku] !== undefined) {
+    const avail = spStockBySku[sku]
+    avEl.className = 'nm-avail'
+    avEl.textContent = `มีอยู่: ${avail} ${opt?.dataset?.unit || 'หน่วย'}`
+  } else {
+    avEl.className = 'nm-avail'
+    avEl.textContent = ''
+  }
+  validateNmQty(n)
+}
+
+function validateNmQty(n) {
+  const sel   = document.getElementById(`nm-item-${n}`)
+  const opt   = sel?.options[sel.selectedIndex]
+  const sku   = opt?.dataset?.sku || ''
+  const unit  = opt?.dataset?.unit || 'หน่วย'
+  const qty   = parseFloat(document.getElementById(`nm-qty-${n}`)?.value) || 0
+  const avEl  = document.getElementById(`nm-avail-${n}`)
+  const avail = spStockBySku[sku]
+
+  if (!sku || avail === undefined) { updatePreview(); return }
+
+  if (qty <= 0) {
+    avEl.className = 'nm-avail'
+    avEl.textContent = `มีอยู่: ${avail} ${unit}`
+  } else if (qty <= avail) {
+    avEl.className = 'nm-avail ok'
+    avEl.textContent = `✅ เบิกได้ — คงเหลือ ${(avail - qty)} ${unit}`
+  } else {
+    avEl.className = 'nm-avail over'
+    avEl.textContent = `⚠️ เบิกได้สูงสุด ${avail} ${unit} (มีอยู่ ${avail})`
+  }
   updatePreview()
 }
 
@@ -627,30 +680,79 @@ async function submitDelivery() {
   if (!bill) { alert('กรุณาระบุเลขที่ใบนำส่ง'); return }
   if (!date) { alert('กรุณาเลือกวันที่ส่ง'); return }
 
-  // Collect all selected bag IDs
+  // Collect meat bags
   const allBagIds = []
   Object.values(meatSel).forEach(s => s.selectedBags.forEach(id => allBagIds.push(id)))
   if (allBagIds.length === 0) { alert('กรุณาเลือกถุงเนื้ออย่างน้อย 1 ถุง'); return }
 
+  // Collect + validate non-meat rows
+  const nmWithdrawals = []
+  const overLimit = []
+  for (let i = 1; i <= nmRowCount; i++) {
+    const itemEl = document.getElementById(`nm-item-${i}`)
+    const qtyEl  = document.getElementById(`nm-qty-${i}`)
+    const unitEl = document.getElementById(`nm-unit-${i}`)
+    if (!itemEl?.value) continue
+    const qty = parseFloat(qtyEl?.value) || 0
+    if (qty <= 0) continue
+    const opt    = itemEl.options[itemEl.selectedIndex]
+    const sku    = opt?.dataset?.sku || ''
+    const name   = opt?.dataset?.name || sku
+    const unit   = unitEl?.value || opt?.dataset?.unit || 'หน่วย'
+    const avail  = spStockBySku[sku] ?? null
+    if (avail !== null && qty > avail) {
+      overLimit.push(`• ${name}: เบิก ${qty} แต่มีอยู่ ${avail} ${unit}`)
+    }
+    nmWithdrawals.push({ item_id: itemEl.value, sku, name, unit, qty, avail })
+  }
+
+  if (overLimit.length > 0) {
+    alert(`❌ เบิกเกินสต๊อก — ไม่สามารถส่งออกได้\n\n${overLimit.join('\n')}\n\nกรุณาแก้ไขจำนวนก่อน`)
+    return
+  }
+
   const bagCount = allBagIds.length
   const totalKg  = allBagIds.reduce((s, id) => s + (bagCache[id]?.weight_g || 0) / 1000, 0)
-  if (!confirm(`ยืนยันส่งออก?\n\nบิล: ${bill}\nปลายทาง: ${dest}\nเนื้อ: ${bagCount} ถุง / ${totalKg.toFixed(3)} กก.`)) return
+  const nmSummary = nmWithdrawals.length > 0
+    ? `\nNon-meat: ${nmWithdrawals.length} รายการ`
+    : ''
+  if (!confirm(`ยืนยันส่งออก?\n\nบิล: ${bill}\nปลายทาง: ${dest}\nเนื้อ: ${bagCount} ถุง / ${totalKg.toFixed(3)} กก.${nmSummary}`)) return
 
   const btn = document.getElementById('submit-btn')
   btn.disabled = true
   btn.textContent = '⏳ กำลังบันทึก...'
 
   try {
+    // 1. PATCH catch_weight → delivered
     const idList = allBagIds.map(id => `"${id}"`).join(',')
     const res = await fetch(`${SB}/rest/v1/catch_weight?id=in.(${idList})`, {
       method: 'PATCH',
       headers: { ...H, Prefer: 'return=minimal' },
-      body: JSON.stringify({
-        status: 'delivered',
-        notes: `${bill} → ${dest} (${date})`
-      })
+      body: JSON.stringify({ status: 'delivered', notes: `${bill} → ${dest} (${date})` })
     })
-    if (!res.ok) throw new Error(`HTTP ${res.status} — ${await res.text()}`)
+    if (!res.ok) throw new Error(`catch_weight PATCH: HTTP ${res.status} — ${await res.text()}`)
+
+    // 2. INSERT stock_counts withdrawal for each non-meat item
+    if (nmWithdrawals.length > 0) {
+      const inserts = nmWithdrawals.map(w => ({
+        item_id:    w.item_id,
+        qty:        w.avail !== null ? w.avail - w.qty : 0,
+        event_type: 'withdrawal',
+        counted_by: 'hub-delivery',
+        note:       `${bill} → ${dest}`
+      }))
+      const res2 = await fetch(`${SB}/rest/v1/stock_counts`, {
+        method: 'POST',
+        headers: { ...H, Prefer: 'return=minimal' },
+        body: JSON.stringify(inserts)
+      })
+      if (!res2.ok) throw new Error(`stock_counts INSERT: HTTP ${res2.status} — ${await res2.text()}`)
+
+      // Update local stock cache
+      nmWithdrawals.forEach(w => {
+        if (w.avail !== null) spStockBySku[w.sku] = w.avail - w.qty
+      })
+    }
 
     btn.textContent = '✅ บันทึกแล้ว'
 
@@ -658,13 +760,15 @@ async function submitDelivery() {
     const deliveredSet = new Set(allBagIds)
     cwBags = cwBags.filter(b => !deliveredSet.has(b.id))
 
-    // Show success banner above preview
+    // Show success banner
+    const nmLine = nmWithdrawals.length > 0
+      ? ` | Non-meat <b>${nmWithdrawals.length} รายการ</b> อัปเดตสต๊อกแล้ว`
+      : ''
     const successHtml = `<div class="success-banner">
-      ✅ ส่งออกสำเร็จ! บิล: <b>${bill}</b> | ${dest} | <b>${bagCount} ถุง / ${totalKg.toFixed(3)} กก.</b>
+      ✅ ส่งออกสำเร็จ! บิล: <b>${bill}</b> | ${dest}<br>
+      เนื้อ <b>${bagCount} ถุง / ${totalKg.toFixed(3)} กก.</b>${nmLine}
     </div>`
     document.getElementById('preview-card').insertAdjacentHTML('beforebegin', successHtml)
-
-    // Scroll to top to show success + print button
     window.scrollTo({ top: 0, behavior: 'smooth' })
 
   } catch(e) {
