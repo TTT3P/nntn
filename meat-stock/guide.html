@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คู่มือ — ระบบสต๊อกเนื้อ NNTN</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --red: #8B0000; --red-light: #c62828; --red-bg: #fff5f5;
+  --green: #1B5E20; --green-light: #388E3C;
+  --blue: #1565C0; --blue-light: #1976D2; --blue-bg: #E3F2FD;
+  --orange: #E65100;
+  --bg: #f5f5f5; --card: #fff; --border: #e0e0e0;
+  --text: #212121; --muted: #757575;
+  --header-bg: #1a1a2e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Sarabun', sans-serif; background: var(--bg);
+  color: var(--text); font-size: 15px; padding-bottom: 60px;
+  line-height: 1.6;
+}
+
+header {
+  background: var(--header-bg); color: white;
+  padding: 16px 16px 14px; text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+header h1 { font-size: 1.1rem; font-weight: 700; }
+header small { font-size: 0.75rem; opacity: 0.6; }
+
+.back-bar {
+  background: #111; padding: 8px 14px;
+  display: flex; gap: 10px; align-items: center;
+}
+.back-bar a {
+  color: rgba(255,255,255,0.6); font-size: 0.8rem;
+  text-decoration: none; border: 1px solid rgba(255,255,255,0.2);
+  padding: 4px 10px; border-radius: 6px;
+}
+.back-bar a:hover { color: white; }
+
+.wrap { padding: 14px; max-width: 680px; margin: 0 auto; }
+
+/* Section nav */
+.toc {
+  background: var(--card); border-radius: 10px;
+  padding: 14px 16px; margin-bottom: 16px;
+  border: 1px solid var(--border);
+}
+.toc-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+             letter-spacing: .05em; color: var(--muted); margin-bottom: 8px; }
+.toc a {
+  display: block; padding: 5px 0; color: var(--blue-light);
+  font-size: 0.88rem; text-decoration: none; border-bottom: 1px solid #f5f5f5;
+}
+.toc a:last-child { border-bottom: none; }
+
+/* Section heading */
+.section {
+  background: var(--card); border-radius: 10px;
+  padding: 18px 16px; margin-bottom: 14px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.section-title {
+  font-size: 1rem; font-weight: 700; margin-bottom: 14px;
+  padding-bottom: 10px; border-bottom: 2px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title .num {
+  background: var(--red-light); color: white;
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.82rem; flex-shrink: 0;
+}
+
+/* Compare table */
+.compare-wrap { overflow-x: auto; margin-bottom: 14px; }
+.compare {
+  width: 100%; border-collapse: collapse; font-size: 0.85rem;
+  min-width: 400px;
+}
+.compare th {
+  padding: 8px 12px; font-size: 0.75rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
+  border-bottom: 2px solid var(--border);
+}
+.compare th.old { background: #FFF8E1; color: var(--orange); }
+.compare th.new { background: #E8F5E9; color: var(--green); }
+.compare th.step { background: #f5f5f5; color: var(--muted); width: 100px; }
+.compare td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+.compare td.step { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+.compare tr:last-child td { border-bottom: none; }
+.compare tr:hover td { background: #fafafa; }
+
+/* Step list */
+.steps { counter-reset: step; }
+.step-item {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 10px 0; border-bottom: 1px solid #f5f5f5;
+}
+.step-item:last-child { border-bottom: none; }
+.step-num {
+  counter-increment: step;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--blue-bg); color: var(--blue);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.82rem; font-weight: 700; flex-shrink: 0;
+  margin-top: 1px;
+}
+.step-num::before { content: counter(step); }
+.step-body { flex: 1; }
+.step-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 3px; }
+.step-desc { font-size: 0.83rem; color: var(--muted); }
+
+/* Tag / badge */
+.tag {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 0.7rem; font-weight: 700; margin-left: 4px;
+}
+.tag-old { background: #FFF8E1; color: var(--orange); }
+.tag-new { background: #E8F5E9; color: var(--green); }
+.tag-same { background: var(--blue-bg); color: var(--blue); }
+.tag-warn { background: var(--red-bg); color: var(--red-light); }
+
+/* Info boxes */
+.info-box {
+  border-radius: 8px; padding: 12px 14px; font-size: 0.85rem;
+  margin-bottom: 12px; line-height: 1.5;
+}
+.info-box.blue  { background: var(--blue-bg); border-left: 3px solid var(--blue-light); color: #0d47a1; }
+.info-box.green { background: #E8F5E9; border-left: 3px solid var(--green-light); color: var(--green); }
+.info-box.orange { background: #FFF3E0; border-left: 3px solid #FFA000; color: var(--orange); }
+.info-box.red   { background: var(--red-bg); border-left: 3px solid var(--red-light); color: var(--red); }
+
+.info-box strong { display: block; margin-bottom: 4px; }
+
+/* Quick ref cards */
+.qref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.qref-card {
+  border: 1.5px solid var(--border); border-radius: 8px; padding: 12px;
+  background: #fafafa;
+}
+.qref-card .qref-icon { font-size: 1.4rem; margin-bottom: 6px; }
+.qref-card .qref-title { font-size: 0.82rem; font-weight: 700; margin-bottom: 4px; }
+.qref-card .qref-url {
+  font-size: 0.72rem; color: var(--blue-light); word-break: break-all;
+  font-family: monospace;
+}
+.qref-card .qref-desc { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+/* Field map */
+.field-map { font-size: 0.83rem; }
+.field-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 0; border-bottom: 1px solid #f0f0f0; gap: 8px;
+}
+.field-row:last-child { border-bottom: none; }
+.field-old { color: var(--orange); font-weight: 600; min-width: 120px; }
+.field-arr { color: var(--muted); }
+.field-new { color: var(--green); font-weight: 600; }
+.field-note { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+@media (max-width: 480px) {
+  .qref-grid { grid-template-columns: 1fr; }
+}
+
+@media print {
+  header, .back-bar, .toc { display: none; }
+  body { background: white; font-size: 12px; }
+  .section { box-shadow: none; page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📖 คู่มือระบบสต๊อกเนื้อ NNTN</h1>
+  <small>สำหรับห้องเนื้อ — Supabase Web System vs Excel เดิม</small>
+</header>
+
+<div class="back-bar">
+  <a href="index.html">← Meat Stock</a>
+  <a href="../hub.html">Hub</a>
+</div>
+
+<div class="wrap">
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-title">สารบัญ</div>
+    <a href="#overview">ภาพรวม — ระบบใหม่เทียบกับเดิม</a>
+    <a href="#parallel">⚠️ ช่วง Parallel Run — ต้องทำอะไรบ้าง</a>
+    <a href="#s1">1. รับเนื้อสดเข้าคลัง A</a>
+    <a href="#s2">2. บันทึกผลผลิตตุ๋น (Section B)</a>
+    <a href="#s3">3. แปรรูป / รีแพ็ค</a>
+    <a href="#s4">4. ส่งออก (NT / FS) — ใบนำส่ง</a>
+    <a href="#s5">5. เช็คสต๊อกปัจจุบัน</a>
+    <a href="#field">6. คอลัมน์ Excel → Supabase Field Map</a>
+    <a href="#faq">7. FAQ — ถามบ่อย</a>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="section" id="overview">
+    <div class="section-title">
+      <div class="num">★</div>
+      ภาพรวม — ระบบใหม่เทียบกับเดิม
+    </div>
+
+    <div class="info-box orange">
+      <strong>⚠️ ตอนนี้อยู่ในช่วง Parallel Run (06/04–~20/04)</strong>
+      ยังต้องทำทั้ง Excel เดิม + Supabase ควบคู่กันไปก่อน จน verify ยอดตรงกัน 2 สัปดาห์
+    </div>
+
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead>
+          <tr>
+            <th class="step">กระบวนการ</th>
+            <th class="old">🟡 เดิม (Excel + Buffer)</th>
+            <th class="new">🟢 ใหม่ (Supabase Web)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="step">รับเนื้อสด</td>
+            <td>กรอก Buffer V2 → copy CW sheet → คลัง A sheet</td>
+            <td>เปิด Meat Stock → tab รับเนื้อสด → กรอก → บันทึก ✅ เสร็จ</td>
+          </tr>
+          <tr>
+            <td class="step">ตุ๋น (Section B)</td>
+            <td>กรอก Buffer V2 → copy CW sheet → คลัง B sheet</td>
+            <td>tab บันทึกผลผลิต → กรอก → บันทึก ✅</td>
+          </tr>
+          <tr>
+            <td class="step">แปรรูป / รีแพ็ค</td>
+            <td>แก้ CW เดิม (Processed) + เพิ่ม row ใหม่ (คลัง B/C)</td>
+            <td>tab แปรรูป → เลือกถุงต้นทาง → ระบุ output → บันทึก ✅</td>
+          </tr>
+          <tr>
+            <td class="step">ส่งออก NT/FS</td>
+            <td>กรอก Buffer V2 → DD tab → Archive tab (DD/MM)</td>
+            <td>Hub → ออกใบนำส่ง → เลือกถุง → บันทึก + พิมพ์ ✅</td>
+          </tr>
+          <tr>
+            <td class="step">เช็คสต๊อก</td>
+            <td>เปิด Excel → CW sheet → filter In Stock → นับ</td>
+            <td>tab สต๊อกปัจจุบัน → เห็นทันที ✅</td>
+          </tr>
+          <tr>
+            <td class="step">Yield</td>
+            <td>คำนวณเอง (น้ำหนักสด vs ตุ๋น)</td>
+            <td>สต๊อกปัจจุบัน → Yield Summary คำนวณอัตโนมัติ ✅</td>
+          </tr>
+          <tr>
+            <td class="step">CW row เลข</td>
+            <td>r1, r2, r3... ใน Excel CW sheet</td>
+            <td>ยังแสดง r123 เหมือนเดิม (legacy_cw_row field) ✅</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info-box green">
+      <strong>✅ ข้อดีหลักของระบบใหม่</strong>
+      ไม่ต้อง Buffer แล้ว — กรอกครั้งเดียว บันทึกตรง Supabase เลย
+      ไม่ต้อง copy-paste ระหว่าง sheet · สต๊อก real-time · เปิดโทรศัพท์ก็ดูได้
+    </div>
+  </div>
+
+  <!-- PARALLEL RUN -->
+  <div class="section" id="parallel">
+    <div class="section-title">
+      <div class="num">⚠</div>
+      ช่วง Parallel Run — ต้องทำอะไรบ้าง
+    </div>
+
+    <div class="info-box red">
+      <strong>🔴 ช่วงนี้ (จนถึง ~20/04) ยังทำทั้งสองระบบ</strong>
+      Excel เดิม = primary · Supabase = ทำควบคู่เพื่อ verify ยอด
+    </div>
+
+    <div class="steps">
+      <div class="step-item">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <div class="step-title">ทำ Excel เดิมตามปกติ <span class="tag tag-old">primary</span></div>
+          <div class="step-desc">Buffer V2 → CW sheet → คลัง A/B/C → DD → Archive — ทำครบทุกขั้นตอนเหมือนเดิม</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <div class="step-title">กรอกซ้ำใน Supabase web <span class="tag tag-new">ควบคู่</span></div>
+          <div class="step-desc">ทำขั้นตอนเดิมซ้ำในหน้าเว็บ — เพื่อเก็บข้อมูลไว้ verify</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <div class="step-title">ปิดวัน: sync script รันอัตโนมัติ <span class="tag tag-same">auto</span></div>
+          <div class="step-desc">supabase_cw_sync.py รันปิดงานทุกวัน — sync ยอด Excel → Supabase เพื่อ verify</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <div class="step-title">~20/04: ถ้ายอดตรงครบ 2 สัปดาห์ → switch primary</div>
+          <div class="step-desc">หลัง verify ผ่าน จะใช้ Supabase เป็น primary และเลิกใช้ Excel CW sheet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: รับเนื้อสด -->
+  <div class="section" id="s1">
+    <div class="section-title">
+      <div class="num">1</div>
+      🛒 รับเนื้อสดเข้าคลัง A
+    </div>
+
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead>
+          <tr><th class="step">ขั้นตอน</th><th class="old">เดิม</th><th class="new">ใหม่</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="step">1</td><td>เปิด Buffer V2 (Google Sheets)</td><td>เปิด Meat Stock → tab 🛒 รับเนื้อสด</td></tr>
+          <tr><td class="step">2</td><td>กรอก วันที่ / บิล / รายการ / น้ำหนักรายถุง</td><td>เลือก วันที่รับเข้า + เลขที่ใบซื้อ → กด "+ เพิ่มรายการเนื้อ"</td></tr>
+          <tr><td class="step">3</td><td>กด Submit Buffer</td><td>เลือก SKU → กรอกน้ำหนักแต่ละถุง (ใส่กี่ถุงก็ได้)</td></tr>
+          <tr><td class="step">4</td><td>Copy paste ไป CW sheet + คลัง A sheet</td><td>กด ✅ บันทึกรับเนื้อสด — เสร็จเลย ไม่ต้อง paste ไปไหน</td></tr>
+          <tr><td class="step">ผล</td><td>CW rows เพิ่ม + คลัง A rows เพิ่ม</td><td>catch_weight rows เพิ่ม (warehouse=คลัง_A, status=in_stock) ✅</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info-box blue">
+      💡 ใส่น้ำหนักแต่ละถุงแยกกัน เช่น ถุง 1 = 2.340 ถุง 2 = 1.890 — กด Enter หรือ Tab เพื่อไปถุงถัดไป<br>
+      ถุงที่ใส่น้ำหนักเป็น 0 จะถูกข้ามโดยอัตโนมัติ
+    </div>
+  </div>
+
+  <!-- SECTION 2: บันทึกผลผลิต -->
+  <div class="section" id="s2">
+    <div class="section-title">
+      <div class="num">2</div>
+      🫕 บันทึกผลผลิตตุ๋น (Section B)
+    </div>
+
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead>
+          <tr><th class="step">ขั้นตอน</th><th class="old">เดิม</th><th class="new">ใหม่</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="step">1</td><td>Buffer V2 → กรอก Section B</td><td>tab 🫕 บันทึกผลผลิต</td></tr>
+          <tr><td class="step">2</td><td>ระบุ วันที่ / ชื่อ / รายการตุ๋น / จำนวนถุง / น้ำหนัก</td><td>เลือกวันที่ผลิต + ชื่อผู้บันทึก → "+ เพิ่มรายการตุ๋น"</td></tr>
+          <tr><td class="step">3</td><td>Submit → copy ไป CW + คลัง B</td><td>เลือก SKU ตุ๋น → กรอกน้ำหนักรายถุง → กด ✅ บันทึกผลผลิต</td></tr>
+          <tr><td class="step">ผล</td><td>CW rows (status=In Stock) + คลัง B rows</td><td>catch_weight rows (warehouse=คลัง_B, status=in_stock) ✅</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 3: แปรรูป -->
+  <div class="section" id="s3">
+    <div class="section-title">
+      <div class="num">3</div>
+      ♻️ แปรรูป / รีแพ็ค
+    </div>
+
+    <div class="info-box blue">
+      💡 แปรรูป = เนื้อถุงเดิม (input) → กลายเป็นถุงใหม่ (output) <br>
+      ถุง input จะเปลี่ยนสถานะเป็น ♻️ Processed อัตโนมัติ
+    </div>
+
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead>
+          <tr><th class="step">ขั้นตอน</th><th class="old">เดิม</th><th class="new">ใหม่</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="step">Input</td><td>หา CW row เดิม → เปลี่ยน status เป็น Processed</td><td>tab ♻️ แปรรูป → เลือกประเภท → กด "เลือกถุง" → แตะถุงต้นทาง</td></tr>
+          <tr><td class="step">Output</td><td>เพิ่ม CW row ใหม่ (SKU output)</td><td>เลือก SKU output → ระบุจำนวนถุง + น้ำหนักรายถุง</td></tr>
+          <tr><td class="step">Submit</td><td>แก้ 2 จุด (old row + new rows)</td><td>กด ✅ บันทึกแปรรูป — ระบบทำทั้งสองอย่างให้เอง</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <table class="compare" style="margin-top:0">
+      <thead>
+        <tr><th class="step" style="background:#f5f5f5;color:var(--muted)">ประเภท</th><th class="new" colspan="2">ใช้เมื่อไหร่</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="step">ครัวกลาง</td><td colspan="2" style="font-size:.85rem">ตัดแบ่งเนื้อสดออกเป็น SKU ใหม่ (เข้าคลัง C พร้อมขาย)</td></tr>
+        <tr><td class="step">รีแพ็ค</td><td colspan="2" style="font-size:.85rem">เปลี่ยนขนาดถุง — item เดิม เช่น [500g] → [75g] หลายถุง</td></tr>
+        <tr><td class="step">ผสม</td><td colspan="2" style="font-size:.85rem">รวม lot — หลายถุงรวมเป็น 1 ถุงใหม่</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 4: ส่งออก -->
+  <div class="section" id="s4">
+    <div class="section-title">
+      <div class="num">4</div>
+      🚛 ส่งออก (NT / FS) — ออกใบนำส่ง
+    </div>
+
+    <div class="info-box orange">
+      ⚠️ ส่งออกเนื้อ อยู่ที่ <strong>Hub → ออกใบนำส่ง</strong> (ไม่ใช่ใน Meat Stock โดยตรง)
+      เพราะใบนำส่งรวมทั้งเนื้อ + Non-meat ในบิลเดียว
+    </div>
+
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead>
+          <tr><th class="step">ขั้นตอน</th><th class="old">เดิม</th><th class="new">ใหม่</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="step">เปิด</td><td>Buffer V2 → Sheet 4</td><td>Hub → 🚛 ออกใบนำส่ง</td></tr>
+          <tr><td class="step">Header</td><td>กรอก วันที่ / ปลายทาย / เลขบิล</td><td>เลือก วันที่ส่ง / ปลายทาง / เลขที่ใบนำส่ง</td></tr>
+          <tr><td class="step">Block 1 เนื้อ</td><td>กรอก SKU + น้ำหนัก ทีละถุง</td><td>กด "+ เพิ่มรายการเนื้อ" → เลือก SKU → "เลือกถุง" → แตะถุง (lot chip)</td></tr>
+          <tr><td class="step">Block 2 Non-meat</td><td>กรอกในช่อง non-meat ของ Buffer</td><td>กด "+ เพิ่มรายการ Non-meat" → เลือก item → ใส่ qty</td></tr>
+          <tr><td class="step">Preview</td><td>ดูใน Sheet 4 preview</td><td>Preview ขึ้น real-time ด้านล่าง</td></tr>
+          <tr><td class="step">Submit</td><td>Submit Buffer → DD tab + Archive DD/MM</td><td>กด 🚛 บันทึกส่งออก — ถุงเปลี่ยน status=delivered ทันที</td></tr>
+          <tr><td class="step">พิมพ์</td><td>print Sheet 4</td><td>กด 🖨 พิมพ์ ใน Preview card</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info-box red">
+      🚫 <strong>ถ้าเบิก Non-meat เกินสต๊อก:</strong> ระบบจะแจ้งเตือน ⚠️ และไม่ให้ submit<br>
+      ข้อความ "เบิกได้สูงสุด X หน่วย" จะขึ้นใต้ช่อง qty ทันทีที่พิมพ์
+    </div>
+  </div>
+
+  <!-- SECTION 5: เช็คสต๊อก -->
+  <div class="section" id="s5">
+    <div class="section-title">
+      <div class="num">5</div>
+      📊 เช็คสต๊อกปัจจุบัน
+    </div>
+
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead>
+          <tr><th class="step">ดูอะไร</th><th class="old">เดิม</th><th class="new">ใหม่</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="step">ยอดรวม</td><td>นับ rows ใน CW sheet ที่ filter In Stock</td><td>tab 📊 สต๊อกปัจจุบัน → KPI card ด้านบน (X ถุง / X กก.)</td></tr>
+          <tr><td class="step">รายการ</td><td>ดู CW sheet ทีละ row</td><td>ตาราง "รายการ In Stock" — คลิก row เพื่อดูถุงรายใบ</td></tr>
+          <tr><td class="step">Yield</td><td>คำนวณเอง หรือดูไม่ได้ทันที</td><td>Yield Summary — แสดง yield% พร้อม range ปกติ + status ✅/⚠️/🔴</td></tr>
+          <tr><td class="step">คลัง</td><td>เปิด sheet คลัง A/B/C แยก</td><td>KPI card แยก คลัง A (สด) / คลัง B (ตุ๋น)</td></tr>
+          <tr><td class="step">CW row</td><td>r123 ใน column A</td><td>แสดง r123 ในช่อง #CW ทุกที่ เหมือนเดิม</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 6: Field Map -->
+  <div class="section" id="field">
+    <div class="section-title">
+      <div class="num">6</div>
+      📋 คอลัมน์ Excel → Supabase Field
+    </div>
+
+    <div class="field-map">
+      <div class="field-row">
+        <span class="field-old">Column A (row)</span>
+        <span class="field-arr">→</span>
+        <span class="field-new">legacy_cw_row</span>
+      </div>
+      <div style="margin: -4px 0 8px; padding-left:2px" class="field-note">ยังแสดง r123 เหมือนเดิม — ใช้อ้างอิงช่วง parallel run</div>
+
+      <div class="field-row">
+        <span class="field-old">Column B (SKU / ชื่อ)</span>
+        <span class="field-arr">→</span>
+        <span class="field-new">item_id → items.name</span>
+      </div>
+      <div class="field-row">
+        <span class="field-old">Column C (น้ำหนัก กก.)</span>
+        <span class="field-arr">→</span>
+        <span class="field-new">weight_g (เก็บเป็นกรัม)</span>
+      </div>
+      <div class="field-row">
+        <span class="field-old">Column D (Lot วันที่)</span>
+        <span class="field-arr">→</span>
+        <span class="field-new">lot_date</span>
+      </div>
+      <div class="field-row">
+        <span class="field-old">Status (In Stock / Delivered)</span>
+        <span class="field-arr">→</span>
+        <span class="field-new">status: in_stock / delivered / processed / loss</span>
+      </div>
+      <div class="field-row">
+        <span class="field-old">คลัง A / B / C (sheet แยก)</span>
+        <span class="field-arr">→</span>
+        <span class="field-new">warehouse: คลัง_A / คลัง_B / คลัง_C</span>
+      </div>
+      <div class="field-row">
+        <span class="field-old">DD tab (Archive)</span>
+        <span class="field-arr">→</span>
+        <span class="field-new">status=delivered + notes=บิล (ใน catch_weight)</span>
+      </div>
+      <div class="field-row">
+        <span class="field-old">บิล / เลขที่ใบส่ง (หมายเหตุ)</span>
+        <span class="field-arr">→</span>
+        <span class="field-new">notes field</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 7: FAQ -->
+  <div class="section" id="faq">
+    <div class="section-title">
+      <div class="num">7</div>
+      ❓ FAQ — ถามบ่อย
+    </div>
+
+    <div class="info-box blue" style="margin-bottom:10px">
+      <strong>Q: กรอกผิด แก้ยังไง?</strong>
+      ตอนนี้ยังไม่มีหน้า edit โดยตรง — แจ้งไทน์หรือ Platform แก้ผ่าน Supabase dashboard
+    </div>
+
+    <div class="info-box blue" style="margin-bottom:10px">
+      <strong>Q: lot chip ที่เลือกถุงคืออะไร?</strong>
+      แต่ละ chip = 1 ถุง แสดงเลข CW (r123) + น้ำหนัก — แตะเพื่อเลือก/ยกเลิก สีน้ำเงิน = เลือกแล้ว
+    </div>
+
+    <div class="info-box blue" style="margin-bottom:10px">
+      <strong>Q: ถ้า internet หาย ทำยังไง?</strong>
+      ระบบต้องใช้ internet — ถ้าหายให้กรอก Buffer Excel เดิมไปก่อน แล้วค่อยมากรอก Supabase ทีหลัง
+    </div>
+
+    <div class="info-box blue" style="margin-bottom:10px">
+      <strong>Q: เลข CW row ใน Supabase ตรงกับ Excel ไหม?</strong>
+      ตรง — ช่วง parallel run sync script จะ map เลข row ให้ · ในระบบใหม่แสดงใน field "CW" ทุกที่
+    </div>
+
+    <div class="info-box blue" style="margin-bottom:10px">
+      <strong>Q: [75g] [500g] น้ำหนักกรอกยังไง?</strong>
+      กรอก nominal (75 หรือ 500) — ระบบรู้ว่าน้ำหนักนี้ไม่ชั่งจริง เหมือน Excel เดิม
+    </div>
+
+    <div class="info-box blue">
+      <strong>Q: Yield Summary คำนวณจากอะไร?</strong>
+      input น้ำหนักสด (รับเข้าคลัง A) เทียบกับ output น้ำหนักตุ๋น (คลัง B) per lot date · range ปกติ = 65–75%
+    </div>
+  </div>
+
+  <!-- Quick ref -->
+  <div class="section">
+    <div class="section-title">
+      <div class="num">🔗</div>
+      URL หน้าสำคัญ
+    </div>
+    <div class="qref-grid">
+      <div class="qref-card">
+        <div class="qref-icon">🥩</div>
+        <div class="qref-title">Meat Stock</div>
+        <div class="qref-desc">รับเนื้อ / ตุ๋น / แปรรูป / ดูสต๊อก</div>
+        <div class="qref-url">ttt3p.github.io/nntn/meat-stock/</div>
+      </div>
+      <div class="qref-card">
+        <div class="qref-icon">🚛</div>
+        <div class="qref-title">ออกใบนำส่ง</div>
+        <div class="qref-desc">NT/FS — เนื้อ + Non-meat</div>
+        <div class="qref-url">ttt3p.github.io/nntn/hub-delivery.html</div>
+      </div>
+      <div class="qref-card">
+        <div class="qref-icon">🏠</div>
+        <div class="qref-title">Hub</div>
+        <div class="qref-desc">หน้าหลัก — เลือก module</div>
+        <div class="qref-url">ttt3p.github.io/nntn/hub.html</div>
+      </div>
+      <div class="qref-card">
+        <div class="qref-icon">🧅</div>
+        <div class="qref-title">Non-meat Stock</div>
+        <div class="qref-desc">สต๊อกวัตถุดิบครัว</div>
+        <div class="qref-url">ttt3p.github.io/nntn/index.html</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
