@@ -1331,12 +1331,12 @@ async function loadStock() {
     cwStock = rows.map(r => ({...r, item_name: r.items?.name || ''}))
     const totalKg=rows.reduce((s,r)=>s+(parseFloat(r.weight_g)||0),0)/1000
     const byWh={A:0,B:0,C:0}
-    rows.forEach(r=>{ if(r.warehouse && byWh[r.warehouse]!==undefined) byWh[r.warehouse]++ })
+    rows.forEach(r=>{ const k=(r.warehouse||'').replace('คลัง_',''); if(byWh[k]!==undefined) byWh[k]++ })
 
     document.getElementById('sk-total').textContent=rows.length+' ถุง'
     document.getElementById('sk-kg').textContent=totalKg.toFixed(2)+' กก.'
-    document.getElementById('sk-a').textContent=byWh.A+' ถุง'
-    document.getElementById('sk-b').textContent=byWh.B+' ถุง'
+    document.getElementById('sk-a').textContent=byWh.A>0?byWh.A+' ถุง':'—'
+    document.getElementById('sk-b').textContent=byWh.B>0?byWh.B+' ถุง':'—'
 
     // Group by item — store bags per group for expand
     const grouped={}
