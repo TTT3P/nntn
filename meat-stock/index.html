@@ -260,10 +260,13 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
 <body>
 
 <header>
-  <div class="brand">
-    <div>
-      <h1>🥩 NNTN Meat Stock</h1>
-      <small>ระบบจัดการสต๊อกเนื้อตุ๋น</small>
+  <div style="display:flex;align-items:center;gap:10px">
+    <a href="../hub.html" style="font-size:1.7rem;color:rgba(255,255,255,0.85);text-decoration:none;line-height:1;min-width:36px;text-align:center">‹</a>
+    <div class="brand">
+      <div>
+        <h1>🥩 NNTN Meat Stock</h1>
+        <small>ระบบจัดการสต๊อกเนื้อตุ๋น</small>
+      </div>
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
@@ -526,7 +529,7 @@ function addRecvItem() {
   div.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-title" style="margin:0">รายการที่ ${n}</div>
-      ${n>1?`<button class="btn-danger" onclick="this.closest('.card').remove()">✕</button>`:''}
+      ${n>1?`<button class="btn-danger" onclick="removeRecvItem(this)">✕</button>`:''}
     </div>
     <div class="row3">
       <div><label>ประเภทเนื้อ</label>
@@ -542,6 +545,19 @@ function addRecvItem() {
   `
   document.getElementById('recv-items').appendChild(div)
   updateRecvBags(n)
+  renumberRecvItems()
+}
+
+function removeRecvItem(btn) {
+  btn.closest('.card').remove()
+  renumberRecvItems()
+}
+
+function renumberRecvItems() {
+  document.querySelectorAll('#recv-items .card').forEach((card, idx) => {
+    const titleEl = card.querySelector('.card-title')
+    if (titleEl) titleEl.textContent = `รายการที่ ${idx + 1}`
+  })
 }
 
 function updateRecvBags(n) {
@@ -654,7 +670,7 @@ function addProdItem() {
   div.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div class="card-title" style="margin:0">รายการที่ ${n}</div>
-      ${n>1?`<button class="btn-danger" onclick="document.getElementById('prod-item-${n}').remove()">✕ ลบ</button>`:''}
+      ${n>1?`<button class="btn-danger" onclick="removeProdItem(${n})">✕ ลบ</button>`:''}
     </div>
 
     <!-- INPUT -->
@@ -728,6 +744,19 @@ function addProdItem() {
       <div class="yield-row"><span>Yield รวม</span><span class="val" id="yb-pct-${n}">—</span></div>
     </div>`
   document.getElementById('prod-items').appendChild(div)
+  renumberProdItems()
+}
+
+function removeProdItem(n) {
+  document.getElementById(`prod-item-${n}`)?.remove()
+  renumberProdItems()
+}
+
+function renumberProdItems() {
+  document.querySelectorAll('#prod-items .card').forEach((card, idx) => {
+    const titleEl = card.querySelector('.card-title')
+    if (titleEl) titleEl.textContent = `รายการที่ ${idx + 1}`
+  })
 }
 
 function onProdRawChange(n) {
