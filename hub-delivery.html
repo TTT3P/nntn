@@ -441,11 +441,6 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
       <div id="hist-list"><div class="loading">แตะแท็บ ประวัติ เพื่อโหลดข้อมูล</div></div>
     </div>
 
-    <!-- ════ Audit Log Section ════ -->
-    <div class="card audit-section">
-      <div class="card-title">📋 Log การแก้ไข</div>
-      <div id="audit-log-content"><div class="loading">กำลังโหลด...</div></div>
-    </div>
   </div><!-- end tab-history -->
 
 </div>
@@ -963,9 +958,6 @@ function switchTab(tab) {
   if (tab === 'history' && !historyLoaded) {
     loadHistory()
   }
-  if (tab === 'history') {
-    loadAuditLog()
-  }
 }
 
 // ─── History ──────────────────────────────────────────────────────────────────
@@ -1058,6 +1050,11 @@ function renderHistory(groups) {
             <button class="hist-cancel-btn" style="flex:1" onclick="cancelAddItemForm(${effectiveGi})">ยกเลิก</button>
           </div>
         </div>
+        <!-- Per-bill audit log -->
+        <div id="hg-audit-${effectiveGi}" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">📋 Log การแก้ไข</div>
+          <div id="hg-audit-rows-${effectiveGi}"></div>
+        </div>
       </div>
     </div>`
   }).join('')
@@ -1100,6 +1097,13 @@ function toggleBillCard(gi) {
   const isOpen = body.style.display !== 'none'
   body.style.display   = isOpen ? 'none' : 'block'
   header.classList.toggle('open', !isOpen)
+  if (!isOpen) {
+    const group = historyData[gi]
+    if (group) {
+      const { bill } = parseBillNote(group.note)
+      loadBillAuditLog(gi, bill)
+    }
+  }
 }
 
 function showEditRow(gi, ri) {
@@ -1171,8 +1175,8 @@ async function saveHistRow(gi, ri) {
       setTimeout(() => { newRowEl.style.background = '' }, 1200)
     }
 
-    // Refresh audit log
-    loadAuditLog()
+    // Refresh per-bill audit log
+    loadBillAuditLog(gi, parseBillNote(historyData[gi].note).bill)
 
   } catch(e) {
     alert(`❌ บันทึกไม่สำเร็จ: ${e.message}`)
@@ -1222,8 +1226,8 @@ async function deleteHistRow(gi, ri) {
       rowsEl.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:8px 0">ไม่มีรายการในบิลนี้</div>'
     }
 
-    // Refresh audit log
-    loadAuditLog()
+    // Refresh per-bill audit log
+    loadBillAuditLog(gi, parseBillNote(historyData[gi].note).bill)
 
   } catch(e) {
     alert(`❌ ลบไม่สำเร็จ: ${e.message}`)
@@ -1327,14 +1331,62 @@ async function saveNewHistItem(gi) {
 
     cancelAddItemForm(gi)
 
-    // Refresh audit log
-    loadAuditLog()
+    // Refresh per-bill audit log
+    loadBillAuditLog(gi, parseBillNote(historyData[gi].note).bill)
 
   } catch(e) {
     alert(`❌ บันทึกไม่สำเร็จ: ${e.message}`)
   } finally {
     saveBtn.disabled = false
     saveBtn.textContent = 'บันทึก'
+  }
+}
+
+// ─── Per-bill Audit Log ───────────────────────────────────────────────────────
+async function loadBillAuditLog(gi, bill) {
+  const section = document.getElementById(`hg-audit-${gi}`)
+  const rowsEl  = document.getElementById(`hg-audit-rows-${gi}`)
+  if (!section || !rowsEl) return
+  section.style.display = 'block'
+  rowsEl.innerHTML = '<div class="loading" style="font-size:0.82rem">กำลังโหลด log...</div>'
+  try {
+    const rows = await get('delivery_edit_log', {
+      select: 'id,action,item_name,item_sku,old_qty,new_qty,done_at',
+      bill:   `eq.${bill}`,
+      order:  'done_at.desc',
+      limit:  '50'
+    })
+    const data = Array.isArray(rows) ? rows : []
+    if (data.length === 0) {
+      rowsEl.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;padding:4px 0">ยังไม่มี log การแก้ไข</div>'
+      return
+    }
+    rowsEl.innerHTML = `<div style="overflow-x:auto"><table class="audit-table" style="font-size:0.8rem">
+      <thead><tr><th>วันเวลา</th><th>action</th><th>รายการ</th><th>qty</th></tr></thead>
+      <tbody>${data.map(r => {
+        const dt = r.done_at ? new Date(r.done_at) : null
+        const dateStr = dt
+          ? dt.toLocaleDateString('th-TH', { day:'2-digit', month:'2-digit', year:'2-digit' })
+            + ' ' + dt.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' })
+          : '—'
+        const cls = r.action === 'แก้ไข' ? 'audit-action-edit'
+                  : r.action === 'ลบรายการ' ? 'audit-action-delete'
+                  : r.action === 'เพิ่มรายการ' ? 'audit-action-add' : ''
+        let qtyHtml = '—'
+        if (r.action === 'แก้ไข')        qtyHtml = `${r.old_qty ?? '?'} → ${r.new_qty ?? '?'}`
+        else if (r.action === 'ลบรายการ')   qtyHtml = `<span class="audit-qty-delete">${r.old_qty ?? '?'}</span>`
+        else if (r.action === 'เพิ่มรายการ') qtyHtml = `<span class="audit-qty-add">${r.new_qty ?? '?'}</span>`
+        const item = r.item_sku ? `${escHtml(r.item_sku)} ${escHtml(r.item_name||'')}` : escHtml(r.item_name||'—')
+        return `<tr>
+          <td style="white-space:nowrap;color:var(--muted)">${dateStr}</td>
+          <td class="${cls}">${escHtml(r.action||'—')}</td>
+          <td>${item}</td>
+          <td>${qtyHtml}</td>
+        </tr>`
+      }).join('')}</tbody>
+    </table></div>`
+  } catch(e) {
+    rowsEl.innerHTML = '<div class="warn-banner" style="font-size:0.82rem">❌ โหลด log ไม่ได้</div>'
   }
 }
 
