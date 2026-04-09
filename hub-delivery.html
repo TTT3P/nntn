@@ -636,12 +636,21 @@ function addMeatBlock() {
 
   document.getElementById('meat-blocks').appendChild(div)
   makeSearchable(`mb-sku-${n}`, '— พิมพ์ค้นหา MT item —')
+  renumberMeatBlocks()
 }
 
 function removeMeatBlock(n) {
   document.getElementById(`meat-block-${n}`)?.remove()
   delete meatSel[n]
+  renumberMeatBlocks()
   updatePreview()
+}
+
+function renumberMeatBlocks() {
+  document.querySelectorAll('#meat-blocks .meat-block').forEach((block, idx) => {
+    const titleEl = block.querySelector('.meat-block-title')
+    if (titleEl) titleEl.textContent = `รายการที่ ${idx + 1}`
+  })
 }
 
 function onMeatItemChange(n) {
