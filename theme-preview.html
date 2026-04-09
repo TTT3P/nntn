@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NNTN Theme Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0a0a0a; font-family: 'Inter', 'Sarabun', sans-serif; padding: 32px 24px; color: #fff; }
+
+h1 { font-size: 1.1rem; color: #888; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 8px; }
+.subtitle { color: #555; font-size: .85rem; margin-bottom: 40px; }
+
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.option-label { font-size: .7rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #666; margin-bottom: 10px; }
+
+/* ─── OPTION A: Supabase Green ─── */
+.theme-a { background: #0f0f0f; border: 1px solid #1f1f1f; border-radius: 12px; overflow: hidden; }
+.theme-a .top-bar { background: #111; border-bottom: 1px solid #1e1e1e; padding: 14px 20px; display: flex; align-items: center; gap: 10px; }
+.theme-a .top-bar .brand { font-size: .85rem; font-weight: 600; color: #ededed; letter-spacing: -.01em; }
+.theme-a .top-bar .pill { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 99px; padding: 3px 10px; font-size: .7rem; color: #888; }
+.theme-a .body { padding: 20px; }
+.theme-a .section-title { font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #555; margin-bottom: 12px; }
+.theme-a .stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 20px; }
+.theme-a .stat { background: #161616; border: 1px solid #222; border-radius: 8px; padding: 12px; }
+.theme-a .stat .val { font-size: 1.3rem; font-weight: 700; color: #ededed; letter-spacing: -.02em; }
+.theme-a .stat .lbl { font-size: .65rem; color: #555; margin-top: 2px; }
+.theme-a .stat .badge { display: inline-block; background: #0d2818; color: #3ecf8e; border: 1px solid #1a4a30; border-radius: 4px; font-size: .6rem; font-weight: 600; padding: 1px 5px; margin-top: 4px; }
+.theme-a .table { width: 100%; border-collapse: collapse; }
+.theme-a .table th { font-size: .65rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #555; padding: 6px 8px; text-align: left; border-bottom: 1px solid #1e1e1e; }
+.theme-a .table td { font-size: .75rem; color: #aaa; padding: 8px 8px; border-bottom: 1px solid #171717; }
+.theme-a .table td.name { color: #ededed; font-weight: 500; }
+.theme-a .chip-ok { display: inline-block; background: #0d2818; color: #3ecf8e; border-radius: 4px; font-size: .6rem; font-weight: 600; padding: 2px 6px; }
+.theme-a .chip-warn { display: inline-block; background: #2d1b00; color: #f59e0b; border-radius: 4px; font-size: .6rem; font-weight: 600; padding: 2px 6px; }
+.theme-a .btn { background: #3ecf8e; color: #0a0a0a; border: none; border-radius: 6px; padding: 7px 14px; font-size: .75rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+.theme-a .btn-ghost { background: transparent; color: #888; border: 1px solid #2a2a2a; border-radius: 6px; padding: 6px 12px; font-size: .75rem; font-weight: 500; cursor: pointer; font-family: inherit; }
+
+/* ─── OPTION B: Navy + Amber (NNTN brand) ─── */
+.theme-b { background: #080c18; border: 1px solid #131929; border-radius: 12px; overflow: hidden; }
+.theme-b .top-bar { background: #0b1120; border-bottom: 1px solid #131929; padding: 14px 20px; display: flex; align-items: center; gap: 10px; }
+.theme-b .top-bar .brand { font-size: .85rem; font-weight: 700; color: #e2e8f0; letter-spacing: -.01em; }
+.theme-b .top-bar .pill { background: #111c38; border: 1px solid #1e3060; border-radius: 99px; padding: 3px 10px; font-size: .7rem; color: #6b8ed4; }
+.theme-b .body { padding: 20px; }
+.theme-b .section-title { font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #3d5280; margin-bottom: 12px; }
+.theme-b .stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 20px; }
+.theme-b .stat { background: #0d1628; border: 1px solid #1a2848; border-radius: 8px; padding: 12px; }
+.theme-b .stat .val { font-size: 1.3rem; font-weight: 700; color: #e2e8f0; letter-spacing: -.02em; }
+.theme-b .stat .lbl { font-size: .65rem; color: #3d5280; margin-top: 2px; }
+.theme-b .stat .badge { display: inline-block; background: #2d1f00; color: #f59e0b; border: 1px solid #4a3200; border-radius: 4px; font-size: .6rem; font-weight: 600; padding: 1px 5px; margin-top: 4px; }
+.theme-b .table { width: 100%; border-collapse: collapse; }
+.theme-b .table th { font-size: .65rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #3d5280; padding: 6px 8px; text-align: left; border-bottom: 1px solid #131929; }
+.theme-b .table td { font-size: .75rem; color: #6b8ed4; padding: 8px 8px; border-bottom: 1px solid #0e1628; }
+.theme-b .table td.name { color: #e2e8f0; font-weight: 500; }
+.theme-b .chip-ok { display: inline-block; background: #0d2818; color: #34d399; border-radius: 4px; font-size: .6rem; font-weight: 600; padding: 2px 6px; }
+.theme-b .chip-warn { display: inline-block; background: #2d1f00; color: #f59e0b; border-radius: 4px; font-size: .6rem; font-weight: 600; padding: 2px 6px; }
+.theme-b .btn { background: #f59e0b; color: #0a0a0a; border: none; border-radius: 6px; padding: 7px 14px; font-size: .75rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+.theme-b .btn-ghost { background: transparent; color: #6b8ed4; border: 1px solid #1e3060; border-radius: 6px; padding: 6px 12px; font-size: .75rem; font-weight: 500; cursor: pointer; font-family: inherit; }
+
+/* ─── OPTION C: Minimal / Slate ─── */
+.theme-c { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+.theme-c .top-bar { background: #18181b; border-bottom: 1px solid #27272a; padding: 14px 20px; display: flex; align-items: center; gap: 10px; }
+.theme-c .top-bar .brand { font-size: .85rem; font-weight: 600; color: #fafafa; letter-spacing: -.01em; }
+.theme-c .top-bar .pill { background: #27272a; border: 1px solid #3f3f46; border-radius: 99px; padding: 3px 10px; font-size: .7rem; color: #a1a1aa; }
+.theme-c .body { padding: 20px; }
+.theme-c .section-title { font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #9ca3af; margin-bottom: 12px; }
+.theme-c .stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 20px; }
+.theme-c .stat { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+.theme-c .stat .val { font-size: 1.3rem; font-weight: 700; color: #18181b; letter-spacing: -.02em; }
+.theme-c .stat .lbl { font-size: .65rem; color: #9ca3af; margin-top: 2px; }
+.theme-c .stat .badge { display: inline-block; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; border-radius: 4px; font-size: .6rem; font-weight: 600; padding: 1px 5px; margin-top: 4px; }
+.theme-c .table { width: 100%; border-collapse: collapse; }
+.theme-c .table th { font-size: .65rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #9ca3af; padding: 6px 8px; text-align: left; border-bottom: 1px solid #f3f4f6; }
+.theme-c .table td { font-size: .75rem; color: #6b7280; padding: 8px 8px; border-bottom: 1px solid #f9fafb; }
+.theme-c .table td.name { color: #111827; font-weight: 500; }
+.theme-c .chip-ok { display: inline-block; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; border-radius: 4px; font-size: .6rem; font-weight: 600; padding: 2px 6px; }
+.theme-c .chip-warn { display: inline-block; background: #fefce8; color: #ca8a04; border: 1px solid #fde68a; border-radius: 4px; font-size: .6rem; font-weight: 600; padding: 2px 6px; }
+.theme-c .btn { background: #18181b; color: #fff; border: none; border-radius: 6px; padding: 7px 14px; font-size: .75rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+.theme-c .btn-ghost { background: transparent; color: #6b7280; border: 1px solid #e5e7eb; border-radius: 6px; padding: 6px 12px; font-size: .75rem; font-weight: 500; cursor: pointer; font-family: inherit; }
+
+.btn-row { display: flex; gap: 8px; margin-top: 16px; }
+.divider { border: none; border-top: 1px solid #1e1e1e; margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<h1>NNTN — Theme Preview</h1>
+<p class="subtitle">เลือกสไตล์ที่ชอบ แล้วแจ้งได้เลย → จะ apply ให้ทุกหน้า</p>
+
+<div class="grid">
+
+  <!-- OPTION A -->
+  <div>
+    <div class="option-label">A — Supabase Green (Dark)</div>
+    <div class="theme-a">
+      <div class="top-bar">
+        <div class="brand">NNTN Stock</div>
+        <div class="pill">Non-meat</div>
+      </div>
+      <div class="body">
+        <div class="section-title">ภาพรวมสต็อก</div>
+        <div class="stat-row">
+          <div class="stat"><div class="val">23</div><div class="lbl">รายการทั้งหมด</div><div class="badge">OK</div></div>
+          <div class="stat"><div class="val">4</div><div class="lbl">ใกล้หมด</div><div class="badge" style="background:#2d1a00;color:#f97316;border-color:#4a2e00">LOW</div></div>
+          <div class="stat"><div class="val">2</div><div class="lbl">หมดแล้ว</div><div class="badge" style="background:#2d0000;color:#f87171;border-color:#4a0000">OUT</div></div>
+        </div>
+        <div class="section-title">รายการล่าสุด</div>
+        <table class="table">
+          <thead><tr><th>รายการ</th><th>คงเหลือ</th><th>สถานะ</th></tr></thead>
+          <tbody>
+            <tr><td class="name">น้ำปลาทิพรส</td><td>12 ขวด</td><td><span class="chip-ok">OK</span></td></tr>
+            <tr><td class="name">เส้นเล็ก</td><td>3 ถุง</td><td><span class="chip-warn">LOW</span></td></tr>
+            <tr><td class="name">ถุงหิ้วขาว</td><td>0</td><td><span class="chip-warn" style="background:#2d0000;color:#f87171">OUT</span></td></tr>
+          </tbody>
+        </table>
+        <div class="btn-row">
+          <button class="btn">เบิกของ</button>
+          <button class="btn-ghost">ดูทั้งหมด</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION B -->
+  <div>
+    <div class="option-label">B — Navy + Amber (NNTN)</div>
+    <div class="theme-b">
+      <div class="top-bar">
+        <div class="brand">NNTN Stock</div>
+        <div class="pill">Non-meat</div>
+      </div>
+      <div class="body">
+        <div class="section-title">ภาพรวมสต็อก</div>
+        <div class="stat-row">
+          <div class="stat"><div class="val">23</div><div class="lbl">รายการทั้งหมด</div><div class="badge" style="background:#0d2818;color:#34d399;border-color:#1a4a30">OK</div></div>
+          <div class="stat"><div class="val">4</div><div class="lbl">ใกล้หมด</div><div class="badge">LOW</div></div>
+          <div class="stat"><div class="val">2</div><div class="lbl">หมดแล้ว</div><div class="badge" style="background:#2d0a00;color:#f87171;border-color:#4a1500">OUT</div></div>
+        </div>
+        <div class="section-title">รายการล่าสุด</div>
+        <table class="table">
+          <thead><tr><th>รายการ</th><th>คงเหลือ</th><th>สถานะ</th></tr></thead>
+          <tbody>
+            <tr><td class="name">น้ำปลาทิพรส</td><td>12 ขวด</td><td><span class="chip-ok">OK</span></td></tr>
+            <tr><td class="name">เส้นเล็ก</td><td>3 ถุง</td><td><span class="chip-warn">LOW</span></td></tr>
+            <tr><td class="name">ถุงหิ้วขาว</td><td>0</td><td><span class="chip-warn" style="background:#2d0a00;color:#f87171">OUT</span></td></tr>
+          </tbody>
+        </table>
+        <div class="btn-row">
+          <button class="btn">เบิกของ</button>
+          <button class="btn-ghost">ดูทั้งหมด</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION C -->
+  <div>
+    <div class="option-label">C — Minimal Light (Shadcn)</div>
+    <div class="theme-c">
+      <div class="top-bar">
+        <div class="brand">NNTN Stock</div>
+        <div class="pill">Non-meat</div>
+      </div>
+      <div class="body">
+        <div class="section-title">ภาพรวมสต็อก</div>
+        <div class="stat-row">
+          <div class="stat"><div class="val" style="color:#18181b">23</div><div class="lbl">รายการทั้งหมด</div><div class="badge">OK</div></div>
+          <div class="stat"><div class="val" style="color:#18181b">4</div><div class="lbl">ใกล้หมด</div><div class="badge" style="background:#fefce8;color:#ca8a04;border-color:#fde68a">LOW</div></div>
+          <div class="stat"><div class="val" style="color:#18181b">2</div><div class="lbl">หมดแล้ว</div><div class="badge" style="background:#fef2f2;color:#dc2626;border-color:#fecaca">OUT</div></div>
+        </div>
+        <div class="section-title">รายการล่าสุด</div>
+        <table class="table">
+          <thead><tr><th>รายการ</th><th>คงเหลือ</th><th>สถานะ</th></tr></thead>
+          <tbody>
+            <tr><td class="name">น้ำปลาทิพรส</td><td>12 ขวด</td><td><span class="chip-ok">OK</span></td></tr>
+            <tr><td class="name">เส้นเล็ก</td><td>3 ถุง</td><td><span class="chip-warn">LOW</span></td></tr>
+            <tr><td class="name">ถุงหิ้วขาว</td><td>0</td><td><span class="chip-warn" style="background:#fef2f2;color:#dc2626;border-color:#fecaca">OUT</span></td></tr>
+          </tbody>
+        </table>
+        <div class="btn-row">
+          <button class="btn">เบิกของ</button>
+          <button class="btn-ghost">ดูทั้งหมด</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

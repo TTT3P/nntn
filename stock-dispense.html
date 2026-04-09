@@ -7,6 +7,7 @@
   <title>เบิกของ & บันทึก Loss — NNTN</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="nntn-theme.css">
   <style>
     :root {
       --green-dark: #1B5E20;
@@ -610,7 +611,7 @@
     var exists = dispenseList.some(function(r) { return r.id === id; });
     if (exists) { toast('มี ' + item.name + ' ในรายการแล้วครับ'); return; }
 
-    dispenseList.push({ id: item.id, name: item.name, unit: item.unit, category: item.category || '' });
+    dispenseList.push({ id: item.id, name: item.name, unit: item.unit, category: item.category || '', qty: 1 });
     renderDispenseList();
 
     document.getElementById('d-item-pending').value = '';
@@ -640,10 +641,15 @@
         + '<div><div class="dr-name">' + r.name + '</div>'
         + '<div class="dr-meta" style="' + warnStyle + '">' + r.unit + (stockNote ? ' · ' + stockNote : '') + '</div>'
         + '<div class="dr-warn" id="dw-' + i + '">⚠️ จำนวนเกินสต๊อก</div></div>'
-        + '<input class="dr-qty-input" type="number" id="dq-' + i + '" value="1" min="0.01" step="0.01" oninput="checkQtyWarn(' + i + ',this.value,\'' + r.id + '\')">'
+        + '<input class="dr-qty-input" type="number" id="dq-' + i + '" value="' + (r.qty || 1) + '" min="0.01" step="0.01" oninput="updateQty(' + i + ',this.value,\'' + r.id + '\')">'
         + '<button class="btn-del" onclick="removeDispenseLine(' + i + ')">×</button>'
         + '</div>';
     }).join('');
+  }
+
+  function updateQty(idx, val, itemId) {
+    if (dispenseList[idx]) dispenseList[idx].qty = parseFloat(val) || 0;
+    checkQtyWarn(idx, val, itemId);
   }
 
   function checkQtyWarn(idx, val, itemId) {

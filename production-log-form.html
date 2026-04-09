@@ -6,6 +6,7 @@
   <script src="/nntn/auth.js"></script>
   <title>บันทึกการผลิต — NNTN</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="nntn-theme.css">
   <style>
     :root {
       --green-dark: #1B5E20;
@@ -276,6 +277,64 @@
     }
     .toast.success { background: #E8F5E9; color: #1B5E20; border: 2px solid #4CAF50; }
     .toast.error   { background: #FFEBEE; color: #C62828; border: 2px solid #EF5350; }
+
+    /* Tabs */
+    .tab-bar {
+      display: flex;
+      background: #fff;
+      border-bottom: 2px solid var(--border);
+      position: sticky; top: 65px; z-index: 9;
+    }
+    .tab-btn {
+      flex: 1; padding: 11px 8px;
+      font-family: inherit; font-size: 14px; font-weight: 600;
+      border: none; background: transparent; color: var(--muted);
+      cursor: pointer; border-bottom: 3px solid transparent;
+    }
+    .tab-btn.active { color: var(--green-dark); border-bottom-color: var(--green); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* History */
+    .hist-pane { padding: 14px 16px; padding-bottom: 100px; }
+    .hist-filter {
+      display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto;
+    }
+    .hist-pill {
+      flex-shrink: 0; padding: 5px 14px; border-radius: 20px;
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      border: 1px solid var(--border); background: #fff; color: #555; cursor: pointer;
+    }
+    .hist-pill.active { background: var(--green-dark); color: #fff; border-color: var(--green-dark); }
+    .hist-card {
+      background: #fff; border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 14px; margin-bottom: 10px;
+      border-left: 4px solid var(--green);
+    }
+    .hist-card-top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 4px;
+    }
+    .hist-rcp { font-size: 15px; font-weight: 700; color: #212121; }
+    .hist-batch { font-size: 14px; font-weight: 700; color: var(--green-dark); }
+    .hist-meta { font-size: 12px; color: var(--muted); }
+    .hist-ingr {
+      margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0e0e0;
+      display: none;
+    }
+    .hist-ingr.open { display: block; }
+    .hist-ingr-row {
+      display: flex; justify-content: space-between;
+      font-size: 12px; color: #444; padding: 2px 0;
+    }
+    .hist-ingr-diff { font-size: 11px; }
+    .hist-ingr-diff.over { color: var(--red); }
+    .hist-ingr-diff.under { color: var(--yellow); }
+    .hist-toggle {
+      font-size: 11px; color: var(--green-dark); cursor: pointer;
+      margin-top: 4px; display: inline-block;
+    }
+    .hist-empty { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 14px; }
   </style>
 </head>
 <body>
@@ -284,6 +343,14 @@
   <h1>🍳 บันทึกการผลิต</h1>
   <p id="date-display"></p>
 </header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('form',this)">📝 บันทึก</button>
+  <button class="tab-btn"        onclick="switchTab('history',this)">📋 ประวัติ</button>
+</div>
+
+<!-- ═══ TAB: บันทึก ═══ -->
+<div id="tab-form" class="tab-pane active">
 
 <!-- วันที่ + ชื่อ -->
 <div class="top-section">
@@ -315,6 +382,20 @@
 
 <div class="footer">
   <button class="submit-btn" id="submit-btn" onclick="submitLog()">✅ บันทึกการผลิต</button>
+</div>
+
+</div><!-- /tab-form -->
+
+<!-- ═══ TAB: ประวัติ ═══ -->
+<div id="tab-history" class="tab-pane">
+  <div class="hist-pane">
+    <div class="hist-filter">
+      <button class="hist-pill active" onclick="histFilter('7',this)">7 วัน</button>
+      <button class="hist-pill" onclick="histFilter('30',this)">30 วัน</button>
+      <button class="hist-pill" onclick="histFilter('all',this)">ทั้งหมด</button>
+    </div>
+    <div id="hist-list"><div class="hist-empty">⏳ กำลังโหลด...</div></div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -534,6 +615,108 @@ async function submitLog() {
   addRow();
 
   setTimeout(() => { btn.disabled = false; btn.textContent = '✅ บันทึกการผลิต'; }, 3000);
+}
+
+// ─── Tab switch ──────────────────────────────────────────
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  el.classList.add('active');
+  // footer visible only on form tab
+  document.querySelector('.footer').style.display = tab === 'form' ? '' : 'none';
+  if (tab === 'history') loadHistory(currentHistDays);
+}
+
+// ─── History ─────────────────────────────────────────────
+let currentHistDays = '7';
+let histDispenseCache = {}; // log_id → [{ingredient, qty_expected, qty_actual, unit}]
+
+function histFilter(days, el) {
+  currentHistDays = days;
+  document.querySelectorAll('.hist-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  loadHistory(days);
+}
+
+async function loadHistory(days) {
+  const listEl = document.getElementById('hist-list');
+  listEl.innerHTML = '<div class="hist-empty">⏳ กำลังโหลด...</div>';
+
+  let query = sb.from('production_log')
+    .select('id, logged_at, logged_by, rcp_code, rcp_name, batch_count, type, note')
+    .order('logged_at', { ascending: false })
+    .order('id', { ascending: false })
+    .limit(100);
+
+  if (days !== 'all') {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - parseInt(days));
+    query = query.gte('logged_at', cutoff.toISOString().split('T')[0]);
+  }
+
+  const { data, error } = await query;
+  if (error || !data || data.length === 0) {
+    listEl.innerHTML = '<div class="hist-empty">ไม่มีข้อมูลในช่วงนี้</div>';
+    return;
+  }
+
+  listEl.innerHTML = data.map(row => {
+    const dateStr = row.logged_at ? row.logged_at.slice(0,10) : '';
+    const typeLabel = row.type === 'staff' ? '👤 พนักงาน' : '🍜 ลูกค้า';
+    const noteStr = row.note ? ` · ${row.note}` : '';
+    return `<div class="hist-card" id="hc-${row.id}">
+      <div class="hist-card-top">
+        <div class="hist-rcp">${row.rcp_code} — ${row.rcp_name || ''}</div>
+        <div class="hist-batch">${row.batch_count} batch</div>
+      </div>
+      <div class="hist-meta">${dateStr} · ${row.logged_by || '—'} · ${typeLabel}${noteStr}</div>
+      <span class="hist-toggle" onclick="toggleIngr(${row.id})">▸ ดูวัตถุดิบ</span>
+      <div class="hist-ingr" id="hi-${row.id}"><div style="font-size:12px;color:#999">⏳ โหลด...</div></div>
+    </div>`;
+  }).join('');
+}
+
+async function toggleIngr(logId) {
+  const ingrEl = document.getElementById(`hi-${logId}`);
+  const togEl  = ingrEl.previousElementSibling;
+  if (ingrEl.classList.contains('open')) {
+    ingrEl.classList.remove('open');
+    togEl.textContent = '▸ ดูวัตถุดิบ';
+    return;
+  }
+  ingrEl.classList.add('open');
+  togEl.textContent = '▾ ซ่อน';
+
+  if (histDispenseCache[logId]) {
+    renderIngrRows(logId, histDispenseCache[logId]);
+    return;
+  }
+
+  const { data } = await sb.from('ingredient_dispense')
+    .select('ingredient, qty_expected, qty_actual, unit')
+    .eq('production_log_id', logId)
+    .order('ingredient');
+
+  histDispenseCache[logId] = data || [];
+  renderIngrRows(logId, histDispenseCache[logId]);
+}
+
+function renderIngrRows(logId, rows) {
+  const el = document.getElementById(`hi-${logId}`);
+  if (!rows || rows.length === 0) {
+    el.innerHTML = '<div style="font-size:12px;color:#999">ไม่มีข้อมูลวัตถุดิบ</div>';
+    return;
+  }
+  el.innerHTML = rows.map(r => {
+    const diff = Math.round((r.qty_actual - r.qty_expected) * 100) / 100;
+    const diffClass = diff > 0 ? 'over' : diff < 0 ? 'under' : '';
+    const diffStr = diff !== 0 ? ` <span class="hist-ingr-diff ${diffClass}">(${diff > 0 ? '+' : ''}${diff})</span>` : '';
+    return `<div class="hist-ingr-row">
+      <span>${r.ingredient}</span>
+      <span>${r.qty_actual} ${r.unit}${diffStr}</span>
+    </div>`;
+  }).join('');
 }
 
 async function init() {
