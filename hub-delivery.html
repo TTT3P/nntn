@@ -537,9 +537,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Auto-update preview when header changes
-  document.getElementById('dl-date').addEventListener('input', updatePreview)
-  document.getElementById('dl-dest').addEventListener('change', updatePreview)
+  document.getElementById('dl-date').addEventListener('input', () => { updatePreview(); suggestBillNum() })
+  document.getElementById('dl-dest').addEventListener('change', () => { updatePreview(); suggestBillNum() })
   document.getElementById('dl-bill').addEventListener('input', updatePreview)
+  suggestBillNum()
 })
 
 // ─── Searchable Select ────────────────────────────────────────────────────────
@@ -968,28 +969,44 @@ async function loadHistory() {
   listEl.innerHTML = '<div class="loading">กำลังโหลดประวัติ...</div>'
 
   try {
-    // Fetch dispense records from hub-delivery, join items
-    const rows = await get('stock_counts', {
-      select: 'id,item_id,qty,dispense_qty,note,counted_at,items(id,sku,name,unit)',
-      event_type: 'eq.dispense',
-      counted_by: 'eq.hub-delivery',
-      order: 'counted_at.desc',
-      limit: '500'
-    })
+    // Fetch SP + MT records in parallel
+    const [spRows, mtRows] = await Promise.all([
+      get('stock_counts', {
+        select: 'id,item_id,qty,dispense_qty,note,counted_at,items(id,sku,name,unit)',
+        event_type: 'eq.dispense',
+        counted_by: 'eq.hub-delivery',
+        order: 'counted_at.desc',
+        limit: '500'
+      }),
+      get('catch_weight', {
+        select: 'id,item_id,weight_g,lot_date,legacy_cw_row,notes,updated_at,items(id,sku,name,unit)',
+        status: 'eq.delivered',
+        order: 'updated_at.desc',
+        limit: '1000'
+      })
+    ])
 
-    const records = Array.isArray(rows) ? rows : []
-
-    // Group by note (bill string)
     const groups = {}
-    records.forEach(r => {
-      const key = r.note || '(ไม่มีเลขบิล)'
-      if (!groups[key]) groups[key] = { note: key, rows: [], counted_at: r.counted_at }
-      groups[key].rows.push(r)
-      // keep latest counted_at for sort
-      if (r.counted_at > groups[key].counted_at) groups[key].counted_at = r.counted_at
+
+    // Group SP by bill number
+    ;(Array.isArray(spRows) ? spRows : []).forEach(r => {
+      const bill = parseBillNote(r.note || '').bill || '(ไม่มีเลขบิล)'
+      if (!groups[bill]) groups[bill] = { note: r.note || bill, rows: [], counted_at: r.counted_at }
+      groups[bill].rows.push({ ...r, _rowType: 'sp' })
+      if (r.counted_at > groups[bill].counted_at) groups[bill].counted_at = r.counted_at
     })
 
-    // Sort groups newest first
+    // Group MT (catch_weight delivered) by bill number — parse from notes
+    ;(Array.isArray(mtRows) ? mtRows : []).forEach(r => {
+      if (!r.notes || !r.notes.includes('→')) return
+      const bill = parseBillNote(r.notes).bill
+      if (!bill) return
+      const ts = r.updated_at || ''
+      if (!groups[bill]) groups[bill] = { note: r.notes, rows: [], counted_at: ts }
+      groups[bill].rows.push({ ...r, _rowType: 'mt' })
+      if (ts > groups[bill].counted_at) groups[bill].counted_at = ts
+    })
+
     historyData = Object.values(groups).sort((a, b) => b.counted_at.localeCompare(a.counted_at))
     historyLoaded = true
     renderHistory(historyData)
@@ -1000,12 +1017,39 @@ async function loadHistory() {
 }
 
 function parseBillNote(note) {
-  // note format: "NT20260408-1 → ครัวกลาง (NT)"
+  // note format: "NT-20260409-01 → ครัวกลาง (NT)"
   const parts = (note || '').split('→')
   return {
     bill: parts[0]?.trim() || note,
     dest: parts[1]?.trim() || ''
   }
+}
+
+async function suggestBillNum() {
+  const billEl = document.getElementById('dl-bill')
+  if (billEl.value.trim()) return  // ไม่ทับถ้ากรอกแล้ว
+  const dateVal = document.getElementById('dl-date').value
+  const dest    = document.getElementById('dl-dest').value
+  if (!dateVal) return
+  const prefix = dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : 'OT'
+  const d = dateVal.replace(/-/g, '')
+  // ค้นบิลวันนี้ทั้ง stock_counts + catch_weight
+  const [scRows, cwRows] = await Promise.all([
+    get('stock_counts', { select: 'note', counted_by: 'eq.hub-delivery', note: `like.${prefix}-${d}*`, limit: '50' }),
+    get('catch_weight', { select: 'notes', status: 'eq.delivered', notes: `like.${prefix}-${d}*`, limit: '50' })
+  ])
+  const allNotes = [
+    ...(Array.isArray(scRows) ? scRows.map(r => r.note || '') : []),
+    ...(Array.isArray(cwRows) ? cwRows.map(r => r.notes || '') : [])
+  ]
+  let maxSeq = 0
+  allNotes.forEach(n => {
+    const m = n.match(new RegExp(`${prefix}-${d}-(\\d+)`))
+    if (m) maxSeq = Math.max(maxSeq, parseInt(m[1]))
+  })
+  const seq = String(maxSeq + 1).padStart(2, '0')
+  billEl.value = `${prefix}-${d}-${seq}`
+  updatePreview()
 }
 
 function renderHistory(groups) {
@@ -1063,6 +1107,22 @@ function renderHistory(groups) {
 }
 
 function renderHistRow(r, gi, ri) {
+  // MT row (catch_weight delivered) — read-only
+  if (r._rowType === 'mt') {
+    const item   = r.items || {}
+    const name   = `🥩 ${item.name || 'เนื้อตุ๋น'}${r.legacy_cw_row ? ` [${r.legacy_cw_row}]` : ''}`
+    const kgDisp = r.weight_g ? (r.weight_g / 1000).toFixed(3) : '?'
+    const lot    = r.lot_date || ''
+    return `
+  <div class="hist-item-row" id="hrow-${gi}-${ri}" style="background:#FFF8E1">
+    <div class="hist-item-name">${escHtml(name)}</div>
+    <div class="hist-item-qty">${kgDisp} <span style="font-size:0.75em;color:#888">กก.</span></div>
+    <div class="hist-item-unit" style="font-size:0.72rem;color:#aaa">${lot}</div>
+    <span style="font-size:0.72rem;color:#E65100;padding:4px 8px;background:#FFF3E0;border-radius:6px">เนื้อตุ๋น</span>
+  </div>`
+  }
+
+  // SP row (stock_counts) — editable
   const item        = r.items || {}
   const name        = item.name || r.item_id || '?'
   const unit        = item.unit || ''
