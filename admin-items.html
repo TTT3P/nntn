@@ -185,8 +185,9 @@
     <div class="section-label">ราคา & ต้นทุน BOM</div>
     <div class="field-row">
       <div class="field">
-        <label>ราคาต่อแพ็ก (บาท)</label>
-        <input type="number" id="f-cost" min="0" step="0.01" placeholder="0.00">
+        <label>ราคา/แพ็ก — BOM (บาท) <span style="color:#C62828">*</span></label>
+        <input type="number" id="f-price-pack" min="0" step="0.01" placeholder="0.00">
+        <div class="hint">ใช้คำนวณใน CookingBook: ฿/g = ราคา ÷ (ปริมาณ × 1000)</div>
       </div>
       <div class="field">
         <label>ปริมาณต่อแพ็ก (กก./ลิตร)</label>
@@ -194,10 +195,17 @@
         <div class="hint">850g ใส่ 0.85 · 3L ใส่ 3.0</div>
       </div>
     </div>
-    <div class="field">
-      <label>Yield % (ส่วนที่ใช้ได้จริง)</label>
-      <input type="number" id="f-yield" min="0" max="100" step="1" placeholder="100">
-      <div class="hint">ถ้าไม่มีการสูญเสีย ใส่ 100</div>
+    <div id="bom-cost-preview" style="display:none;margin:-6px 0 12px;padding:8px 12px;background:#E8F5E9;border-radius:8px;font-size:13px;color:#1B5E20;"></div>
+    <div class="field-row">
+      <div class="field">
+        <label>ราคาซื้อจริง (บาท) <span style="font-size:11px;color:var(--muted);font-weight:400">ถ้าต่างจากราคา BOM</span></label>
+        <input type="number" id="f-cost" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label>Yield % (ส่วนที่ใช้ได้จริง)</label>
+        <input type="number" id="f-yield" min="0" max="100" step="1" placeholder="100">
+        <div class="hint">ถ้าไม่มีการสูญเสีย ใส่ 100</div>
+      </div>
     </div>
 
     <div class="section-label">สต๊อก</div>
@@ -282,7 +290,7 @@ function showToast(msg, type) {
 async function loadAll() {
   const [itemsRes, suppRes, linkRes] = await Promise.all([
     sb.from('items')
-      .select('id, sku, name, category, unit, par_level, max_level, is_active, brand, cost_per_pack, qty_per_pack, yield_pct, notes')
+      .select('id, sku, name, category, unit, par_level, max_level, is_active, brand, cost_per_pack, qty_per_pack, yield_pct, notes, price_per_pack')
       .order('category').order('sku'),
     sb.from('suppliers').select('id, name').eq('is_active', true).order('name'),
     sb.from('item_suppliers').select('item_id, supplier_id, is_preferred')
@@ -322,7 +330,7 @@ function renderList() {
 
   // Filter
   if (activeFilter === 'no-price') {
-    active = active.filter(i => !i.cost_per_pack && i.category !== 'srcp' && i.category !== 'pkg');
+    active = active.filter(i => !i.price_per_pack && !i.cost_per_pack && i.category !== 'srcp' && i.category !== 'pkg');
   } else if (activeFilter !== 'all') {
     active = active.filter(i => i.category === activeFilter);
   }
@@ -353,8 +361,9 @@ function renderList() {
     const sup = getPreferredSupplier(item.id);
     const supTag = sup ? `<span class="supplier-tag">${sup.name}</span>` : '';
     const brandTag = item.brand ? `<span style="font-size:11px;color:#555">${item.brand}</span>` : '';
-    const costInfo = item.cost_per_pack
-      ? `฿${parseFloat(item.cost_per_pack).toFixed(0)}${item.qty_per_pack ? ` / ${item.qty_per_pack}${item.qty_per_pack < 5 ? 'kg' : ''}` : ''}`
+    const priceForDisplay = item.price_per_pack || item.cost_per_pack;
+    const costInfo = priceForDisplay
+      ? `฿${parseFloat(priceForDisplay).toFixed(0)}${item.qty_per_pack ? ` / ${item.qty_per_pack}${item.unit || 'kg'}` : ''}${item.price_per_pack && item.qty_per_pack ? ` · ฿${(item.price_per_pack / (item.qty_per_pack * 1000)).toFixed(4)}/g` : ''}`
       : '';
     const costTag = costInfo ? `<span class="cost-tag">${costInfo}</span>` : '';
 
@@ -404,15 +413,33 @@ function openModal() {
   document.getElementById('f-category').value = '';
   document.getElementById('f-brand').value = '';
   document.getElementById('f-supplier').value = '';
+  document.getElementById('f-price-pack').value = '';
   document.getElementById('f-cost').value = '';
   document.getElementById('f-qty-pack').value = '';
   document.getElementById('f-yield').value = '';
+  document.getElementById('bom-cost-preview').style.display = 'none';
   document.getElementById('f-par').value = '';
   document.getElementById('f-max').value = '';
   document.getElementById('f-notes').value = '';
   document.getElementById('overlay').classList.add('open');
   setTimeout(() => document.getElementById('f-name').focus(), 150);
 }
+
+// BOM cost preview
+function updateBomPreview() {
+  const price = parseFloat(document.getElementById('f-price-pack').value);
+  const qty   = parseFloat(document.getElementById('f-qty-pack').value);
+  const box   = document.getElementById('bom-cost-preview');
+  if (price > 0 && qty > 0) {
+    const per_g = price / (qty * 1000);
+    box.style.display = 'block';
+    box.textContent = `💡 ต้นทุน BOM: ฿${per_g.toFixed(4)}/g (หรือ ฿${(per_g * 1000).toFixed(2)}/kg)`;
+  } else {
+    box.style.display = 'none';
+  }
+}
+document.getElementById('f-price-pack').addEventListener('input', updateBomPreview);
+document.getElementById('f-qty-pack').addEventListener('input', updateBomPreview);
 
 document.getElementById('f-category').addEventListener('change', function() {
   const editId = document.getElementById('edit-id').value;
@@ -431,9 +458,11 @@ function openEdit(id) {
   document.getElementById('f-unit').value = item.unit;
   document.getElementById('f-category').value = item.category;
   document.getElementById('f-brand').value = item.brand || '';
+  document.getElementById('f-price-pack').value = item.price_per_pack || '';
   document.getElementById('f-cost').value = item.cost_per_pack || '';
   document.getElementById('f-qty-pack').value = item.qty_per_pack || '';
   document.getElementById('f-yield').value = item.yield_pct != null ? Math.round(item.yield_pct * 100) : '';
+  updateBomPreview();
   document.getElementById('f-notes').value = item.notes || '';
   document.getElementById('f-par').value = item.par_level || '';
   document.getElementById('f-max').value = item.max_level || '';
@@ -456,6 +485,7 @@ async function saveItem() {
   const category = document.getElementById('f-category').value;
   const brand    = document.getElementById('f-brand').value.trim() || null;
   const suppId   = document.getElementById('f-supplier').value || null;
+  const priceRaw = document.getElementById('f-price-pack').value;
   const costRaw  = document.getElementById('f-cost').value;
   const qtyRaw   = document.getElementById('f-qty-pack').value;
   const yieldRaw = document.getElementById('f-yield').value;
@@ -472,16 +502,17 @@ async function saveItem() {
     showToast('⚠️ Max ต้องมากกว่าหรือเท่ากับ Par', 'error'); return;
   }
 
-  const cost_per_pack = costRaw ? parseFloat(costRaw) : null;
-  const qty_per_pack  = qtyRaw  ? parseFloat(qtyRaw)  : null;
-  const yield_pct     = yieldRaw ? parseFloat(yieldRaw) / 100 : null;
+  const price_per_pack = priceRaw ? parseFloat(priceRaw) : null;
+  const cost_per_pack  = costRaw  ? parseFloat(costRaw)  : null;
+  const qty_per_pack   = qtyRaw   ? parseFloat(qtyRaw)   : null;
+  const yield_pct      = yieldRaw ? parseFloat(yieldRaw) / 100 : null;
 
   const btn = document.getElementById('modal-save-btn');
   btn.disabled = true;
   btn.textContent = '⏳ กำลังบันทึก...';
 
   const notes   = document.getElementById('f-notes').value.trim() || null;
-  const payload = { name, unit, category, brand, cost_per_pack, qty_per_pack, yield_pct, par_level: par, max_level: max, notes };
+  const payload = { name, unit, category, brand, price_per_pack, cost_per_pack, qty_per_pack, yield_pct, par_level: par, max_level: max, notes };
   let error, savedId;
 
   if (editId) {
