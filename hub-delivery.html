@@ -871,18 +871,19 @@ function updatePreview() {
     })
   })
 
-  // Collect non-meat data
+  // Collect non-meat data — ใช้ querySelectorAll แทน index loop เพื่อรองรับ delete+add
   const nmRows = []
-  for (let i = 1; i <= nmRowCount; i++) {
-    const itemEl = document.getElementById(`nm-item-${i}`)
-    const qtyEl  = document.getElementById(`nm-qty-${i}`)
-    const unitEl = document.getElementById(`nm-unit-${i}`)
-    if (!itemEl || !itemEl.value) continue
+  document.querySelectorAll('#nm-rows .nm-row-wrap').forEach(wrap => {
+    const n = wrap.id.replace('nm-row-', '')
+    const itemEl = document.getElementById(`nm-item-${n}`)
+    const qtyEl  = document.getElementById(`nm-qty-${n}`)
+    const unitEl = document.getElementById(`nm-unit-${n}`)
+    if (!itemEl || !itemEl.value) return
     const name = itemEl.options[itemEl.selectedIndex]?.dataset?.name || '?'
     const qty  = parseFloat(qtyEl?.value) || 0
     const unit = unitEl?.value || ''
     if (qty > 0) nmRows.push({ name, qty, unit })
-  }
+  })
 
   const el = document.getElementById('preview-content')
 
@@ -1421,16 +1422,17 @@ async function submitDelivery() {
   Object.values(meatSel).forEach(s => s.selectedBags.forEach(id => allBagIds.push(id)))
   // meat is optional — allow non-meat only delivery
 
-  // Collect + validate non-meat rows
+  // Collect + validate non-meat rows — ใช้ querySelectorAll แทน index loop
   const nmWithdrawals = []
   const overLimit = []
-  for (let i = 1; i <= nmRowCount; i++) {
-    const itemEl = document.getElementById(`nm-item-${i}`)
-    const qtyEl  = document.getElementById(`nm-qty-${i}`)
-    const unitEl = document.getElementById(`nm-unit-${i}`)
-    if (!itemEl?.value) continue
+  document.querySelectorAll('#nm-rows .nm-row-wrap').forEach(wrap => {
+    const n = wrap.id.replace('nm-row-', '')
+    const itemEl = document.getElementById(`nm-item-${n}`)
+    const qtyEl  = document.getElementById(`nm-qty-${n}`)
+    const unitEl = document.getElementById(`nm-unit-${n}`)
+    if (!itemEl?.value) return
     const qty = parseFloat(qtyEl?.value) || 0
-    if (qty <= 0) continue
+    if (qty <= 0) return
     const opt    = itemEl.options[itemEl.selectedIndex]
     const sku    = opt?.dataset?.sku || ''
     const name   = opt?.dataset?.name || sku
@@ -1440,7 +1442,7 @@ async function submitDelivery() {
       overLimit.push(`• ${name}: เบิก ${qty} แต่มีอยู่ ${avail} ${unit}`)
     }
     nmWithdrawals.push({ item_id: itemEl.value, sku, name, unit, qty, avail })
-  }
+  })
 
   if (overLimit.length > 0) {
     alert(`❌ เบิกเกินสต๊อก — ไม่สามารถส่งออกได้\n\n${overLimit.join('\n')}\n\nกรุณาแก้ไขจำนวนก่อน`)
