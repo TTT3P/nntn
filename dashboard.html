@@ -272,14 +272,20 @@ const sb      = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const sbStock = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'stock' } });
 
 const CAT_LABELS = {
-  seasoning:  '🧂 เครื่องปรุง',
-  spice:      '🌿 สมุนไพร',
-  vegetable:  '🥬 ผัก',
-  packaging:  '📦 แพ็กเกจจิ้ง',
-  consumable: '🛒 วัสดุสิ้นเปลือง',
-  noodle:     '🍜 เส้น & ข้าว',
-  srcp:       '🥄 Sub-Recipe',
-  pkg:        '🛍️ Portioned',
+  seasoning:       '🧂 เครื่องปรุง',
+  spice:           '🌿 สมุนไพร',
+  vegetable:       '🥬 ผัก',
+  packaging:       '📦 แพ็กเกจจิ้ง',
+  consumable:      '🛒 วัสดุสิ้นเปลือง',
+  noodle:          '🍜 เส้น & ข้าว',
+  srcp:            '🥄 Sub-Recipe',
+  pkg:             '🛍️ Portioned',
+  meat:            '🥩 เนื้อ (รวม)',
+  meat_raw:        '🥩 เนื้อสด',
+  meat_cooked:     '🫕 เนื้อตุ๋น',
+  meat_portioned:  '📦 เนื้อพอร์ชั่น',
+  meat_other:      '🥩 เนื้ออื่นๆ',
+  meat_trim:       '♻️ เศษเนื้อ',
 };
 
 const STATUS_LABELS = { OUT: 'หมด', ORDER_NOW: 'ต้องสั่ง', LOW: 'ใกล้หมด', OK: 'ปกติ' };
