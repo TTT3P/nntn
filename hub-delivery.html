@@ -1703,7 +1703,7 @@ async function submitDelivery() {
 
     // Remove delivered bags from cwBags
     const deliveredSet = new Set(allBagIds)
-    cwBags = cwBags.filter(b => !deliveredSet.has(b.id))
+    cwBags = cwBags.filter(b => !deliveredSet.has(String(b.id)))
 
     // Show success banner
     const nmLine = nmWithdrawals.length > 0
