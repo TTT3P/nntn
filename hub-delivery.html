@@ -534,7 +534,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     checkDraft()
 
   } catch(e) {
-    document.getElementById('meat-blocks').innerHTML = `<div class="warn-banner">❌ โหลดข้อมูลไม่ได้: ${e.message}</div>`
+    const is401 = e.message && e.message.includes('401')
+    document.getElementById('meat-blocks').innerHTML = is401
+      ? `<div class="warn-banner" style="text-align:center;padding:20px 16px">
+           🔒 กรุณาล็อกอินเพื่อเข้าใช้งาน<br>
+           <a href="/nntn/login.html" style="display:inline-block;margin-top:12px;background:#8B0000;color:#fff;padding:8px 20px;border-radius:8px;text-decoration:none;font-size:0.9rem">เข้าสู่ระบบ</a>
+         </div>`
+      : `<div class="warn-banner">❌ โหลดข้อมูลไม่ได้: ${e.message}</div>`
   }
 
   // Auto-update preview when header changes
