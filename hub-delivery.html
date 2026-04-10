@@ -502,7 +502,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       get('items', { select: 'id,sku,name,unit', is_active: 'eq.true', order: 'sku.asc', limit: 500 }),
       get('catch_weight', {
         select: 'id,item_id,weight_g,lot_date,warehouse,legacy_cw_row',
-        status: 'eq.in_stock',
+        status: 'eq.✅ In Stock',
         order: 'lot_date.asc',
         limit: 2000
       }),
@@ -987,7 +987,7 @@ async function loadHistory() {
       }),
       get('catch_weight', {
         select: 'id,item_id,weight_g,lot_date,legacy_cw_row,notes,updated_at,items(id,sku,name,unit)',
-        status: 'eq.delivered',
+        status: 'eq.🚚 Delivered',
         order: 'updated_at.desc',
         limit: '1000'
       })
@@ -1043,7 +1043,7 @@ async function suggestBillNum() {
   // ค้นบิลวันนี้ทั้ง stock_counts + catch_weight
   const [scRows, cwRows] = await Promise.all([
     get('stock_counts', { select: 'note', counted_by: 'eq.hub-delivery', note: `like.${prefix}-${d}*`, limit: '50' }),
-    get('catch_weight', { select: 'notes', status: 'eq.delivered', notes: `like.${prefix}-${d}*`, limit: '50' })
+    get('catch_weight', { select: 'notes', status: 'eq.🚚 Delivered', notes: `like.${prefix}-${d}*`, limit: '50' })
   ])
   const allNotes = [
     ...(Array.isArray(scRows) ? scRows.map(r => r.note || '') : []),
@@ -1630,7 +1630,7 @@ async function submitDelivery() {
       const res = await fetch(`${SB}/rest/v1/catch_weight?id=in.(${idList})`, {
         method: 'PATCH',
         headers: { ...H, Prefer: 'return=minimal' },
-        body: JSON.stringify({ status: 'delivered', notes: `${bill} → ${dest} (${date})` })
+        body: JSON.stringify({ status: '🚚 Delivered', notes: `${bill} → ${dest} (${date})` })
       })
       if (!res.ok) throw new Error(`catch_weight PATCH: HTTP ${res.status} — ${await res.text()}`)
     }
@@ -1654,7 +1654,7 @@ async function submitDelivery() {
           await fetch(`${SB}/rest/v1/catch_weight?id=in.(${idList})`, {
             method: 'PATCH',
             headers: { ...H, Prefer: 'return=minimal' },
-            body: JSON.stringify({ status: 'in_stock', notes: null })
+            body: JSON.stringify({ status: '✅ In Stock', notes: null })
           })
         } catch(_) {}
       }
