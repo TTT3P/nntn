@@ -51,6 +51,7 @@
     }
     button:hover { background: #2E7D32; }
     button:active { background: #1B5E20; transform: scale(0.98); }
+    button:disabled { background: #A5D6A7; cursor: not-allowed; }
 
     .footer { margin-top: 24px; font-size: 0.7rem; color: #BDBDBD; }
   </style>
@@ -65,24 +66,30 @@
   <input type="password" id="pwd" placeholder="••••••••" autocomplete="current-password">
   <div class="error-msg" id="err"></div>
 
-  <button onclick="doLogin()">เข้าสู่ระบบ</button>
+  <button id="btn" onclick="doLogin()">เข้าสู่ระบบ</button>
   <div class="footer">NNTN Stock v2 • สำหรับทีมงานเท่านั้น</div>
 </div>
 
 <script>
-  var AUTH_KEY   = 'nntn_auth_v1';
-  var AUTH_TOKEN = 'bm50bjIwMjY='; // ต้องตรงกับ auth.js
+  var SB           = 'https://emjqulzikpxorvpaaiww.supabase.co';
+  var KEY          = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+  var STAFF_EMAIL  = 'staff@nntn.internal';
+  var SB_TOKEN_KEY = 'nntn_sb_token';
 
   // ถ้า login อยู่แล้ว → ไปหน้าหลักเลย
-  if (localStorage.getItem(AUTH_KEY) === AUTH_TOKEN) {
+  if (localStorage.getItem(SB_TOKEN_KEY)) {
     var next = new URLSearchParams(location.search).get('next');
-    location.replace(next || '/nntn/index.html');
+    location.replace(next || 'index.html');
   }
 
-  function doLogin() {
-    var pwd = document.getElementById('pwd').value;
+  async function doLogin() {
+    var pwd   = document.getElementById('pwd').value;
     var input = document.getElementById('pwd');
-    var err = document.getElementById('err');
+    var err   = document.getElementById('err');
+    var btn   = document.getElementById('btn');
+
+    err.textContent = '';
+    input.classList.remove('error');
 
     if (!pwd) {
       err.textContent = 'กรุณาใส่รหัสผ่าน';
@@ -90,19 +97,38 @@
       return;
     }
 
-    if (btoa(pwd) === AUTH_TOKEN) {
-      localStorage.setItem(AUTH_KEY, AUTH_TOKEN);
+    btn.disabled = true;
+    btn.textContent = 'กำลังเข้าสู่ระบบ…';
+
+    try {
+      var res = await fetch(SB + '/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: { 'apikey': KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: STAFF_EMAIL, password: pwd })
+      });
+
+      if (!res.ok) {
+        err.textContent = 'รหัสผ่านไม่ถูกต้อง';
+        input.classList.add('error');
+        input.value = '';
+        input.focus();
+        return;
+      }
+
+      var data = await res.json();
+      localStorage.setItem(SB_TOKEN_KEY, data.access_token);
+
       var next = new URLSearchParams(location.search).get('next');
-      location.replace(next || '/nntn/index.html');
-    } else {
-      err.textContent = 'รหัสผ่านไม่ถูกต้อง';
-      input.classList.add('error');
-      input.value = '';
-      input.focus();
+      location.replace(next || 'index.html');
+
+    } catch (e) {
+      err.textContent = 'เชื่อมต่อไม่ได้ — ลองใหม่อีกครั้ง';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'เข้าสู่ระบบ';
     }
   }
 
-  // Enter key
   document.getElementById('pwd').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') doLogin();
     document.getElementById('pwd').classList.remove('error');

@@ -461,7 +461,8 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
 <script>
 const SB  = 'https://emjqulzikpxorvpaaiww.supabase.co'
 const KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M'
-const H    = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json' }
+const jwt  = localStorage.getItem('nntn_sb_token') || KEY
+const H    = { 'apikey': KEY, 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' }
 
 // State
 let mtItems       = []   // MT- items from items table
