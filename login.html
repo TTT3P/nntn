@@ -117,6 +117,8 @@
 
       var data = await res.json();
       localStorage.setItem(SB_TOKEN_KEY, data.access_token);
+      if (data.refresh_token) localStorage.setItem('nntn_sb_refresh', data.refresh_token);
+      if (data.expires_at)    localStorage.setItem('nntn_sb_expires', String(data.expires_at));
 
       var next = new URLSearchParams(location.search).get('next');
       location.replace(next || 'index.html');
