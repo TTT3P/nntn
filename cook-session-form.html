@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NNTN — บันทึกการต้ม</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="nntn-theme.css">
+<script src="auth.js"></script>
+<style>
+:root {
+  --red: #8B0000; --red-light: #c62828; --red-bg: #fff5f5;
+  --green: #1B5E20; --green-light: #4CAF50; --green-bg: #E8F5E9;
+  --blue: #1565C0; --blue-light: #1976D2; --blue-bg: #E3F2FD;
+  --orange: #E65100; --orange-bg: #FFF3E0;
+  --bg: #f5f5f5; --card: #fff; --border: #e0e0e0;
+  --text: #212121; --muted: #757575;
+  --header-bg: #1a1a2e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; padding-bottom: 80px; }
+
+header {
+  background: var(--header-bg); color: white; padding: 12px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+header .brand h1 { font-size: 1rem; font-weight: 700; }
+header .brand small { font-size: 0.7rem; opacity: 0.6; display: block; margin-top: 1px; }
+.back-btn {
+  font-size: 0.82rem; color: rgba(255,255,255,0.7); background: none;
+  border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;
+  padding: 5px 10px; cursor: pointer; font-family: inherit; text-decoration: none;
+}
+.back-btn:hover { color: white; border-color: rgba(255,255,255,0.4); }
+
+.wrap { padding: 14px; max-width: 600px; margin: 0 auto; }
+
+.card {
+  background: var(--card); border-radius: 10px;
+  padding: 16px; margin-bottom: 14px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.card-title {
+  font-size: 0.88rem; font-weight: 700; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 6px;
+}
+.tag {
+  font-size: 0.68rem; padding: 2px 7px; border-radius: 10px; font-weight: 600;
+}
+.tag-green { background: var(--green-bg); color: var(--green); }
+.tag-orange { background: var(--orange-bg); color: var(--orange); }
+
+label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 5px; }
+input, select, textarea {
+  width: 100%; padding: 10px 12px; font-family: inherit; font-size: 0.9rem;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  background: white; color: var(--text); transition: border-color .15s;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue-light); }
+textarea { resize: vertical; min-height: 60px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.mb { margin-bottom: 12px; }
+
+/* Shift selector */
+.shift-group { display: flex; gap: 8px; }
+.shift-btn {
+  flex: 1; padding: 10px 0; border: 1.5px solid var(--border);
+  border-radius: 8px; background: white; font-family: inherit;
+  font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all .15s;
+  color: var(--muted);
+}
+.shift-btn.active {
+  border-color: var(--blue-light); background: var(--blue-bg); color: var(--blue);
+}
+
+/* Dynamic rows */
+.dyn-row {
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px; margin-bottom: 10px; background: #fafafa;
+}
+.dyn-row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.dyn-row-num { font-size: 0.75rem; font-weight: 700; color: var(--muted); }
+.btn-danger { background: none; border: none; color: #ef5350; cursor: pointer; padding: 4px; font-size: 1rem; line-height: 1; }
+.btn-danger:hover { color: #b71c1c; }
+
+/* Toggle input type */
+.input-mode-toggle {
+  display: flex; gap: 6px; margin-bottom: 8px;
+}
+.mode-btn {
+  font-size: 0.72rem; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border);
+  cursor: pointer; background: white; font-family: inherit; color: var(--muted); transition: all .15s;
+}
+.mode-btn.active { border-color: var(--blue-light); background: var(--blue-bg); color: var(--blue); font-weight: 600; }
+
+/* Buttons */
+.btn {
+  padding: 11px 20px; border-radius: 8px; border: none;
+  font-family: inherit; font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; transition: opacity .15s;
+}
+.btn:active { opacity: 0.8; }
+.btn-primary { background: var(--red-light); color: white; width: 100%; }
+.btn-outline { background: none; border: 1.5px dashed; padding: 9px 14px; font-size: 0.82rem; width: 100%; }
+.btn-outline-green { color: var(--green); border-color: var(--green); }
+.btn-outline-orange { color: var(--orange); border-color: var(--orange); }
+
+/* Tab system */
+.tab-bar {
+  display: flex; border-bottom: 2px solid var(--border); margin-bottom: 14px; background: var(--card);
+  border-radius: 10px 10px 0 0; overflow: hidden;
+  position: sticky; top: 52px; z-index: 50;
+}
+.tab-btn {
+  flex: 1; padding: 12px 6px; background: none; border: none; font-family: inherit;
+  font-size: 0.85rem; font-weight: 600; cursor: pointer; color: var(--muted);
+  border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s;
+}
+.tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* Banners */
+.success-banner {
+  background: #E8F5E9; border: 1px solid var(--green-light); border-radius: 8px;
+  padding: 12px 16px; color: var(--green); font-size: 0.88rem;
+  margin-bottom: 14px; line-height: 1.5;
+}
+.warn-banner {
+  background: #FFF3E0; border: 1px solid #FFB300; border-radius: 8px;
+  padding: 12px 16px; color: var(--orange); font-size: 0.85rem; margin-bottom: 14px;
+}
+.loading { text-align: center; color: var(--muted); padding: 32px 0; font-size: 0.88rem; }
+
+/* History cards */
+.hist-session-card {
+  border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px;
+  overflow: hidden;
+}
+.hist-session-header {
+  padding: 12px 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+  background: white;
+}
+.hist-session-header:hover { background: #fafafa; }
+.hist-session-header.open { background: var(--blue-bg); border-bottom: 1px solid var(--blue-light); }
+.hist-session-info h3 { font-size: 0.9rem; font-weight: 700; }
+.hist-session-meta { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+.hist-badge { font-size: 0.72rem; color: var(--muted); background: #f5f5f5; padding: 3px 9px; border-radius: 10px; }
+.hist-session-body { padding: 12px 14px; background: white; }
+.hist-section-title { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 10px 0 6px; }
+.hist-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.88rem; }
+.hist-row:last-child { border-bottom: none; }
+.hist-row-name { color: var(--text); }
+.hist-row-qty { font-weight: 600; color: var(--blue); }
+.hist-empty { text-align: center; color: var(--muted); padding: 32px 0; font-size: 0.88rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>🍲 บันทึกการต้ม</h1>
+    <small>ครัวเนื้อในตำนาน</small>
+  </div>
+  <a href="index.html" class="back-btn">← กลับ</a>
+</header>
+
+<div class="wrap">
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-btn-form" onclick="switchTab('form')">📝 บันทึก</button>
+    <button class="tab-btn" id="tab-btn-history" onclick="switchTab('history')">📋 ประวัติ</button>
+  </div>
+
+  <!-- ═══════ Tab: Form ═══════ -->
+  <div class="tab-pane active" id="tab-form">
+
+    <!-- Header info -->
+    <div class="card">
+      <div class="card-title">📅 ข้อมูลรอบการต้ม</div>
+      <div class="row2">
+        <div>
+          <label>วันที่</label>
+          <input type="date" id="cs-date">
+        </div>
+        <div>
+          <label>หมายเหตุ (ถ้ามี)</label>
+          <input type="text" id="cs-note" placeholder="เช่น: น้ำเยอะขึ้น">
+        </div>
+      </div>
+      <div class="mb">
+        <label>กะ</label>
+        <div class="shift-group">
+          <button class="shift-btn active" data-shift="เช้า" onclick="selectShift(this)">🌅 เช้า</button>
+          <button class="shift-btn" data-shift="บ่าย" onclick="selectShift(this)">☀️ บ่าย</button>
+          <button class="shift-btn" data-shift="เย็น" onclick="selectShift(this)">🌙 เย็น</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cook Inputs -->
+    <div class="card">
+      <div class="card-title">
+        🥩 วัตถุดิบเข้าหม้อ
+        <span class="tag tag-orange">inputs</span>
+      </div>
+      <div id="input-rows"></div>
+      <button class="btn btn-outline btn-outline-orange" onclick="addInputRow()">+ เพิ่มวัตถุดิบ</button>
+    </div>
+
+    <!-- Cook Outputs -->
+    <div class="card">
+      <div class="card-title">
+        🍖 ผลผลิตออกจากหม้อ
+        <span class="tag tag-green">outputs</span>
+      </div>
+      <div id="output-rows"></div>
+      <button class="btn btn-outline btn-outline-green" onclick="addOutputRow()">+ เพิ่มรายการผลผลิต</button>
+    </div>
+
+    <!-- Submit -->
+    <div style="margin-bottom:14px">
+      <button class="btn btn-primary" id="submit-btn" onclick="submitSession()">💾 บันทึกรอบการต้ม</button>
+    </div>
+
+  </div><!-- end tab-form -->
+
+  <!-- ═══════ Tab: History ═══════ -->
+  <div class="tab-pane" id="tab-history">
+    <div id="hist-list"><div class="loading">แตะแท็บ ประวัติ เพื่อโหลดข้อมูล</div></div>
+  </div>
+
+</div><!-- end wrap -->
+
+<script>
+const SB  = 'https://emjqulzikpxorvpaaiww.supabase.co'
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M'
+const jwt = localStorage.getItem('nntn_sb_token') || KEY
+const H   = { 'apikey': KEY, 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' }
+
+// State
+let allItems      = []   // items from DB
+let inputRowCount = 0
+let outputRowCount = 0
+let selectedShift = 'เช้า'
+let _submitting   = false
+let historyLoaded = false
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+async function get(table, params = {}) {
+  const q = Object.entries(params).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&')
+  const r = await fetch(`${SB}/rest/v1/${table}?${q}`, { headers: H })
+  if (!r.ok) throw new Error(`GET ${table}: ${r.status}`)
+  return r.json()
+}
+
+function fmtDate(s) {
+  if (!s) return '—'
+  const d = new Date(s)
+  return d.toLocaleDateString('th-TH', { day:'2-digit', month:'2-digit', year:'2-digit' })
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+}
+
+function friendlyErr(msg) {
+  if (msg.includes('42501') || msg.includes('403') || msg.includes('permission denied'))
+    return 'ไม่มีสิทธิ์บันทึก — กรุณา login ใหม่แล้วลองอีกครั้ง'
+  return msg.replace(/\s*—\s*\{.*\}[\s\S]*$/, '')
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('cs-date').value = new Date().toISOString().split('T')[0]
+
+  try {
+    const rows = await get('items', { select: 'id,sku,name,unit', is_active: 'eq.true', order: 'sku.asc', limit: 500 })
+    allItems = Array.isArray(rows) ? rows : []
+  } catch(e) {
+    console.warn('items load failed:', e.message)
+  }
+
+  // Add first rows
+  addInputRow()
+  addOutputRow()
+})
+
+// ─── Shift selector ───────────────────────────────────────────────────────────
+function selectShift(btn) {
+  document.querySelectorAll('.shift-btn').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  selectedShift = btn.dataset.shift
+}
+
+// ─── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'))
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+  document.getElementById(`tab-${tab}`).classList.add('active')
+  document.getElementById(`tab-btn-${tab}`).classList.add('active')
+  if (tab === 'history' && !historyLoaded) loadHistory()
+}
+
+// ─── Input rows (วัตถุดิบเข้าหม้อ) ────────────────────────────────────────────
+function buildItemOptions(selected = '') {
+  return allItems.map(i =>
+    `<option value="${i.id}" data-sku="${i.sku}" data-unit="${i.unit||''}" data-name="${escHtml(i.name)}" ${i.id===selected?'selected':''}>
+      ${i.sku} | ${escHtml(i.name)}
+    </option>`
+  ).join('')
+}
+
+function addInputRow() {
+  inputRowCount++
+  const n = inputRowCount
+  const el = document.createElement('div')
+  el.className = 'dyn-row'
+  el.id = `input-row-${n}`
+  el.innerHTML = `
+    <div class="dyn-row-header">
+      <span class="dyn-row-num">วัตถุดิบ #${n}</span>
+      <button class="btn-danger" onclick="removeInputRow(${n})" title="ลบ">✕</button>
+    </div>
+    <div class="input-mode-toggle">
+      <button class="mode-btn active" id="imode-item-${n}" onclick="setInputMode(${n},'item')">📋 เลือกจาก list</button>
+      <button class="mode-btn" id="imode-free-${n}" onclick="setInputMode(${n},'free')">✏️ พิมพ์เอง</button>
+    </div>
+    <div id="ipart-item-${n}" class="mb">
+      <label>รายการ</label>
+      <select id="iitem-${n}">
+        <option value="">— เลือก item —</option>
+        ${buildItemOptions()}
+      </select>
+    </div>
+    <div id="ipart-free-${n}" class="mb" style="display:none">
+      <label>ชื่อวัตถุดิบ (freeform)</label>
+      <input type="text" id="ifree-${n}" placeholder="เช่น: น้ำซุปเก่า, กระดูก lot 08/04">
+    </div>
+    <div class="row2">
+      <div>
+        <label>น้ำหนักดิบ (กก.)</label>
+        <input type="number" id="ikg-${n}" min="0" step="0.001" placeholder="0.000">
+      </div>
+      <div>
+        <label>หมายเหตุ</label>
+        <input type="text" id="inote-${n}" placeholder="(ถ้ามี)">
+      </div>
+    </div>`
+  document.getElementById('input-rows').appendChild(el)
+}
+
+function removeInputRow(n) {
+  document.getElementById(`input-row-${n}`)?.remove()
+}
+
+function setInputMode(n, mode) {
+  const itemPart = document.getElementById(`ipart-item-${n}`)
+  const freePart = document.getElementById(`ipart-free-${n}`)
+  document.getElementById(`imode-item-${n}`).classList.toggle('active', mode === 'item')
+  document.getElementById(`imode-free-${n}`).classList.toggle('active', mode === 'free')
+  itemPart.style.display = mode === 'item' ? '' : 'none'
+  freePart.style.display = mode === 'free' ? '' : 'none'
+}
+
+// ─── Output rows (ผลผลิต) ─────────────────────────────────────────────────────
+function addOutputRow() {
+  outputRowCount++
+  const n = outputRowCount
+  const el = document.createElement('div')
+  el.className = 'dyn-row'
+  el.id = `output-row-${n}`
+  el.style.background = '#f0fff4'
+  el.innerHTML = `
+    <div class="dyn-row-header">
+      <span class="dyn-row-num">ผลผลิต #${n}</span>
+      <button class="btn-danger" onclick="removeOutputRow(${n})" title="ลบ">✕</button>
+    </div>
+    <div class="mb">
+      <label>รายการ</label>
+      <select id="oitem-${n}">
+        <option value="">— เลือก item —</option>
+        ${buildItemOptions()}
+      </select>
+    </div>
+    <div class="row3">
+      <div>
+        <label>น้ำหนักสุก (กก.) <span style="color:#c62828">*</span></label>
+        <input type="number" id="okg-${n}" min="0" step="0.001" placeholder="0.000" style="border-color:var(--green)">
+      </div>
+      <div>
+        <label>จำนวนถุง</label>
+        <input type="number" id="obags-${n}" min="0" step="1" placeholder="0">
+      </div>
+      <div>
+        <label>หมายเหตุ</label>
+        <input type="text" id="onote-${n}" placeholder="(ถ้ามี)">
+      </div>
+    </div>`
+  document.getElementById('output-rows').appendChild(el)
+}
+
+function removeOutputRow(n) {
+  document.getElementById(`output-row-${n}`)?.remove()
+}
+
+// ─── Collect rows ─────────────────────────────────────────────────────────────
+function collectInputs() {
+  const rows = []
+  document.querySelectorAll('#input-rows .dyn-row').forEach(el => {
+    const n    = el.id.replace('input-row-', '')
+    const mode = document.getElementById(`imode-item-${n}`)?.classList.contains('active') ? 'item' : 'free'
+    const item_id  = mode === 'item' ? (document.getElementById(`iitem-${n}`)?.value || null) : null
+    const freeform = mode === 'free' ? (document.getElementById(`ifree-${n}`)?.value?.trim() || null) : null
+    const kg_raw   = parseFloat(document.getElementById(`ikg-${n}`)?.value) || null
+    const note     = document.getElementById(`inote-${n}`)?.value?.trim() || null
+    // Skip completely empty rows
+    if (!item_id && !freeform && !kg_raw) return
+    rows.push({ item_id: item_id || null, freeform, kg_raw, note })
+  })
+  return rows
+}
+
+function collectOutputs() {
+  const rows = []
+  const errors = []
+  document.querySelectorAll('#output-rows .dyn-row').forEach(el => {
+    const n       = el.id.replace('output-row-', '')
+    const item_id = document.getElementById(`oitem-${n}`)?.value || null
+    const kg_cooked = parseFloat(document.getElementById(`okg-${n}`)?.value)
+    const bag_count = parseInt(document.getElementById(`obags-${n}`)?.value) || 0
+    const note    = document.getElementById(`onote-${n}`)?.value?.trim() || null
+    // Skip completely empty rows
+    if (!item_id && !kg_cooked) return
+    if (!kg_cooked || kg_cooked <= 0) {
+      errors.push(`ผลผลิต #${n}: กรุณากรอกน้ำหนักสุก`)
+      return
+    }
+    rows.push({ item_id: item_id || null, kg_cooked, bag_count, note })
+  })
+  return { rows, errors }
+}
+
+// ─── Submit ───────────────────────────────────────────────────────────────────
+async function submitSession() {
+  if (_submitting) return
+
+  const date  = document.getElementById('cs-date').value
+  const shift = selectedShift
+  const notes = document.getElementById('cs-note').value.trim() || null
+
+  if (!date) { alert('กรุณาเลือกวันที่'); return }
+
+  const inputs = collectInputs()
+  const { rows: outputs, errors: outErrors } = collectOutputs()
+
+  if (outErrors.length > 0) { alert(outErrors.join('\n')); return }
+  if (inputs.length === 0 && outputs.length === 0) {
+    alert('กรุณากรอกวัตถุดิบหรือผลผลิตอย่างน้อย 1 รายการ')
+    return
+  }
+  if (outputs.length === 0) {
+    if (!confirm('ยังไม่มีผลผลิต — บันทึกเฉพาะวัตถุดิบเข้าหม้อ?')) return
+  }
+
+  const inSummary  = inputs.length  > 0 ? `\nวัตถุดิบ: ${inputs.length} รายการ` : ''
+  const outSummary = outputs.length > 0 ? `\nผลผลิต: ${outputs.length} รายการ` : ''
+  if (!confirm(`ยืนยันบันทึกรอบการต้ม?\n\nวันที่: ${date} | กะ: ${shift}${inSummary}${outSummary}`)) return
+
+  const btn = document.getElementById('submit-btn')
+  btn.disabled = true
+  btn.textContent = '⏳ กำลังบันทึก...'
+  _submitting = true
+
+  try {
+    // 1. INSERT cook_sessions
+    const csRes = await fetch(`${SB}/rest/v1/cook_sessions`, {
+      method: 'POST',
+      headers: { ...H, Prefer: 'return=representation' },
+      body: JSON.stringify([{ session_date: date, shift, notes }])
+    })
+    if (!csRes.ok) throw new Error(`cook_sessions INSERT: HTTP ${csRes.status} — ${await csRes.text()}`)
+    const [session] = await csRes.json()
+    const sessionId = session.id
+
+    // 2. INSERT cook_inputs (if any)
+    if (inputs.length > 0) {
+      const inputRows = inputs.map(r => ({ ...r, session_id: sessionId }))
+      const inRes = await fetch(`${SB}/rest/v1/cook_inputs`, {
+        method: 'POST',
+        headers: { ...H, Prefer: 'return=minimal' },
+        body: JSON.stringify(inputRows)
+      })
+      if (!inRes.ok) throw new Error(`cook_inputs INSERT: HTTP ${inRes.status} — ${await inRes.text()}`)
+    }
+
+    // 3. INSERT cook_outputs (if any)
+    if (outputs.length > 0) {
+      const outputRows = outputs.map(r => ({ ...r, session_id: sessionId }))
+      const outRes = await fetch(`${SB}/rest/v1/cook_outputs`, {
+        method: 'POST',
+        headers: { ...H, Prefer: 'return=minimal' },
+        body: JSON.stringify(outputRows)
+      })
+      if (!outRes.ok) throw new Error(`cook_outputs INSERT: HTTP ${outRes.status} — ${await outRes.text()}`)
+    }
+
+    // Success
+    btn.textContent = '✅ บันทึกแล้ว'
+    historyLoaded = false
+
+    const totalKg = outputs.reduce((s,r) => s + r.kg_cooked, 0)
+    const successHtml = `<div class="success-banner">
+      ✅ บันทึกสำเร็จ! | ${date} | กะ${shift}<br>
+      วัตถุดิบ <b>${inputs.length} รายการ</b> | ผลผลิต <b>${outputs.length} รายการ</b>
+      ${totalKg > 0 ? ` | รวม <b>${totalKg.toFixed(3)} กก.</b>` : ''}
+    </div>`
+    document.querySelector('.tab-bar').insertAdjacentHTML('afterend', successHtml)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    // Reset form
+    setTimeout(() => {
+      document.getElementById('cs-note').value = ''
+      document.getElementById('cs-date').value = new Date().toISOString().split('T')[0]
+      document.getElementById('input-rows').innerHTML = ''
+      document.getElementById('output-rows').innerHTML = ''
+      inputRowCount = 0; outputRowCount = 0
+      addInputRow(); addOutputRow()
+      btn.disabled = false
+      btn.textContent = '💾 บันทึกรอบการต้ม'
+    }, 2000)
+
+  } catch(e) {
+    alert(`❌ บันทึกไม่สำเร็จ: ${friendlyErr(e.message)}`)
+    btn.disabled = false
+    btn.textContent = '💾 บันทึกรอบการต้ม'
+  } finally {
+    _submitting = false
+  }
+}
+
+// ─── History ──────────────────────────────────────────────────────────────────
+async function loadHistory() {
+  const listEl = document.getElementById('hist-list')
+  listEl.innerHTML = '<div class="loading">กำลังโหลดประวัติ...</div>'
+  try {
+    const sessions = await get('cook_sessions', {
+      select: 'id,session_date,shift,notes,created_at,cook_inputs(id,item_id,kg_raw,freeform,note,items(sku,name)),cook_outputs(id,item_id,kg_cooked,bag_count,note,items(sku,name))',
+      order: 'session_date.desc,created_at.desc',
+      limit: '30'
+    })
+    const rows = Array.isArray(sessions) ? sessions : []
+    historyLoaded = true
+    if (rows.length === 0) {
+      listEl.innerHTML = '<div class="hist-empty">ยังไม่มีประวัติการต้ม</div>'
+      return
+    }
+    listEl.innerHTML = rows.map((s, i) => renderSessionCard(s, i)).join('')
+  } catch(e) {
+    listEl.innerHTML = `<div class="warn-banner">❌ โหลดประวัติไม่ได้: ${e.message}</div>`
+  }
+}
+
+function renderSessionCard(s, i) {
+  const inputs  = Array.isArray(s.cook_inputs)  ? s.cook_inputs  : []
+  const outputs = Array.isArray(s.cook_outputs) ? s.cook_outputs : []
+  const totalOut = outputs.reduce((sum, r) => sum + (r.kg_cooked || 0), 0)
+  const shiftLabel = { เช้า: '🌅', บ่าย: '☀️', เย็น: '🌙' }[s.shift] || ''
+
+  const inputsHtml = inputs.length === 0 ? '<div style="color:var(--muted);font-size:.82rem">ไม่มีข้อมูล</div>' :
+    inputs.map(r => {
+      const name = r.items?.name || r.freeform || '(ไม่ระบุ)'
+      const qty  = r.kg_raw ? `${r.kg_raw} กก.` : '—'
+      return `<div class="hist-row">
+        <span class="hist-row-name">${escHtml(name)}</span>
+        <span class="hist-row-qty">${qty}</span>
+      </div>`
+    }).join('')
+
+  const outputsHtml = outputs.length === 0 ? '<div style="color:var(--muted);font-size:.82rem">ไม่มีข้อมูล</div>' :
+    outputs.map(r => {
+      const name = r.items?.name || '(ไม่ระบุ)'
+      const qty  = `${r.kg_cooked} กก.${r.bag_count ? ` / ${r.bag_count} ถุง` : ''}`
+      return `<div class="hist-row">
+        <span class="hist-row-name">${escHtml(name)}</span>
+        <span class="hist-row-qty">${qty}</span>
+      </div>`
+    }).join('')
+
+  return `
+  <div class="hist-session-card">
+    <div class="hist-session-header" id="hh-${i}" onclick="toggleHistCard(${i})">
+      <div class="hist-session-info">
+        <h3>${fmtDate(s.session_date)} ${shiftLabel} กะ${s.shift}</h3>
+        <div class="hist-session-meta">
+          ${inputs.length} วัตถุดิบ · ${outputs.length} ผลผลิต
+          ${totalOut > 0 ? ` · รวม ${totalOut.toFixed(3)} กก.` : ''}
+          ${s.notes ? ` · ${escHtml(s.notes)}` : ''}
+        </div>
+      </div>
+      <span class="hist-badge" id="hbadge-${i}">▼</span>
+    </div>
+    <div class="hist-session-body" id="hbody-${i}" style="display:none">
+      <div class="hist-section-title">🥩 วัตถุดิบเข้าหม้อ</div>
+      ${inputsHtml}
+      <div class="hist-section-title" style="margin-top:10px">🍖 ผลผลิต</div>
+      ${outputsHtml}
+    </div>
+  </div>`
+}
+
+function toggleHistCard(i) {
+  const body   = document.getElementById(`hbody-${i}`)
+  const header = document.getElementById(`hh-${i}`)
+  const badge  = document.getElementById(`hbadge-${i}`)
+  const isOpen = body.style.display !== 'none'
+  body.style.display = isOpen ? 'none' : 'block'
+  header.classList.toggle('open', !isOpen)
+  badge.textContent  = isOpen ? '▼' : '▲'
+}
+</script>
+</body>
+</html>
