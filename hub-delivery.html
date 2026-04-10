@@ -1608,7 +1608,36 @@ async function submitDelivery() {
     })
     if (!res.ok) throw new Error(`catch_weight PATCH: HTTP ${res.status} — ${await res.text()}`)
 
-    // 2. INSERT stock_counts withdrawal for each non-meat item
+    // 2. INSERT stock.deliveries header + stock.delivery_lines
+    const SH = { ...H, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+    const dlHeaderRes = await fetch(`${SB}/rest/v1/deliveries`, {
+      method: 'POST',
+      headers: { ...SH, Prefer: 'return=representation' },
+      body: JSON.stringify([{ bill_no: bill, branch: dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : dest, date, channel: 'hub-delivery' }])
+    })
+    if (!dlHeaderRes.ok) throw new Error(`deliveries INSERT: HTTP ${dlHeaderRes.status} — ${await dlHeaderRes.text()}`)
+    const [dlHeader] = await dlHeaderRes.json()
+    const deliveryId = dlHeader.id
+
+    const dlLines = []
+    allBagIds.forEach(id => {
+      const bag = bagCache[id]
+      if (!bag) return
+      dlLines.push({ delivery_id: deliveryId, catch_weight_id: Number(id), item_id: bag.item_id, weight_g: bag.weight_g, qty: 1 })
+    })
+    nmWithdrawals.forEach(w => {
+      dlLines.push({ delivery_id: deliveryId, item_id: w.item_id, qty: w.qty, weight_g: null, catch_weight_id: null })
+    })
+    if (dlLines.length > 0) {
+      const dlLinesRes = await fetch(`${SB}/rest/v1/delivery_lines`, {
+        method: 'POST',
+        headers: { ...SH, Prefer: 'return=minimal' },
+        body: JSON.stringify(dlLines)
+      })
+      if (!dlLinesRes.ok) throw new Error(`delivery_lines INSERT: HTTP ${dlLinesRes.status} — ${await dlLinesRes.text()}`)
+    }
+
+    // 3. INSERT stock_counts withdrawal for each non-meat item
     if (nmWithdrawals.length > 0) {
       const inserts = nmWithdrawals.map(w => ({
         item_id:      w.item_id,
