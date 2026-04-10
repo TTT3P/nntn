@@ -705,7 +705,7 @@ function renderMeatChips(n) {
 
   chipsEl.innerHTML = Object.entries(lots).sort().map(([lot, bags]) => {
     const chips = bags.map(b => {
-      const cw = b.legacy_cw_row ? `r${b.legacy_cw_row}` : '#' + b.id.substring(0, 6)
+      const cw = b.legacy_cw_row ? `${b.legacy_cw_row}` : '#' + b.id.substring(0, 6)
       const kg = ((b.weight_g || 0) / 1000).toFixed(3)
       return `<div class="lot-chip selected" style="cursor:default">
         <div class="lot-name">${cw}</div>
@@ -749,7 +749,7 @@ function openBagModal(n) {
   } else {
     body.innerHTML = Object.entries(lots).sort().map(([lot, lotBags]) => {
       const chips = lotBags.map(b => {
-        const cw = b.legacy_cw_row ? `r${b.legacy_cw_row}` : '#' + b.id.substring(0, 6)
+        const cw = b.legacy_cw_row ? `${b.legacy_cw_row}` : '#' + b.id.substring(0, 6)
         const kg = ((b.weight_g || 0) / 1000).toFixed(3)
         const isSel = selectedBags.has(b.id) ? ' selected' : ''
         return `<div class="lot-chip${isSel}" id="bagchip-${b.id}"
@@ -887,7 +887,7 @@ function updatePreview() {
     state.selectedBags.forEach(id => {
       const b = bagCache[id]
       if (!b) return
-      const cw = b.legacy_cw_row ? `r${b.legacy_cw_row}` : '#' + id.substring(0, 6)
+      const cw = b.legacy_cw_row ? `${b.legacy_cw_row}` : '#' + id.substring(0, 6)
       const lot = fmtDate(b.lot_date)
       const kg  = ((b.weight_g || 0) / 1000).toFixed(3)
       meatRows.push({ name, cw, lot, kg: parseFloat(kg) })
@@ -1548,7 +1548,18 @@ function escHtml(s) {
 }
 
 // ─── Submit ───────────────────────────────────────────────────────────────────
+let _submitting = false
+
+function friendlyErr(msg) {
+  if (msg.includes('42501') || msg.includes('403') || msg.includes('permission denied'))
+    return 'ไม่มีสิทธิ์บันทึก — กรุณา login ใหม่แล้วลองอีกครั้ง'
+  if (msg.includes('404')) return 'ไม่พบข้อมูล — กรุณารีเฟรชหน้าแล้วลองใหม่'
+  // Strip raw JSON/code payload
+  return msg.replace(/\s*—\s*\{.*\}[\s\S]*$/, '').replace(/\s*—\s*".*"$/, '')
+}
+
 async function submitDelivery() {
+  if (_submitting) return
   const date = document.getElementById('dl-date').value
   const dest = document.getElementById('dl-dest').value
   const bill = document.getElementById('dl-bill').value.trim()
@@ -1588,6 +1599,11 @@ async function submitDelivery() {
     return
   }
 
+  if (allBagIds.length === 0 && nmWithdrawals.length === 0) {
+    alert('กรุณาเลือกถุงเนื้อ หรือเพิ่มรายการ Non-meat อย่างน้อย 1 รายการ')
+    return
+  }
+
   const bagCount = allBagIds.length
   const totalKg  = allBagIds.reduce((s, id) => s + (bagCache[id]?.weight_g || 0) / 1000, 0)
   const nmSummary = nmWithdrawals.length > 0
@@ -1598,27 +1614,46 @@ async function submitDelivery() {
   const btn = document.getElementById('submit-btn')
   btn.disabled = true
   btn.textContent = '⏳ กำลังบันทึก...'
+  _submitting = true
+
+  const idList = allBagIds.map(id => `"${id}"`).join(',')
 
   try {
     // 1. PATCH catch_weight → delivered
-    const idList = allBagIds.map(id => `"${id}"`).join(',')
-    const res = await fetch(`${SB}/rest/v1/catch_weight?id=in.(${idList})`, {
-      method: 'PATCH',
-      headers: { ...H, Prefer: 'return=minimal' },
-      body: JSON.stringify({ status: 'delivered', notes: `${bill} → ${dest} (${date})` })
-    })
-    if (!res.ok) throw new Error(`catch_weight PATCH: HTTP ${res.status} — ${await res.text()}`)
+    if (allBagIds.length > 0) {
+      const res = await fetch(`${SB}/rest/v1/catch_weight?id=in.(${idList})`, {
+        method: 'PATCH',
+        headers: { ...H, Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: 'delivered', notes: `${bill} → ${dest} (${date})` })
+      })
+      if (!res.ok) throw new Error(`catch_weight PATCH: HTTP ${res.status} — ${await res.text()}`)
+    }
 
     // 2. INSERT stock.deliveries header + stock.delivery_lines
     const SH = { ...H, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
-    const dlHeaderRes = await fetch(`${SB}/rest/v1/deliveries`, {
-      method: 'POST',
-      headers: { ...SH, Prefer: 'return=representation' },
-      body: JSON.stringify([{ bill_no: bill, branch: dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : dest, date, channel: 'hub-delivery' }])
-    })
-    if (!dlHeaderRes.ok) throw new Error(`deliveries INSERT: HTTP ${dlHeaderRes.status} — ${await dlHeaderRes.text()}`)
-    const [dlHeader] = await dlHeaderRes.json()
-    const deliveryId = dlHeader.id
+    let deliveryId = null
+    try {
+      const dlHeaderRes = await fetch(`${SB}/rest/v1/deliveries`, {
+        method: 'POST',
+        headers: { ...SH, Prefer: 'return=representation' },
+        body: JSON.stringify([{ bill_no: bill, branch: dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : dest, date, channel: 'hub-delivery' }])
+      })
+      if (!dlHeaderRes.ok) throw new Error(`deliveries INSERT: HTTP ${dlHeaderRes.status} — ${await dlHeaderRes.text()}`)
+      const [dlHeader] = await dlHeaderRes.json()
+      deliveryId = dlHeader.id
+    } catch(e2) {
+      // Rollback catch_weight if deliveries INSERT failed
+      if (allBagIds.length > 0) {
+        try {
+          await fetch(`${SB}/rest/v1/catch_weight?id=in.(${idList})`, {
+            method: 'PATCH',
+            headers: { ...H, Prefer: 'return=minimal' },
+            body: JSON.stringify({ status: 'in_stock', notes: null })
+          })
+        } catch(_) {}
+      }
+      throw e2
+    }
 
     const dlLines = []
     allBagIds.forEach(id => {
@@ -1683,9 +1718,11 @@ async function submitDelivery() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
 
   } catch(e) {
-    alert(`❌ บันทึกไม่สำเร็จ: ${e.message}`)
+    alert(`❌ บันทึกไม่สำเร็จ: ${friendlyErr(e.message)}`)
     btn.disabled = false
     btn.textContent = '🚛 บันทึกส่งออก'
+  } finally {
+    _submitting = false
   }
 }
 
