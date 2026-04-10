@@ -208,7 +208,10 @@
 <script>
 const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const jwt = localStorage.getItem('nntn_sb_token') || SUPABASE_KEY;
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  global: { headers: { Authorization: 'Bearer ' + jwt } }
+});
 
 const CAT_LABELS = {
   seasoning:  '🧂 เครื่องปรุงน้ำซุป',
