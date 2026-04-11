@@ -313,7 +313,7 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
 <div class="tabs-wrap">
 <div class="tabs">
   <button class="tab-btn active" onclick="switchTab('receive')">🛒 รับเนื้อสด</button>
-  <button class="tab-btn" onclick="switchTab('produce')">🫕 บันทึกผลผลิต</button>
+  <button class="tab-btn" onclick="switchTab('produce')">🔥 หม้อตุ๋น</button>
   <button class="tab-btn" onclick="switchTab('process')">♻️ แปรรูป</button>
 <button class="tab-btn" onclick="switchTab('stock')">📊 สต๊อกปัจจุบัน</button>
 </div>
@@ -674,7 +674,7 @@ async function submitReceive() {
         bag_no:       idx + 1,
         weight_g:     g,
         warehouse:    'A',
-        status:       'in_stock',
+        status:       '✅ In Stock',
         date_recorded: date,
         notes:        bill || null,
         source:       'web-receive'
@@ -1454,7 +1454,7 @@ async function submitProcess() {
       bag_no:       idx + 1,
       weight_g:     g,
       warehouse:    outWarehouse,
-      status:       'in_stock',
+      status:       '✅ In Stock',
       date_recorded: date,
       notes:        `แปรรูปจาก ${inputBags.length} ถุง (${type})`,
       source:       'web-process'
@@ -1474,12 +1474,12 @@ async function submitProcess() {
   btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'
 
   try {
-    // PATCH input bags → status='processed'
+    // PATCH input bags → '🔄 Repacked' (แปรรูป = repack, material preserved)
     const idList = inputBags.map(b => `"${b.id}"`).join(',')
     const r1 = await fetch(`${SB}/rest/v1/catch_weight?id=in.(${idList})`, {
       method: 'PATCH',
       headers: { ...H, Prefer: 'return=minimal' },
-      body: JSON.stringify({ status: 'processed', notes: `แปรรูป ${date}` })
+      body: JSON.stringify({ status: '🔄 Repacked', notes: `แปรรูป ${date}` })
     })
     if (!r1.ok) throw new Error(await r1.text())
 
