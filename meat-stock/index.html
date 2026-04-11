@@ -208,6 +208,41 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
 .stock-bag-item .btn-adj:hover { border-color: var(--red-light); color: var(--red-light); }
 
 /* Modal */
+/* ── Cooking Kanban ── */
+.cook-widget-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.cook-widget { background: white; border: 2px solid var(--border); border-radius: 10px; padding: 12px 8px; text-align: center; }
+.cook-widget-val { font-size: 1.6rem; font-weight: 800; color: var(--text); line-height: 1; }
+.cook-widget-label { font-size: 0.68rem; color: var(--muted); margin-top: 4px; }
+.kanban-board { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+@media (max-width: 640px) { .kanban-board { grid-template-columns: 1fr; } }
+.kanban-col { background: #fafafa; border-radius: 10px; padding: 10px 8px; min-height: 180px; border: 1px solid var(--border); }
+.kanban-col-plan { border-top: 3px solid #3b82f6; }
+.kanban-col-cook { border-top: 3px solid #E65100; }
+.kanban-col-done { border-top: 3px solid var(--green-light); }
+.kanban-col-head { font-size: 0.76rem; font-weight: 700; color: var(--muted); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; padding: 0 2px; }
+.kanban-col-count { background: rgba(0,0,0,0.08); padding: 1px 8px; border-radius: 10px; font-size: 0.68rem; color: var(--text); font-weight: 700; }
+.kanban-col-body { min-height: 80px; }
+.kanban-empty { text-align: center; color: #bbb; font-size: 0.74rem; padding: 18px 4px; }
+.kanban-card { background: white; border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 3px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.08); cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; }
+.kanban-card:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+.kanban-card-plan { border-left-color: #3b82f6; }
+.kanban-card-cook { border-left-color: #E65100; }
+.kanban-card-done { border-left-color: var(--green-light); }
+.kanban-card-title { font-size: 0.86rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.kanban-card-meta { font-size: 0.72rem; color: var(--muted); margin-bottom: 3px; line-height: 1.3; }
+.kanban-card-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.66rem; font-weight: 700; margin-top: 3px; }
+.kct-time { background: #FFF3E0; color: #E65100; }
+.kct-yield-good { background: #E8F5E9; color: var(--green); }
+.kct-yield-warn { background: #FFF3E0; color: #E65100; }
+.kct-yield-bad { background: var(--red-bg); color: var(--red-light); }
+.kct-plan { background: var(--blue-bg); color: var(--blue); }
+.cook-sec { background: #f9f9f9; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+.cook-sec-label { font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.cook-bag-picker { max-height: 180px; overflow-y: auto; border: 1.5px solid var(--border); border-radius: 8px; padding: 6px; background: white; }
+.cook-bag-chip { display: inline-block; padding: 4px 10px; margin: 3px; background: #f0f0f0; border-radius: 12px; font-size: 0.76rem; cursor: pointer; border: 1.5px solid transparent; user-select: none; }
+.cook-bag-chip:hover { background: #e0e0e0; }
+.cook-bag-chip.selected { background: var(--blue-bg); border-color: var(--blue-light); color: var(--blue); font-weight: 600; }
+
 .modal-overlay {
   display: none; position: fixed; inset: 0; z-index: 200;
   background: rgba(0,0,0,0.5); align-items: flex-end; justify-content: center;
@@ -303,22 +338,39 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
   <button class="btn btn-primary" onclick="submitReceive()">✅ บันทึกรับเนื้อสด</button>
 </div>
 
-<!-- ════ บันทึกผลผลิต ════ -->
+<!-- ════ หม้อตุ๋น (Cooking Kanban) ════ -->
 <div class="page" id="page-produce">
-  <div class="card">
-    <div class="card-title">🫕 บันทึกผลผลิตตุ๋น <span class="tag">Section B</span></div>
-    <div class="row2">
-      <div><label>วันที่ผลิต</label><input type="date" id="prod-date"></div>
-      <div><label>ผู้บันทึก</label><input type="text" id="prod-user" placeholder="ชื่อ"></div>
+  <div class="cook-widget-bar">
+    <div class="cook-widget">
+      <div class="cook-widget-val" id="cw-plan-count">—</div>
+      <div class="cook-widget-label">📋 วางแผน</div>
+    </div>
+    <div class="cook-widget" style="border-color:#E6510040">
+      <div class="cook-widget-val" id="cw-cook-count" style="color:#E65100">—</div>
+      <div class="cook-widget-label">🔥 กำลังต้ม</div>
+    </div>
+    <div class="cook-widget" style="border-color:#4CAF5040">
+      <div class="cook-widget-val" id="cw-done-count" style="color:var(--green)">—</div>
+      <div class="cook-widget-label">✅ เสร็จวันนี้</div>
     </div>
   </div>
 
-  <div id="prod-items"></div>
+  <button class="btn btn-primary" onclick="openNewPotModal()" style="margin-bottom:14px">+ เปิดหม้อใหม่</button>
 
-  <button class="btn btn-outline btn-outline-green" style="width:100%;margin-bottom:14px" onclick="addProdItem()">
-    + เพิ่มรายการตุ๋น
-  </button>
-  <button class="btn btn-primary" onclick="submitProduce()">✅ บันทึกผลผลิต</button>
+  <div class="kanban-board">
+    <div class="kanban-col kanban-col-plan">
+      <div class="kanban-col-head"><span>📋 วางแผน</span><span class="kanban-col-count" id="kc-plan">0</span></div>
+      <div class="kanban-col-body" id="kc-plan-body"><div class="kanban-empty">ไม่มี</div></div>
+    </div>
+    <div class="kanban-col kanban-col-cook">
+      <div class="kanban-col-head"><span>🔥 กำลังต้ม</span><span class="kanban-col-count" id="kc-cook">0</span></div>
+      <div class="kanban-col-body" id="kc-cook-body"><div class="kanban-empty">ไม่มี</div></div>
+    </div>
+    <div class="kanban-col kanban-col-done">
+      <div class="kanban-col-head"><span>✅ เสร็จวันนี้</span><span class="kanban-col-count" id="kc-done">0</span></div>
+      <div class="kanban-col-body" id="kc-done-body"><div class="kanban-empty">ยังไม่มี</div></div>
+    </div>
+  </div>
 </div>
 
 <!-- ════ แปรรูป ════ -->
@@ -479,7 +531,8 @@ function switchTab(name) {
     b.classList.toggle('active', ['receive','produce','process','stock'][i]===name))
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
   document.getElementById('page-'+name).classList.add('active')
-  if(name==='stock') loadStock()
+  if(name==='stock')   loadStock()
+  if(name==='produce') loadKanban()
 }
 
 // ── Global data ──
@@ -489,7 +542,7 @@ let recvItemCount = 0, procInputCount = 0
 // ── Init ──
 async function init() {
   const [its, cw] = await Promise.all([
-    get('items', { select:'id,name,sku,category,byproduct_item_id,byproduct_required', order:'name' }),
+    get('items', { select:'id,name,sku,category,item_category,byproduct_item_id,byproduct_required,yield_expected_min,yield_expected_max', order:'name' }),
     get('catch_weight', { 'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name)', 'status':'eq.✅ In Stock', 'limit':1000 })
   ])
   items = Array.isArray(its) ? its : []
@@ -506,15 +559,17 @@ async function init() {
   items.filter(i=>i.sku&&i.sku.startsWith('MT')).forEach(i => { const o=document.createElement('option'); o.value=i.id; o.textContent=`${i.sku} | ${i.name}`; skuSel.appendChild(o) })
 
   // Set today dates
-  ;['recv-date','prod-date','proc-date','exp-date'].forEach(id => {
+  ;['recv-date','proc-date','exp-date'].forEach(id => {
     const el=document.getElementById(id); if(el) el.value=today()
   })
 
-  // Add first items
+  // Add first items (Tab 2 produce = Kanban, lazy-load on switchTab)
   addRecvItem()
-  addProdItem()
   addProcInput()
   addExpItem()
+
+  // Preload Kanban (Tab 2 is visible by default? only if user lands there — use lazy)
+  // loadKanban() will be called via switchTab when user enters Tab 2
 }
 
 // ════ รับเนื้อสด ════
@@ -654,431 +709,544 @@ async function submitReceive() {
   }
 }
 
-// ════ บันทึกผลผลิต (multi-card) ════
-let prodItemCount = 0
+// ════ หม้อตุ๋น (Cooking Kanban) ════
+let kanbanSessions = []
+let currentClosePot = null
+let currentNewPotBags = new Set()
+let _npRawBagsByItem = {}
 
-function addProdItem() {
-  prodItemCount++
-  const n = prodItemCount
-  const rawItems = items.filter(i => i.category === 'meat_raw')
-  const rawOpts = rawItems.map(i =>
-    `<option value="${i.id}" data-name="${i.name}" data-byproduct="${i.byproduct_item_id||''}" data-byrequired="${i.byproduct_required||false}">${i.name}</option>`
-  ).join('')
-
-  const div = document.createElement('div')
-  div.className = 'card'; div.id = `prod-item-${n}`; div.style.borderLeft = '4px solid var(--red-light)'
-  div.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div class="card-title" style="margin:0">รายการที่ ${n}</div>
-      ${n>1?`<button class="btn-danger" onclick="removeProdItem(${n})">✕ ลบ</button>`:''}
-    </div>
-
-    <!-- INPUT -->
-    <div style="background:#f9f9f9;border-radius:8px;padding:12px;margin-bottom:10px">
-      <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">เนื้อสดที่เบิก (INPUT)</div>
-      <div class="row2">
-        <div><label>ประเภทเนื้อสด</label>
-          <select id="prod-raw-${n}" onchange="onProdRawChange(${n})">
-            <option value="">— เลือก —</option>${rawOpts}
-          </select>
-        </div>
-        <div><label>Lot ที่ใช้</label>
-          <div id="prod-lots-${n}" class="lot-chips" style="margin-top:2px"><div class="loading" style="font-size:.78rem">เลือกเนื้อสดก่อน</div></div>
-        </div>
-      </div>
-      <div id="prod-lot-hint-${n}" style="font-size:.78rem;color:var(--blue);margin-bottom:8px"></div>
-      <div><label>น้ำหนักเนื้อดิบที่ใช้ (กก.)</label>
-        <input type="number" id="prod-raw-kg-${n}" step="0.001" placeholder="0.000" oninput="calcProdYield(${n})">
-      </div>
-    </div>
-
-    <!-- MAIN OUTPUT -->
-    <div style="background:#e8f4fd;border-radius:8px;padding:12px;margin-bottom:10px">
-      <div style="font-size:.72rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">ผลผลิตหลัก (OUTPUT)</div>
-      <div class="row2">
-        <div><label>ชื่อเนื้อตุ๋น</label>
-          <select id="prod-cooked-${n}" onchange="calcProdYield(${n})">
-            <option value="">— เลือก —</option>
-            ${items.filter(i=>i.category==='meat_cooked').map(i=>`<option value="${i.id}">${i.name}</option>`).join('')}
-          </select>
-        </div>
-        <div><label>จำนวนถุง</label>
-          <input type="number" id="prod-bags-${n}" min="1" placeholder="0" oninput="updateProdBagRows(${n})">
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:40px 1fr 70px;gap:6px;font-size:.78rem;color:var(--muted);padding:6px 0;margin-bottom:4px">
-        <span>ถุง</span><span>น้ำหนัก (กรัม)</span><span>กก.</span>
-      </div>
-      <div id="prod-bag-rows-${n}"><div class="loading">ระบุจำนวนถุงก่อน</div></div>
-      <div class="sum-row">รวม output หลัก: <b id="prod-cooked-sum-${n}">0.000</b> กก.</div>
-    </div>
-
-    <!-- BY-PRODUCT (แสดงเมื่อ raw item มี byproduct_item_id) -->
-    <div id="prod-byp-section-${n}" style="display:none;background:#FFF8E1;border-radius:8px;padding:12px;margin-bottom:10px;border:1px solid #FFE082">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:.72rem;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.05em">
-          By-product — <span id="prod-byp-name-${n}"></span>
-        </div>
-        <button id="prod-byp-remove-${n}" class="btn-danger btn-sm" style="font-size:.72rem"
-                onclick="removeProdByp(${n})">✕ ไม่มีรอบนี้</button>
-      </div>
-      <div class="row2" style="margin-bottom:8px">
-        <div><label>จำนวนถุง</label>
-          <input type="number" id="prod-byp-bags-${n}" min="1" placeholder="0" oninput="updateProdBypRows(${n})">
-        </div>
-        <div style="display:flex;align-items:flex-end">
-          <div class="sum-row" style="border:none;padding:0">รวม: <b id="prod-byp-sum-${n}">0.000</b> กก.</div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:40px 1fr 70px;gap:6px;font-size:.78rem;color:var(--muted);padding:6px 0;margin-bottom:4px">
-        <span>ถุง</span><span>น้ำหนัก (กรัม)</span><span>กก.</span>
-      </div>
-      <div id="prod-byp-rows-${n}"><div class="loading">ระบุจำนวนถุงก่อน</div></div>
-    </div>
-
-    <!-- YIELD -->
-    <div class="yield-box" id="prod-yield-box-${n}" style="display:none">
-      <div class="yield-row"><span>Input</span><span class="val" id="yb-in-${n}">—</span></div>
-      <div class="yield-row"><span>Output หลัก</span><span class="val" id="yb-out-${n}">—</span></div>
-      <div class="yield-row" id="yb-byp-row-${n}" style="display:none"><span>By-product</span><span class="val" id="yb-byp-${n}">—</span></div>
-      <div class="yield-row"><span>Yield รวม</span><span class="val" id="yb-pct-${n}">—</span></div>
-    </div>`
-  document.getElementById('prod-items').appendChild(div)
-  renumberProdItems()
+async function loadKanban() {
+  try {
+    const tday = today()
+    const sessions = await get('cook_sessions', {
+      select: 'id,session_date,shift,status,notes,created_at,updated_at,cook_inputs(id,kg_raw,item_id,items(id,sku,name,yield_expected_min,yield_expected_max)),cook_outputs(id,kg_cooked,bag_count,item_id,items(id,sku,name))',
+      session_date: `eq.${tday}`,
+      order: 'created_at.desc',
+      limit: '50'
+    })
+    kanbanSessions = Array.isArray(sessions) ? sessions : []
+    renderKanbanBoard()
+  } catch(e) {
+    const errEl = document.getElementById('kc-cook-body')
+    if (errEl) errEl.innerHTML = `<div class="kanban-empty" style="color:var(--red-light)">❌ ${e.message}</div>`
+  }
 }
 
-function removeProdItem(n) {
-  document.getElementById(`prod-item-${n}`)?.remove()
-  renumberProdItems()
+function renderKanbanBoard() {
+  const plan = kanbanSessions.filter(s => s.status === 'open')
+  const cook = kanbanSessions.filter(s => s.status === 'cooking')
+  const done = kanbanSessions.filter(s => s.status === 'done')
+
+  document.getElementById('cw-plan-count').textContent = plan.length
+  document.getElementById('cw-cook-count').textContent = cook.length
+  document.getElementById('cw-done-count').textContent = done.length
+  document.getElementById('kc-plan').textContent = plan.length
+  document.getElementById('kc-cook').textContent = cook.length
+  document.getElementById('kc-done').textContent = done.length
+
+  const planBody = document.getElementById('kc-plan-body')
+  const cookBody = document.getElementById('kc-cook-body')
+  const doneBody = document.getElementById('kc-done-body')
+
+  planBody.innerHTML = plan.length
+    ? plan.map(s => renderKanbanCard(s, 'plan')).join('')
+    : '<div class="kanban-empty">ไม่มี</div>'
+  cookBody.innerHTML = cook.length
+    ? cook.map(s => renderKanbanCard(s, 'cook')).join('')
+    : '<div class="kanban-empty">ไม่มี</div>'
+  doneBody.innerHTML = done.length
+    ? done.map(s => renderKanbanCard(s, 'done')).join('')
+    : '<div class="kanban-empty">ยังไม่มี</div>'
 }
 
-function renumberProdItems() {
-  document.querySelectorAll('#prod-items .card').forEach((card, idx) => {
-    const titleEl = card.querySelector('.card-title')
-    if (titleEl) titleEl.textContent = `รายการที่ ${idx + 1}`
-  })
-}
+function renderKanbanCard(session, type) {
+  const inputs = session.cook_inputs || []
+  const outputs = session.cook_outputs || []
+  const rawKg = inputs.reduce((s, i) => s + (Number(i.kg_raw) || 0), 0)
+  const cookedKg = outputs.reduce((s, o) => s + (Number(o.kg_cooked) || 0), 0)
+  const bagCount = outputs.reduce((s, o) => s + (Number(o.bag_count) || 0), 0)
+  const rawName = inputs[0]?.items?.name || '—'
+  const cookedName = outputs[0]?.items?.name || '—'
+  const shift = session.shift || ''
+  const potName = session.notes || `Session ${session.id.substring(0,6)}`
 
-function onProdRawChange(n) {
-  const sel = document.getElementById(`prod-raw-${n}`)
-  const opt = sel.selectedOptions[0]
-  const bypId   = opt?.dataset?.byproduct || ''
-  const bypReq  = opt?.dataset?.byrequired === 'true'
-  const bypItem = bypId ? items.find(i => i.id === bypId) : null
+  const createdAt = new Date(session.created_at)
+  const now = new Date()
+  const elapsedMin = Math.floor((now - createdAt) / 60000)
+  const elapsedStr = elapsedMin < 60
+    ? `${elapsedMin} นาที`
+    : `${Math.floor(elapsedMin/60)} ชม ${elapsedMin%60} นาที`
 
-  // show/hide by-product section
-  const sec = document.getElementById(`prod-byp-section-${n}`)
-  if (bypItem) {
-    sec.style.display = 'block'
-    document.getElementById(`prod-byp-name-${n}`).textContent = bypItem.name
-    // required = ลบไม่ได้
-    const rmBtn = document.getElementById(`prod-byp-remove-${n}`)
-    if (rmBtn) rmBtn.style.display = bypReq ? 'none' : ''
-    // pre-fill 1 ถุงถ้า required
-    if (bypReq) {
-      document.getElementById(`prod-byp-bags-${n}`).value = 1
-      updateProdBypRows(n)
-    }
+  let yieldTag = ''
+  if (type === 'done' && rawKg > 0) {
+    const yieldPct = (cookedKg / rawKg) * 100
+    const expMin = inputs[0]?.items?.yield_expected_min
+    let yieldCls = 'kct-yield-good'
+    if (expMin != null && yieldPct < Number(expMin)) yieldCls = 'kct-yield-bad'
+    yieldTag = `<span class="kanban-card-tag ${yieldCls}">yield ${yieldPct.toFixed(1)}%</span>`
+  }
+
+  let body = ''
+  if (type === 'plan') {
+    body = `<div class="kanban-card-meta">กะ${shift} | รอเริ่ม</div>
+            <span class="kanban-card-tag kct-plan">พร้อมเริ่ม</span>`
+  } else if (type === 'cook') {
+    body = `<div class="kanban-card-meta">${escHtml(rawName)} ${rawKg.toFixed(1)} กก.</div>
+            <div class="kanban-card-meta">กะ${shift}</div>
+            <span class="kanban-card-tag kct-time">⏱ ${elapsedStr}</span>`
   } else {
-    sec.style.display = 'none'
+    body = `<div class="kanban-card-meta">${escHtml(rawName)} ${rawKg.toFixed(1)} → ${escHtml(cookedName)} ${cookedKg.toFixed(1)} กก.</div>
+            <div class="kanban-card-meta">กะ${shift} | ${bagCount} ถุง</div>
+            ${yieldTag}`
   }
-  sec.dataset.bypId = bypId
 
-  updateProdLots(n)
+  return `<div class="kanban-card kanban-card-${type}" onclick="onKanbanCardClick('${session.id}')">
+    <div class="kanban-card-title">${escHtml(potName)}</div>
+    ${body}
+  </div>`
 }
 
-function removeProdByp(n) {
-  document.getElementById(`prod-byp-section-${n}`).style.display = 'none'
-  document.getElementById(`prod-byp-bags-${n}`).value = ''
-  document.getElementById(`prod-byp-rows-${n}`).innerHTML = '<div class="loading">ระบุจำนวนถุงก่อน</div>'
-  document.getElementById(`prod-byp-sum-${n}`).textContent = '0.000'
-  calcProdYield(n)
+function escHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 }
 
-function updateProdBypRows(n) {
-  const cnt = parseInt(document.getElementById(`prod-byp-bags-${n}`)?.value)||0
-  const cont = document.getElementById(`prod-byp-rows-${n}`)
-  cont.innerHTML = ''
-  for (let i = 1; i <= cnt; i++) {
-    const row = document.createElement('div'); row.className = 'bag-row'
-    row.innerHTML = `
-      <div class="bag-no">${i}</div>
-      <input type="number" placeholder="กรัม" oninput="updateProdBypSum(${n})" style="text-align:right">
-      <div class="bag-kg" id="pbypk-${n}-${i}">—</div>
-      <div></div>`
-    cont.appendChild(row)
+function onKanbanCardClick(sessionId) {
+  const session = kanbanSessions.find(s => s.id === sessionId)
+  if (!session) return
+  if (session.status === 'cooking') {
+    openClosePotModal(session)
+  } else if (session.status === 'open') {
+    alert('ยังไม่รองรับการเริ่มหม้อจาก "วางแผน" — Phase 2\nใช้ปุ่ม "+ เปิดหม้อใหม่" แทน')
+  } else {
+    showSessionDetail(session)
   }
-  if (!cnt) cont.innerHTML = '<div class="loading">ระบุจำนวนถุงก่อน</div>'
-  updateProdBypSum(n)
 }
 
-function updateProdBypSum(n) {
-  let total = 0
-  document.querySelectorAll(`#prod-byp-rows-${n} input[type=number]`).forEach((inp, idx) => {
-    const g = parseFloat(inp.value)||0; total += g/1000
-    const el = document.getElementById(`pbypk-${n}-${idx+1}`)
-    if (el) el.textContent = g > 0 ? (g/1000).toFixed(3)+' กก.' : '—'
+// ── Cook Modal helpers ──
+function showCookModal(html) {
+  let overlay = document.getElementById('cook-modal-overlay')
+  if (!overlay) {
+    overlay = document.createElement('div')
+    overlay.id = 'cook-modal-overlay'
+    overlay.className = 'modal-overlay'
+    overlay.onclick = (e) => { if (e.target === overlay) closeCookModal() }
+    document.body.appendChild(overlay)
+  }
+  overlay.innerHTML = html
+  overlay.classList.add('open')
+}
+function closeCookModal() {
+  const overlay = document.getElementById('cook-modal-overlay')
+  if (overlay) overlay.classList.remove('open')
+  currentNewPotBags.clear()
+  currentClosePot = null
+}
+
+// ── Create New Pot ──
+function openNewPotModal() {
+  currentNewPotBags = new Set()
+  const nextNum = (kanbanSessions.filter(s => s.status !== 'cancelled').length) + 1
+  const potName = `หม้อ ${nextNum}`
+  const hour = new Date().getHours()
+  let shift = 'เช้า'
+  if (hour >= 12 && hour < 16) shift = 'บ่าย'
+  else if (hour >= 16) shift = 'เย็น'
+
+  showCookModal(`
+  <div class="modal-box">
+    <div class="modal-title">🔥 เปิดหม้อตุ๋นใหม่</div>
+    <div class="modal-sub">เลือกเนื้อสด → ส่งเข้าหม้อ (status → cooking)</div>
+
+    <div class="cook-sec">
+      <div class="cook-sec-label">Session Info</div>
+      <div class="row2">
+        <div>
+          <label>ชื่อหม้อ</label>
+          <input type="text" id="np-pot-name" value="${escHtml(potName)}" readonly
+                 style="background:#f0f0f0;color:var(--muted)">
+        </div>
+        <div>
+          <label>กะ</label>
+          <select id="np-shift">
+            <option value="เช้า" ${shift==='เช้า'?'selected':''}>🌅 เช้า</option>
+            <option value="บ่าย" ${shift==='บ่าย'?'selected':''}>☀️ บ่าย</option>
+            <option value="เย็น" ${shift==='เย็น'?'selected':''}>🌙 เย็น</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="cook-sec">
+      <div class="cook-sec-label">เนื้อสดเข้าหม้อ</div>
+      <div style="margin-bottom:8px">
+        <label>รายการเนื้อ</label>
+        <select id="np-item" onchange="onNewPotItemChange()">
+          <option value="">— เลือก —</option>
+        </select>
+      </div>
+      <div>
+        <label>เลือกถุง (แตะเพื่อเลือก/ยกเลิก)</label>
+        <div class="cook-bag-picker" id="np-bag-picker">
+          <div style="padding:16px;text-align:center;color:var(--muted);font-size:0.78rem">เลือกรายการก่อน</div>
+        </div>
+        <div style="margin-top:8px;font-size:0.82rem;color:var(--muted)">
+          เลือกแล้ว: <b id="np-selected-count">0</b> ถุง / <b id="np-selected-kg">0.000</b> กก.
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeCookModal()">ยกเลิก</button>
+      <button class="btn-confirm" onclick="submitNewPot()">🔥 ส่งเข้าหม้อ</button>
+    </div>
+  </div>
+  `)
+  loadNewPotItemDropdown()
+}
+
+function loadNewPotItemDropdown() {
+  _npRawBagsByItem = {}
+  cwStock.forEach(b => {
+    if (b.warehouse !== 'A') return
+    const item = items.find(i => i.id === b.item_id)
+    if (!item) return
+    if (item.category && item.category !== 'meat_raw' && !item.name.includes('สด') && !item.name.includes('ดิบ')) return
+    if (!_npRawBagsByItem[item.id]) _npRawBagsByItem[item.id] = { item, bags: [] }
+    _npRawBagsByItem[item.id].bags.push(b)
   })
-  document.getElementById(`prod-byp-sum-${n}`).textContent = total.toFixed(3)
-  calcProdYield(n)
-}
 
-function updateProdLots(n) {
-  const sel = document.getElementById(`prod-raw-${n}`)
-  const opt = sel.selectedOptions[0]
-  const rawName = opt?.dataset?.name || ''
-  // ล้าง bag area เก่า
-  const oldArea = document.getElementById(`prod-bags-area-${n}`)
-  if (oldArea) oldArea.remove()
-  const cont = document.getElementById(`prod-lots-${n}`)
-  cont.innerHTML = ''
-  if (!rawName) { cont.innerHTML = '<div class="loading" style="font-size:.78rem">เลือกเนื้อสดก่อน</div>'; return }
-
-  const itemId  = sel.value
-  const matching = cwStock.filter(r => r.item_id === itemId)
-  if (!matching.length) {
-    cont.innerHTML = `<div class="loading" style="color:var(--red-light);font-size:.78rem">ไม่มีสต๊อก ${rawName} ในคลัง</div>`
+  const sel = document.getElementById('np-item')
+  if (!sel) return
+  const groups = Object.values(_npRawBagsByItem).filter(g => g.bags.length > 0)
+  if (groups.length === 0) {
+    sel.innerHTML = '<option value="">— ไม่มีเนื้อสดในสต๊อก —</option>'
     return
   }
-
-  // group by lot_date เรียง FIFO
-  const lots = {}
-  matching.forEach(r => {
-    const lot = r.lot_date ? r.lot_date.split('T')[0] : 'unknown'
-    if (!lots[lot]) lots[lot] = []
-    lots[lot].push(r)
-  })
-  const sortedLots = Object.entries(lots).sort(([a],[b]) => a < b ? -1 : 1)
-
-  // สร้าง bag area ใหม่ — แสดงทุก lot พร้อมกัน
-  const area = document.createElement('div')
-  area.id = `prod-bags-area-${n}`
-  area.style.marginTop = '10px'
-
-  // ปุ่มเลือกทั้งหมด
-  area.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <span style="font-size:.75rem;color:var(--muted)">เลือกถุงที่เข้าหม้อ (ข้ามล็อตได้)</span>
-      <button class="btn btn-outline btn-outline-green btn-sm" onclick="selectAllProdBags(${n})">เลือกทั้งหมด</button>
-    </div>`
-
-  sortedLots.forEach(([lot, bags]) => {
-    const lotKg = bags.reduce((s,r)=>s+(parseFloat(r.weight_g)||0)/1000, 0)
-    const group = document.createElement('div')
-    group.style.marginBottom = '10px'
-    group.innerHTML = `
-      <div style="font-size:.72rem;color:var(--muted);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center">
-        <span>lot ${fmtDate(lot)} — ${bags.length} ถุง</span>
-        <button class="btn btn-outline btn-outline-blue btn-sm" style="padding:2px 8px;font-size:.68rem"
-                onclick="selectLotBags(${n},'${lot}')">เลือก lot นี้</button>
-      </div>
-      <div class="lot-chips" style="margin:0" id="prod-lot-chips-${n}-${lot.replace(/-/g,'')}">
-        ${bags.map(r => {
-          const kg  = ((parseFloat(r.weight_g)||0)/1000).toFixed(3)
-          const cw  = r.legacy_cw_row ? `r${r.legacy_cw_row}` : '#'+r.id.substring(0,6)
-          return `<div class="lot-chip" id="pbag-${n}-${r.id}"
-                       data-id="${r.id}" data-kg="${(parseFloat(r.weight_g)||0)/1000}" data-lot="${lot}"
-                       onclick="toggleProdBag(${n},'${r.id}')">
-            <div class="lot-name">${cw}</div>
-            <div class="lot-kg">${kg} กก.</div>
-          </div>`
-        }).join('')}
-      </div>`
-    area.appendChild(group)
-  })
-
-  // ใส่ bag area หลัง prod-lots div
-  cont.parentNode.insertBefore(area, cont.nextSibling)
-
-  document.getElementById(`prod-lot-hint-${n}`).textContent = ''
-  document.getElementById(`prod-raw-kg-${n}`).value = ''
-  calcProdYield(n)
+  sel.innerHTML = '<option value="">— เลือก —</option>' +
+    groups.map(g => `<option value="${g.item.id}">${escHtml(g.item.name)} (${g.bags.length} ถุง)</option>`).join('')
 }
 
-function selectAllProdBags(n) {
-  document.querySelectorAll(`#prod-bags-area-${n} .lot-chip`).forEach(c => c.classList.add('selected'))
-  recalcProdRawKg(n)
-}
-
-function selectLotBags(n, lot) {
-  const lotKey = lot.replace(/-/g,'')
-  document.querySelectorAll(`#prod-lot-chips-${n}-${lotKey} .lot-chip`).forEach(c => c.classList.add('selected'))
-  recalcProdRawKg(n)
-}
-
-function toggleProdBag(n, bagId) {
-  document.getElementById(`pbag-${n}-${bagId}`)?.classList.toggle('selected')
-  recalcProdRawKg(n)
-}
-
-function recalcProdRawKg(n) {
-  let total = 0; let count = 0
-  document.querySelectorAll(`#prod-bags-area-${n} .lot-chip.selected`).forEach(c => {
-    total += parseFloat(c.dataset.kg)||0
-    count++
-  })
-  document.getElementById(`prod-raw-kg-${n}`).value = total > 0 ? total.toFixed(3) : ''
-  document.getElementById(`prod-lot-hint-${n}`).textContent =
-    count ? `เลือก ${count} ถุง → ${total.toFixed(3)} กก.` : ''
-  calcProdYield(n)
-}
-
-function updateProdBagRows(n) {
-  const cnt = parseInt(document.getElementById(`prod-bags-${n}`)?.value)||0
-  const cont = document.getElementById(`prod-bag-rows-${n}`)
-  const existing = []; cont.querySelectorAll('input[type=number]').forEach(i => existing.push(i.value))
-  cont.innerHTML = ''
-  for (let i=1; i<=cnt; i++) {
-    const row = document.createElement('div'); row.className = 'bag-row'
-    row.innerHTML = `
-      <div class="bag-no">${i}</div>
-      <input type="number" placeholder="กรัม" value="${existing[i-1]||''}"
-             oninput="updateProdBagSum(${n})" style="text-align:right">
-      <div class="bag-kg" id="pbk-${n}-${i}">—</div>
-      <div></div>`
-    cont.appendChild(row)
+function onNewPotItemChange() {
+  const itemId = document.getElementById('np-item').value
+  currentNewPotBags = new Set()
+  const picker = document.getElementById('np-bag-picker')
+  if (!itemId) {
+    picker.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:0.78rem">เลือกรายการก่อน</div>'
+    updateNewPotSelected()
+    return
   }
-  if (!cnt) cont.innerHTML = '<div class="loading">ระบุจำนวนถุงก่อน</div>'
-  updateProdBagSum(n)
+  const group = _npRawBagsByItem[itemId]
+  if (!group || group.bags.length === 0) {
+    picker.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:0.78rem">ไม่มีถุง</div>'
+    return
+  }
+  const sorted = [...group.bags].sort((a, b) => (a.lot_date || '').localeCompare(b.lot_date || ''))
+  picker.innerHTML = sorted.map(b => {
+    const kg = ((b.weight_g || 0) / 1000).toFixed(3)
+    const label = b.legacy_cw_row || `#${b.id}`
+    return `<span class="cook-bag-chip" data-id="${b.id}" onclick="toggleNewPotBag('${b.id}')">${label} ${kg}กก.</span>`
+  }).join('')
+  updateNewPotSelected()
 }
 
-function updateProdBagSum(n) {
-  let total = 0
-  document.querySelectorAll(`#prod-bag-rows-${n} input[type=number]`).forEach((inp, idx) => {
-    const g = parseFloat(inp.value)||0; total += g/1000
-    const el = document.getElementById(`pbk-${n}-${idx+1}`)
-    if (el) el.textContent = g > 0 ? (g/1000).toFixed(3)+' กก.' : '—'
+function toggleNewPotBag(bagId) {
+  const chip = document.querySelector(`.cook-bag-chip[data-id="${bagId}"]`)
+  if (!chip) return
+  const key = String(bagId)
+  if (currentNewPotBags.has(key)) {
+    currentNewPotBags.delete(key)
+    chip.classList.remove('selected')
+  } else {
+    currentNewPotBags.add(key)
+    chip.classList.add('selected')
+  }
+  updateNewPotSelected()
+}
+
+function updateNewPotSelected() {
+  let totalKg = 0
+  currentNewPotBags.forEach(id => {
+    const bag = cwStock.find(b => String(b.id) === String(id))
+    if (bag) totalKg += (Number(bag.weight_g) || 0) / 1000
   })
-  document.getElementById(`prod-cooked-sum-${n}`).textContent = total.toFixed(3)
-  calcProdYield(n)
+  const cntEl = document.getElementById('np-selected-count')
+  const kgEl = document.getElementById('np-selected-kg')
+  if (cntEl) cntEl.textContent = currentNewPotBags.size
+  if (kgEl) kgEl.textContent = totalKg.toFixed(3)
 }
 
-function calcProdYield(n) {
-  const raw    = parseFloat(document.getElementById(`prod-raw-kg-${n}`)?.value)||0
-  const cooked = parseFloat(document.getElementById(`prod-cooked-sum-${n}`)?.textContent)||0
-  const bypSec = document.getElementById(`prod-byp-section-${n}`)
-  const bypVis = bypSec && bypSec.style.display !== 'none'
-  const byp    = bypVis ? (parseFloat(document.getElementById(`prod-byp-sum-${n}`)?.textContent)||0) : 0
-  const total  = cooked + byp
-  const box    = document.getElementById(`prod-yield-box-${n}`)
-  if (!box) return
-  if (raw > 0 && total > 0) {
-    const pct = total/raw*100
-    box.style.display = 'block'
-    document.getElementById(`yb-in-${n}`).textContent  = raw.toFixed(3)+' กก.'
-    document.getElementById(`yb-out-${n}`).textContent = cooked.toFixed(3)+' กก.'
-    // by-product row
-    const bypRow = document.getElementById(`yb-byp-row-${n}`)
-    if (bypRow) {
-      bypRow.style.display = byp > 0 ? '' : 'none'
-      const bypEl = document.getElementById(`yb-byp-${n}`)
-      if (bypEl) bypEl.textContent = byp.toFixed(3)+' กก.'
-    }
-    const el = document.getElementById(`yb-pct-${n}`)
-    el.textContent = pct.toFixed(1)+'%'
-    el.className = 'val '+(pct<50?'yield-bad':pct<65?'yield-warn':'yield-ok')
-  } else { box.style.display = 'none' }
-}
+async function submitNewPot() {
+  const potName = document.getElementById('np-pot-name').value
+  const shift = document.getElementById('np-shift').value
+  const itemId = document.getElementById('np-item').value
+  const bagIds = Array.from(currentNewPotBags).map(id => parseInt(id)).filter(n => !isNaN(n))
 
-async function submitProduce() {
-  const date = document.getElementById('prod-date').value
-  const user = document.getElementById('prod-user').value.trim()
-  if (!date) { alert('กรุณาเลือกวันที่ผลิต'); return }
+  if (!itemId) { alert('กรุณาเลือกรายการเนื้อ'); return }
+  if (bagIds.length === 0) { alert('กรุณาเลือกถุงอย่างน้อย 1 ถุง'); return }
 
-  const cards = document.querySelectorAll('[id^=prod-item-]')
-  if (!cards.length) { alert('ไม่มีรายการ'); return }
+  const totalKg = bagIds.reduce((s, id) => {
+    const b = cwStock.find(x => Number(x.id) === id)
+    return s + ((Number(b?.weight_g) || 0) / 1000)
+  }, 0)
 
-  // Collect all input bag IDs and output rows across all cards
-  const inputBagIds = []
-  const outputRows  = []
-  let valid = true
+  if (!confirm(`ยืนยันเปิดหม้อใหม่?\n\n${potName} (กะ${shift})\n${bagIds.length} ถุง / ${totalKg.toFixed(3)} กก.\n\n⚠️ ถุงที่เลือกจะถูก mark "❌ Out" ทันที`)) return
 
-  cards.forEach(card => {
-    const n = card.id.replace('prod-item-','')
+  const btn = document.querySelector('#cook-modal-overlay .btn-confirm')
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...' }
 
-    // --- input bags ---
-    document.querySelectorAll(`#prod-bags-area-${n} .lot-chip.selected`).forEach(chip => {
-      const bagId = chip.dataset.id
-      if (bagId) inputBagIds.push(bagId)
-    })
-
-    const rawKg   = parseFloat(document.getElementById(`prod-raw-kg-${n}`)?.value)||0
-    const cookedId = document.getElementById(`prod-cooked-${n}`)?.value
-    if (!cookedId || rawKg <= 0) { valid = false; return }
-
-    // --- main output bags ---
-    document.querySelectorAll(`#prod-bag-rows-${n} input[type=number]`).forEach((inp, idx) => {
-      const g = parseFloat(inp.value)
-      if (!g || g <= 0) return
-      outputRows.push({
-        item_id: cookedId, lot_date: date, bag_no: idx+1, weight_g: g,
-        warehouse: 'B', status: 'in_stock', date_recorded: date,
-        notes: user ? `ตุ๋น ${date} โดย ${user}` : `ตุ๋น ${date}`,
-        source: 'web-produce'
-      })
-    })
-
-    // --- by-product output bags ---
-    const bypSec  = document.getElementById(`prod-byp-section-${n}`)
-    const bypId   = bypSec?.dataset?.bypId
-    if (bypId && bypSec?.style.display !== 'none') {
-      document.querySelectorAll(`#prod-byp-rows-${n} input[type=number]`).forEach((inp, idx) => {
-        const g = parseFloat(inp.value)
-        if (!g || g <= 0) return
-        outputRows.push({
-          item_id: bypId, lot_date: date, bag_no: idx+1, weight_g: g,
-          warehouse: 'B', status: 'in_stock', date_recorded: date,
-          notes: user ? `by-product ${date} โดย ${user}` : `by-product ${date}`,
-          source: 'web-produce'
-        })
-      })
-    }
-  })
-
-  if (!valid) { alert('กรุณาเลือกเนื้อตุ๋น + กรอกน้ำหนัก input ทุกรายการ'); return }
-  if (outputRows.length === 0) { alert('กรุณากรอกน้ำหนัก output อย่างน้อย 1 ถุง'); return }
-
-  const totalOutKg = outputRows.reduce((s,r)=>s+r.weight_g/1000, 0)
-  const bypCount   = outputRows.filter(r=>r.notes?.startsWith('by-product')).length
-  const mainCount  = outputRows.length - bypCount
-  if (!confirm(
-    `ยืนยันบันทึกผลผลิต?\n\nOutput: ${mainCount} ถุงหลัก${bypCount>0?` + ${bypCount} ถุง by-product`:''}\nรวม ${totalOutKg.toFixed(3)} กก.\n${inputBagIds.length>0?`Input: ${inputBagIds.length} ถุงสด → processed`:''}`
-  )) return
-
-  const btn = document.querySelector('#page-produce .btn-primary')
-  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'
-
+  let sessionId = null
   try {
-    // 1. PATCH input bags → processed
-    if (inputBagIds.length > 0) {
-      const idList = inputBagIds.map(id=>`"${id}"`).join(',')
-      const r = await fetch(`${SB}/rest/v1/catch_weight?id=in.(${idList})`, {
-        method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' },
-        body: JSON.stringify({ status: 'processed', notes: `ตุ๋น ${date}` })
+    const sRes = await post('cook_sessions', [{
+      session_date: today(),
+      shift,
+      status: 'cooking',
+      notes: potName
+    }])
+    sessionId = sRes[0].id
+
+    await post('cook_inputs', [{
+      session_id: sessionId,
+      item_id: itemId,
+      kg_raw: totalKg,
+      catch_weight_ids: bagIds
+    }])
+
+    const idList = bagIds.join(',')
+    const patchRes = await fetch(`${SB}/rest/v1/catch_weight?id=in.(${idList})`, {
+      method: 'PATCH',
+      headers: {...H, Prefer:'return=minimal'},
+      body: JSON.stringify({
+        status: '❌ Out',
+        cook_session_id: sessionId,
+        notes: `${potName} | กะ${shift}`
       })
-      if (!r.ok) throw new Error(`PATCH input: ${r.status}`)
-    }
-
-    // 2. INSERT output rows
-    const r2 = await fetch(`${SB}/rest/v1/catch_weight`, {
-      method: 'POST', headers: { ...H, Prefer: 'return=minimal' },
-      body: JSON.stringify(outputRows)
     })
-    if (!r2.ok) throw new Error(`INSERT output: ${r2.status} — ${await r2.text()}`)
+    if (!patchRes.ok) throw new Error(`PATCH catch_weight: HTTP ${patchRes.status} — ${await patchRes.text()}`)
 
-    btn.disabled = false; btn.textContent = '✅ บันทึกผลผลิต'
-    alert(`✅ บันทึกสำเร็จ!\nOutput ${outputRows.length} ถุง / ${totalOutKg.toFixed(3)} กก. → เนื้อตุ๋น`)
-
-    // reset
-    document.getElementById('prod-items').innerHTML = ''
-    prodItemCount = 0
-    addProdItem()
-    cwStock = cwStock.filter(r => !inputBagIds.includes(r.id))
+    closeCookModal()
+    alert(`✅ เปิดหม้อ ${potName} แล้ว\n${bagIds.length} ถุง / ${totalKg.toFixed(3)} กก.`)
+    await reloadCwAndKanban()
 
   } catch(e) {
-    alert(`❌ บันทึกไม่สำเร็จ: ${e.message}`)
-    btn.disabled = false; btn.textContent = '✅ บันทึกผลผลิต'
+    if (sessionId) {
+      try {
+        await fetch(`${SB}/rest/v1/cook_inputs?session_id=eq.${sessionId}`, { method: 'DELETE', headers: {...H, Prefer:'return=minimal'} })
+        await fetch(`${SB}/rest/v1/cook_sessions?id=eq.${sessionId}`, { method: 'DELETE', headers: {...H, Prefer:'return=minimal'} })
+      } catch(_){}
+    }
+    alert(`❌ เปิดหม้อไม่สำเร็จ: ${e.message}`)
+    if (btn) { btn.disabled = false; btn.textContent = '🔥 ส่งเข้าหม้อ' }
   }
+}
+
+// ── Close Pot ──
+function openClosePotModal(session) {
+  currentClosePot = session
+  const inputs = session.cook_inputs || []
+  const rawItem = inputs[0]?.items
+  const rawKg = inputs.reduce((s, i) => s + (Number(i.kg_raw) || 0), 0)
+  const potName = session.notes || `Session ${session.id.substring(0,6)}`
+  const cookedOpts = items
+    .filter(i => i.category === 'meat_cooked')
+    .map(i => `<option value="${i.id}">${escHtml(i.name)}</option>`)
+    .join('')
+  const startTime = new Date(session.created_at).toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'})
+
+  showCookModal(`
+  <div class="modal-box">
+    <div class="modal-title">✏️ ปิดหม้อ — ${escHtml(potName)}</div>
+    <div class="modal-sub">บันทึกผลผลิต + คำนวณ yield</div>
+
+    <div class="cook-sec">
+      <div class="cook-sec-label">Input (เริ่ม ${startTime} | กะ${session.shift})</div>
+      <div style="font-size:0.92rem">${escHtml(rawItem?.name || '—')}: <b>${rawKg.toFixed(3)} กก.</b></div>
+    </div>
+
+    <div class="cook-sec">
+      <div class="cook-sec-label">ผลผลิต (Output)</div>
+      <div class="row2">
+        <div>
+          <label>เนื้อตุ๋น</label>
+          <select id="cp-item" onchange="calcClosePotYield()">
+            <option value="">— เลือก —</option>${cookedOpts}
+          </select>
+        </div>
+        <div>
+          <label>จำนวนถุง</label>
+          <input type="number" id="cp-bag-count" min="1" placeholder="0" oninput="updateClosePotBags()">
+        </div>
+      </div>
+      <div id="cp-bag-rows" style="margin-top:10px"></div>
+    </div>
+
+    <div class="cook-sec" id="cp-yield-box" style="display:none">
+      <div class="cook-sec-label">Yield</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span>Input</span><span>${rawKg.toFixed(3)} กก.</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span>Output</span><span id="cp-yo">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+        <span>Yield</span><span id="cp-yp">—</span>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeCookModal()">ยกเลิก</button>
+      <button class="btn-confirm" onclick="submitClosePot()">✅ ปิดหม้อ</button>
+    </div>
+  </div>
+  `)
+}
+
+function updateClosePotBags() {
+  const count = parseInt(document.getElementById('cp-bag-count').value) || 0
+  const rows = document.getElementById('cp-bag-rows')
+  if (!rows) return
+  if (count <= 0) { rows.innerHTML = ''; calcClosePotYield(); return }
+  rows.innerHTML = `
+    <div style="display:grid;grid-template-columns:40px 1fr 80px;gap:6px;font-size:0.72rem;color:var(--muted);padding:4px 0">
+      <span>ถุง</span><span>น้ำหนัก (กรัม)</span><span>กก.</span>
+    </div>
+  ` + Array.from({length: count}, (_, i) => `
+    <div style="display:grid;grid-template-columns:40px 1fr 80px;gap:6px;margin-bottom:4px">
+      <span style="display:flex;align-items:center;font-size:0.82rem">#${i+1}</span>
+      <input type="number" class="cp-bw" data-idx="${i}" placeholder="0" oninput="calcClosePotYield()" style="padding:6px">
+      <span class="cp-bk" data-idx="${i}" style="display:flex;align-items:center;font-size:0.82rem;color:var(--muted)">0.000</span>
+    </div>
+  `).join('')
+  calcClosePotYield()
+}
+
+function calcClosePotYield() {
+  if (!currentClosePot) return
+  const inputs = currentClosePot.cook_inputs || []
+  const rawKg = inputs.reduce((s, i) => s + (Number(i.kg_raw) || 0), 0)
+
+  let totalG = 0
+  document.querySelectorAll('.cp-bw').forEach((el, i) => {
+    const g = parseFloat(el.value) || 0
+    totalG += g
+    const kgSpan = document.querySelector(`.cp-bk[data-idx="${i}"]`)
+    if (kgSpan) kgSpan.textContent = (g / 1000).toFixed(3)
+  })
+  const totalKg = totalG / 1000
+  const box = document.getElementById('cp-yield-box')
+  if (!box) return
+  if (totalG <= 0) { box.style.display = 'none'; return }
+  box.style.display = 'block'
+  const yoEl = document.getElementById('cp-yo')
+  if (yoEl) yoEl.textContent = `${totalKg.toFixed(3)} กก.`
+
+  if (rawKg > 0) {
+    const yieldPct = (totalKg / rawKg) * 100
+    const itemId = document.getElementById('cp-item')?.value
+    const cookedItem = items.find(i => i.id === itemId)
+    const expMin = cookedItem?.yield_expected_min
+    let color = 'var(--green)'
+    let emoji = '🟢'
+    let rangeTxt = ''
+    if (expMin != null) {
+      rangeTxt = ` (min ${Number(expMin).toFixed(0)}%)`
+      if (yieldPct < Number(expMin)) { color = 'var(--red-light)'; emoji = '🔴' }
+    }
+    const yp = document.getElementById('cp-yp')
+    if (yp) {
+      yp.textContent = `${yieldPct.toFixed(1)}% ${emoji}${rangeTxt}`
+      yp.style.color = color
+    }
+  }
+}
+
+async function submitClosePot() {
+  if (!currentClosePot) return
+  const sessionId = currentClosePot.id
+  const itemId = document.getElementById('cp-item').value
+  const bagWeights = Array.from(document.querySelectorAll('.cp-bw'))
+    .map(el => parseFloat(el.value) || 0)
+    .filter(g => g > 0)
+
+  if (!itemId) { alert('กรุณาเลือกเนื้อตุ๋น'); return }
+  if (bagWeights.length === 0) { alert('กรุณากรอกน้ำหนักอย่างน้อย 1 ถุง'); return }
+
+  const totalKg = bagWeights.reduce((s, g) => s + g, 0) / 1000
+
+  if (!confirm(`ยืนยันปิดหม้อ?\n\nผลผลิต: ${bagWeights.length} ถุง / ${totalKg.toFixed(3)} กก.`)) return
+
+  const btn = document.querySelector('#cook-modal-overlay .btn-confirm')
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...' }
+
+  try {
+    await post('cook_outputs', [{
+      session_id: sessionId,
+      item_id: itemId,
+      kg_cooked: totalKg,
+      bag_count: bagWeights.length
+    }])
+
+    const newBags = bagWeights.map((g, i) => ({
+      item_id: itemId,
+      weight_g: g,
+      warehouse: 'B',
+      status: '✅ In Stock',
+      cook_session_id: sessionId,
+      bag_no: i + 1,
+      lot_date: today(),
+      date_recorded: today(),
+      source: 'meat-stock-kanban',
+      notes: currentClosePot.notes || ''
+    }))
+    await post('catch_weight', newBags)
+
+    const upRes = await fetch(`${SB}/rest/v1/cook_sessions?id=eq.${sessionId}`, {
+      method: 'PATCH',
+      headers: {...H, Prefer:'return=minimal'},
+      body: JSON.stringify({ status: 'done' })
+    })
+    if (!upRes.ok) throw new Error(`UPDATE session: HTTP ${upRes.status} — ${await upRes.text()}`)
+
+    closeCookModal()
+    alert(`✅ ปิดหม้อสำเร็จ\n${bagWeights.length} ถุง / ${totalKg.toFixed(3)} กก.`)
+    await reloadCwAndKanban()
+
+  } catch(e) {
+    alert(`❌ ปิดหม้อไม่สำเร็จ: ${e.message}`)
+    if (btn) { btn.disabled = false; btn.textContent = '✅ ปิดหม้อ' }
+  }
+}
+
+function showSessionDetail(session) {
+  const inputs = session.cook_inputs || []
+  const outputs = session.cook_outputs || []
+  const rawKg = inputs.reduce((s, i) => s + (Number(i.kg_raw) || 0), 0)
+  const cookedKg = outputs.reduce((s, o) => s + (Number(o.kg_cooked) || 0), 0)
+  const bagCount = outputs.reduce((s, o) => s + (Number(o.bag_count) || 0), 0)
+  const yieldPct = rawKg > 0 ? ((cookedKg / rawKg) * 100).toFixed(1) : '—'
+  const potName = session.notes || `Session ${session.id.substring(0,6)}`
+
+  alert(
+    `${potName} (${session.status})\n\n` +
+    `กะ${session.shift}\n` +
+    `Input: ${inputs[0]?.items?.name || '—'} ${rawKg.toFixed(3)} กก.\n` +
+    `Output: ${outputs[0]?.items?.name || '—'} ${cookedKg.toFixed(3)} กก. (${bagCount} ถุง)\n` +
+    `Yield: ${yieldPct}%`
+  )
+}
+
+async function reloadCwAndKanban() {
+  try {
+    const cw = await get('catch_weight', {
+      'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name)',
+      'status':'eq.✅ In Stock', 'limit':1000
+    })
+    cwStock = Array.isArray(cw) ? cw.map(r => ({...r, item_name: r.items?.name || ''})) : []
+    const d = new Date()
+    const ds = `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`
+    const hdr = document.getElementById('header-cw')
+    if (hdr) hdr.innerHTML = `${ds} | CW <span>✅ ${cwStock.length} ถุง</span>`
+  } catch(_){}
+  await loadKanban()
 }
 
 // ════ แปรรูป ════
