@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NNTN — เมนูและต้นทุน</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap');
+    body { font-family: 'Sarabun', sans-serif; }
+    .tier-card { transition: transform .2s, box-shadow .2s; }
+    .tier-card:hover { transform: translateY(-4px); }
+    .check { color: #16a34a; font-weight: 700; }
+    .dash  { color: #d1d5db; }
+    .addon { color: #dc2626; font-weight: 700; font-size:.75rem; }
+    .fc-good   { background:#dcfce7; color:#166534; }
+    .fc-warn   { background:#fef9c3; color:#854d0e; }
+    .fc-danger { background:#fee2e2; color:#991b1b; }
+  </style>
+</head>
+<body class="bg-stone-50 text-gray-800" x-data="{ tab: 'menu' }">
+
+<!-- ───── HEADER ───── -->
+<header class="bg-gradient-to-r from-red-900 to-red-700 text-white shadow-xl">
+  <div class="max-w-6xl mx-auto px-4 py-5 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-wide">🍜 ครัวเนื้อในตำนาน</h1>
+      <p class="text-red-200 text-sm mt-0.5">วิชรธรรม 53 — NNTN Menu & Cost System v9.0</p>
+    </div>
+    <div class="text-right text-sm text-red-200">อัปเดต 11/04/2026</div>
+  </div>
+</header>
+
+<!-- ───── TAB NAV ───── -->
+<nav class="bg-white border-b shadow-sm sticky top-0 z-10">
+  <div class="max-w-6xl mx-auto px-4 flex gap-1 py-2">
+    <button @click="tab='menu'"
+      :class="tab==='menu' ? 'bg-red-700 text-white' : 'text-gray-600 hover:bg-gray-100'"
+      class="px-5 py-2 rounded-full text-sm font-semibold transition">🍜 เมนู</button>
+    <button @click="tab='cost'"
+      :class="tab==='cost' ? 'bg-red-700 text-white' : 'text-gray-600 hover:bg-gray-100'"
+      class="px-5 py-2 rounded-full text-sm font-semibold transition">📊 ต้นทุน & FC%</button>
+  </div>
+</nav>
+
+<main class="max-w-6xl mx-auto px-4 py-8 space-y-10">
+
+<!-- ══════════════════════════════════════
+     TAB: MENU
+══════════════════════════════════════ -->
+<div x-show="tab==='menu'" x-transition>
+
+  <!-- TIER CARDS -->
+  <section>
+    <h2 class="text-xl font-bold text-red-800 mb-4">🍖 ก๋วยเตี๋ยวเนื้อตุ๋น — เลือก Tier</h2>
+    <p class="text-sm text-gray-500 mb-4">1 unit = Standard 3ชิ้น×10g | เครื่องใน 2ชิ้น×10g | วากิว 1ชิ้น×20g | ลูกชิ้น 3ลูก</p>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+      <!-- S -->
+      <div class="tier-card bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+        <div class="bg-amber-400 text-white text-center py-3">
+          <div class="text-3xl font-extrabold">S</div>
+          <div class="text-amber-100 text-xs">3 units</div>
+        </div>
+        <div class="p-4 text-center">
+          <div class="text-3xl font-black text-gray-800">฿89</div>
+          <div class="text-xs text-gray-400 mb-3">Delivery ฿137</div>
+          <div class="text-left space-y-1 text-sm">
+            <div class="font-semibold text-gray-600 text-xs uppercase mb-1">เลือกได้</div>
+            <div>✅ เนื้อสด</div><div>✅ สามชั้น</div>
+            <div>✅ น่องกรอบ</div><div>✅ ริ้วขาว</div>
+            <div>✅ ลูกชิ้นเนื้อ</div><div>✅ ลูกชิ้นเอ็น</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M -->
+      <div class="tier-card bg-white rounded-2xl shadow-md border-2 border-orange-400 overflow-hidden">
+        <div class="bg-orange-500 text-white text-center py-3 relative">
+          <div class="text-3xl font-extrabold">M</div>
+          <div class="text-orange-100 text-xs">5 units</div>
+          <span class="absolute top-2 right-2 bg-white text-orange-600 text-xs font-bold px-2 py-0.5 rounded-full">ฮิต</span>
+        </div>
+        <div class="p-4 text-center">
+          <div class="text-3xl font-black text-gray-800">฿129</div>
+          <div class="text-xs text-gray-400 mb-3">Delivery ฿199</div>
+          <div class="text-left space-y-1 text-sm">
+            <div class="font-semibold text-gray-600 text-xs uppercase mb-1">ทุก S + เพิ่ม</div>
+            <div>✅ ชายโครง</div><div>✅ น่องลาย</div>
+            <div>✅ ม้าม</div><div>✅ ไส้อ่อน</div><div>✅ เอ็นแก้ว</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- L -->
+      <div class="tier-card bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+        <div class="bg-red-700 text-white text-center py-3">
+          <div class="text-3xl font-extrabold">L</div>
+          <div class="text-red-200 text-xs">6 units</div>
+        </div>
+        <div class="p-4 text-center">
+          <div class="text-3xl font-black text-gray-800">฿159</div>
+          <div class="text-xs text-gray-400 mb-3">Delivery ฿245</div>
+          <div class="text-left space-y-1 text-sm">
+            <div class="font-semibold text-gray-600 text-xs uppercase mb-1">ทุก M + เพิ่ม</div>
+            <div>✅ วากิวพับใน</div>
+            <div>✅ วากิวเสือร้องไห้</div>
+            <div class="text-xs text-gray-400">(วากิว = 1ชิ้น×20g/unit)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- XL -->
+      <div class="tier-card bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+        <div class="bg-gradient-to-b from-gray-800 to-gray-900 text-white text-center py-3">
+          <div class="text-3xl font-extrabold">XL</div>
+          <div class="text-gray-400 text-xs">8 units</div>
+        </div>
+        <div class="p-4 text-center">
+          <div class="text-3xl font-black text-gray-800">฿199</div>
+          <div class="text-xs text-gray-400 mb-3">Delivery ฿305</div>
+          <div class="text-left space-y-1 text-sm">
+            <div class="font-semibold text-gray-600 text-xs uppercase mb-1">ตัวเลือกเหมือน L</div>
+            <div class="text-gray-500 text-xs">8 units อิสระ</div>
+            <div class="mt-2 text-xs text-amber-700 font-semibold">ลิ้นวัว → addon +฿69</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SPECIAL MENUS -->
+  <section>
+    <h2 class="text-xl font-bold text-red-800 mb-4">✨ เมนูพิเศษ</h2>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-2xl shadow p-5 border-l-4 border-red-600">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="font-bold text-lg">RCP-042 ก๋วยเตี๋ยวลิ้นวัว Premium</div>
+            <div class="text-sm text-gray-500 mt-1">ลิ้น 4ชิ้น + Base Bowl + ลูกชิ้น</div>
+          </div>
+          <div class="text-2xl font-black text-red-700">฿199</div>
+        </div>
+        <div class="mt-3 flex gap-3 text-sm">
+          <span class="fc-good px-2 py-1 rounded-full font-semibold">FC 34.6% ✅</span>
+          <span class="bg-gray-100 px-2 py-1 rounded-full text-gray-600">ต้นทุน ฿68.87</span>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl shadow p-5 border-l-4 border-amber-500">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="font-bold text-lg">RCP-043 ก๋วยเตี๋ยวลิ้นวัวตุ๋น</div>
+            <div class="text-sm text-gray-500 mt-1">Base Bowl + ลิ้นวัว 80g (8ชิ้น)</div>
+          </div>
+          <div class="text-2xl font-black text-red-700">฿199</div>
+        </div>
+        <div class="mt-3 flex gap-3 text-sm">
+          <span class="fc-good px-2 py-1 rounded-full font-semibold">FC 31.2% ✅</span>
+          <span class="bg-gray-100 px-2 py-1 rounded-full text-gray-600">ต้นทุน ฿62.11</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NOODLE OPTIONS -->
+  <section>
+    <h2 class="text-xl font-bold text-red-800 mb-4">🍝 เลือกเส้น</h2>
+    <div class="bg-white rounded-2xl shadow overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-800 text-white">
+          <tr>
+            <th class="text-left px-4 py-3">เส้น</th>
+            <th class="text-center px-3 py-3">Standard</th>
+            <th class="text-center px-3 py-3">พิเศษ +฿10</th>
+            <th class="text-center px-3 py-3">ราคาซื้อ</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr class="bg-green-50">
+            <td class="px-4 py-3 font-semibold">หมี่ขาว สิงห์ทอง ⭐</td>
+            <td class="text-center px-3 py-3">150g สุก<br><span class="text-gray-400 text-xs">฿4.79/ชาม</span></td>
+            <td class="text-center px-3 py-3">180g สุก<br><span class="text-gray-400 text-xs">฿5.75/ชาม</span></td>
+            <td class="text-center px-3 py-3 text-gray-500">฿88.75/กก.</td>
+          </tr>
+          <tr>
+            <td class="px-4 py-3">เส้นเล็ก ดอกบัว</td>
+            <td class="text-center px-3 py-3">150g สุก<br><span class="text-gray-400 text-xs">฿3.10/ชาม</span></td>
+            <td class="text-center px-3 py-3">180g สุก<br><span class="text-gray-400 text-xs">฿3.72/ชาม</span></td>
+            <td class="text-center px-3 py-3 text-gray-500">฿30/กก.</td>
+          </tr>
+          <tr class="bg-gray-50">
+            <td class="px-4 py-3">เส้นใหญ่ ดอกบัว</td>
+            <td class="text-center px-3 py-3">150g สุก<br><span class="text-gray-400 text-xs">฿4.86/ชาม</span></td>
+            <td class="text-center px-3 py-3">180g สุก<br><span class="text-gray-400 text-xs">฿5.83/ชาม</span></td>
+            <td class="text-center px-3 py-3 text-gray-500">฿35/กก.</td>
+          </tr>
+          <tr>
+            <td class="px-4 py-3">บะหมี่ตราไก่</td>
+            <td class="text-center px-3 py-3">1.5 ก้อน<br><span class="text-gray-400 text-xs">฿5.63/ชาม</span></td>
+            <td class="text-center px-3 py-3">2 ก้อน<br><span class="text-gray-400 text-xs">฿7.50/ชาม</span></td>
+            <td class="text-center px-3 py-3 text-gray-500">฿3.75/ก้อน</td>
+          </tr>
+          <tr class="bg-gray-50">
+            <td class="px-4 py-3">มาม่านูดดี้</td>
+            <td class="text-center px-3 py-3">1 ก้อน<br><span class="text-gray-400 text-xs">฿3.10/ชาม</span></td>
+            <td class="text-center px-3 py-3">2 ก้อน<br><span class="text-gray-400 text-xs">฿6.20/ชาม</span></td>
+            <td class="text-center px-3 py-3 text-gray-500">฿3.10/ก้อน</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ADD-ONS -->
+  <section>
+    <h2 class="text-xl font-bold text-red-800 mb-4">➕ Side Add-on</h2>
+    <div class="grid md:grid-cols-2 gap-6">
+
+      <!-- Standard ฿20 -->
+      <div class="bg-white rounded-2xl shadow p-5">
+        <div class="font-bold text-gray-700 mb-1 flex items-center gap-2">
+          <span class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-sm">Standard</span>
+          <span class="text-sm text-gray-500">+1 unit = ฿20 | 3ชิ้น×10g</span>
+        </div>
+        <div class="text-xs text-blue-500 mb-3">Delivery +1 unit = ฿29</div>
+        <div class="flex text-xs text-gray-400 font-semibold mb-1 px-1">
+          <span class="flex-1"></span><span class="w-10 text-center">ร้าน</span><span class="w-12 text-center text-blue-400">Deli</span>
+        </div>
+        <div class="space-y-1 text-sm">
+          <div class="flex items-center py-1 border-b border-gray-50"><span class="flex-1">เนื้อสด</span><span class="w-10 text-center font-bold text-orange-600">฿20</span><span class="w-12 text-center font-bold text-blue-500">฿29</span></div>
+          <div class="flex items-center py-1 border-b border-gray-50"><span class="flex-1">สามชั้น</span><span class="w-10 text-center font-bold text-orange-600">฿20</span><span class="w-12 text-center font-bold text-blue-500">฿29</span></div>
+          <div class="flex items-center py-1 border-b border-gray-50"><span class="flex-1">น่องกรอบ</span><span class="w-10 text-center font-bold text-orange-600">฿20</span><span class="w-12 text-center font-bold text-blue-500">฿29</span></div>
+          <div class="flex items-center py-1 border-b border-gray-50"><span class="flex-1">ริ้วขาว</span><span class="w-10 text-center font-bold text-orange-600">฿20</span><span class="w-12 text-center font-bold text-blue-500">฿29</span></div>
+          <div class="flex items-center py-1 border-b border-gray-50"><span class="flex-1">ลูกชิ้นเนื้อ/เอ็น</span><span class="w-10 text-center font-bold text-orange-600">฿20</span><span class="w-12 text-center font-bold text-blue-500">฿29</span></div>
+        </div>
+        <div class="mt-3 font-bold text-gray-700 text-xs uppercase mb-1 pt-2 border-t">เครื่องใน | 2ชิ้น×10g</div>
+        <div class="space-y-1 text-sm">
+          <div class="flex items-center py-1 border-b border-gray-50"><span class="flex-1">ม้าม</span><span class="w-10 text-center font-bold text-orange-600">฿20</span><span class="w-12 text-center font-bold text-blue-500">฿29</span></div>
+          <div class="flex items-center py-1 border-b border-gray-50"><span class="flex-1">ไส้อ่อน</span><span class="w-10 text-center font-bold text-orange-600">฿20</span><span class="w-12 text-center font-bold text-blue-500">฿29</span></div>
+          <div class="flex items-center py-1"><span class="flex-1">เอ็นแก้ว</span><span class="w-10 text-center font-bold text-orange-600">฿20</span><span class="w-12 text-center font-bold text-blue-500">฿29</span></div>
+        </div>
+      </div>
+
+      <!-- Premium ฿30 + ลิ้นวัว -->
+      <div class="bg-white rounded-2xl shadow p-5">
+        <div class="font-bold text-gray-700 mb-1 flex items-center gap-2">
+          <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-sm">Premium</span>
+          <span class="text-sm text-gray-500">+1 unit = ฿30</span>
+        </div>
+        <div class="text-xs text-blue-500 mb-3">Delivery +1 unit = ฿44</div>
+        <div class="flex text-xs text-gray-400 font-semibold mb-1 px-1">
+          <span class="flex-1"></span><span class="w-10 text-center">ร้าน</span><span class="w-12 text-center text-blue-400">Deli</span>
+        </div>
+        <div class="space-y-1 text-sm">
+          <div class="flex items-center py-1 border-b border-gray-50">
+            <span class="flex-1">ชายโครง <span class="text-gray-400 text-xs">3ชิ้น×10g</span></span>
+            <span class="w-10 text-center font-bold text-red-600">฿30</span><span class="w-12 text-center font-bold text-blue-500">฿44</span>
+          </div>
+          <div class="flex items-center py-1 border-b border-gray-50">
+            <span class="flex-1">น่องลาย <span class="text-gray-400 text-xs">3ชิ้น×10g</span></span>
+            <span class="w-10 text-center font-bold text-red-600">฿30</span><span class="w-12 text-center font-bold text-blue-500">฿44</span>
+          </div>
+          <div class="flex items-center py-1 border-b border-gray-50">
+            <span class="flex-1">วากิวพับใน <span class="text-gray-400 text-xs">1ชิ้น×20g</span></span>
+            <span class="w-10 text-center font-bold text-red-600">฿30</span><span class="w-12 text-center font-bold text-blue-500">฿44</span>
+          </div>
+          <div class="flex items-center py-1 border-b border-gray-50">
+            <span class="flex-1">วากิวเสือร้องไห้ <span class="text-gray-400 text-xs">1ชิ้น×20g</span></span>
+            <span class="w-10 text-center font-bold text-red-600">฿30</span><span class="w-12 text-center font-bold text-blue-500">฿44</span>
+          </div>
+        </div>
+        <div class="mt-3 pt-2 border-t">
+          <div class="flex justify-between items-center py-2 bg-amber-50 rounded-xl px-3">
+            <div>
+              <div class="font-bold text-amber-800">🐮 ลิ้นวัวตุ๋น</div>
+              <div class="text-xs text-amber-600">4ชิ้น × 10g = 40g | standalone</div>
+            </div>
+            <div class="text-right">
+              <div class="font-black text-2xl text-amber-700">฿69</div>
+              <div class="text-xs font-bold text-blue-500">Deli ฿99</div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-3 pt-2 border-t text-sm space-y-1">
+          <div class="text-xs font-semibold text-gray-500 uppercase mb-1">ของพ่วง</div>
+          <div class="flex text-xs text-gray-400 font-semibold mb-1 px-1">
+            <span class="flex-1"></span><span class="w-10 text-center">ร้าน</span><span class="w-12 text-center text-blue-400">Deli</span>
+          </div>
+          <div class="flex items-center py-1 border-b border-gray-50"><span class="flex-1">ข้าวเปล่า 200g</span><span class="w-10 text-center font-bold text-gray-700">฿15</span><span class="w-12 text-center font-bold text-blue-500">฿25</span></div>
+          <div class="flex items-center py-1 border-b border-gray-50"><span class="flex-1">เต้าหู้ยี้ 20g</span><span class="w-10 text-center font-semibold text-gray-400 text-xs">ฟรี</span><span class="w-12 text-center font-bold text-blue-500">฿12</span></div>
+          <div class="flex items-center py-1"><span class="flex-1">แคปวัว 1ถุง</span><span class="w-10 text-center font-bold text-gray-700">฿15</span><span class="w-12 text-center font-bold text-blue-500">฿25</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- end tab:menu -->
+
+
+<!-- ══════════════════════════════════════
+     TAB: COST
+══════════════════════════════════════ -->
+<div x-show="tab==='cost'" x-transition>
+
+  <!-- BASE BOWL -->
+  <section>
+    <h2 class="text-xl font-bold text-red-800 mb-4">🍜 Base Bowl Cost</h2>
+    <div class="grid md:grid-cols-3 gap-4 mb-6">
+      <div class="bg-white rounded-2xl shadow p-5 border-l-4 border-green-500">
+        <div class="text-sm text-gray-500">ก๋วยเตี๋ยว (150g)</div>
+        <div class="text-3xl font-black text-green-700">฿11.06</div>
+        <div class="text-xs text-gray-400 mt-1">เส้น+น้ำซุป+ผัก+เครื่องปรุง</div>
+      </div>
+      <div class="bg-white rounded-2xl shadow p-5 border-l-4 border-amber-500">
+        <div class="text-sm text-gray-500">ก๋วยเตี๋ยว พิเศษ (180g)</div>
+        <div class="text-3xl font-black text-amber-700">฿12.02</div>
+        <div class="text-xs text-gray-400 mt-1">+฿10 ราคา → margin ฿8</div>
+      </div>
+      <div class="bg-white rounded-2xl shadow p-5 border-l-4 border-blue-500">
+        <div class="text-sm text-gray-500">เกาเหลา (ไม่มีเส้น)</div>
+        <div class="text-3xl font-black text-blue-700">฿7.60</div>
+        <div class="text-xs text-gray-400 mt-1">ผักมากขึ้น ราคาเท่ากัน</div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="text-left px-4 py-2">รายการ</th>
+            <th class="text-center px-3 py-2">ปริมาณ</th>
+            <th class="text-center px-3 py-2">ต้นทุน</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50 text-sm">
+          <tr><td class="px-4 py-2">เส้น (150g สุก)</td><td class="text-center px-3">150g</td><td class="text-center px-3 font-semibold">฿4.79</td></tr>
+          <tr class="bg-gray-50"><td class="px-4 py-2">น้ำซุป (RCP-002)</td><td class="text-center px-3">250ml</td><td class="text-center px-3 font-semibold">฿1.66</td></tr>
+          <tr><td class="px-4 py-2">ผัก (ถั่วงอก 5g + ผักบุ้ง 10g)</td><td class="text-center px-3">15g</td><td class="text-center px-3 font-semibold">฿2.00</td></tr>
+          <tr class="bg-gray-50"><td class="px-4 py-2">กระเทียมเจียว</td><td class="text-center px-3">5g</td><td class="text-center px-3 font-semibold">฿0.33</td></tr>
+          <tr><td class="px-4 py-2">พริกผัด</td><td class="text-center px-3">15g</td><td class="text-center px-3 font-semibold">฿1.68</td></tr>
+          <tr class="bg-gray-50"><td class="px-4 py-2">น้ำตาล</td><td class="text-center px-3">5g</td><td class="text-center px-3 font-semibold">฿0.15</td></tr>
+          <tr><td class="px-4 py-2">พริกน้ำส้ม</td><td class="text-center px-3">20g</td><td class="text-center px-3 font-semibold">฿0.45</td></tr>
+          <tr class="bg-green-50 font-bold"><td class="px-4 py-2">รวม Base Bowl</td><td class="text-center px-3">—</td><td class="text-center px-3 text-green-700">฿11.06</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- TIER FC% TABLE -->
+  <section>
+    <h2 class="text-xl font-bold text-red-800 mb-1">📊 FC% รายTier (AVG Standard)</h2>
+    <p class="text-sm text-gray-500 mb-4">AVG cost/unit ~฿6.50 | True FC% = BOM × 1.15 ÷ ราคา</p>
+    <div class="bg-white rounded-2xl shadow overflow-hidden mb-4">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-800 text-white">
+          <tr>
+            <th class="text-left px-4 py-3">Tier</th>
+            <th class="text-center px-3 py-3">ราคาร้าน</th>
+            <th class="text-center px-3 py-3">ต้นทุน AVG</th>
+            <th class="text-center px-3 py-3">FC% ร้าน</th>
+            <th class="text-center px-3 py-3">True FC%</th>
+            <th class="text-center px-3 py-3">Delivery</th>
+            <th class="text-center px-3 py-3">FC% Deli</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr>
+            <td class="px-4 py-3 font-bold">S (3u)</td>
+            <td class="text-center px-3">฿89</td>
+            <td class="text-center px-3">฿31.98</td>
+            <td class="text-center px-3"><span class="fc-warn px-2 py-0.5 rounded-full text-xs font-bold">36.0%</span></td>
+            <td class="text-center px-3"><span class="fc-danger px-2 py-0.5 rounded-full text-xs font-bold">41.3% 🔴</span></td>
+            <td class="text-center px-3">฿137</td>
+            <td class="text-center px-3"><span class="fc-danger px-2 py-0.5 rounded-full text-xs font-bold">52.2%</span></td>
+          </tr>
+          <tr class="bg-gray-50">
+            <td class="px-4 py-3 font-bold">M (5u)</td>
+            <td class="text-center px-3">฿129</td>
+            <td class="text-center px-3">฿44.89</td>
+            <td class="text-center px-3"><span class="fc-good px-2 py-0.5 rounded-full text-xs font-bold">34.8%</span></td>
+            <td class="text-center px-3"><span class="fc-warn px-2 py-0.5 rounded-full text-xs font-bold">40.0% 🟡</span></td>
+            <td class="text-center px-3">฿199</td>
+            <td class="text-center px-3"><span class="fc-danger px-2 py-0.5 rounded-full text-xs font-bold">46.9%</span></td>
+          </tr>
+          <tr>
+            <td class="px-4 py-3 font-bold">L (6u)</td>
+            <td class="text-center px-3">฿159</td>
+            <td class="text-center px-3">฿53.25</td>
+            <td class="text-center px-3"><span class="fc-good px-2 py-0.5 rounded-full text-xs font-bold">33.5%</span></td>
+            <td class="text-center px-3"><span class="fc-warn px-2 py-0.5 rounded-full text-xs font-bold">38.5% 🟡</span></td>
+            <td class="text-center px-3">฿245</td>
+            <td class="text-center px-3"><span class="fc-danger px-2 py-0.5 rounded-full text-xs font-bold">43.9%</span></td>
+          </tr>
+          <tr class="bg-gray-50">
+            <td class="px-4 py-3 font-bold">XL (8u)</td>
+            <td class="text-center px-3">฿199</td>
+            <td class="text-center px-3">฿66.87</td>
+            <td class="text-center px-3"><span class="fc-good px-2 py-0.5 rounded-full text-xs font-bold">33.6%</span></td>
+            <td class="text-center px-3"><span class="fc-warn px-2 py-0.5 rounded-full text-xs font-bold">38.6% 🟡</span></td>
+            <td class="text-center px-3">฿305</td>
+            <td class="text-center px-3"><span class="fc-danger px-2 py-0.5 rounded-full text-xs font-bold">42.8%</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Chart -->
+    <div class="bg-white rounded-2xl shadow p-6">
+      <h3 class="font-bold text-gray-700 mb-4">FC% เปรียบเทียบ — ร้าน vs True vs Delivery</h3>
+      <canvas id="fcChart" height="100"></canvas>
+    </div>
+  </section>
+
+  <!-- ADD-ON FC% -->
+  <section>
+    <h2 class="text-xl font-bold text-red-800 mb-4">📋 Add-on FC% Analysis</h2>
+    <div class="bg-white rounded-2xl shadow overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-800 text-white">
+          <tr>
+            <th class="text-left px-4 py-3">รายการ</th>
+            <th class="text-center px-3 py-3">กลุ่ม</th>
+            <th class="text-center px-3 py-3">ต้นทุน/unit</th>
+            <th class="text-center px-3 py-3">ราคา</th>
+            <th class="text-center px-3 py-3">FC%</th>
+            <th class="text-center px-3 py-3">True FC%</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 text-sm">
+          <tr><td class="px-4 py-2">เนื้อสด</td><td class="text-center">Standard</td><td class="text-center">฿4.75</td><td class="text-center">฿20</td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">23.8%</span></td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">27.4%</span></td></tr>
+          <tr class="bg-gray-50"><td class="px-4 py-2">สามชั้น</td><td class="text-center">Standard</td><td class="text-center">฿6.83</td><td class="text-center">฿20</td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">34.2%</span></td><td class="text-center"><span class="fc-warn px-2 py-0.5 rounded-full text-xs">39.3%</span></td></tr>
+          <tr><td class="px-4 py-2">น่องกรอบ</td><td class="text-center">Standard</td><td class="text-center">฿7.50</td><td class="text-center">฿20</td><td class="text-center"><span class="fc-warn px-2 py-0.5 rounded-full text-xs">37.5%</span></td><td class="text-center"><span class="fc-danger px-2 py-0.5 rounded-full text-xs">43.1%</span></td></tr>
+          <tr class="bg-gray-50"><td class="px-4 py-2">ริ้วขาว</td><td class="text-center">Standard</td><td class="text-center">฿7.24</td><td class="text-center">฿20</td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">36.2%</span></td><td class="text-center"><span class="fc-danger px-2 py-0.5 rounded-full text-xs">41.6%</span></td></tr>
+          <tr><td class="px-4 py-2">ลูกชิ้นเนื้อ/เอ็น</td><td class="text-center">Standard</td><td class="text-center">฿6.15</td><td class="text-center">฿20</td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">30.8%</span></td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">35.4%</span></td></tr>
+          <tr class="bg-orange-50"><td class="px-4 py-2 font-semibold">ชายโครง</td><td class="text-center">Premium</td><td class="text-center">฿8.82</td><td class="text-center font-bold text-red-600">฿30</td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">29.4%</span></td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">33.8%</span></td></tr>
+          <tr class="bg-orange-50"><td class="px-4 py-2 font-semibold">น่องลาย</td><td class="text-center">Premium</td><td class="text-center">฿9.85</td><td class="text-center font-bold text-red-600">฿30</td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">32.8%</span></td><td class="text-center"><span class="fc-warn px-2 py-0.5 rounded-full text-xs">37.7%</span></td></tr>
+          <tr class="bg-gray-50"><td class="px-4 py-2">ม้าม</td><td class="text-center">เครื่องใน</td><td class="text-center">฿4.09</td><td class="text-center">฿20</td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">20.5%</span></td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">23.5%</span></td></tr>
+          <tr><td class="px-4 py-2">ไส้อ่อน</td><td class="text-center">เครื่องใน</td><td class="text-center">฿5.61</td><td class="text-center">฿20</td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">28.1%</span></td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">32.3%</span></td></tr>
+          <tr class="bg-gray-50"><td class="px-4 py-2">เอ็นแก้ว</td><td class="text-center">เครื่องใน</td><td class="text-center">฿6.21</td><td class="text-center">฿20</td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">31.1%</span></td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">35.7%</span></td></tr>
+          <tr class="bg-yellow-50"><td class="px-4 py-2 font-semibold">วากิวพับใน</td><td class="text-center">วากิว</td><td class="text-center">฿7.40</td><td class="text-center font-bold text-red-600">฿30</td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">24.7%</span></td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">28.4%</span></td></tr>
+          <tr class="bg-yellow-50"><td class="px-4 py-2 font-semibold">วากิวเสือ</td><td class="text-center">วากิว</td><td class="text-center">฿9.60</td><td class="text-center font-bold text-red-600">฿30</td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">32.0%</span></td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">36.8%</span></td></tr>
+          <tr class="bg-amber-50"><td class="px-4 py-2 font-bold">ลิ้นวัว (4ชิ้น=40g)</td><td class="text-center">ลิ้นวัว</td><td class="text-center">฿24.86</td><td class="text-center font-black text-amber-700">฿69</td><td class="text-center"><span class="fc-good px-2 py-0.5 rounded-full text-xs">36.0%</span></td><td class="text-center"><span class="fc-warn px-2 py-0.5 rounded-full text-xs">41.4%</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Legend -->
+    <div class="mt-4 flex gap-4 text-xs text-gray-600 flex-wrap">
+      <span class="fc-good px-3 py-1 rounded-full font-semibold">✅ ≤37% ดีมาก</span>
+      <span class="fc-warn px-3 py-1 rounded-full font-semibold">🟡 38–41% ยอมรับได้</span>
+      <span class="fc-danger px-3 py-1 rounded-full font-semibold">🔴 >41% ควรทบทวน</span>
+    </div>
+  </section>
+
+</div><!-- end tab:cost -->
+
+</main>
+
+<footer class="text-center text-xs text-gray-400 py-6 mt-4 border-t">
+  NNTN CookingBook v9.0 — F&B Cost Controller — อัปเดต 11/04/2026
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const ctx = document.getElementById('fcChart');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['S (฿89)', 'M (฿129)', 'L (฿159)', 'XL (฿199)'],
+      datasets: [
+        {
+          label: 'FC% ร้าน',
+          data: [36.0, 34.8, 33.5, 33.6],
+          backgroundColor: '#86efac',
+          borderRadius: 6,
+        },
+        {
+          label: 'True FC% (×1.15)',
+          data: [41.3, 40.0, 38.5, 38.6],
+          backgroundColor: '#fde68a',
+          borderRadius: 6,
+        },
+        {
+          label: 'FC% Delivery',
+          data: [52.2, 46.9, 43.9, 42.8],
+          backgroundColor: '#fca5a5',
+          borderRadius: 6,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 60,
+          ticks: {
+            callback: v => v + '%'
+          }
+        }
+      }
+    }
+  });
+});
+</script>
+
+</body>
+</html>
