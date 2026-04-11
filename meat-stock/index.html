@@ -1042,7 +1042,7 @@ async function submitNewPot() {
 function openClosePotModal(session) {
   currentClosePot = session
   const inputs = session.cook_inputs || []
-  const rawItem = inputs[0]?.items
+  const rawItemEmbed = inputs[0]?.items
   const rawKg = inputs.reduce((s, i) => s + (Number(i.kg_raw) || 0), 0)
   const potName = session.notes || `Session ${session.id.substring(0,6)}`
   const cookedOpts = items
@@ -1051,6 +1051,29 @@ function openClosePotModal(session) {
     .join('')
   const startTime = new Date(session.created_at).toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'})
 
+  // Lookup byproduct info from global items (has byproduct_item_id + byproduct_required)
+  const rawItemFull = items.find(i => i.id === rawItemEmbed?.id)
+  const bypItemId = rawItemFull?.byproduct_item_id
+  const bypItem = bypItemId ? items.find(i => i.id === bypItemId) : null
+  const bypRequired = !!rawItemFull?.byproduct_required
+  const bypSection = bypItem ? `
+    <div class="cook-sec" style="background:#FFF8E1;border:1.5px solid #FFE082">
+      <div class="cook-sec-label" style="color:#E65100">
+        By-product — ${escHtml(bypItem.name)} ${bypRequired ? '<span style="color:var(--red-light)">(บังคับ)</span>' : '<span style="color:var(--muted)">(ไม่บังคับ)</span>'}
+      </div>
+      <div class="row2">
+        <div>
+          <label>จำนวนถุง</label>
+          <input type="number" id="cp-byp-count" min="0" placeholder="0" oninput="updateClosePotBypBags()">
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <div style="font-size:0.82rem;color:var(--muted)">รวม: <b id="cp-byp-kg-sum">0.000</b> กก.</div>
+        </div>
+      </div>
+      <div id="cp-byp-rows" style="margin-top:10px"></div>
+    </div>
+  ` : ''
+
   showCookModal(`
   <div class="modal-box">
     <div class="modal-title">✏️ ปิดหม้อ — ${escHtml(potName)}</div>
@@ -1058,11 +1081,11 @@ function openClosePotModal(session) {
 
     <div class="cook-sec">
       <div class="cook-sec-label">Input (เริ่ม ${startTime} | กะ${session.shift})</div>
-      <div style="font-size:0.92rem">${escHtml(rawItem?.name || '—')}: <b>${rawKg.toFixed(3)} กก.</b></div>
+      <div style="font-size:0.92rem">${escHtml(rawItemEmbed?.name || '—')}: <b>${rawKg.toFixed(3)} กก.</b></div>
     </div>
 
     <div class="cook-sec">
-      <div class="cook-sec-label">ผลผลิต (Output)</div>
+      <div class="cook-sec-label">ผลผลิตหลัก (Main output)</div>
       <div class="row2">
         <div>
           <label>เนื้อตุ๋น</label>
@@ -1078,16 +1101,24 @@ function openClosePotModal(session) {
       <div id="cp-bag-rows" style="margin-top:10px"></div>
     </div>
 
+    ${bypSection}
+
     <div class="cook-sec" id="cp-yield-box" style="display:none">
       <div class="cook-sec-label">Yield</div>
       <div style="display:flex;justify-content:space-between;margin-bottom:3px">
         <span>Input</span><span>${rawKg.toFixed(3)} กก.</span>
       </div>
       <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-        <span>Output</span><span id="cp-yo">—</span>
+        <span>Output หลัก</span><span id="cp-yo">—</span>
+      </div>
+      <div id="cp-byp-line" style="display:none;justify-content:space-between;margin-bottom:3px">
+        <span>By-product</span><span id="cp-yb">—</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
         <span>Yield</span><span id="cp-yp">—</span>
+      </div>
+      <div id="cp-total-line" style="display:none;justify-content:space-between;font-size:0.78rem;color:var(--muted);margin-top:4px">
+        <span>Total recovery</span><span id="cp-tr">—</span>
       </div>
     </div>
 
@@ -1097,6 +1128,25 @@ function openClosePotModal(session) {
     </div>
   </div>
   `)
+}
+
+function updateClosePotBypBags() {
+  const count = parseInt(document.getElementById('cp-byp-count').value) || 0
+  const rows = document.getElementById('cp-byp-rows')
+  if (!rows) return
+  if (count <= 0) { rows.innerHTML = ''; calcClosePotYield(); return }
+  rows.innerHTML = `
+    <div style="display:grid;grid-template-columns:40px 1fr 80px;gap:6px;font-size:0.72rem;color:var(--muted);padding:4px 0">
+      <span>ถุง</span><span>น้ำหนัก (กรัม)</span><span>กก.</span>
+    </div>
+  ` + Array.from({length: count}, (_, i) => `
+    <div style="display:grid;grid-template-columns:40px 1fr 80px;gap:6px;margin-bottom:4px">
+      <span style="display:flex;align-items:center;font-size:0.82rem">#${i+1}</span>
+      <input type="number" class="cp-byp-bw" data-idx="${i}" placeholder="0" oninput="calcClosePotYield()" style="padding:6px">
+      <span class="cp-byp-bk" data-idx="${i}" style="display:flex;align-items:center;font-size:0.82rem;color:var(--muted)">0.000</span>
+    </div>
+  `).join('')
+  calcClosePotYield()
 }
 
 function updateClosePotBags() {
@@ -1131,14 +1181,40 @@ function calcClosePotYield() {
     if (kgSpan) kgSpan.textContent = (g / 1000).toFixed(3)
   })
   const totalKg = totalG / 1000
+
+  let bypG = 0
+  document.querySelectorAll('.cp-byp-bw').forEach((el, i) => {
+    const g = parseFloat(el.value) || 0
+    bypG += g
+    const kgSpan = document.querySelector(`.cp-byp-bk[data-idx="${i}"]`)
+    if (kgSpan) kgSpan.textContent = (g / 1000).toFixed(3)
+  })
+  const bypKg = bypG / 1000
+  const bypSumEl = document.getElementById('cp-byp-kg-sum')
+  if (bypSumEl) bypSumEl.textContent = bypKg.toFixed(3)
+
   const box = document.getElementById('cp-yield-box')
   if (!box) return
-  if (totalG <= 0) { box.style.display = 'none'; return }
+  if (totalG <= 0 && bypG <= 0) { box.style.display = 'none'; return }
   box.style.display = 'block'
   const yoEl = document.getElementById('cp-yo')
   if (yoEl) yoEl.textContent = `${totalKg.toFixed(3)} กก.`
 
-  if (rawKg > 0) {
+  const bypLine = document.getElementById('cp-byp-line')
+  const totalLine = document.getElementById('cp-total-line')
+  if (bypG > 0) {
+    if (bypLine) { bypLine.style.display = 'flex'; document.getElementById('cp-yb').textContent = `${bypKg.toFixed(3)} กก.` }
+    if (totalLine && rawKg > 0) {
+      totalLine.style.display = 'flex'
+      const totalRec = ((totalKg + bypKg) / rawKg * 100).toFixed(1)
+      document.getElementById('cp-tr').textContent = `${totalRec}% (หลัก+byproduct)`
+    }
+  } else {
+    if (bypLine) bypLine.style.display = 'none'
+    if (totalLine) totalLine.style.display = 'none'
+  }
+
+  if (rawKg > 0 && totalG > 0) {
     const yieldPct = (totalKg / rawKg) * 100
     const itemId = document.getElementById('cp-item')?.value
     const cookedItem = items.find(i => i.id === itemId)
@@ -1171,18 +1247,45 @@ async function submitClosePot() {
 
   const totalKg = bagWeights.reduce((s, g) => s + g, 0) / 1000
 
-  if (!confirm(`ยืนยันปิดหม้อ?\n\nผลผลิต: ${bagWeights.length} ถุง / ${totalKg.toFixed(3)} กก.`)) return
+  const inputs = currentClosePot.cook_inputs || []
+  const rawItemFull = items.find(i => i.id === inputs[0]?.items?.id)
+  const bypItemId = rawItemFull?.byproduct_item_id
+  const bypItem = bypItemId ? items.find(i => i.id === bypItemId) : null
+  const bypRequired = !!rawItemFull?.byproduct_required
+
+  const bypWeights = Array.from(document.querySelectorAll('.cp-byp-bw'))
+    .map(el => parseFloat(el.value) || 0)
+    .filter(g => g > 0)
+
+  if (bypRequired && bypWeights.length === 0) {
+    alert(`⚠️ ${bypItem?.name || 'By-product'} บังคับ — กรุณากรอกอย่างน้อย 1 ถุง`)
+    return
+  }
+
+  const bypKg = bypWeights.reduce((s, g) => s + g, 0) / 1000
+  const bypMsg = bypWeights.length > 0 ? `\nBy-product: ${bypWeights.length} ถุง / ${bypKg.toFixed(3)} กก.` : ''
+
+  if (!confirm(`ยืนยันปิดหม้อ?\n\nผลผลิต: ${bagWeights.length} ถุง / ${totalKg.toFixed(3)} กก.${bypMsg}`)) return
 
   const btn = document.querySelector('#cook-modal-overlay .btn-confirm')
   if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...' }
 
   try {
-    await post('cook_outputs', [{
+    const outputs = [{
       session_id: sessionId,
       item_id: itemId,
       kg_cooked: totalKg,
       bag_count: bagWeights.length
-    }])
+    }]
+    if (bypItem && bypWeights.length > 0) {
+      outputs.push({
+        session_id: sessionId,
+        item_id: bypItem.id,
+        kg_cooked: bypKg,
+        bag_count: bypWeights.length
+      })
+    }
+    await post('cook_outputs', outputs)
 
     const newBags = bagWeights.map((g, i) => ({
       item_id: itemId,
@@ -1196,6 +1299,24 @@ async function submitClosePot() {
       source: 'meat-stock-kanban',
       notes: currentClosePot.notes || ''
     }))
+
+    if (bypItem && bypWeights.length > 0) {
+      const bypWarehouse = bypItem.category === 'meat_cooked' ? 'B' : 'A'
+      bypWeights.forEach((g, i) => {
+        newBags.push({
+          item_id: bypItem.id,
+          weight_g: g,
+          warehouse: bypWarehouse,
+          status: '✅ In Stock',
+          cook_session_id: sessionId,
+          bag_no: i + 1,
+          lot_date: today(),
+          date_recorded: today(),
+          source: 'meat-stock-kanban-byp',
+          notes: `by-product of ${currentClosePot.notes || sessionId.substring(0,6)}`
+        })
+      })
+    }
     await post('catch_weight', newBags)
 
     const upRes = await fetch(`${SB}/rest/v1/cook_sessions?id=eq.${sessionId}`, {
@@ -1206,7 +1327,7 @@ async function submitClosePot() {
     if (!upRes.ok) throw new Error(`UPDATE session: HTTP ${upRes.status} — ${await upRes.text()}`)
 
     closeCookModal()
-    alert(`✅ ปิดหม้อสำเร็จ\n${bagWeights.length} ถุง / ${totalKg.toFixed(3)} กก.`)
+    alert(`✅ ปิดหม้อสำเร็จ\n${bagWeights.length} ถุง / ${totalKg.toFixed(3)} กก.${bypMsg}`)
     await reloadCwAndKanban()
 
   } catch(e) {
