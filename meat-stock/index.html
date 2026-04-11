@@ -356,8 +356,8 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
   </div>
 
   <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <button class="btn btn-primary" onclick="openNewPotModal('cook')" style="flex:1;min-width:140px">🔥 เปิดหม้อใหม่</button>
-    <button class="btn" onclick="openPlanPotModal()" style="flex:1;min-width:140px;background:#f5f5f5;border:1px solid #bdbdbd">📝 วางแผนหม้อ</button>
+    <button class="btn btn-primary" onclick="openNewPotModal('cook')" style="flex:1;min-width:140px">🔥 เปิดเนื้อใหม่</button>
+    <button class="btn" onclick="openPlanPotModal()" style="flex:1;min-width:140px;background:#f5f5f5;border:1px solid #bdbdbd">📝 วางแผนเนื้อ</button>
   </div>
 
   <div class="kanban-board">
@@ -778,7 +778,7 @@ function renderKanbanCard(session, type) {
   const rawName = inputs[0]?.items?.name || '—'
   const cookedName = outputs[0]?.items?.name || '—'
   const shift = session.shift || ''
-  const potName = session.notes || `Session ${session.id.substring(0,6)}`
+  const potName = session.notes || rawName || `Session ${session.id.substring(0,6)}`
 
   const createdAt = new Date(session.created_at)
   const now = new Date()
@@ -798,15 +798,14 @@ function renderKanbanCard(session, type) {
 
   let body = ''
   if (type === 'plan') {
-    body = `<div class="kanban-card-meta">กะ${shift} | รอเริ่ม</div>
+    body = `<div class="kanban-card-meta">${rawKg.toFixed(1)} กก. · กะ${shift}</div>
             <span class="kanban-card-tag kct-plan">พร้อมเริ่ม</span>`
   } else if (type === 'cook') {
-    body = `<div class="kanban-card-meta">${escHtml(rawName)} ${rawKg.toFixed(1)} กก.</div>
-            <div class="kanban-card-meta">กะ${shift}</div>
+    body = `<div class="kanban-card-meta">${rawKg.toFixed(1)} กก. · กะ${shift}</div>
             <span class="kanban-card-tag kct-time">⏱ ${elapsedStr}</span>`
   } else {
-    body = `<div class="kanban-card-meta">${escHtml(rawName)} ${rawKg.toFixed(1)} → ${escHtml(cookedName)} ${cookedKg.toFixed(1)} กก.</div>
-            <div class="kanban-card-meta">กะ${shift} | ${bagCount} ถุง</div>
+    body = `<div class="kanban-card-meta">${rawKg.toFixed(1)} → ${cookedKg.toFixed(1)} กก. · ${bagCount} ถุง</div>
+            <div class="kanban-card-meta" style="font-size:.72rem;color:var(--muted)">→ ${escHtml(cookedName)} · กะ${shift}</div>
             ${yieldTag}`
   }
 
@@ -858,15 +857,13 @@ function openPlanPotModal() { openNewPotModal('plan') }
 function openNewPotModal(mode = 'cook') {
   _newPotMode = mode
   currentNewPotBags = new Set()
-  const nextNum = (kanbanSessions.filter(s => s.status !== 'cancelled').length) + 1
-  const potName = `หม้อ ${nextNum}`
   const hour = new Date().getHours()
   let shift = 'เช้า'
   if (hour >= 12 && hour < 16) shift = 'บ่าย'
   else if (hour >= 16) shift = 'เย็น'
 
   const isPlan = mode === 'plan'
-  const title = isPlan ? '📝 วางแผนหม้อใหม่' : '🔥 เปิดหม้อตุ๋นใหม่'
+  const title = isPlan ? '📝 วางแผนเนื้อที่จะตุ๋น' : '🔥 เปิดเนื้อเข้าหม้อ'
   const sub = isPlan ? 'เลือกเนื้อสด → วางแผน (status → open, ยังไม่ consume ถุง)' : 'เลือกเนื้อสด → ส่งเข้าหม้อ (status → cooking)'
   const submitLabel = isPlan ? '📝 บันทึกแผน' : '🔥 ส่งเข้าหม้อ'
 
@@ -879,9 +876,9 @@ function openNewPotModal(mode = 'cook') {
       <div class="cook-sec-label">Session Info</div>
       <div class="row2">
         <div>
-          <label>ชื่อหม้อ</label>
-          <input type="text" id="np-pot-name" value="${escHtml(potName)}" readonly
-                 style="background:#f0f0f0;color:var(--muted)">
+          <label>ชื่อ (auto)</label>
+          <input type="text" id="np-pot-name" value="จากชื่อเนื้อ" readonly
+                 style="background:#f0f0f0;color:var(--muted);font-size:.82rem">
         </div>
         <div>
           <label>กะ</label>
@@ -994,7 +991,6 @@ function updateNewPotSelected() {
 }
 
 async function submitNewPot() {
-  const potName = document.getElementById('np-pot-name').value
   const shift = document.getElementById('np-shift').value
   const itemId = document.getElementById('np-item').value
   const bagIds = Array.from(currentNewPotBags).map(id => parseInt(id)).filter(n => !isNaN(n))
@@ -1003,14 +999,23 @@ async function submitNewPot() {
   if (!itemId) { alert('กรุณาเลือกรายการเนื้อ'); return }
   if (bagIds.length === 0) { alert('กรุณาเลือกถุงอย่างน้อย 1 ถุง'); return }
 
+  const selectedItem = items.find(i => i.id === itemId)
+  const baseName = selectedItem?.name || 'เนื้อ'
+  const sameNameToday = kanbanSessions.filter(s => {
+    if (s.status === 'cancelled') return false
+    const sRaw = s.cook_inputs?.[0]?.items?.name || s.notes || ''
+    return sRaw === baseName || (s.notes && s.notes.startsWith(baseName))
+  }).length
+  const potName = sameNameToday > 0 ? `${baseName} #${sameNameToday + 1}` : baseName
+
   const totalKg = bagIds.reduce((s, id) => {
     const b = cwStock.find(x => Number(x.id) === id)
     return s + ((Number(b?.weight_g) || 0) / 1000)
   }, 0)
 
   const confirmMsg = isPlan
-    ? `ยืนยันวางแผนหม้อ?\n\n${potName} (กะ${shift})\n${bagIds.length} ถุง / ${totalKg.toFixed(3)} กก.\n\n📝 ถุงจะยังไม่ถูก consume — รอกด "เริ่มตุ๋น"`
-    : `ยืนยันเปิดหม้อใหม่?\n\n${potName} (กะ${shift})\n${bagIds.length} ถุง / ${totalKg.toFixed(3)} กก.\n\n⚠️ ถุงที่เลือกจะถูก mark "❌ Out" ทันที`
+    ? `ยืนยันวางแผน "${potName}"?\n\nกะ${shift}\n${bagIds.length} ถุง / ${totalKg.toFixed(3)} กก.\n\n📝 ถุงจะยังไม่ถูก consume — รอกด "เริ่มตุ๋น"`
+    : `ยืนยันเปิด "${potName}" เข้าหม้อ?\n\nกะ${shift}\n${bagIds.length} ถุง / ${totalKg.toFixed(3)} กก.\n\n⚠️ ถุงที่เลือกจะถูก mark "❌ Out" ทันที`
   if (!confirm(confirmMsg)) return
 
   const btn = document.querySelector('#cook-modal-overlay .btn-confirm')
@@ -1049,8 +1054,8 @@ async function submitNewPot() {
 
     closeCookModal()
     const okMsg = isPlan
-      ? `📝 วางแผน ${potName} แล้ว\n${bagIds.length} ถุง / ${totalKg.toFixed(3)} กก.\n\nแตะ card ในคอลัมน์ "วางแผน" เพื่อเริ่มตุ๋น`
-      : `✅ เปิดหม้อ ${potName} แล้ว\n${bagIds.length} ถุง / ${totalKg.toFixed(3)} กก.`
+      ? `📝 วางแผน "${potName}" แล้ว\n${bagIds.length} ถุง / ${totalKg.toFixed(3)} กก.\n\nแตะ card ในคอลัมน์ "วางแผน" เพื่อเริ่มตุ๋น`
+      : `✅ เปิด "${potName}" เข้าหม้อแล้ว\n${bagIds.length} ถุง / ${totalKg.toFixed(3)} กก.`
     alert(okMsg)
     await reloadCwAndKanban()
 
@@ -1061,8 +1066,8 @@ async function submitNewPot() {
         await fetch(`${SB}/rest/v1/cook_sessions?id=eq.${sessionId}`, { method: 'DELETE', headers: {...H, Prefer:'return=minimal'} })
       } catch(_){}
     }
-    alert(`❌ เปิดหม้อไม่สำเร็จ: ${e.message}`)
-    if (btn) { btn.disabled = false; btn.textContent = '🔥 ส่งเข้าหม้อ' }
+    alert(`❌ ไม่สำเร็จ: ${e.message}`)
+    if (btn) { btn.disabled = false; btn.textContent = isPlan ? '📝 บันทึกแผน' : '🔥 ส่งเข้าหม้อ' }
   }
 }
 
