@@ -2093,9 +2093,10 @@ async function loadStock() {
             <div class="stock-bag-list">
               ${d.bags.sort((a,b)=>new Date(a.lot_date)-new Date(b.lot_date)).map(bag=>`
                 <div class="stock-bag-item">
-                  <span class="bag-cw">${bag.legacy_cw_row||'#'+bag.id.substring(0,6)}</span>
+                  <span class="bag-cw">${bag.legacy_cw_row||'#'+String(bag.id).substring(0,6)}</span>
                   <span class="bag-lot">${bag.lot_date?fmtDate(bag.lot_date.split('T')[0]):''}</span>
                   <span class="bag-wt">${((parseFloat(bag.weight_g)||0)/1000).toFixed(3)} กก.</span>
+                  <button class="btn-adj" onclick="event.stopPropagation();openTraceModal(${bag.id})" style="background:#E3F2FD;color:#1565C0;border:1px solid #90CAF9;margin-right:4px">🔍 ที่มา</button>
                   <button class="btn-adj" onclick="event.stopPropagation();openAdjModal(${JSON.stringify(bag).replace(/"/g,'&quot;')})">⚙️ ปรับยอด</button>
                 </div>`).join('')}
             </div>
@@ -2136,6 +2137,160 @@ function toggleStockExpand(name) {
   const row = document.getElementById('expand-'+key)
   if (!row) return
   row.style.display = row.style.display==='none' ? 'table-row' : 'none'
+}
+
+// ── Trace modal (P4 Task 1-2) ──────────────────────────
+async function openTraceModal(bagId) {
+  showCookModal(`<div class="modal-box">
+    <div class="modal-title">🔍 Trace — กำลังโหลด...</div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeCookModal()">ปิด</button></div>
+  </div>`)
+
+  try {
+    const bagRows = await get('catch_weight', {
+      select: 'id,item_id,weight_g,warehouse,status,legacy_cw_row,lot_date,cook_session_id,notes,source,items(name,category)',
+      id: `eq.${bagId}`,
+      limit: '1'
+    })
+    const bag = Array.isArray(bagRows) ? bagRows[0] : null
+    if (!bag) throw new Error('ไม่พบถุง')
+
+    const itemName = bag.items?.name || '—'
+    const itemCat = bag.items?.category || ''
+    const isCooked = itemCat === 'meat_cooked' || itemCat === 'meat_trim'
+    const weightKg = (Number(bag.weight_g) || 0) / 1000
+    const bagLabel = bag.legacy_cw_row || `#${String(bag.id).substring(0,6)}`
+
+    let backwardHtml = ''
+    let forwardHtml = ''
+
+    // ── BACKWARD: raw source (if this is cooked with cook_session_id) ──
+    if (bag.cook_session_id) {
+      const sessRows = await get('cook_sessions', {
+        select: 'id,session_date,shift,status,notes,created_at,cook_inputs(kg_raw,catch_weight_ids,items(name))',
+        id: `eq.${bag.cook_session_id}`,
+        limit: '1'
+      })
+      const sess = Array.isArray(sessRows) ? sessRows[0] : null
+      if (sess) {
+        const rawBagIds = (sess.cook_inputs?.[0]?.catch_weight_ids) || []
+        let rawBagsHtml = ''
+        if (rawBagIds.length > 0) {
+          const rawBags = await get('catch_weight', {
+            select: 'id,legacy_cw_row,weight_g,lot_date,source,notes,items(name)',
+            id: `in.(${rawBagIds.join(',')})`
+          })
+          const rows = Array.isArray(rawBags) ? rawBags : []
+          rawBagsHtml = rows.map(rb => `
+            <div style="display:flex;justify-content:space-between;font-size:.82rem;padding:4px 0;border-bottom:1px dashed var(--border)">
+              <span>${escHtml(rb.legacy_cw_row || '#' + String(rb.id).substring(0,6))} · ${escHtml(rb.items?.name || '—')}</span>
+              <span>${((Number(rb.weight_g)||0)/1000).toFixed(3)} กก. · lot ${rb.lot_date ? rb.lot_date.split('T')[0] : '—'}</span>
+            </div>
+          `).join('')
+        }
+        const startedAt = sess.created_at ? new Date(sess.created_at) : null
+        const startStr = startedAt ? `${startedAt.getDate().toString().padStart(2,'0')}/${(startedAt.getMonth()+1).toString().padStart(2,'0')}/${startedAt.getFullYear()} ${startedAt.getHours().toString().padStart(2,'0')}:${startedAt.getMinutes().toString().padStart(2,'0')}` : '—'
+        backwardHtml = `
+          <div class="cook-sec" style="background:#FFF3E0;border:1.5px solid #FFCC80">
+            <div class="cook-sec-label" style="color:#E65100">⬅️ ที่มา (raw source)</div>
+            <div style="font-size:.82rem;color:var(--muted);margin-bottom:4px">ตุ๋นเมื่อ: <b style="color:#333">${startStr}</b> · กะ${sess.shift || '—'}</div>
+            ${rawBagsHtml || '<div style="color:var(--muted);font-size:.8rem">ไม่มีข้อมูล raw bags</div>'}
+          </div>
+        `
+      }
+    }
+
+    // ── FORWARD: delivery (if bag is delivered or via delivery_lines) ──
+    let deliveryInfo = null
+    try {
+      const dlUrl = `${SB}/rest/v1/delivery_lines?select=delivery_id,weight_g,deliveries(bill_no,date,branch,channel)&catch_weight_id=eq.${bag.id}&limit=5`
+      const dlRes = await fetch(dlUrl, { headers: {...H, 'Accept-Profile': 'stock'} })
+      if (dlRes.ok) {
+        const dl = await dlRes.json()
+        if (Array.isArray(dl) && dl.length > 0) deliveryInfo = dl[0]
+      }
+    } catch(_) {}
+
+    if (deliveryInfo?.deliveries) {
+      const d = deliveryInfo.deliveries
+      forwardHtml = `
+        <div class="cook-sec" style="background:#E8F5E9;border:1.5px solid #A5D6A7">
+          <div class="cook-sec-label" style="color:#2E7D32">➡️ ปลายทาง (delivery)</div>
+          <div style="font-size:.88rem"><b>${escHtml(d.bill_no || '—')}</b></div>
+          <div style="font-size:.82rem;color:var(--muted);margin-top:3px">วันส่ง: ${d.date || '—'} · สาขา: ${escHtml(d.branch || '—')} · ช่องทาง: ${escHtml(d.channel || '—')}</div>
+        </div>
+      `
+    } else if (bag.status === '🚚 Delivered' && bag.notes) {
+      forwardHtml = `
+        <div class="cook-sec" style="background:#E8F5E9;border:1.5px solid #A5D6A7">
+          <div class="cook-sec-label" style="color:#2E7D32">➡️ ปลายทาง (delivery)</div>
+          <div style="font-size:.82rem">${escHtml(bag.notes)}</div>
+          <div style="font-size:.68rem;color:var(--muted);margin-top:3px">(จาก catch_weight.notes — ข้อมูลไม่อยู่ใน delivery_lines)</div>
+        </div>
+      `
+    } else if (bag.status === '✅ In Stock') {
+      forwardHtml = `
+        <div class="cook-sec" style="background:#f5f5f5">
+          <div class="cook-sec-label">➡️ ปลายทาง (delivery)</div>
+          <div style="font-size:.82rem;color:var(--muted)">ยังอยู่ในสต๊อก — ยังไม่ส่งออก</div>
+        </div>
+      `
+    } else {
+      forwardHtml = `
+        <div class="cook-sec" style="background:#f5f5f5">
+          <div class="cook-sec-label">➡️ ปลายทาง (delivery)</div>
+          <div style="font-size:.82rem;color:var(--muted)">สถานะ: ${escHtml(bag.status || '—')}</div>
+        </div>
+      `
+    }
+
+    // If this is raw (not cooked), show forward trace to any cook_sessions that consumed it
+    let forwardCookHtml = ''
+    if (!isCooked) {
+      try {
+        const ciRows = await get('cook_inputs', {
+          select: 'session_id,catch_weight_ids,cook_sessions(id,session_date,shift,status,notes,created_at)',
+          catch_weight_ids: `cs.{${bag.id}}`,
+          limit: '5'
+        })
+        const ciList = Array.isArray(ciRows) ? ciRows : []
+        if (ciList.length > 0) {
+          const sessList = ciList.map(ci => {
+            const s = ci.cook_sessions
+            if (!s) return ''
+            const dt = s.created_at ? new Date(s.created_at) : null
+            const dtStr = dt ? `${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}` : '—'
+            return `<div style="font-size:.82rem;padding:4px 0;border-bottom:1px dashed var(--border)">
+              <b>${escHtml(s.notes || s.id.substring(0,6))}</b> · ${dtStr} กะ${s.shift || '—'} · <span style="color:var(--muted)">${s.status}</span>
+            </div>`
+          }).join('')
+          forwardCookHtml = `
+            <div class="cook-sec" style="background:#E1F5FE;border:1.5px solid #81D4FA">
+              <div class="cook-sec-label" style="color:#01579B">🔥 ใช้ตุ๋นใน</div>
+              ${sessList}
+            </div>
+          `
+        }
+      } catch(_) {}
+    }
+
+    showCookModal(`<div class="modal-box">
+      <div class="modal-title">🔍 Trace — ${escHtml(bagLabel)}</div>
+      <div class="modal-sub">${escHtml(itemName)} · ${weightKg.toFixed(3)} กก. · ${escHtml(bag.status || '—')}</div>
+
+      ${backwardHtml}
+      ${forwardCookHtml}
+      ${forwardHtml}
+
+      <div class="modal-actions"><button class="btn-confirm" onclick="closeCookModal()">ปิด</button></div>
+    </div>`)
+  } catch(e) {
+    showCookModal(`<div class="modal-box">
+      <div class="modal-title">❌ Trace error</div>
+      <div style="padding:12px;color:var(--red-light);font-size:.82rem">${escHtml(e.message)}</div>
+      <div class="modal-actions"><button class="btn-cancel" onclick="closeCookModal()">ปิด</button></div>
+    </div>`)
+  }
 }
 
 // ── Modal state ─────────────────────────────────────────
