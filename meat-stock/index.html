@@ -559,14 +559,13 @@ async function init() {
   items.filter(i=>i.sku&&i.sku.startsWith('MT')).forEach(i => { const o=document.createElement('option'); o.value=i.id; o.textContent=`${i.sku} | ${i.name}`; skuSel.appendChild(o) })
 
   // Set today dates
-  ;['recv-date','proc-date','exp-date'].forEach(id => {
+  ;['recv-date','proc-date'].forEach(id => {
     const el=document.getElementById(id); if(el) el.value=today()
   })
 
   // Add first items (Tab 2 produce = Kanban, lazy-load on switchTab)
   addRecvItem()
   addProcInput()
-  addExpItem()
 
   // Preload Kanban (Tab 2 is visible by default? only if user lands there — use lazy)
   // loadKanban() will be called via switchTab when user enters Tab 2
