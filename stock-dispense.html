@@ -426,7 +426,7 @@
 <div class="tabs">
   <button class="tab-btn dispense active" onclick="switchTab('dispense', this)">📦 เบิกของ</button>
   <button class="tab-btn loss"            onclick="switchTab('loss', this)">⚠️ Loss / Waste</button>
-  <button class="tab-btn log"             onclick="switchTab('log', this)">📋 Log วันนี้</button>
+  <button class="tab-btn log"             onclick="switchTab('log', this)">📋 Log</button>
 </div>
 
 <!-- ═══════════ TAB: เบิกของ (LIST FLOW) ═══════════ -->
@@ -509,6 +509,13 @@
 <!-- ═══════════ TAB: Log ═══════════ -->
 <div id="tab-log" class="tab-pane">
 
+  <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+    <label style="font-size:13px; color:#555; white-space:nowrap;">วันที่:</label>
+    <input type="date" id="log-date-filter"
+      style="flex:1; padding:7px 10px; font-size:14px; border:1px solid #ddd; border-radius:8px; font-family:inherit;"
+      onchange="loadLog()">
+  </div>
+
   <div class="log-filter">
     <button class="filter-pill active" onclick="filterLog('all', this)">ทั้งหมด</button>
     <button class="filter-pill" onclick="filterLog('dispense', this)">เบิก</button>
@@ -542,9 +549,11 @@
 
   // ─── Init ────────────────────────────────────────────
   (async function init() {
-    var today = new Date().toISOString().split('T')[0];
+    var today = new Date(Date.now() + 7*60*60*1000).toISOString().split('T')[0];
     document.getElementById('d-date').value = today;
     document.getElementById('l-date').value = today;
+    var logDateEl = document.getElementById('log-date-filter');
+    if (logDateEl) logDateEl.value = today;
 
     // Load non-meat items only
     var itmResult = await sb.from('items')
@@ -687,12 +696,17 @@
     countEl.textContent = '(' + dispenseList.length + ' รายการ)';
     container.innerHTML = dispenseList.map(function(r, i) {
       var stockQty = stockMap[r.id] !== undefined ? stockMap[r.id] : null;
-      var stockNote = stockQty !== null ? 'สต๊อก: ' + stockQty + ' ' + r.unit : '';
+      var stockNote = stockQty !== null ? 'มี ' + stockQty + ' ' + r.unit : '';
       var warnStyle = (stockQty !== null && stockQty <= 0) ? 'color:var(--red);' : (stockQty !== null && stockQty < 2 ? 'color:var(--orange-dark);' : 'color:var(--muted);');
+      var initLeft  = stockQty !== null ? Math.round((stockQty - (r.qty||1)) * 100) / 100 : null;
+      var remColor  = initLeft === null ? '' : initLeft < 0 ? 'color:#C62828;' : initLeft < 2 ? 'color:#E65100;' : 'color:#2E7D32;';
+      var remText   = initLeft !== null ? 'เหลือ ' + initLeft : '';
       return '<div class="dispense-row">'
-        + '<div><div class="dr-name">' + r.name + '</div>'
-        + '<div class="dr-meta" style="' + warnStyle + '">' + r.unit + (stockNote ? ' · ' + stockNote : '') + '</div>'
-        + '<div class="dr-warn" id="dw-' + i + '">⚠️ จำนวนเกินสต๊อก</div></div>'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div class="dr-name">' + r.name + '</div>'
+        + '<div class="dr-meta" style="' + warnStyle + '">' + stockNote + (remText ? ' → <span id="dr-rem-' + i + '" style="font-weight:600;' + remColor + '">' + remText + '</span>' : '') + '</div>'
+        + '<div class="dr-warn" id="dw-' + i + '">⚠️ จำนวนเกินสต๊อก</div>'
+        + '</div>'
         + '<input class="dr-qty-input" type="number" id="dq-' + i + '" value="' + (r.qty || 1) + '" min="0.01" step="0.01" oninput="updateQty(' + i + ',this.value,\'' + r.id + '\')">'
         + '<button class="btn-del" onclick="removeDispenseLine(' + i + ')">×</button>'
         + '</div>';
@@ -709,12 +723,18 @@
     var qty = parseFloat(val) || 0;
     var inp  = document.getElementById('dq-' + idx);
     var warn = document.getElementById('dw-' + idx);
+    var rem  = document.getElementById('dr-rem-' + idx);
     if (stock !== null && qty > stock) {
       if (inp)  inp.classList.add('over');
       if (warn) warn.style.display = 'block';
     } else {
       if (inp)  inp.classList.remove('over');
       if (warn) warn.style.display = 'none';
+    }
+    if (rem && stock !== null) {
+      var left = Math.round((stock - qty) * 100) / 100;
+      rem.textContent = 'เหลือ ' + left;
+      rem.style.color = left < 0 ? '#C62828' : left < 2 ? '#E65100' : '#2E7D32';
     }
   }
 
@@ -940,14 +960,16 @@
     var container = document.getElementById('log-list');
     container.innerHTML = '<div class="empty">กำลังโหลด...</div>';
 
-    // Bangkok date (UTC+7)
-    var nowBkk = new Date(Date.now() + 7 * 60 * 60 * 1000);
-    var today = nowBkk.toISOString().split('T')[0];
+    // Use date picker value, fallback to Bangkok today
+    var dateEl = document.getElementById('log-date-filter');
+    var selectedDate = dateEl && dateEl.value ? dateEl.value
+      : new Date(Date.now() + 7*60*60*1000).toISOString().split('T')[0];
     var types = logFilter === 'all' ? ['dispense','loss','waste'] : [logFilter];
 
     var result = await sb.from('stock_counts')
       .select('id,item_id,dispense_qty,qty,event_type,note,counted_at,counted_by')
-      .gte('counted_at', today + 'T00:00:00+07:00')
+      .gte('counted_at', selectedDate + 'T00:00:00+07:00')
+      .lte('counted_at', selectedDate + 'T23:59:59+07:00')
       .in('event_type', types)
       .order('counted_at', { ascending: false });
 

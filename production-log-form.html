@@ -148,6 +148,28 @@
       font-weight: bold;
     }
 
+    /* Yield / Waste row */
+    .yield-row {
+      display: flex; gap: 8px; margin-top: 10px;
+      background: #F9FBE7; border-radius: 8px; padding: 10px 10px 8px;
+      border: 1px solid #C5E1A5;
+    }
+    .yield-field { flex: 1; }
+    .yield-field label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; }
+    .yield-field input[type="number"], .yield-field input[type="text"] {
+      width: 100%; padding: 8px 6px; font-size: 14px; text-align: center;
+      border: 1px solid var(--border); border-radius: 6px;
+      font-family: inherit; background: white;
+      -moz-appearance: textfield;
+    }
+    .yield-field input::-webkit-outer-spin-button,
+    .yield-field input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .yield-field input:focus { outline: none; border-color: var(--green); }
+    .yield-display {
+      font-size: 22px; font-weight: 800; padding-top: 6px;
+      text-align: center; color: var(--muted);
+    }
+
     .note-field { margin-top: 8px; }
     .note-field input {
       width: 100%;
@@ -518,6 +540,26 @@ function addRow(rcpCode = '', batchCount = '', type = 'customer') {
       <input type="radio" name="type-${id}" id="staff-${id}" value="staff" ${type==='staff'?'checked':''}>
       <label for="staff-${id}">👤 พนักงาน</label>
     </div>
+    <div class="yield-row">
+      <div class="yield-field">
+        <label>ผลผลิตจริง</label>
+        <input type="number" min="0" step="0.1" id="out-qty-${id}" placeholder="0"
+               oninput="calcYield(${id})">
+      </div>
+      <div class="yield-field" style="flex:0.7">
+        <label>หน่วย</label>
+        <input type="text" id="out-unit-${id}" placeholder="ถุง">
+      </div>
+      <div class="yield-field">
+        <label>เศษ/เสีย</label>
+        <input type="number" min="0" step="0.1" id="waste-${id}" placeholder="0"
+               oninput="calcYield(${id})">
+      </div>
+      <div class="yield-field" style="flex:0.7; text-align:center;">
+        <label>Yield%</label>
+        <div class="yield-display" id="yield-${id}">—</div>
+      </div>
+    </div>
     <div class="note-field">
       <input type="text" id="note-${id}" placeholder="หมายเหตุ (ถ้ามี)">
     </div>
@@ -540,6 +582,21 @@ function addRow(rcpCode = '', batchCount = '', type = 'customer') {
 function removeRow(id) {
   const el = document.getElementById(`row-${id}`);
   if (el) el.remove();
+}
+
+function calcYield(id) {
+  const out   = parseFloat(document.getElementById(`out-qty-${id}`)?.value) || 0;
+  const waste = parseFloat(document.getElementById(`waste-${id}`)?.value) || 0;
+  const el    = document.getElementById(`yield-${id}`);
+  if (!el) return;
+  if (out + waste > 0) {
+    const pct = Math.round(out / (out + waste) * 100);
+    el.textContent = pct + '%';
+    el.style.color = pct >= 80 ? '#1B5E20' : pct >= 60 ? '#E65100' : '#C62828';
+  } else {
+    el.textContent = '—';
+    el.style.color = '';
+  }
 }
 
 function onRcpChange(id) {
@@ -614,7 +671,10 @@ async function submitLog() {
     const note = document.getElementById(`note-${id}`).value.trim() || null;
 
     if (!rcpCode || !batchCount || batchCount <= 0) return;
-    rows.push({ id, logged_at: logDate, logged_by: loggedBy, rcp_code: rcpCode, rcp_name: rcpName, batch_count: batchCount, type, note });
+    const outputQty  = parseFloat(document.getElementById(`out-qty-${id}`)?.value) || null;
+    const outputUnit = document.getElementById(`out-unit-${id}`)?.value.trim() || null;
+    const wasteQty   = parseFloat(document.getElementById(`waste-${id}`)?.value) || null;
+    rows.push({ id, logged_at: logDate, logged_by: loggedBy, rcp_code: rcpCode, rcp_name: rcpName, batch_count: batchCount, type, note, output_qty: outputQty, output_unit: outputUnit, waste_qty: wasteQty });
   });
 
   if (rows.length === 0) {
@@ -631,7 +691,8 @@ async function submitLog() {
   for (const row of rows) {
     const { data, error } = await sb.from('production_log')
       .insert({ logged_at: row.logged_at, logged_by: row.logged_by, rcp_code: row.rcp_code,
-                rcp_name: row.rcp_name, batch_count: row.batch_count, type: row.type, note: row.note })
+                rcp_name: row.rcp_name, batch_count: row.batch_count, type: row.type, note: row.note,
+                output_qty: row.output_qty, output_unit: row.output_unit, waste_qty: row.waste_qty })
       .select('id').single();
     if (error) {
       showToast('❌ บันทึก production_log ไม่สำเร็จ: ' + error.message, 'error');
@@ -715,7 +776,7 @@ async function loadHistory(days) {
   listEl.innerHTML = '<div class="hist-empty">⏳ กำลังโหลด...</div>';
 
   let query = sb.from('production_log')
-    .select('id, logged_at, logged_by, rcp_code, rcp_name, batch_count, type, note')
+    .select('id, logged_at, logged_by, rcp_code, rcp_name, batch_count, type, note, output_qty, output_unit, waste_qty')
     .order('logged_at', { ascending: false })
     .order('id', { ascending: false })
     .limit(100);
@@ -736,9 +797,21 @@ async function loadHistory(days) {
     const dateStr = row.logged_at ? row.logged_at.slice(0,10) : '';
     const typeLabel = row.type === 'staff' ? '👤 พนักงาน' : '🍜 ลูกค้า';
     const noteStr = row.note ? ` · ${row.note}` : '';
+    // Yield badge
+    let yieldBadge = '';
+    if (row.output_qty != null) {
+      const total = (row.output_qty || 0) + (row.waste_qty || 0);
+      const pct = total > 0 ? Math.round(row.output_qty / total * 100) : null;
+      const unitStr = row.output_unit ? ` ${row.output_unit}` : '';
+      const pctColor = pct == null ? '#888' : pct >= 80 ? '#1B5E20' : pct >= 60 ? '#E65100' : '#C62828';
+      yieldBadge = `<span style="margin-left:8px;font-size:12px;font-weight:700;color:${pctColor};">`
+        + `${row.output_qty}${unitStr}${pct != null ? ' · Yield '+pct+'%' : ''}`
+        + (row.waste_qty ? ` · เสีย ${row.waste_qty}${unitStr}` : '')
+        + `</span>`;
+    }
     return `<div class="hist-card" id="hc-${row.id}">
       <div class="hist-card-top">
-        <div class="hist-rcp">${row.rcp_code} — ${row.rcp_name || ''}</div>
+        <div class="hist-rcp">${row.rcp_code} — ${row.rcp_name || ''}${yieldBadge}</div>
         <div class="hist-batch">${row.batch_count} batch</div>
       </div>
       <div class="hist-meta">${dateStr} · ${row.logged_by || '—'} · ${typeLabel}${noteStr}</div>
