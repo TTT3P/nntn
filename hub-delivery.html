@@ -1617,6 +1617,21 @@ async function submitDelivery() {
     : ''
   if (!confirm(`ยืนยันส่งออก?\n\nบิล: ${bill}\nปลายทาง: ${dest}\nเนื้อ: ${bagCount} ถุง / ${totalKg.toFixed(3)} กก.${nmSummary}`)) return
 
+  // ── Stock Guard: ตรวจว่าทุกถุงยังเป็น In Stock อยู่จริง ──
+  if (allBagIds.length > 0) {
+    const checkIdList = allBagIds.map(id => `"${id}"`).join(',')
+    const checkRes = await fetch(`${SB}/rest/v1/catch_weight?id=in.(${checkIdList})&select=id,status`, { headers: H })
+    if (checkRes.ok) {
+      const checkBags = await checkRes.json()
+      const notInStock = checkBags.filter(b => b.status !== '✅ In Stock')
+      if (notInStock.length > 0) {
+        alert(`❌ ส่งออกไม่ได้\n\nพบ ${notInStock.length} ถุงที่ไม่ได้อยู่ใน In Stock (อาจถูกส่งออกไปแล้วโดย session อื่น)\n\nหน้าจะรีเฟรชเพื่อโหลดสต๊อกล่าสุด`)
+        location.reload()
+        return
+      }
+    }
+  }
+
   const btn = document.getElementById('submit-btn')
   btn.disabled = true
   btn.textContent = '⏳ กำลังบันทึก...'
@@ -1632,7 +1647,14 @@ async function submitDelivery() {
         headers: { ...H, Prefer: 'return=minimal' },
         body: JSON.stringify({ status: '🚚 Delivered', notes: `${bill} → ${dest} (${date})` })
       })
-      if (!res.ok) throw new Error(`catch_weight PATCH: HTTP ${res.status} — ${await res.text()}`)
+      if (!res.ok) {
+        const errText = await res.text()
+        // DB trigger error = ส่งออกไม่ได้เพราะสต๊อกไม่ครบ
+        if (errText.includes('Cannot deliver bag')) {
+          throw new Error(`❌ DB ปฏิเสธ: มีถุงที่ไม่ได้อยู่ใน In Stock — รีเฟรชแล้วลองใหม่`)
+        }
+        throw new Error(`catch_weight PATCH: HTTP ${res.status} — ${errText}`)
+      }
     }
 
     // 2. INSERT stock.deliveries header + stock.delivery_lines
