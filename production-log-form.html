@@ -534,12 +534,6 @@ function addRow(rcpCode = '', batchCount = '', type = 'customer') {
                oninput="onBatchChange(${id})">
       </div>
     </div>
-    <div class="type-toggle">
-      <input type="radio" name="type-${id}" id="cust-${id}" value="customer" ${type==='customer'?'checked':''}>
-      <label for="cust-${id}">🍜 ลูกค้า</label>
-      <input type="radio" name="type-${id}" id="staff-${id}" value="staff" ${type==='staff'?'checked':''}>
-      <label for="staff-${id}">👤 พนักงาน</label>
-    </div>
     <div class="yield-row">
       <div class="yield-field">
         <label>ผลผลิตจริง</label>
@@ -667,7 +661,7 @@ async function submitLog() {
     const rcpCode = rcpSel.value;
     const rcpName = rcpSel.options[rcpSel.selectedIndex]?.dataset.name || '';
     const batchCount = parseFloat(document.getElementById(`batch-${id}`).value);
-    const type = document.querySelector(`input[name="type-${id}"]:checked`)?.value || 'customer';
+    const type = 'customer';
     const note = document.getElementById(`note-${id}`).value.trim() || null;
 
     if (!rcpCode || !batchCount || batchCount <= 0) return;
