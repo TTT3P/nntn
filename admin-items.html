@@ -40,19 +40,59 @@
     .filter-pill.active { background: var(--green-dark); color: white; border-color: var(--green-dark); font-weight: bold; }
     .filter-pill:active { opacity: 0.8; }
 
-    .group-header { background: #E8F5E9; padding: 8px 16px; font-size: 13px; font-weight: bold; color: var(--green-dark); border-top: 1px solid #C8E6C9; border-bottom: 1px solid #C8E6C9; }
+    /* Search bar */
+    .search-bar { padding: 10px 16px; background: white; border-bottom: 1px solid var(--border); }
+    .search-bar input {
+      width: 100%; padding: 9px 12px 9px 36px;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      font-family: inherit; font-size: 14px; background: #FAFAFA;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: 10px center;
+    }
+    .search-bar input:focus { outline: none; border-color: var(--green); background-color: white; }
 
-    .item-row { background: white; padding: 12px 16px; border-bottom: 1px solid #f5f5f5; display: flex; align-items: center; gap: 10px; }
-    .item-info { flex: 1; }
-    .item-name { font-size: 15px; font-weight: 500; }
-    .item-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .item-meta-2 { font-size: 11px; color: #aaa; margin-top: 1px; }
-    .supplier-tag { display: inline-block; background: #E8F5E9; color: var(--green-dark); font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: 4px; }
-    .cost-tag { display: inline-block; background: #FFF3E0; color: var(--orange); font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: 4px; }
+    /* Guide box */
+    .guide-box { background: #E3F2FD; border-left: 4px solid #1565C0; font-size: 13px; line-height: 1.7; color: #1a237e; overflow: hidden; }
+    .guide-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; cursor: pointer; user-select: none; }
+    .guide-header span { font-weight: 700; }
+    .guide-arrow { font-size: 11px; color: #1565C0; transition: transform 0.2s; }
+    .guide-arrow.open { transform: rotate(180deg); }
+    .guide-body { padding: 0 16px 12px; display: none; }
+    .guide-body.open { display: block; }
 
-    .item-actions { display: flex; gap: 8px; flex-shrink: 0; }
-    .btn-edit { padding: 7px 14px; background: #E3F2FD; color: #1565C0; border: none; border-radius: 8px; font-size: 13px; font-family: inherit; cursor: pointer; }
-    .btn-del  { padding: 7px 14px; background: #FFEBEE; color: var(--red); border: none; border-radius: 8px; font-size: 13px; font-family: inherit; cursor: pointer; }
+    /* Group header — prominent band */
+    .group-header {
+      background: #1B5E20; color: rgba(255,255,255,0.9);
+      padding: 5px 16px; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+    }
+
+    /* Item rows */
+    .item-row { background: white; padding: 11px 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 10px; }
+    .item-row:active { background: #f9f9f9; }
+    .item-info { flex: 1; min-width: 0; }
+    .item-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-chips { display: flex; align-items: center; gap: 5px; margin-top: 3px; flex-wrap: wrap; }
+    .sku-chip { font-size: 10px; color: #888; background: #f0f0f0; border-radius: 4px; padding: 1px 5px; font-family: monospace; }
+    .unit-chip { font-size: 11px; color: var(--muted); }
+    .par-chip { font-size: 10px; color: var(--green-dark); background: #E8F5E9; border-radius: 4px; padding: 1px 5px; }
+    .price-chip { font-size: 10px; color: var(--orange); background: #FFF3E0; border-radius: 4px; padding: 1px 5px; }
+    .supplier-chip { font-size: 10px; color: #555; background: #ECEFF1; border-radius: 4px; padding: 1px 5px; }
+
+    /* Icon-only action buttons */
+    .item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .btn-edit {
+      width: 36px; height: 36px; background: #E3F2FD; color: #1565C0;
+      border: none; border-radius: 8px; font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn-del {
+      width: 36px; height: 36px; background: #FFEBEE; color: var(--red);
+      border: none; border-radius: 8px; font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn-edit:active { background: #BBDEFB; }
+    .btn-del:active  { background: #FFCDD2; }
 
     /* Modal */
     .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50; align-items: flex-end; }
@@ -111,11 +151,21 @@
   <a href="admin-bom.html">📋 BOM</a>
 </nav>
 
-<div style="background:#E3F2FD;border-left:4px solid #1565C0;padding:12px 16px;font-size:13px;line-height:1.7;color:#1a237e;">
-  <b>📌 คู่มือการใช้งาน</b><br>
-  <b>✅ ทำได้:</b> เพิ่มวัตถุดิบใหม่ · อัปเดตราคา/ปริมาณต่อแพ็ก · แก้ยี่ห้อ/ผู้ขาย · ปรับ Par/Max Level<br>
-  <b>⚠️ ระวัง:</b> อย่าเปลี่ยน <b>หมวด</b> ของรายการเดิม (กระทบรายงาน) · อย่าลบรายการที่ยังใช้อยู่ใน BOM<br>
-  <b>🚫 ไม่ทำ:</b> แก้ <b>SKU</b> · แก้รายการหมวด 🥄 Sub-Recipe และ 🛍️ Portioned (ห้อง Platform ดูแล)
+<div class="guide-box" id="guide-box">
+  <div class="guide-header" onclick="toggleGuide()">
+    <span>📌 คู่มือการใช้งาน</span>
+    <span class="guide-arrow" id="guide-arrow">▲</span>
+  </div>
+  <div class="guide-body" id="guide-body">
+    <b>✅ ทำได้:</b> เพิ่มวัตถุดิบใหม่ · อัปเดตราคา/ปริมาณต่อแพ็ก · แก้ยี่ห้อ/ผู้ขาย · ปรับ Par/Max Level<br>
+    <b>⚠️ ระวัง:</b> อย่าเปลี่ยน <b>หมวด</b> ของรายการเดิม (กระทบรายงาน) · อย่าลบรายการที่ยังใช้อยู่ใน BOM<br>
+    <b>🚫 ไม่ทำ:</b> แก้ <b>SKU</b> · แก้รายการหมวด 🥄 Sub-Recipe และ 🛍️ Portioned (ห้อง Platform ดูแล)
+  </div>
+</div>
+
+<div class="search-bar">
+  <input type="search" id="search-input" placeholder="ค้นหาชื่อ / SKU / ยี่ห้อ..."
+    oninput="renderList()" autocomplete="off">
 </div>
 
 <div class="filter-bar" id="filter-bar">
@@ -293,6 +343,25 @@ function showToast(msg, type) {
   setTimeout(() => { t.style.display = 'none'; }, 3000);
 }
 
+// ---- Guide toggle ----
+function toggleGuide() {
+  const body  = document.getElementById('guide-body');
+  const arrow = document.getElementById('guide-arrow');
+  const open  = body.classList.toggle('open');
+  arrow.classList.toggle('open', open);
+  localStorage.setItem('admin_guide_collapsed', open ? '0' : '1');
+}
+(function restoreGuide() {
+  const collapsed = localStorage.getItem('admin_guide_collapsed') === '1';
+  if (!collapsed) {
+    // default: open — DOM already ready (script at bottom of body)
+    const body  = document.getElementById('guide-body');
+    const arrow = document.getElementById('guide-arrow');
+    if (body)  body.classList.add('open');
+    if (arrow) arrow.classList.add('open');
+  }
+})();
+
 // ---- Load ----
 async function loadAll() {
   const [itemsRes, suppRes, linkRes] = await Promise.all([
@@ -335,7 +404,17 @@ function getPreferredSupplier(itemId) {
 function renderList() {
   let active = items.filter(i => i.is_active);
 
-  // Filter
+  // Search filter
+  const q = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
+  if (q) {
+    active = active.filter(i =>
+      i.name.toLowerCase().includes(q) ||
+      i.sku.toLowerCase().includes(q) ||
+      (i.brand || '').toLowerCase().includes(q)
+    );
+  }
+
+  // Category filter
   if (activeFilter === 'no-price') {
     active = active.filter(i => !i.price_per_pack && !i.cost_per_pack && i.category !== 'srcp' && i.category !== 'pkg');
   } else if (activeFilter !== 'all') {
@@ -366,24 +445,27 @@ function renderList() {
     }
 
     const sup = getPreferredSupplier(item.id);
-    const supTag = sup ? `<span class="supplier-tag">${sup.name}</span>` : '';
-    const brandTag = item.brand ? `<span style="font-size:11px;color:#555">${item.brand}</span>` : '';
-    const priceForDisplay = item.price_per_pack || item.cost_per_pack;
-    const costInfo = priceForDisplay
-      ? `฿${parseFloat(priceForDisplay).toFixed(0)}${item.qty_per_pack ? ` / ${item.qty_per_pack}${item.unit || 'kg'}` : ''}${item.price_per_pack && item.qty_per_pack ? ` · ฿${(item.price_per_pack / (item.qty_per_pack * 1000)).toFixed(4)}/g` : ''}`
-      : '';
-    const costTag = costInfo ? `<span class="cost-tag">${costInfo}</span>` : '';
+    const price = item.price_per_pack || item.cost_per_pack;
+    const priceStr = price ? `฿${parseFloat(price).toFixed(0)}` : '';
+    const perGStr = (item.price_per_pack && item.qty_per_pack)
+      ? `฿${(item.price_per_pack/(item.qty_per_pack*1000)).toFixed(4)}/g` : '';
 
     html += `
       <div class="item-row" id="row-${item.id}">
         <div class="item-info">
           <div class="item-name">${item.name}</div>
-          <div class="item-meta">${item.sku} · ${item.unit} · Par: ${item.par_level ?? '—'} / Max: ${item.max_level ?? '—'}</div>
-          ${(brandTag || supTag || costTag) ? `<div class="item-meta-2">${brandTag}${supTag}${costTag}</div>` : ''}
+          <div class="item-chips">
+            <span class="sku-chip">${item.sku}</span>
+            <span class="unit-chip">${item.unit || ''}</span>
+            ${item.par_level != null ? `<span class="par-chip">Par ${item.par_level}${item.max_level != null ? '/' + item.max_level : ''}</span>` : ''}
+            ${priceStr ? `<span class="price-chip">${priceStr}${perGStr ? ' · ' + perGStr : ''}</span>` : ''}
+            ${sup ? `<span class="supplier-chip">${sup.name}</span>` : ''}
+            ${item.brand ? `<span class="supplier-chip">${item.brand}</span>` : ''}
+          </div>
         </div>
         <div class="item-actions">
-          <button class="btn-edit" onclick="openEdit('${item.id}')">✏️ แก้</button>
-          <button class="btn-del"  onclick="openConfirm('${item.id}')">🗑️</button>
+          <button class="btn-edit" onclick="openEdit('${item.id}')" title="แก้ไข">✏️</button>
+          <button class="btn-del"  onclick="openConfirm('${item.id}')" title="ลบ">🗑</button>
         </div>
       </div>`;
   });
