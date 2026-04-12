@@ -1155,6 +1155,20 @@ function openClosePotModal(session) {
       </div>
     </div>
 
+    <div class="cook-sec" style="margin-top:8px">
+      <div class="cook-sec-label">Waste / สูญเสีย</div>
+      <div class="row2">
+        <div>
+          <label>น้ำหนัก waste (กก.)</label>
+          <input type="number" id="cp-waste-kg" min="0" step="0.001" placeholder="0.000" oninput="calcClosePotYield()" style="width:100%">
+        </div>
+        <div>
+          <label>หมายเหตุ waste</label>
+          <input type="text" id="cp-waste-note" placeholder="เช่น กระดูก, หนัง, ไขมัน" style="width:100%">
+        </div>
+      </div>
+    </div>
+
     <div class="modal-actions" style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn-cancel" onclick="closeCookModal()">ออก</button>
       <button class="btn-danger" onclick="cancelPot()" style="background:#c62828;color:#fff">🚫 ยกเลิกหม้อ</button>
@@ -1358,6 +1372,18 @@ function calcClosePotYield() {
       yp.textContent = `${yieldPct.toFixed(1)}% ${emoji}${rangeTxt}`
       yp.style.color = color
     }
+    const wasteKg = parseFloat(document.getElementById('cp-waste-kg')?.value || 0) || 0
+    const wasteLine = document.getElementById('cp-waste-line')
+    const wasteLabel = document.getElementById('cp-wl')
+    if (wasteLine && wasteLabel) {
+      if (wasteKg > 0) {
+        const wastePct = (wasteKg / rawKg * 100).toFixed(1)
+        wasteLabel.textContent = `${wasteKg.toFixed(3)} กก. (${wastePct}%)`
+        wasteLine.style.display = 'flex'
+      } else {
+        wasteLine.style.display = 'none'
+      }
+    }
   }
 }
 
@@ -1398,11 +1424,15 @@ async function submitClosePot() {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...' }
 
   try {
+    const wasteKg = parseFloat(document.getElementById('cp-waste-kg')?.value || 0) || 0
+    const wasteNote = document.getElementById('cp-waste-note')?.value?.trim() || ''
     const outputs = [{
       session_id: sessionId,
       item_id: itemId,
       kg_cooked: totalKg,
-      bag_count: bagWeights.length
+      bag_count: bagWeights.length,
+      waste_kg: wasteKg,
+      note: wasteNote || null
     }]
     if (bypItem && bypWeights.length > 0) {
       outputs.push({
