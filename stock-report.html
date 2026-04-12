@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <script src="/nntn/auth.js"></script>
   <title>รายงานสต๊อก — NNTN</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -100,6 +100,46 @@
 
     .empty   { text-align: center; padding: 32px; color: var(--muted); font-size: 14px; }
     .loading { text-align: center; padding: 32px; color: var(--muted); }
+  
+/* ── NNTN Bottom Nav ── */
+.nntn-bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: white;
+  box-shadow: 0 -1px 0 rgba(0,0,0,0.08);
+  display: flex; align-items: stretch;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+  user-select: none; touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  font-family: 'Sarabun', sans-serif;
+}
+.nntn-bottom-nav a {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-decoration: none; color: #9E9E9E;
+  min-height: 56px; padding: 6px 2px;
+}
+.nntn-nav-pill {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 2px;
+  padding: 4px 12px; border-radius: 14px;
+  transition: background 0.15s;
+}
+.nntn-bottom-nav a.active .nntn-nav-pill { background: #E8F5E9; }
+.nntn-nav-icon { font-size: 20px; line-height: 1; position: relative; display: inline-flex; }
+.nntn-nav-label { font-size: 11px; font-weight: 500; }
+.nntn-bottom-nav a.active .nntn-nav-label { color: #1B5E20; font-weight: 700; }
+.nntn-nav-badge {
+  position: absolute; top: -4px; right: -10px;
+  background: #D32F2F; color: white;
+  font-size: 9px; font-weight: 700;
+  min-width: 15px; height: 15px;
+  border-radius: 8px; padding: 0 3px;
+  display: none; align-items: center; justify-content: center;
+}
+/* push body content above nav */
+body { padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important; }
+
   </style>
 </head>
 <body>
@@ -479,6 +519,61 @@ function switchTab(tab, el) {
 }
 
 load();
+</script>
+
+<!-- NNTN Bottom Nav -->
+<nav class="nntn-bottom-nav">
+  <a href="index.html" class="nav-item">
+    <span class="nntn-nav-pill">
+      <span class="nntn-nav-icon">🏠
+      </span>
+      <span class="nntn-nav-label">Hub</span>
+    </span>
+  </a>
+  <a href="dashboard.html" class="nav-item">
+    <span class="nntn-nav-pill">
+      <span class="nntn-nav-icon">🚦
+      <span class="nntn-nav-badge" id="nntn-nav-badge"></span>
+      </span>
+      <span class="nntn-nav-label">สต๊อก</span>
+    </span>
+  </a>
+  <a href="stock-dispense.html" class="nav-item">
+    <span class="nntn-nav-pill">
+      <span class="nntn-nav-icon">📦
+      </span>
+      <span class="nntn-nav-label">เบิก</span>
+    </span>
+  </a>
+  <a href="po-receive.html" class="nav-item">
+    <span class="nntn-nav-pill">
+      <span class="nntn-nav-icon">🛒
+      </span>
+      <span class="nntn-nav-label">รับของ</span>
+    </span>
+  </a>
+  <a href="stock-report.html" class="nav-item active">
+    <span class="nntn-nav-pill">
+      <span class="nntn-nav-icon">📈
+      </span>
+      <span class="nntn-nav-label">รายงาน</span>
+    </span>
+  </a>
+</nav>
+
+<script>
+(function(){
+  var b=document.querySelector('.nntn-nav-badge');
+  if(!b)return;
+  fetch('https://emjqulzikpxorvpaaiww.supabase.co/rest/v1/items?select=id&current_status=eq.OUT',{
+    headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M'}
+  }).then(function(r){return r.json();}).then(function(d){
+    if(d&&d.length>0){
+      b.textContent=d.length>99?'99+':d.length;
+      b.style.display='flex';
+    }
+  }).catch(function(){});
+})();
 </script>
 </body>
 </html>
