@@ -553,11 +553,16 @@ let recvItemCount = 0, procInputCount = 0
 async function init() {
   const [its, cw] = await Promise.all([
     get('items', { select:'id,name,sku,category,item_category,byproduct_item_id,byproduct_required,yield_expected_min,yield_expected_max', is_active:'eq.true', order:'name' }),
-    get('catch_weight', { 'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name)', 'status':'eq.✅ In Stock', 'limit':1000 })
+    get('catch_weight', { 'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name,sku,category)', 'status':'eq.✅ In Stock', 'limit':1000 })
   ])
   items = Array.isArray(its) ? its : []
-  // normalize item_name จาก join
-  cwStock = Array.isArray(cw) ? cw.map(r => ({...r, item_name: r.items?.name || ''})) : []
+  // normalize item_name/sku/category จาก join
+  cwStock = Array.isArray(cw) ? cw.map(r => ({
+    ...r,
+    item_name: r.items?.name || '',
+    item_sku: r.items?.sku || '',
+    item_category: r.items?.category || ''
+  })) : []
 
   // Header CW count
   const d = new Date(); const ds = `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`
@@ -1630,8 +1635,19 @@ function updateRepackItemLabel() {
 function addProcInput() {
   procInputCount++
   const n = procInputCount
-  const uniqueItems = [...new Set(cwStock.filter(r => r.warehouse !== 'C').map(r => r.item_name).filter(Boolean))].sort()
-  const itemOpts = uniqueItems.map(nm => `<option value="${nm}">${nm}</option>`).join('')
+  // Curated list: SKU หลัก + เศษเนื้อ (category=meat_trim)
+  const MAIN_PROC_SKUS = ['MT-028','MT-019','SP-206','SP-101','SP-036','SP-037','SP-087']
+  const mainInStock = [...new Set(
+    cwStock.filter(r => MAIN_PROC_SKUS.includes(r.item_sku)).map(r => r.item_name).filter(Boolean)
+  )].sort()
+  const scrapInStock = [...new Set(
+    cwStock.filter(r => r.item_category === 'meat_trim').map(r => r.item_name).filter(Boolean)
+  )].sort()
+  const mainOpts = mainInStock.map(nm => `<option value="${nm}">${nm}</option>`).join('')
+  const scrapOpts = scrapInStock.map(nm => `<option value="${nm}">${nm}</option>`).join('')
+  const itemOpts =
+    (mainOpts ? `<optgroup label="หลัก">${mainOpts}</optgroup>` : '') +
+    (scrapOpts ? `<optgroup label="เศษเนื้อ">${scrapOpts}</optgroup>` : '')
 
   const div = document.createElement('div')
   div.style.marginBottom = '10px'
