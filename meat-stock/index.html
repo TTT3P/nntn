@@ -569,9 +569,24 @@ async function init() {
   document.getElementById('header-cw').innerHTML =
     `${ds} | CW <span>✅ ${cwStock.length} ถุง</span>`
 
-  // Process SKU dropdown (MT items only — คลัง B/C)
+  // Process SKU output dropdown — curated list (portion/packed ที่ผลิตจากแปรรูป)
+  const PROC_OUTPUT_SKUS = [
+    'MT-020','MT-014','MT-043','MT-008',          // พิคานย่า 100G/75G ไทย+ออส
+    'MT-030','MT-031','MT-007','MT-040',          // 75G กิวด้ง/คุ้น/แดดเดียว/ตุ๋น
+    'MT-011','MT-037','MT-018',                   // 75G บด/แม็กกี้/หมักนุ่ม
+    'MT-039','MT-009'                             // 500g ลูกชิ้น/ลูกชิ้นเอ็น
+  ]
   const skuSel = document.getElementById('proc-sku-out')
-  items.filter(i=>i.sku&&i.sku.startsWith('MT')).forEach(i => { const o=document.createElement('option'); o.value=i.id; o.textContent=`${i.sku} | ${i.name}`; skuSel.appendChild(o) })
+  const bySku = {}
+  items.forEach(i => { if (i.sku) bySku[i.sku] = i })
+  PROC_OUTPUT_SKUS.forEach(sku => {
+    const i = bySku[sku]
+    if (!i) return
+    const o = document.createElement('option')
+    o.value = i.id
+    o.textContent = `${i.sku} | ${i.name}`
+    skuSel.appendChild(o)
+  })
 
   // Set today dates
   ;['recv-date','proc-date'].forEach(id => {
