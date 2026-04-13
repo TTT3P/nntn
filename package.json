@@ -1,0 +1,27 @@
+{
+  "name": "non-meat-stock",
+  "version": "1.0.0",
+  "description": "",
+  "main": "auth.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:report": "playwright show-report"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TTT3P/nntn.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/TTT3P/nntn/issues"
+  },
+  "homepage": "https://github.com/TTT3P/nntn#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}
