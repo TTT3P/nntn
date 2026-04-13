@@ -552,7 +552,7 @@ let recvItemCount = 0, procInputCount = 0
 // ── Init ──
 async function init() {
   const [its, cw] = await Promise.all([
-    get('items', { select:'id,name,sku,category,item_category,byproduct_item_id,byproduct_required,yield_expected_min,yield_expected_max', order:'name' }),
+    get('items', { select:'id,name,sku,category,item_category,byproduct_item_id,byproduct_required,yield_expected_min,yield_expected_max', is_active:'eq.true', order:'name' }),
     get('catch_weight', { 'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name)', 'status':'eq.✅ In Stock', 'limit':1000 })
   ])
   items = Array.isArray(its) ? its : []
@@ -585,7 +585,7 @@ async function init() {
 function addRecvItem() {
   recvItemCount++
   const n = recvItemCount
-  const rawItems = items.filter(i => i.category==='meat_raw' || (!i.category && !i.name.includes('ตุ๋น')))
+  const rawItems = items.filter(i => i.category==='meat_raw' || i.category==='meat' || (!i.category && !i.name.includes('ตุ๋น')))
   const opts = rawItems.map(i=>`<option value="${i.id}">${i.name}</option>`).join('')
 
   const div = document.createElement('div')
@@ -925,7 +925,7 @@ function loadNewPotItemDropdown() {
     if (b.warehouse !== 'A') return
     const item = items.find(i => i.id === b.item_id)
     if (!item) return
-    if (item.category && item.category !== 'meat_raw' && !item.name.includes('สด') && !item.name.includes('ดิบ')) return
+    if (item.category && item.category !== 'meat_raw' && item.category !== 'meat' && !item.name.includes('สด') && !item.name.includes('ดิบ')) return
     if (!_npRawBagsByItem[item.id]) _npRawBagsByItem[item.id] = { item, bags: [] }
     _npRawBagsByItem[item.id].bags.push(b)
   })
