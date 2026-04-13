@@ -1630,7 +1630,7 @@ function updateRepackItemLabel() {
 function addProcInput() {
   procInputCount++
   const n = procInputCount
-  const uniqueItems = [...new Set(cwStock.map(r => r.item_name).filter(Boolean))].sort()
+  const uniqueItems = [...new Set(cwStock.filter(r => r.warehouse !== 'C').map(r => r.item_name).filter(Boolean))].sort()
   const itemOpts = uniqueItems.map(nm => `<option value="${nm}">${nm}</option>`).join('')
 
   const div = document.createElement('div')
