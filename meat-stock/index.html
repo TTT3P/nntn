@@ -945,6 +945,7 @@ function loadNewPotItemDropdown() {
     if (b.warehouse !== 'A') return
     const item = items.find(i => i.id === b.item_id)
     if (!item) return
+    if (item.name.includes('[')) return  // ตัด pre-packed (เช่น เสือร้องไห้ออส[500g]) — ไม่เข้าหม้อตุ๋น
     if (item.category && item.category !== 'meat_raw' && item.category !== 'meat' && !item.name.includes('สด') && !item.name.includes('ดิบ')) return
     if (!_npRawBagsByItem[item.id]) _npRawBagsByItem[item.id] = { item, bags: [] }
     _npRawBagsByItem[item.id].bags.push(b)
