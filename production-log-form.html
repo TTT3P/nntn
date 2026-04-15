@@ -452,17 +452,10 @@
     <input type="date" id="log-date">
   </div>
   <div class="field-group">
-    <label>ชื่อผู้บันทึก</label>
-    <select id="logged-by">
-      <option value="">— เลือก —</option>
-      <option>อิม</option>
-      <option>ชาติ</option>
-      <option>ส้ม</option>
-      <option>อุทัย</option>
-      <option>กุ้ง</option>
-      <option>พร</option>
-      <option>โส</option>
-    </select>
+    <label>ผู้บันทึก</label>
+    <div style="padding:10px 12px;background:#F1F8E9;border-radius:8px;font-size:0.9rem;color:#1B5E20;">
+      <strong id="current-user-badge">—</strong>
+    </div>
   </div>
 </div>
 
@@ -648,10 +641,9 @@ function showToast(msg, type) {
 
 async function submitLog() {
   const logDate  = document.getElementById('log-date').value;
-  const loggedBy = document.getElementById('logged-by').value;
+  const loggedBy = window.nntnCurrentUser || 'UNKNOWN';
 
   if (!logDate)   { showToast('⚠️ กรุณาเลือกวันที่', 'error'); return; }
-  if (!loggedBy)  { showToast('⚠️ กรุณาเลือกชื่อ', 'error'); return; }
 
   // Collect rows
   const rows = [];
@@ -897,6 +889,11 @@ async function init() {
   addRow();
 }
 
+// Populate current user badge from JWT (set by auth.js)
+(function setUserBadge() {
+  var el = document.getElementById('current-user-badge');
+  if (el) el.textContent = window.nntnCurrentUser || 'UNKNOWN';
+})();
 init();
 </script>
 

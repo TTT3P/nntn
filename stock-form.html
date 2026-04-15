@@ -249,15 +249,8 @@
   <a href="admin-config.html">⚙️ ตั้งค่า Par</a>
 </nav>
 
-<div class="name-section">
-  <label>ชื่อผู้นับ</label>
-  <select id="counted-by">
-    <option value="">— เลือกชื่อ —</option>
-    <option>อิม</option>
-    <option>แก้ว</option>
-    <option>ทาย</option>
-
-  </select>
+<div class="name-section" style="padding:8px 12px;background:#F1F8E9;border-radius:8px;font-size:0.85rem;color:#1B5E20;">
+  บันทึกในนาม: <strong id="current-user-badge">—</strong>
 </div>
 
 <div class="cat-chips" id="cat-chips"></div>
@@ -461,8 +454,7 @@ function showToast(msg, type) {
 }
 
 async function submitCount() {
-  const countedBy = document.getElementById('counted-by').value;
-  if (!countedBy) { showToast('⚠️ กรุณาเลือกชื่อก่อน', 'error'); return; }
+  const countedBy = window.nntnCurrentUser || 'UNKNOWN';
 
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
@@ -526,6 +518,11 @@ async function submitCount() {
   setTimeout(() => { btn.disabled = false; btn.textContent = '✅ ส่งยอดนับ'; }, 1500);
 }
 
+// Populate current user badge from JWT (set by auth.js)
+(function setUserBadge() {
+  var el = document.getElementById('current-user-badge');
+  if (el) el.textContent = window.nntnCurrentUser || 'UNKNOWN';
+})();
 loadItems();
 </script>
 </body>

@@ -178,8 +178,10 @@
     </div>
 
     <div class="form-row">
-      <label>ชื่อผู้บันทึก</label>
-      <input type="text" id="logged-by" placeholder="เช่น อิม, ชาติ">
+      <label>ผู้บันทึก</label>
+      <div style="padding:10px 12px;background:#F1F8E9;border-radius:8px;font-size:0.9rem;color:#1B5E20;">
+        <strong id="current-user-badge">—</strong>
+      </div>
     </div>
 
     <div class="form-row">
@@ -378,13 +380,13 @@ async function loadHistory(sku) {
 async function submit() {
   if (!selectedSrcp) return;
   const logged_at = document.getElementById('logged-at').value;
-  const logged_by = document.getElementById('logged-by').value.trim();
+  const logged_by = window.nntnCurrentUser || 'UNKNOWN';
   const batch_count = parseFloat(document.getElementById('batch-count').value);
   const yield_grams = parseFloat(document.getElementById('yield-grams').value);
   const note = document.getElementById('note').value.trim();
   const alertEl = document.getElementById('alert-box');
 
-  if (!logged_at || !logged_by || !batch_count || !yield_grams) {
+  if (!logged_at || !batch_count || !yield_grams) {
     alertEl.textContent = '❌ กรุณากรอกข้อมูลให้ครบ';
     alertEl.className = 'alert error';
     return;
@@ -417,6 +419,11 @@ async function submit() {
   loadHistory(selectedSrcp.sku);
 }
 
+// Populate current user badge from JWT (set by auth.js)
+(function setUserBadge() {
+  var el = document.getElementById('current-user-badge');
+  if (el) el.textContent = window.nntnCurrentUser || 'UNKNOWN';
+})();
 buildGrid();
 </script>
 </body>

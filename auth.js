@@ -161,6 +161,20 @@
   // Set current token (readable by patched createClient + fetch)
   window.__nntnCurrentToken = token;
 
+  // Extract display_name from JWT → expose as window.nntnCurrentUser
+  // Used by forms to auto-fill "recorded by" field (replaces dropdown)
+  try {
+    var payload = JSON.parse(atob(token.split('.')[1]));
+    var meta    = payload && payload.user_metadata;
+    var email   = payload && payload.email;
+    // Prefer display_name, fallback to email prefix uppercased, then 'UNKNOWN'
+    window.nntnCurrentUser = (meta && meta.display_name)
+      || (email ? email.split('@')[0].toUpperCase() : null)
+      || 'UNKNOWN';
+  } catch (e) {
+    window.nntnCurrentUser = 'UNKNOWN';
+  }
+
   // Install the patch NOW (before any page script runs createClient)
   installPatchWhenReady();
 
