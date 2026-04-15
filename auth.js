@@ -1,9 +1,20 @@
 /**
- * NNTN Stock — Supabase Auth Gate
+ * NNTN Stock — Supabase Auth Gate + Session Loader
  * ----------------------------------------
  * - ตรวจ JWT session (nntn_sb_token)
  * - Auto-refresh เมื่อ token ใกล้หมดอายุ (< 5 นาที)
  * - Inject ปุ่ม "ออกจากระบบ" ทุกหน้า
+ * - Monkey-patch `supabase.createClient` → every client auto-includes
+ *   `Authorization: Bearer <user_access_token>` in every PostgREST request
+ *   → zero-edit migration: pages can keep their existing createClient calls
+ *
+ * Load order (important):
+ *   <script src="/nntn/auth.js"></script>              ← this file
+ *   <script src="https://cdn.../supabase-js@2"></script> ← SDK
+ *   <script>  const sb = supabase.createClient(URL, KEY);  </script>
+ *
+ * auth.js installs a `defineProperty` hook on `window.supabase` that rewrites
+ * `createClient` to inject user JWT header — runs synchronously when SDK loads.
  */
 (function () {
   'use strict';
@@ -15,9 +26,12 @@
   var EXPIRES_KEY = 'nntn_sb_expires';
   var LOGIN_URL   = '/nntn/login.html';
 
-  // ไม่บล็อกหน้า login เอง
+  // Expose anon constants for any legacy code that references them
+  window.NNTN_SB_URL  = SB;
+  window.NNTN_SB_ANON = KEY;
+
   var path = location.pathname;
-  if (path === '/nntn/login.html' || path.endsWith('/login.html')) return;
+  var isLoginPage = (path === '/nntn/login.html' || path.endsWith('/login.html'));
 
   function clearSession() {
     localStorage.removeItem(TOKEN_KEY);
@@ -44,6 +58,8 @@
       localStorage.setItem(TOKEN_KEY,   data.access_token);
       localStorage.setItem(REFRESH_KEY, data.refresh_token);
       localStorage.setItem(EXPIRES_KEY, String(data.expires_at));
+      // Update any existing clients' header to use new token
+      window.__nntnCurrentToken = data.access_token;
       return true;
     } catch (e) {
       logout();
@@ -51,17 +67,89 @@
     }
   }
 
+  // ============================================================
+  // Install createClient monkey-patch via property descriptor
+  // ============================================================
+  function patchCreateClient(supabaseNs) {
+    if (!supabaseNs || !supabaseNs.createClient || supabaseNs.__nntnPatched) return;
+
+    var original = supabaseNs.createClient.bind(supabaseNs);
+
+    supabaseNs.createClient = function patchedCreateClient(url, key, options) {
+      options = options || {};
+      options.global = options.global || {};
+      options.global.headers = options.global.headers || {};
+
+      // Inject user JWT into Authorization header (overrides anon bearer)
+      var tok = window.__nntnCurrentToken || localStorage.getItem(TOKEN_KEY);
+      if (tok) {
+        options.global.headers['Authorization'] = 'Bearer ' + tok;
+      }
+
+      // Always ensure apikey header (Supabase JS does this already, but be safe)
+      if (key && !options.global.headers['apikey']) {
+        options.global.headers['apikey'] = key;
+      }
+
+      return original(url, key, options);
+    };
+
+    supabaseNs.__nntnPatched = true;
+  }
+
+  // Install ASAP using Object.defineProperty setter hook.
+  // auth.js runs BEFORE supabase-js CDN script, so `window.supabase` is undefined.
+  // We install a setter that intercepts the assignment when supabase-js loads.
+  function installPatchWhenReady() {
+    // If already loaded (hot-reload / rare case), patch immediately
+    if (window.supabase && window.supabase.createClient) {
+      patchCreateClient(window.supabase);
+      return;
+    }
+
+    var _sb = undefined;
+    try {
+      Object.defineProperty(window, 'supabase', {
+        configurable: true,
+        get: function () { return _sb; },
+        set: function (v) {
+          _sb = v;
+          patchCreateClient(_sb);
+        },
+      });
+    } catch (e) {
+      // Fallback: if defineProperty fails, fall back to polling
+      console.warn('[auth] defineProperty setter failed, falling back to polling:', e);
+      var start = Date.now();
+      var iv = setInterval(function () {
+        if (window.supabase && window.supabase.createClient) {
+          clearInterval(iv);
+          patchCreateClient(window.supabase);
+        } else if (Date.now() - start > 10000) {
+          clearInterval(iv);
+          console.error('[auth] supabase-js did not load within 10s — createClient patch NOT installed');
+        }
+      }, 10);
+    }
+  }
+
+  // Login page → don't gate, just install patch (login uses anon key directly anyway)
+  if (isLoginPage) {
+    installPatchWhenReady();
+    return;
+  }
+
   var token   = localStorage.getItem(TOKEN_KEY);
   var expires = parseInt(localStorage.getItem(EXPIRES_KEY) || '0', 10);
   var now     = Math.floor(Date.now() / 1000);
 
-  // ไม่มี token → redirect login
+  // No token → redirect login
   if (!token) {
     location.replace(LOGIN_URL + '?next=' + encodeURIComponent(location.href));
     return;
   }
 
-  // Token ใกล้หมด / หมดแล้ว → refresh แล้ว reload
+  // Token near expiry → refresh + reload
   if (expires && now >= expires - 300) {
     document.documentElement.style.visibility = 'hidden';
     refreshSession().then(function (ok) {
@@ -70,14 +158,53 @@
     return;
   }
 
-  // Refresh อัตโนมัติทุก 50 นาที (background)
+  // Set current token (readable by patched createClient + fetch)
+  window.__nntnCurrentToken = token;
+
+  // Install the patch NOW (before any page script runs createClient)
+  installPatchWhenReady();
+
+  // ============================================================
+  // Also monkey-patch window.fetch for raw REST calls (e.g. badge loaders)
+  // that hardcode anon key in Authorization header
+  // ============================================================
+  (function patchFetch() {
+    if (!window.fetch || window.fetch.__nntnPatched) return;
+    var orig = window.fetch.bind(window);
+    var wrapped = function patchedFetch(input, init) {
+      try {
+        var url = (typeof input === 'string') ? input : (input && input.url) || '';
+        if (url.indexOf(SB + '/rest/v1') === 0) {
+          init = init || {};
+          var h = init.headers;
+          var tok = window.__nntnCurrentToken || localStorage.getItem(TOKEN_KEY);
+          if (tok) {
+            if (h instanceof Headers) {
+              h.set('Authorization', 'Bearer ' + tok);
+            } else if (h && typeof h === 'object') {
+              h['Authorization'] = 'Bearer ' + tok;
+            } else {
+              init.headers = { 'Authorization': 'Bearer ' + tok, 'apikey': KEY };
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[auth] fetch patch error:', e);
+      }
+      return orig(input, init);
+    };
+    wrapped.__nntnPatched = true;
+    window.fetch = wrapped;
+  })();
+
+  // Auto-refresh every 50 minutes
   setInterval(function () {
     var exp = parseInt(localStorage.getItem(EXPIRES_KEY) || '0', 10);
     var n   = Math.floor(Date.now() / 1000);
     if (!exp || n >= exp - 300) refreshSession();
   }, 50 * 60 * 1000);
 
-  // Inject ปุ่ม logout
+  // Logout button
   document.addEventListener('DOMContentLoaded', function () {
     var btn = document.createElement('button');
     btn.textContent = 'ออกจากระบบ';
