@@ -1,0 +1,70 @@
+name: Weekly Security Probe
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'  # Monday 02:00 UTC (09:00 Bangkok)
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe anon access (should all return 401)
+        env:
+          ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -e
+          SB="https://emjqulzikpxorvpaaiww.supabase.co"
+          FAIL=0
+
+          check_401() {
+            local tbl="$1"
+            local profile="$2"
+            local hdr=""
+            [ -n "$profile" ] && hdr="-H Accept-Profile:$profile"
+            local status
+            status=$(curl -s -o /dev/null -w "%{http_code}" \
+              "$SB/rest/v1/$tbl?limit=1" \
+              -H "apikey: $ANON_KEY" \
+              -H "Authorization: Bearer $ANON_KEY" $hdr)
+            if [ "$status" != "401" ]; then
+              echo "::error::LEAK $tbl (${profile:-public}) → HTTP $status (expected 401)"
+              FAIL=1
+            else
+              echo "OK  $tbl (${profile:-public}) → HTTP 401"
+            fi
+          }
+
+          check_401 "items"           ""
+          check_401 "catch_weight"    ""
+          check_401 "current_stock"   ""
+          check_401 "recipes"         "cookingbook"
+          check_401 "bom_items"       "cookingbook"
+          check_401 "grab_items"      "sales_ops"
+
+          # sales_ops_test schema should be unreachable (expect non-200)
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            "$SB/rest/v1/grab_items?limit=1" \
+            -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+            -H "Accept-Profile:sales_ops_test")
+          if [ "$status" = "200" ]; then
+            echo "::error::LEAK sales_ops_test schema exposed (HTTP 200)"
+            FAIL=1
+          else
+            echo "OK  sales_ops_test → HTTP $status (unreachable)"
+          fi
+
+          if [ "$FAIL" = "1" ]; then
+            echo "::error::SECURITY LEAK DETECTED"
+            exit 1
+          fi
+          echo "All probes passed — RLS intact"
+
+      - name: Notify Discord on failure
+        if: failure() && env.WEBHOOK != ''
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_PLATFORM }}
+        run: |
+          curl -s -X POST "$WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d '{"content":"🚨 [Platform] Weekly security probe FAILED — RLS regression detected. Check GitHub Actions log."}'
