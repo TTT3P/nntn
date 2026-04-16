@@ -1,0 +1,11 @@
+# Session files (sensitive cookies)
+sessions/
+*.json
+
+# Environment files
+.env
+*.env
+
+# Python cache
+__pycache__/
+*.pyc
