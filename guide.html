@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คู่มือการใช้งาน — NNTN Stock System</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --red: #8B0000; --red-light: #c62828; --red-bg: #fff5f5;
+  --green: #1B5E20; --green-light: #388E3C; --green-bg: #E8F5E9;
+  --blue: #1565C0; --blue-light: #1976D2; --blue-bg: #E3F2FD;
+  --orange: #E65100; --orange-bg: #FFF3E0;
+  --purple: #6A1B9A; --purple-bg: #F3E5F5;
+  --bg: #f5f5f5; --card: #fff; --border: #e0e0e0;
+  --text: #212121; --muted: #757575;
+  --header-bg: #1a1a2e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Sarabun', sans-serif; background: var(--bg);
+  color: var(--text); font-size: 15px; padding-bottom: 60px; line-height: 1.7;
+}
+header {
+  background: var(--header-bg); color: white;
+  padding: 20px 16px 16px; text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+header .logo { font-size: 2rem; margin-bottom: 4px; }
+header h1 { font-size: 1.15rem; font-weight: 700; }
+header small { font-size: 0.75rem; opacity: 0.55; }
+
+.wrap { padding: 16px; max-width: 680px; margin: 0 auto; }
+
+/* TOC */
+.toc {
+  background: var(--card); border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 18px;
+  border: 1px solid var(--border);
+}
+.toc-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+             letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; }
+.toc a {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0; color: var(--blue-light);
+  font-size: 0.9rem; text-decoration: none;
+  border-bottom: 1px solid #f5f5f5;
+}
+.toc a:last-child { border-bottom: none; }
+.toc a .toc-num {
+  background: var(--header-bg); color: white;
+  width: 20px; height: 20px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 700; flex-shrink: 0;
+}
+
+/* Section card */
+.section {
+  background: var(--card); border-radius: 12px;
+  padding: 18px 16px; margin-bottom: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.section-title {
+  font-size: 1.05rem; font-weight: 700; margin-bottom: 16px;
+  padding-bottom: 10px; border-bottom: 2px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.section-title .num {
+  background: var(--red-light); color: white;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.82rem; font-weight: 700; flex-shrink: 0;
+}
+
+/* Steps */
+.steps { list-style: none; counter-reset: step; }
+.steps li {
+  counter-increment: step;
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 10px 0; border-bottom: 1px solid #f5f5f5;
+}
+.steps li:last-child { border-bottom: none; }
+.steps li::before {
+  content: counter(step);
+  background: var(--blue-bg); color: var(--blue);
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.78rem; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+}
+.steps li strong { display: block; }
+.steps li span { font-size: 0.88rem; color: var(--muted); }
+
+/* Workflow row */
+.flow { display: flex; flex-direction: column; gap: 10px; }
+.flow-item {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: #fafafa; border-radius: 10px; padding: 12px 14px;
+  border: 1px solid var(--border);
+}
+.flow-icon { font-size: 1.5rem; flex-shrink: 0; line-height: 1; }
+.flow-body { flex: 1; }
+.flow-title { font-weight: 700; font-size: 0.95rem; }
+.flow-desc { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+.flow-btn {
+  display: inline-block; margin-top: 8px;
+  background: var(--red-light); color: white;
+  padding: 5px 14px; border-radius: 20px;
+  font-size: 0.8rem; font-weight: 700; text-decoration: none;
+}
+.flow-btn:hover { background: var(--red); }
+
+/* AIM table */
+.aim-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.aim-table th {
+  text-align: left; padding: 8px 10px;
+  background: var(--header-bg); color: white;
+  font-size: 0.78rem;
+}
+.aim-table td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+.aim-table tr:last-child td { border-bottom: none; }
+.aim-table tr:hover td { background: #fafafa; }
+.aim-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 0.75rem; font-weight: 700;
+}
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-red   { background: var(--red-bg);   color: var(--red-light); }
+.badge-blue  { background: var(--blue-bg);  color: var(--blue); }
+.badge-orange{ background: var(--orange-bg);color: var(--orange); }
+
+/* Info box */
+.info-box {
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 12px;
+  font-size: 0.9rem; display: flex; gap: 10px; align-items: flex-start;
+}
+.info-box.green { background: var(--green-bg); border-left: 4px solid var(--green-light); }
+.info-box.red   { background: var(--red-bg);   border-left: 4px solid var(--red-light); }
+.info-box.blue  { background: var(--blue-bg);  border-left: 4px solid var(--blue-light); }
+.info-box.orange{ background: var(--orange-bg);border-left: 4px solid var(--orange); }
+.info-box-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+/* Login box */
+.login-box {
+  background: var(--header-bg); color: white; border-radius: 12px;
+  padding: 16px; text-align: center; margin-bottom: 16px;
+}
+.login-box .url {
+  font-size: 0.8rem; opacity: 0.6; margin-bottom: 6px;
+}
+.login-btn {
+  display: inline-block; background: var(--red-light); color: white;
+  padding: 10px 28px; border-radius: 25px; font-weight: 700;
+  text-decoration: none; font-size: 0.95rem; margin-top: 10px;
+}
+.login-cred {
+  margin-top: 12px; font-size: 0.82rem; opacity: 0.7;
+}
+.login-cred span {
+  display: inline-block; background: rgba(255,255,255,0.1);
+  padding: 3px 10px; border-radius: 8px; margin: 2px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🥬</div>
+  <h1>คู่มือการใช้งาน — NNTN Stock System</h1>
+  <small>ครัวเนื้อในตำนาน • อัปเดต เม.ย. 2026</small>
+</header>
+
+<div class="wrap">
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-title">สารบัญ</div>
+    <a href="#login"><span class="toc-num">1</span> เข้าสู่ระบบ</a>
+    <a href="#workflow"><span class="toc-num">2</span> งานประจำวัน (ขั้นตอนทีละขั้น)</a>
+    <a href="#aim"><span class="toc-num">3</span> AIM — ระบบแจ้งเตือน Discord</a>
+    <a href="#problem"><span class="toc-num">4</span> ถ้าติดปัญหา</a>
+  </div>
+
+  <!-- 1. Login -->
+  <div class="section" id="login">
+    <div class="section-title">
+      <span class="num">1</span> เข้าสู่ระบบ
+    </div>
+
+    <div class="login-box">
+      <div class="url">ttt3p.github.io/nntn/login.html</div>
+      <div style="font-size:1rem;font-weight:700;">NNTN สต๊อกครัว</div>
+      <a class="login-btn" href="login.html">เข้าสู่ระบบ →</a>
+      <div class="login-cred">
+        ชื่อผู้ใช้: <span>ชื่อของคุณ (ภาษาอังกฤษ)</span>
+        รหัสผ่าน: <span>เบอร์โทรของคุณ</span>
+      </div>
+    </div>
+
+    <div class="info-box blue">
+      <span class="info-box-icon">💡</span>
+      <div>ชื่อผู้ใช้ = ชื่อจริงภาษาอังกฤษ เช่น <strong>aim, tor, mile</strong> — ตัวใหญ่เล็กไม่สำคัญ</div>
+    </div>
+    <div class="info-box red">
+      <span class="info-box-icon">⚠️</span>
+      <div>ถ้า login ไม่ได้ ให้แจ้งไทน์ทันที — ห้ามใช้บัญชีคนอื่นแทน</div>
+    </div>
+  </div>
+
+  <!-- 2. Workflow -->
+  <div class="section" id="workflow">
+    <div class="section-title">
+      <span class="num">2</span> งานประจำวัน
+    </div>
+
+    <div class="flow">
+
+      <div class="flow-item">
+        <div class="flow-icon">📥</div>
+        <div class="flow-body">
+          <div class="flow-title">รับเนื้อสด</div>
+          <div class="flow-desc">เมื่อรับวัตถุดิบเนื้อเข้าคลัง A — กรอกน้ำหนักถุงและชนิดเนื้อ</div>
+          <a class="flow-btn" href="meat-stock/index.html">→ หน้ารับเนื้อสด</a>
+        </div>
+      </div>
+
+      <div class="flow-item">
+        <div class="flow-icon">🍲</div>
+        <div class="flow-body">
+          <div class="flow-title">เปิดหม้อตุ๋น</div>
+          <div class="flow-desc">บันทึกเมื่อเริ่มต้มเนื้อ — เลือกชนิดเนื้อ ใส่น้ำหนักรวม</div>
+          <a class="flow-btn" href="meat-stock/index.html">→ หน้าหม้อตุ๋น</a>
+        </div>
+      </div>
+
+      <div class="flow-item">
+        <div class="flow-icon">🔪</div>
+        <div class="flow-body">
+          <div class="flow-title">แปรรูป (ตัดแบ่ง)</div>
+          <div class="flow-desc">บันทึกเมื่อตัดแบ่งเนื้อตุ๋นเป็นถุง — ระบุน้ำหนักแต่ละถุง</div>
+          <a class="flow-btn" href="meat-stock/index.html">→ หน้าแปรรูป</a>
+        </div>
+      </div>
+
+      <div class="flow-item">
+        <div class="flow-icon">🧂</div>
+        <div class="flow-body">
+          <div class="flow-title">เบิก Non-meat</div>
+          <div class="flow-desc">เบิกวัตถุดิบที่ไม่ใช่เนื้อ เช่น ซีอิ๊ว, น้ำมัน, บะหมี่ — บันทึกทุกครั้งที่เบิก</div>
+          <a class="flow-btn" href="stock-dispense.html">→ หน้าเบิก</a>
+        </div>
+      </div>
+
+      <div class="flow-item">
+        <div class="flow-icon">🚛</div>
+        <div class="flow-body">
+          <div class="flow-title">ส่งออก (ใบนำส่ง)</div>
+          <div class="flow-desc">บันทึกการส่งเนื้อ + ของ non-meat ออกจากครัวกลาง — ระบบจะออกใบนำส่งให้ทันที</div>
+          <a class="flow-btn" href="hub-delivery.html">→ หน้าส่งออก</a>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:16px;">
+      <div class="info-box green">
+        <span class="info-box-icon">✅</span>
+        <div><strong>กฎสำคัญ:</strong> ทำแต่ละขั้นตอนให้ครบก่อนไปขั้นถัดไป — ระบบจะบันทึกอัตโนมัติทุกครั้งที่กดปุ่ม</div>
+      </div>
+      <div class="info-box orange">
+        <span class="info-box-icon">📌</span>
+        <div>ถ้ากรอกข้อมูลผิด <strong>อย่าแก้ไขเอง</strong> — แจ้งไทน์ก่อนเสมอ</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. AIM -->
+  <div class="section" id="aim">
+    <div class="section-title">
+      <span class="num">3</span> AIM — ระบบแจ้งเตือน Discord
+    </div>
+
+    <div class="info-box blue">
+      <span class="info-box-icon">🔔</span>
+      <div>ทุกครั้งที่มีการเคลื่อนไหวในระบบ จะมี notification ส่งไปใน Discord channel <strong>#aim</strong> อัตโนมัติ — ไทน์จะเห็นทุกอย่างแบบ real-time</div>
+    </div>
+
+    <table class="aim-table">
+      <thead>
+        <tr>
+          <th>สัญลักษณ์</th>
+          <th>ความหมาย</th>
+          <th>ตัวอย่าง</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>📥</td>
+          <td><span class="aim-badge badge-green">รับเข้า</span> รับเนื้อสด</td>
+          <td style="font-size:0.82rem;color:var(--muted);">📥 รับเนื้อ SP-028 ลิ้นวัว | 5.2 กก. | คลัง A</td>
+        </tr>
+        <tr>
+          <td>🔄</td>
+          <td><span class="aim-badge badge-blue">อัปเดต</span> สต๊อกเปลี่ยนสถานะ</td>
+          <td style="font-size:0.82rem;color:var(--muted);">🔄 ส่งออกแล้ว | In Stock → Delivered</td>
+        </tr>
+        <tr>
+          <td>📤</td>
+          <td><span class="aim-badge badge-orange">เบิกออก</span> non-meat ถูกเบิก</td>
+          <td style="font-size:0.82rem;color:var(--muted);">📤 เบิกออก ซีอิ๊วขาว | 16 → 15 ขวด</td>
+        </tr>
+        <tr>
+          <td>🚛</td>
+          <td><span class="aim-badge badge-blue">ส่งออก</span> บันทึกใบนำส่ง</td>
+          <td style="font-size:0.82rem;color:var(--muted);">🚛 ส่งออก บิล NT-xxx → NT | เนื้อ 5 ถุง</td>
+        </tr>
+        <tr>
+          <td>💰</td>
+          <td><span class="aim-badge badge-orange">ราคา</span> ปรับราคาสินค้า</td>
+          <td style="font-size:0.82rem;color:var(--muted);">💰 ปรับราคา SP-003 | 215 → 250 ฿/pack</td>
+        </tr>
+        <tr>
+          <td>🆕</td>
+          <td><span class="aim-badge badge-green">ใหม่</span> เพิ่มสินค้า</td>
+          <td style="font-size:0.82rem;color:var(--muted);">🆕 สินค้าใหม่ SP-999 น้ำมันมะพร้าว</td>
+        </tr>
+        <tr>
+          <td>🚫</td>
+          <td><span class="aim-badge badge-red">ปิด</span> ปิดใช้งานสินค้า</td>
+          <td style="font-size:0.82rem;color:var(--muted);">🚫 ปิดใช้งาน SP-050 ...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 4. Problem -->
+  <div class="section" id="problem">
+    <div class="section-title">
+      <span class="num">4</span> ถ้าติดปัญหา
+    </div>
+
+    <ol class="steps">
+      <li>
+        <strong>ลองรีเฟรชหน้าก่อน</strong>
+        <span>กด F5 หรือดึงหน้าจอลง (บนมือถือ) — แก้ได้ 80% ของปัญหาทั่วไป</span>
+      </li>
+      <li>
+        <strong>ถ่ายภาพหน้าจอที่มีปัญหา</strong>
+        <span>เพื่อให้ไทน์เห็นว่า error คืออะไร</span>
+      </li>
+      <li>
+        <strong>แจ้งไทน์ทันที — อย่าเดา อย่าแก้เอง</strong>
+        <span>ส่งรูปให้ไทน์ผ่าน Line หรือบอกตรงๆ — ระบบจะแก้ให้เร็วที่สุด</span>
+      </li>
+      <li>
+        <strong>ถ้า login ไม่ได้เลย</strong>
+        <span>แจ้งไทน์ด่วน — ห้าม share password กับคนอื่น</span>
+      </li>
+    </ol>
+
+    <div class="info-box green" style="margin-top:14px;">
+      <span class="info-box-icon">💬</span>
+      <div><strong>ไทน์ monitor ระบบ real-time ผ่าน AIM</strong> — ถ้าน้องทำอะไรผิดพลาด ไทน์จะเห็นและช่วยแก้ไขให้เอง</div>
+    </div>
+  </div>
+
+  <div style="text-align:center;color:var(--muted);font-size:0.8rem;margin-top:8px;">
+    NNTN Stock System • ครัวเนื้อในตำนาน
+  </div>
+
+</div>
+</body>
+</html>
