@@ -10,7 +10,7 @@ setup('authenticate', async ({ page }) => {
   if (!pwd) {
     throw new Error('NNTN_PWD env var is required (set locally or via GitHub Secret)');
   }
-  await page.locator('#usr').fill('staff');
+  await page.locator('#usr').fill('ci');
   await page.locator('#pwd').fill(pwd);
   await page.click('#btn');
 
