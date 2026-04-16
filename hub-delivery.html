@@ -512,7 +512,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const items = Array.isArray(allItems) ? allItems : []
     mtItems = items.filter(i => i.sku && i.sku.startsWith('MT'))
-    spItems = items.filter(i => i.sku && i.sku.startsWith('SP'))
+    spItems = items.filter(i => i.sku && (i.sku.startsWith('SP') || i.sku.startsWith('MISC')))
 
     // Build sku → current_qty map for SP items
     ;(Array.isArray(stockRows) ? stockRows : []).forEach(r => {
@@ -825,7 +825,8 @@ function addNmRow() {
       <input type="text" id="nm-unit-${n}" placeholder="หน่วย" oninput="updatePreview()">
       <button class="btn-danger" onclick="removeNmRow(${n})">✕</button>
     </div>
-    <div class="nm-avail" id="nm-avail-${n}"></div>`
+    <div class="nm-avail" id="nm-avail-${n}"></div>
+    <input type="text" id="nm-note-${n}" placeholder="ชื่อรายการ (บังคับ)" style="display:none;width:100%;margin-top:4px;box-sizing:border-box" oninput="updatePreview();saveDraft()">`
 
   document.getElementById('nm-rows').appendChild(wrap)
   makeSearchable(`nm-item-${n}`, '— พิมพ์ค้นหา SP item —')
@@ -838,12 +839,17 @@ function removeNmRow(n) {
 }
 
 function onNmChange(n) {
-  const sel  = document.getElementById(`nm-item-${n}`)
-  const opt  = sel.options[sel.selectedIndex]
-  document.getElementById(`nm-unit-${n}`).value = opt?.dataset?.unit || ''
-  const sku  = opt?.dataset?.sku || ''
-  const avEl = document.getElementById(`nm-avail-${n}`)
-  if (sku && spStockBySku[sku] !== undefined) {
+  const sel    = document.getElementById(`nm-item-${n}`)
+  const opt    = sel.options[sel.selectedIndex]
+  const sku    = opt?.dataset?.sku || ''
+  const isMisc = sku.startsWith('MISC')
+  const avEl   = document.getElementById(`nm-avail-${n}`)
+  const noteEl = document.getElementById(`nm-note-${n}`)
+  document.getElementById(`nm-unit-${n}`).value = isMisc ? '' : (opt?.dataset?.unit || '')
+  if (noteEl) noteEl.style.display = isMisc ? '' : 'none'
+  if (isMisc) {
+    avEl.textContent = ''
+  } else if (sku && spStockBySku[sku] !== undefined) {
     const avail = spStockBySku[sku]
     avEl.className = 'nm-avail'
     avEl.textContent = `มีอยู่: ${avail} ${opt?.dataset?.unit || 'หน่วย'}`
@@ -909,7 +915,12 @@ function updatePreview() {
     const qtyEl  = document.getElementById(`nm-qty-${n}`)
     const unitEl = document.getElementById(`nm-unit-${n}`)
     if (!itemEl || !itemEl.value) return
-    const name = itemEl.options[itemEl.selectedIndex]?.dataset?.name || '?'
+    const opt    = itemEl.options[itemEl.selectedIndex]
+    const sku    = opt?.dataset?.sku || ''
+    const isMisc = sku.startsWith('MISC')
+    const name   = isMisc
+      ? (document.getElementById(`nm-note-${n}`)?.value?.trim() || 'รายการพิเศษ')
+      : (opt?.dataset?.name || '?')
     const qty  = parseFloat(qtyEl?.value) || 0
     const unit = unitEl?.value || ''
     if (qty > 0) nmRows.push({ name, qty, unit })
@@ -1592,13 +1603,19 @@ async function submitDelivery() {
     if (qty <= 0) return
     const opt    = itemEl.options[itemEl.selectedIndex]
     const sku    = opt?.dataset?.sku || ''
-    const name   = opt?.dataset?.name || sku
+    const isMisc = sku.startsWith('MISC')
+    const note   = document.getElementById(`nm-note-${n}`)?.value?.trim() || ''
+    if (isMisc && !note) {
+      overLimit.push(`• รายการพิเศษ: กรุณาระบุชื่อรายการ`)
+      return
+    }
+    const name   = isMisc ? note : (opt?.dataset?.name || sku)
     const unit   = unitEl?.value || opt?.dataset?.unit || 'หน่วย'
-    const avail  = spStockBySku[sku] ?? null
+    const avail  = isMisc ? null : (spStockBySku[sku] ?? null)
     if (avail !== null && qty > avail) {
       overLimit.push(`• ${name}: เบิก ${qty} แต่มีอยู่ ${avail} ${unit}`)
     }
-    nmWithdrawals.push({ item_id: itemEl.value, sku, name, unit, qty, avail })
+    nmWithdrawals.push({ item_id: itemEl.value, sku, name, unit, qty, avail, note: isMisc ? note : null })
   })
 
   if (overLimit.length > 0) {
@@ -1691,7 +1708,7 @@ async function submitDelivery() {
       dlLines.push({ delivery_id: deliveryId, catch_weight_id: Number(id), item_id: bag.item_id, weight_g: bag.weight_g, qty: 1 })
     })
     nmWithdrawals.forEach(w => {
-      dlLines.push({ delivery_id: deliveryId, item_id: w.item_id, qty: w.qty, weight_g: null, catch_weight_id: null })
+      dlLines.push({ delivery_id: deliveryId, item_id: w.item_id, qty: w.qty, weight_g: null, catch_weight_id: null, note: w.note || null })
     })
     if (dlLines.length > 0) {
       const dlLinesRes = await fetch(`${SB}/rest/v1/delivery_lines`, {
@@ -1702,9 +1719,10 @@ async function submitDelivery() {
       if (!dlLinesRes.ok) throw new Error(`delivery_lines INSERT: HTTP ${dlLinesRes.status} — ${await dlLinesRes.text()}`)
     }
 
-    // 3. INSERT stock_counts withdrawal for each non-meat item
-    if (nmWithdrawals.length > 0) {
-      const inserts = nmWithdrawals.map(w => ({
+    // 3. INSERT stock_counts withdrawal for each non-meat item (ข้าม MISC — ไม่มีสต๊อก)
+    const stockNm = nmWithdrawals.filter(w => !w.sku.startsWith('MISC'))
+    if (stockNm.length > 0) {
+      const inserts = stockNm.map(w => ({
         item_id:      w.item_id,
         qty:          w.avail !== null ? w.avail - w.qty : 0,
         dispense_qty: w.qty,
@@ -1720,7 +1738,7 @@ async function submitDelivery() {
       if (!res2.ok) throw new Error(`stock_counts INSERT: HTTP ${res2.status} — ${await res2.text()}`)
 
       // Update local stock cache
-      nmWithdrawals.forEach(w => {
+      stockNm.forEach(w => {
         if (w.avail !== null) spStockBySku[w.sku] = w.avail - w.qty
       })
     }
@@ -1775,7 +1793,8 @@ function saveDraft() {
       const itemId = document.getElementById(`nm-item-${n}`)?.value
       const qty    = document.getElementById(`nm-qty-${n}`)?.value
       const unit   = document.getElementById(`nm-unit-${n}`)?.value
-      if (itemId) draft.nm.push({ itemId, qty: qty || '', unit: unit || '' })
+      const note = document.getElementById(`nm-note-${n}`)?.value || ''
+      if (itemId) draft.nm.push({ itemId, qty: qty || '', unit: unit || '', note })
     })
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
   } catch(e) {}
@@ -1853,6 +1872,10 @@ function loadDraft() {
         }
         if (saved.qty)  document.getElementById(`nm-qty-${n}`).value  = saved.qty
         if (saved.unit) document.getElementById(`nm-unit-${n}`).value = saved.unit
+        if (saved.note) {
+          const noteEl = document.getElementById(`nm-note-${n}`)
+          if (noteEl) { noteEl.value = saved.note; noteEl.style.display = '' }
+        }
       })
     }
 

@@ -6,7 +6,11 @@ const authFile = path.join(__dirname, '..', 'playwright', '.auth', 'user.json');
 
 setup('authenticate', async ({ page }) => {
   await page.goto('login.html');
-  const pwd = process.env.NNTN_PWD || 'nntn2026';
+  const pwd = process.env.NNTN_PWD;
+  if (!pwd) {
+    throw new Error('NNTN_PWD env var is required (set locally or via GitHub Secret)');
+  }
+  await page.locator('#usr').fill('staff');
   await page.locator('#pwd').fill(pwd);
   await page.click('#btn');
 
