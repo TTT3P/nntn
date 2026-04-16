@@ -11,8 +11,8 @@
   --green: #1B5E20; --green-light: #388E3C; --green-bg: #E8F5E9;
   --blue: #1565C0; --blue-light: #1976D2; --blue-bg: #E3F2FD;
   --orange: #E65100; --orange-bg: #FFF3E0;
-  --purple: #6A1B9A; --purple-bg: #F3E5F5;
-  --bg: #f5f5f5; --card: #fff; --border: #e0e0e0;
+  --yellow-bg: #FFFDE7;
+  --bg: #f0f2f5; --card: #fff; --border: #e0e0e0;
   --text: #212121; --muted: #757575;
   --header-bg: #1a1a2e;
 }
@@ -30,136 +30,81 @@ header .logo { font-size: 2rem; margin-bottom: 4px; }
 header h1 { font-size: 1.15rem; font-weight: 700; }
 header small { font-size: 0.75rem; opacity: 0.55; }
 
-.wrap { padding: 16px; max-width: 680px; margin: 0 auto; }
+.wrap { padding: 14px; max-width: 700px; margin: 0 auto; }
 
 /* TOC */
-.toc {
-  background: var(--card); border-radius: 12px;
-  padding: 14px 16px; margin-bottom: 18px;
-  border: 1px solid var(--border);
-}
-.toc-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-             letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; }
-.toc a {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 0; color: var(--blue-light);
-  font-size: 0.9rem; text-decoration: none;
-  border-bottom: 1px solid #f5f5f5;
-}
+.toc { background: var(--card); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; border: 1px solid var(--border); }
+.toc-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; }
+.toc a { display: flex; align-items: center; gap: 8px; padding: 6px 0; color: var(--blue-light); font-size: 0.9rem; text-decoration: none; border-bottom: 1px solid #f5f5f5; }
 .toc a:last-child { border-bottom: none; }
-.toc a .toc-num {
-  background: var(--header-bg); color: white;
-  width: 20px; height: 20px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.7rem; font-weight: 700; flex-shrink: 0;
-}
+.toc-num { background: var(--header-bg); color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; }
 
-/* Section card */
-.section {
-  background: var(--card); border-radius: 12px;
-  padding: 18px 16px; margin-bottom: 16px;
-  border: 1px solid var(--border);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-}
-.section-title {
-  font-size: 1.05rem; font-weight: 700; margin-bottom: 16px;
-  padding-bottom: 10px; border-bottom: 2px solid var(--border);
-  display: flex; align-items: center; gap: 10px;
-}
-.section-title .num {
-  background: var(--red-light); color: white;
-  width: 28px; height: 28px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.82rem; font-weight: 700; flex-shrink: 0;
-}
+/* Section */
+.section { background: var(--card); border-radius: 12px; padding: 18px 16px; margin-bottom: 16px; border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.section-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.section-title .num { background: var(--red-light); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 700; flex-shrink: 0; }
+
+/* Sub section */
+.sub { margin-bottom: 20px; }
+.sub-title { font-size: 0.95rem; font-weight: 700; color: var(--red-light); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.sub-title::before { content: ''; display: block; width: 4px; height: 18px; background: var(--red-light); border-radius: 2px; }
 
 /* Steps */
 .steps { list-style: none; counter-reset: step; }
-.steps li {
-  counter-increment: step;
-  display: flex; gap: 12px; align-items: flex-start;
-  padding: 10px 0; border-bottom: 1px solid #f5f5f5;
-}
-.steps li:last-child { border-bottom: none; }
-.steps li::before {
-  content: counter(step);
-  background: var(--blue-bg); color: var(--blue);
-  width: 24px; height: 24px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.78rem; font-weight: 700; flex-shrink: 0; margin-top: 1px;
-}
-.steps li strong { display: block; }
-.steps li span { font-size: 0.88rem; color: var(--muted); }
+.steps > li { counter-increment: step; display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f5f5f5; align-items: flex-start; }
+.steps > li:last-child { border-bottom: none; padding-bottom: 0; }
+.steps > li::before { content: counter(step); background: var(--header-bg); color: white; min-width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.step-body { flex: 1; }
+.step-body strong { display: block; font-size: 0.95rem; }
+.step-body p { font-size: 0.88rem; color: var(--muted); margin-top: 2px; }
+.step-body .field-list { margin-top: 8px; }
 
-/* Workflow row */
-.flow { display: flex; flex-direction: column; gap: 10px; }
-.flow-item {
-  display: flex; gap: 12px; align-items: flex-start;
-  background: #fafafa; border-radius: 10px; padding: 12px 14px;
-  border: 1px solid var(--border);
-}
-.flow-icon { font-size: 1.5rem; flex-shrink: 0; line-height: 1; }
-.flow-body { flex: 1; }
-.flow-title { font-weight: 700; font-size: 0.95rem; }
-.flow-desc { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
-.flow-btn {
-  display: inline-block; margin-top: 8px;
-  background: var(--red-light); color: white;
-  padding: 5px 14px; border-radius: 20px;
-  font-size: 0.8rem; font-weight: 700; text-decoration: none;
-}
-.flow-btn:hover { background: var(--red); }
+/* Field row */
+.field { display: flex; gap: 8px; align-items: flex-start; padding: 5px 0; font-size: 0.88rem; border-bottom: 1px solid #f9f9f9; }
+.field:last-child { border-bottom: none; }
+.field-label { font-weight: 700; min-width: 140px; flex-shrink: 0; }
+.field-val { color: var(--muted); flex: 1; }
+.field-val em { font-style: normal; background: #f5f5f5; padding: 1px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; }
 
-/* AIM table */
-.aim-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-.aim-table th {
-  text-align: left; padding: 8px 10px;
-  background: var(--header-bg); color: white;
-  font-size: 0.78rem;
-}
-.aim-table td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
-.aim-table tr:last-child td { border-bottom: none; }
-.aim-table tr:hover td { background: #fafafa; }
-.aim-badge {
-  display: inline-block; padding: 2px 8px; border-radius: 10px;
-  font-size: 0.75rem; font-weight: 700;
-}
-.badge-green { background: var(--green-bg); color: var(--green); }
-.badge-red   { background: var(--red-bg);   color: var(--red-light); }
-.badge-blue  { background: var(--blue-bg);  color: var(--blue); }
-.badge-orange{ background: var(--orange-bg);color: var(--orange); }
+/* Info boxes */
+.box { border-radius: 10px; padding: 10px 14px; margin: 8px 0; font-size: 0.88rem; display: flex; gap: 10px; align-items: flex-start; }
+.box-icon { flex-shrink: 0; margin-top: 1px; }
+.box.green { background: var(--green-bg); border-left: 4px solid var(--green-light); }
+.box.red   { background: var(--red-bg);   border-left: 4px solid var(--red-light); }
+.box.blue  { background: var(--blue-bg);  border-left: 4px solid var(--blue-light); }
+.box.orange{ background: var(--orange-bg);border-left: 4px solid var(--orange); }
+.box.yellow{ background: var(--yellow-bg);border-left: 4px solid #F9A825; }
 
-/* Info box */
-.info-box {
-  border-radius: 10px; padding: 12px 14px; margin-bottom: 12px;
-  font-size: 0.9rem; display: flex; gap: 10px; align-items: flex-start;
-}
-.info-box.green { background: var(--green-bg); border-left: 4px solid var(--green-light); }
-.info-box.red   { background: var(--red-bg);   border-left: 4px solid var(--red-light); }
-.info-box.blue  { background: var(--blue-bg);  border-left: 4px solid var(--blue-light); }
-.info-box.orange{ background: var(--orange-bg);border-left: 4px solid var(--orange); }
-.info-box-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+/* Button mock */
+.btn-mock { display: inline-flex; align-items: center; gap: 5px; padding: 5px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; margin: 2px; }
+.btn-red    { background: var(--red-light); color: white; }
+.btn-green  { background: var(--green-light); color: white; }
+.btn-blue   { background: var(--blue-light); color: white; }
+.btn-orange { background: var(--orange); color: white; }
+.btn-dark   { background: var(--header-bg); color: white; }
+.btn-outline{ background: white; color: var(--blue); border: 1.5px dashed var(--blue-light); }
+
+/* Tab mock */
+.tab-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.tab-chip { padding: 5px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; background: #f0f2f5; color: var(--muted); border: 1px solid var(--border); }
+.tab-chip.active { background: var(--red-light); color: white; border-color: var(--red-light); }
 
 /* Login box */
-.login-box {
-  background: var(--header-bg); color: white; border-radius: 12px;
-  padding: 16px; text-align: center; margin-bottom: 16px;
-}
-.login-box .url {
-  font-size: 0.8rem; opacity: 0.6; margin-bottom: 6px;
-}
-.login-btn {
-  display: inline-block; background: var(--red-light); color: white;
-  padding: 10px 28px; border-radius: 25px; font-weight: 700;
-  text-decoration: none; font-size: 0.95rem; margin-top: 10px;
-}
-.login-cred {
-  margin-top: 12px; font-size: 0.82rem; opacity: 0.7;
-}
-.login-cred span {
-  display: inline-block; background: rgba(255,255,255,0.1);
-  padding: 3px 10px; border-radius: 8px; margin: 2px;
-}
+.login-box { background: var(--header-bg); color: white; border-radius: 12px; padding: 18px; text-align: center; margin-bottom: 12px; }
+.login-box .url { font-size: 0.78rem; opacity: 0.6; margin-bottom: 4px; }
+.login-btn { display: inline-block; background: var(--red-light); color: white; padding: 10px 28px; border-radius: 25px; font-weight: 700; text-decoration: none; font-size: 0.95rem; margin: 10px 0 6px; }
+.cred-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 0.85rem; opacity: 0.85; }
+.cred-item { background: rgba(255,255,255,0.12); padding: 4px 12px; border-radius: 8px; }
+
+/* AIM table */
+.aim-tbl { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+.aim-tbl th { text-align: left; padding: 8px 10px; background: var(--header-bg); color: white; font-size: 0.78rem; }
+.aim-tbl td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+.aim-tbl tr:last-child td { border-bottom: none; }
+.aim-tbl tr:hover td { background: #fafafa; }
+
+/* divider */
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
 </style>
 </head>
 <body>
@@ -174,198 +119,467 @@ header small { font-size: 0.75rem; opacity: 0.55; }
 
   <!-- TOC -->
   <div class="toc">
-    <div class="toc-title">สารบัญ</div>
+    <div class="toc-title">เนื้อหา</div>
     <a href="#login"><span class="toc-num">1</span> เข้าสู่ระบบ</a>
-    <a href="#workflow"><span class="toc-num">2</span> งานประจำวัน (ขั้นตอนทีละขั้น)</a>
-    <a href="#aim"><span class="toc-num">3</span> AIM — ระบบแจ้งเตือน Discord</a>
-    <a href="#problem"><span class="toc-num">4</span> ถ้าติดปัญหา</a>
+    <a href="#receive"><span class="toc-num">2</span> รับเนื้อสด</a>
+    <a href="#cook"><span class="toc-num">3</span> หม้อตุ๋น — เปิด & ปิดหม้อ</a>
+    <a href="#process"><span class="toc-num">4</span> แปรรูป / รีแพ็ค</a>
+    <a href="#dispense"><span class="toc-num">5</span> เบิก Non-meat</a>
+    <a href="#delivery"><span class="toc-num">6</span> ส่งออก (ใบนำส่ง)</a>
+    <a href="#aim"><span class="toc-num">7</span> AIM — แจ้งเตือน Discord</a>
+    <a href="#problem"><span class="toc-num">8</span> ถ้าติดปัญหา</a>
   </div>
 
   <!-- 1. Login -->
   <div class="section" id="login">
-    <div class="section-title">
-      <span class="num">1</span> เข้าสู่ระบบ
-    </div>
+    <div class="section-title"><span class="num">1</span> เข้าสู่ระบบ</div>
 
     <div class="login-box">
       <div class="url">ttt3p.github.io/nntn/login.html</div>
-      <div style="font-size:1rem;font-weight:700;">NNTN สต๊อกครัว</div>
-      <a class="login-btn" href="login.html">เข้าสู่ระบบ →</a>
-      <div class="login-cred">
-        ชื่อผู้ใช้: <span>ชื่อของคุณ (ภาษาอังกฤษ)</span>
-        รหัสผ่าน: <span>เบอร์โทรของคุณ</span>
+      <div style="font-size:1.05rem;font-weight:700;">🥬 NNTN สต๊อกครัว</div>
+      <a class="login-btn" href="login.html">เปิดหน้า Login →</a>
+      <div class="cred-row">
+        <span class="cred-item">👤 ชื่อผู้ใช้: ชื่อจริงภาษาอังกฤษ</span>
+        <span class="cred-item">🔑 รหัสผ่าน: เบอร์โทรของคุณ</span>
       </div>
     </div>
 
-    <div class="info-box blue">
-      <span class="info-box-icon">💡</span>
-      <div>ชื่อผู้ใช้ = ชื่อจริงภาษาอังกฤษ เช่น <strong>aim, tor, mile</strong> — ตัวใหญ่เล็กไม่สำคัญ</div>
+    <div class="sub">
+      <div class="sub-title">ขั้นตอนการ Login</div>
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <strong>พิมพ์ชื่อผู้ใช้</strong>
+            <p>ช่อง "ชื่อผู้ใช้" — พิมพ์ชื่อภาษาอังกฤษของคุณ เช่น <em>aim</em> <em>tor</em> <em>mile</em> (ตัวใหญ่เล็กไม่สำคัญ)</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>พิมพ์รหัสผ่าน</strong>
+            <p>ช่อง "รหัสผ่าน" — ใส่เบอร์โทรของคุณ กด Enter หรือกดปุ่ม "เข้าสู่ระบบ"</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>ระบบพาไปหน้าหลักอัตโนมัติ</strong>
+            <p>ถ้า login สำเร็จจะเข้าสู่ระบบทันที — มุมบนจะแสดงชื่อของคุณ</p>
+          </div>
+        </li>
+      </ol>
     </div>
-    <div class="info-box red">
-      <span class="info-box-icon">⚠️</span>
-      <div>ถ้า login ไม่ได้ ให้แจ้งไทน์ทันที — ห้ามใช้บัญชีคนอื่นแทน</div>
+
+    <div class="box red"><span class="box-icon">⚠️</span><div>ถ้าขึ้น "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" ให้แจ้งไทน์ทันที — ห้าม login ด้วยบัญชีคนอื่น</div></div>
+  </div>
+
+  <!-- 2. รับเนื้อสด -->
+  <div class="section" id="receive">
+    <div class="section-title"><span class="num">2</span> รับเนื้อสด</div>
+
+    <div class="box blue"><span class="box-icon">📍</span><div>ใช้เมื่อ: <strong>รับวัตถุดิบเนื้อเข้าคลัง A</strong> — กรอกทุกครั้งที่มีเนื้อเข้าใหม่</div></div>
+
+    <div class="tab-row">
+      <span class="tab-chip active">🛒 รับเนื้อสด</span>
+      <span class="tab-chip">🔥 หม้อตุ๋น</span>
+      <span class="tab-chip">♻️ แปรรูป</span>
+      <span class="tab-chip">📊 สต๊อกปัจจุบัน</span>
+    </div>
+
+    <div class="sub">
+      <div class="sub-title">ขั้นตอน</div>
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <strong>เปิดหน้า Meat Stock → tab 🛒 รับเนื้อสด</strong>
+            <p><a href="meat-stock/index.html" style="color:var(--blue-light)">meat-stock/index.html</a></p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>กรอกข้อมูลแต่ละช่อง</strong>
+            <div class="field-list">
+              <div class="field"><span class="field-label">วันที่รับเข้า</span><span class="field-val">ระบบใส่วันนี้ให้อัตโนมัติ — เปลี่ยนได้ถ้าบันทึกย้อนหลัง</span></div>
+              <div class="field"><span class="field-label">เลขที่ใบซื้อ/ใบส่ง</span><span class="field-val">เช่น <em>PO-001</em> — กรอกตามเอกสารที่ได้รับ</span></div>
+              <div class="field"><span class="field-label">ประเภทเนื้อ</span><span class="field-val">เลือกจาก dropdown — มีเฉพาะเนื้อที่ใช้งานอยู่</span></div>
+              <div class="field"><span class="field-label">วัน Lot</span><span class="field-val">ระบบใส่วันนี้ให้ — ตรงกับวันผลิต/รับ</span></div>
+              <div class="field"><span class="field-label">จำนวนถุง</span><span class="field-val">ตั้งเป็น 1 — เปลี่ยนเป็นจำนวนถุงที่รับจริง</span></div>
+              <div class="field"><span class="field-label">น้ำหนักรายถุง</span><span class="field-val">กรอกน้ำหนัก (กรัม) ทีละถุง เช่น <em>5200</em> = 5.2 กก.</span></div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>ถ้ามีเนื้อหลายชนิดในครั้งเดียว</strong>
+            <p>กดปุ่ม <span class="btn-mock btn-outline">+ เพิ่มรายการเนื้อ</span> เพื่อเพิ่ม block ใหม่ — กรอกข้อมูลซ้ำสำหรับชนิดถัดไป</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>กดบันทึก</strong>
+            <p>กดปุ่ม <span class="btn-mock btn-red">✅ บันทึกรับเนื้อสด</span> — ระบบจะขึ้น popup แจ้ง "✅ บันทึกสำเร็จ X ถุง / Y.YYY กก."</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="box green"><span class="box-icon">✅</span><div>บันทึกสำเร็จ = ถุงเนื้อจะขึ้นใน <strong>สต๊อกปัจจุบัน</strong> ทันที สถานะ "✅ In Stock" คลัง A</div></div>
+    <div class="box orange"><span class="box-icon">⚠️</span><div>ถ้าขึ้น popup "❌ บันทึกไม่สำเร็จ" ให้ถ่ายรูปหน้าจอแล้วแจ้งไทน์ — ห้ามกดซ้ำ</div></div>
+  </div>
+
+  <!-- 3. หม้อตุ๋น -->
+  <div class="section" id="cook">
+    <div class="section-title"><span class="num">3</span> หม้อตุ๋น — เปิด &amp; ปิดหม้อ</div>
+
+    <div class="box blue"><span class="box-icon">📍</span><div>ใช้เมื่อ: <strong>เริ่มต้มเนื้อ</strong> (เปิดหม้อ) และ <strong>เสร็จแล้ว</strong> (ปิดหม้อ) — ต้องทำทั้งสองขั้นตอน</div></div>
+
+    <div class="tab-row">
+      <span class="tab-chip">🛒 รับเนื้อสด</span>
+      <span class="tab-chip active">🔥 หม้อตุ๋น</span>
+      <span class="tab-chip">♻️ แปรรูป</span>
+      <span class="tab-chip">📊 สต๊อกปัจจุบัน</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sub">
+      <div class="sub-title">เปิดหม้อ — เริ่มต้มเนื้อ</div>
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <strong>กดปุ่ม <span class="btn-mock btn-red">🔥 เปิดเนื้อใหม่</span></strong>
+            <p>Kanban board จะโหลดขึ้นมา กดปุ่มสีแดงด้านบน</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>กรอกใน popup ที่เปิดขึ้น</strong>
+            <div class="field-list">
+              <div class="field"><span class="field-label">กะ</span><span class="field-val">ระบบเลือกให้อัตโนมัติตามเวลา — เช็คว่าถูกต้องก่อน (🌅 เช้า / ☀️ บ่าย / 🌙 เย็น)</span></div>
+              <div class="field"><span class="field-label">รายการเนื้อ</span><span class="field-val">เลือกชนิดเนื้อที่จะต้ม — จะเห็นจำนวนถุงที่มีอยู่</span></div>
+              <div class="field"><span class="field-label">เลือกถุง</span><span class="field-val">แตะถุงที่ต้องการ (chip จะเป็นสีน้ำเงินเมื่อเลือก) — เลือกได้หลายถุง</span></div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>กด <span class="btn-mock btn-red">🔥 ส่งเข้าหม้อ</span></strong>
+            <p>ระบบจะถามยืนยัน — กด OK — ถุงที่เลือกจะเปลี่ยนสถานะเป็น "❌ Out" และการ์ดหม้อจะขึ้นใน column "🔥 กำลังต้ม"</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sub">
+      <div class="sub-title">ปิดหม้อ — เมื่อต้มเสร็จ</div>
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <strong>กดที่การ์ดหม้อในคอลัมน์ "🔥 กำลังต้ม"</strong>
+            <p>กด card ของหม้อที่ต้มเสร็จแล้ว — popup "ปิดหม้อ" จะเปิดขึ้น</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>กรอกผลผลิตที่ได้</strong>
+            <div class="field-list">
+              <div class="field"><span class="field-label">SKU output</span><span class="field-val">เลือกประเภทเนื้อตุ๋นที่ได้ (dropdown MT-)</span></div>
+              <div class="field"><span class="field-label">จำนวนถุง</span><span class="field-val">ใส่จำนวนถุงที่ตัดแบ่งได้</span></div>
+              <div class="field"><span class="field-label">น้ำหนักรายถุง</span><span class="field-val">กรอกน้ำหนัก (กรัม) ทีละถุง</span></div>
+              <div class="field"><span class="field-label">เศษเนื้อ (byproduct)</span><span class="field-val">ถ้ามี section สีเหลือง "(บังคับ)" = ต้องกรอก — ใส่น้ำหนักเศษที่ได้</span></div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>กด "✅ ปิดหม้อ / บันทึก"</strong>
+            <p>การ์ดจะย้ายไปคอลัมน์ "✅ เสร็จวันนี้" — ถุงเนื้อตุ๋นจะขึ้นในสต๊อก คลัง B/C</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="box yellow"><span class="box-icon">📌</span><div><strong>วางแผนล่วงหน้า:</strong> ถ้าอยากบันทึกว่าจะต้มล็อตไหน แต่ยังไม่เริ่มทันที ให้กด <span class="btn-mock btn-dark" style="font-size:0.75rem">📝 วางแผนเนื้อ</span> แทน — ถุงจะยัง In Stock จนกว่าจะกดเริ่มจริง</div></div>
+  </div>
+
+  <!-- 4. แปรรูป -->
+  <div class="section" id="process">
+    <div class="section-title"><span class="num">4</span> แปรรูป / รีแพ็ค</div>
+
+    <div class="box blue"><span class="box-icon">📍</span><div>ใช้เมื่อ: <strong>ตัดแบ่งเนื้อตุ๋นเป็นถุงขนาดต่างๆ</strong> หรือรวม lot / เปลี่ยนขนาดถุง</div></div>
+
+    <div class="tab-row">
+      <span class="tab-chip">🛒 รับเนื้อสด</span>
+      <span class="tab-chip">🔥 หม้อตุ๋น</span>
+      <span class="tab-chip active">♻️ แปรรูป</span>
+      <span class="tab-chip">📊 สต๊อกปัจจุบัน</span>
+    </div>
+
+    <div class="sub">
+      <div class="sub-title">ขั้นตอน</div>
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <strong>กรอกวันที่ และเลือกประเภท</strong>
+            <div class="field-list">
+              <div class="field"><span class="field-label">วันที่</span><span class="field-val">ระบบใส่วันนี้ให้ — เปลี่ยนได้</span></div>
+              <div class="field"><span class="field-label">ประเภท</span><span class="field-val">เลือก <em>ครัวกลาง — ตัดแบ่ง/แพ็ค SKU</em> สำหรับการแปรรูปปกติ</span></div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>เพิ่มถุงต้นทาง (Input)</strong>
+            <p>กดปุ่ม <span class="btn-mock btn-outline">+ เพิ่มถุงต้นทาง</span> — เลือกถุงเนื้อตุ๋นที่จะนำมาแปรรูป — ด้านล่างจะแสดงยอดรวม "รวม input: X.XXX กก."</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>ระบุผลผลิต (Output)</strong>
+            <div class="field-list">
+              <div class="field"><span class="field-label">SKU output</span><span class="field-val">เลือกชนิดถุงที่แพ็คเสร็จ (เช่น MT-020 พิคาน่า 100g)</span></div>
+              <div class="field"><span class="field-label">จำนวนถุง</span><span class="field-val">ใส่จำนวนถุงที่ได้</span></div>
+              <div class="field"><span class="field-label">น้ำหนักรายถุง</span><span class="field-val">กรอกน้ำหนักแต่ละถุง — Yield% จะคำนวณให้อัตโนมัติ</span></div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>ตรวจสอบ Yield%</strong>
+            <p>ดูกล่อง Yield ด้านล่าง — <span style="color:var(--green-light);font-weight:700;">สีเขียว = ปกติ</span> / <span style="color:var(--orange);font-weight:700;">สีส้ม = เตือน</span> / <span style="color:var(--red-light);font-weight:700;">สีแดง = ผิดปกติ ให้แจ้งไทน์</span></p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>กด <span class="btn-mock btn-red">✅ บันทึกแปรรูป</span></strong>
+            <p>ถุงต้นทางจะเปลี่ยนสถานะเป็น "♻️ Repacked" — ถุงผลผลิตใหม่จะขึ้นในสต๊อก</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="box orange"><span class="box-icon">⚠️</span><div>ถุงที่เลือกเป็น input จะถูกเปลี่ยนสถานะทันทีที่กดบันทึก — ทำซ้ำไม่ได้ ถ้าไม่แน่ใจให้ถามไทน์ก่อน</div></div>
+  </div>
+
+  <!-- 5. เบิก Non-meat -->
+  <div class="section" id="dispense">
+    <div class="section-title"><span class="num">5</span> เบิก Non-meat</div>
+
+    <div class="box blue"><span class="box-icon">📍</span><div>ใช้เมื่อ: <strong>เบิกวัตถุดิบที่ไม่ใช่เนื้อ</strong> เช่น ซีอิ๊ว น้ำมัน บะหมี่ เครื่องปรุง บรรจุภัณฑ์ — ต้องบันทึกทุกครั้งที่เบิก</div></div>
+
+    <div class="tab-row">
+      <span class="tab-chip active">📦 เบิกของ</span>
+      <span class="tab-chip">⚠️ Loss / Waste</span>
+      <span class="tab-chip">📋 Log</span>
+    </div>
+
+    <div class="sub">
+      <div class="sub-title">ขั้นตอนเบิกของ</div>
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <strong>เปิดหน้า Stock Dispense → tab 📦 เบิกของ</strong>
+            <p><a href="stock-dispense.html" style="color:var(--blue-light)">stock-dispense.html</a></p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>ค้นหาวัตถุดิบที่ต้องการเบิก</strong>
+            <p>พิมพ์ชื่อในช่อง "พิมพ์ชื่อวัตถุดิบ..." — dropdown จะแสดงรายการที่ตรงกัน ใช้ลูกศรขึ้น/ลง + Enter เพื่อเลือก แล้วกด <span class="btn-mock btn-green">+ เพิ่ม</span></p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>ใส่จำนวนที่เบิก</strong>
+            <p>แถวที่เพิ่มมาจะแสดง "มี X unit → เหลือ Y" — กรอกจำนวนในช่อง qty — ถ้าตัวเลขเป็นสีส้มหรือขึ้น ⚠️ แปลว่าเบิกเกินสต๊อก</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>เพิ่มรายการอื่นถ้ามี</strong>
+            <p>ค้นหาและกด <span class="btn-mock btn-green">+ เพิ่ม</span> ซ้ำได้เรื่อยๆ จนครบทุกรายการที่เบิก</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>ตรวจสอบวันที่ และกด submit</strong>
+            <div class="field-list">
+              <div class="field"><span class="field-label">วันที่เบิก</span><span class="field-val">ระบบใส่วันนี้ให้ — เปลี่ยนได้ถ้าบันทึกย้อนหลัง</span></div>
+              <div class="field"><span class="field-label">หมายเหตุ</span><span class="field-val">เขียนได้ เช่น "เบิกไปใช้พรุ่งนี้" (ไม่บังคับ)</span></div>
+            </div>
+            <p style="margin-top:8px">กด <span class="btn-mock btn-green">📦 ยืนยันเบิกของทั้งหมด</span> — ระบบจะแจ้ง "✅ เบิกแล้ว X รายการ"</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sub">
+      <div class="sub-title">บันทึก Loss / Waste — ของเสีย/สูญหาย</div>
+      <div class="box orange" style="margin-bottom:10px"><span class="box-icon">📍</span><div>ใช้เมื่อ: ของเน่าเสีย / ตกแตก / นับไม่ตรง — ต้องบันทึกทุกครั้งเพื่อ track สต๊อก</div></div>
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <strong>กด tab ⚠️ Loss / Waste</strong>
+            <p>หน้าจะเปลี่ยนเป็น background สีส้ม</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>ค้นหาและเพิ่มรายการที่เสีย</strong>
+            <p>เหมือน tab เบิกของ — พิมพ์ชื่อ → กด <span class="btn-mock btn-orange">+ เพิ่ม</span></p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>กรอกจำนวน และเลือกสาเหตุ</strong>
+            <div class="field-list">
+              <div class="field"><span class="field-label">จำนวน</span><span class="field-val">ใส่ตัวเลขที่เสีย/สูญหาย</span></div>
+              <div class="field"><span class="field-label">สาเหตุ</span><span class="field-val">เลือกจาก dropdown: หมดอายุ / เสียหาย / หกหาย / นับไม่ตรง / อื่นๆ</span></div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>กด <span class="btn-mock btn-orange">⚠️ บันทึก Loss/Waste ทั้งหมด</span></strong>
+            <p>ระบบจะแจ้ง "✅ บันทึก Loss แล้ว X รายการ"</p>
+          </div>
+        </li>
+      </ol>
     </div>
   </div>
 
-  <!-- 2. Workflow -->
-  <div class="section" id="workflow">
-    <div class="section-title">
-      <span class="num">2</span> งานประจำวัน
+  <!-- 6. ส่งออก -->
+  <div class="section" id="delivery">
+    <div class="section-title"><span class="num">6</span> ส่งออก (ใบนำส่ง)</div>
+
+    <div class="box blue"><span class="box-icon">📍</span><div>ใช้เมื่อ: <strong>ส่งเนื้อ + ของ non-meat ออกจากครัวกลาง</strong> — ระบบออกใบนำส่งให้ทันที พร้อมปริ้น</div></div>
+
+    <div class="tab-row">
+      <span class="tab-chip active">🚛 ออกใบนำส่ง</span>
+      <span class="tab-chip">📋 ประวัติ</span>
     </div>
 
-    <div class="flow">
-
-      <div class="flow-item">
-        <div class="flow-icon">📥</div>
-        <div class="flow-body">
-          <div class="flow-title">รับเนื้อสด</div>
-          <div class="flow-desc">เมื่อรับวัตถุดิบเนื้อเข้าคลัง A — กรอกน้ำหนักถุงและชนิดเนื้อ</div>
-          <a class="flow-btn" href="meat-stock/index.html">→ หน้ารับเนื้อสด</a>
-        </div>
-      </div>
-
-      <div class="flow-item">
-        <div class="flow-icon">🍲</div>
-        <div class="flow-body">
-          <div class="flow-title">เปิดหม้อตุ๋น</div>
-          <div class="flow-desc">บันทึกเมื่อเริ่มต้มเนื้อ — เลือกชนิดเนื้อ ใส่น้ำหนักรวม</div>
-          <a class="flow-btn" href="meat-stock/index.html">→ หน้าหม้อตุ๋น</a>
-        </div>
-      </div>
-
-      <div class="flow-item">
-        <div class="flow-icon">🔪</div>
-        <div class="flow-body">
-          <div class="flow-title">แปรรูป (ตัดแบ่ง)</div>
-          <div class="flow-desc">บันทึกเมื่อตัดแบ่งเนื้อตุ๋นเป็นถุง — ระบุน้ำหนักแต่ละถุง</div>
-          <a class="flow-btn" href="meat-stock/index.html">→ หน้าแปรรูป</a>
-        </div>
-      </div>
-
-      <div class="flow-item">
-        <div class="flow-icon">🧂</div>
-        <div class="flow-body">
-          <div class="flow-title">เบิก Non-meat</div>
-          <div class="flow-desc">เบิกวัตถุดิบที่ไม่ใช่เนื้อ เช่น ซีอิ๊ว, น้ำมัน, บะหมี่ — บันทึกทุกครั้งที่เบิก</div>
-          <a class="flow-btn" href="stock-dispense.html">→ หน้าเบิก</a>
-        </div>
-      </div>
-
-      <div class="flow-item">
-        <div class="flow-icon">🚛</div>
-        <div class="flow-body">
-          <div class="flow-title">ส่งออก (ใบนำส่ง)</div>
-          <div class="flow-desc">บันทึกการส่งเนื้อ + ของ non-meat ออกจากครัวกลาง — ระบบจะออกใบนำส่งให้ทันที</div>
-          <a class="flow-btn" href="hub-delivery.html">→ หน้าส่งออก</a>
-        </div>
-      </div>
-
+    <div class="sub">
+      <div class="sub-title">ขั้นตอน</div>
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <strong>เปิดหน้า Hub Delivery → tab 🚛 ออกใบนำส่ง</strong>
+            <p><a href="hub-delivery.html" style="color:var(--blue-light)">hub-delivery.html</a></p>
+            <p style="margin-top:4px">ถ้าขึ้น banner "📋 มี draft ค้างอยู่" — กด "โหลด draft" เพื่อดึงข้อมูลที่กรอกไว้ครั้งก่อน หรือ "ยกเลิก" เพื่อเริ่มใหม่</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>กรอก "ข้อมูลใบนำส่ง"</strong>
+            <div class="field-list">
+              <div class="field"><span class="field-label">วันที่ส่ง</span><span class="field-val">ระบบใส่วันนี้ให้อัตโนมัติ</span></div>
+              <div class="field"><span class="field-label">ปลายทาง</span><span class="field-val">เลือก: <em>ครัวกลาง (NT)</em> / <em>หน้าร้าน (FS)</em> / <em>อื่นๆ</em></span></div>
+              <div class="field"><span class="field-label">เลขที่ใบนำส่ง</span><span class="field-val">ระบบเสนอให้อัตโนมัติ เช่น <em>NT-20260417-01</em> — เปลี่ยนได้ถ้าต้องการ</span></div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>Block 1 — เนื้อตุ๋น: เลือก SKU และถุง</strong>
+            <p>1) เลือก MT item จาก dropdown "พิมพ์ค้นหา MT item" → 2) กดปุ่ม "📦 เลือกถุง" → 3) แตะเลือกถุงใน popup → 4) กด "✅ ยืนยัน"</p>
+            <p style="margin-top:4px">ถ้าส่งหลาย SKU กดปุ่ม <span class="btn-mock btn-outline" style="font-size:0.75rem">+ เพิ่มรายการเนื้อ</span> เพื่อเพิ่ม block ใหม่</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>Block 2 — Non-meat: เลือกสินค้าและจำนวน</strong>
+            <p>ค้นหา SP item → กรอก qty และหน่วย — ระบบแสดงสต๊อกคงเหลือให้เห็น</p>
+            <p style="margin-top:4px"><strong>ส่งของที่ไม่มีใน stock</strong> (เช่น สแตน ร่มกันแดด): เลือก <em>MISC-001 รายการพิเศษ</em> → จะมีช่อง "ชื่อรายการ (บังคับ)" ให้พิมพ์ชื่อ</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>ตรวจสอบ Preview ใบนำส่ง</strong>
+            <p>ดูที่ card "👁 Preview ใบนำส่ง" — ตรวจให้ครบก่อนบันทึก ถ้าต้องการพิมพ์ใบให้กดปุ่ม <span class="btn-mock btn-blue" style="font-size:0.75rem">🖨 พิมพ์</span></p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>กด <span class="btn-mock btn-red">🚛 บันทึกส่งออก</span></strong>
+            <p>ระบบจะถามยืนยัน — ระบุจำนวนถุงและรายการ — กด OK เพื่อบันทึก ถุงเนื้อจะเปลี่ยนสถานะเป็น "🚚 Delivered"</p>
+          </div>
+        </li>
+      </ol>
     </div>
 
-    <div style="margin-top:16px;">
-      <div class="info-box green">
-        <span class="info-box-icon">✅</span>
-        <div><strong>กฎสำคัญ:</strong> ทำแต่ละขั้นตอนให้ครบก่อนไปขั้นถัดไป — ระบบจะบันทึกอัตโนมัติทุกครั้งที่กดปุ่ม</div>
-      </div>
-      <div class="info-box orange">
-        <span class="info-box-icon">📌</span>
-        <div>ถ้ากรอกข้อมูลผิด <strong>อย่าแก้ไขเอง</strong> — แจ้งไทน์ก่อนเสมอ</div>
-      </div>
-    </div>
+    <div class="box green"><span class="box-icon">💡</span><div><strong>ดูประวัติการส่ง:</strong> กด tab 📋 ประวัติ — ค้นหาบิลเก่า แก้ไขจำนวน หรือเพิ่มรายการที่ลืมกรอกได้</div></div>
   </div>
 
-  <!-- 3. AIM -->
+  <!-- 7. AIM -->
   <div class="section" id="aim">
-    <div class="section-title">
-      <span class="num">3</span> AIM — ระบบแจ้งเตือน Discord
-    </div>
+    <div class="section-title"><span class="num">7</span> AIM — ระบบแจ้งเตือน Discord</div>
 
-    <div class="info-box blue">
-      <span class="info-box-icon">🔔</span>
-      <div>ทุกครั้งที่มีการเคลื่อนไหวในระบบ จะมี notification ส่งไปใน Discord channel <strong>#aim</strong> อัตโนมัติ — ไทน์จะเห็นทุกอย่างแบบ real-time</div>
-    </div>
+    <div class="box blue"><span class="box-icon">🔔</span><div>ทุกครั้งที่มีการเคลื่อนไหวในระบบ จะแจ้งเตือนอัตโนมัติใน Discord channel <strong>#aim</strong> — ไทน์เห็น real-time ตลอดเวลา</div></div>
 
-    <table class="aim-table">
+    <table class="aim-tbl">
       <thead>
-        <tr>
-          <th>สัญลักษณ์</th>
-          <th>ความหมาย</th>
-          <th>ตัวอย่าง</th>
-        </tr>
+        <tr><th>สัญลักษณ์</th><th>เกิดจาก</th><th>ตัวอย่างข้อความ</th></tr>
       </thead>
       <tbody>
-        <tr>
-          <td>📥</td>
-          <td><span class="aim-badge badge-green">รับเข้า</span> รับเนื้อสด</td>
-          <td style="font-size:0.82rem;color:var(--muted);">📥 รับเนื้อ SP-028 ลิ้นวัว | 5.2 กก. | คลัง A</td>
-        </tr>
-        <tr>
-          <td>🔄</td>
-          <td><span class="aim-badge badge-blue">อัปเดต</span> สต๊อกเปลี่ยนสถานะ</td>
-          <td style="font-size:0.82rem;color:var(--muted);">🔄 ส่งออกแล้ว | In Stock → Delivered</td>
-        </tr>
-        <tr>
-          <td>📤</td>
-          <td><span class="aim-badge badge-orange">เบิกออก</span> non-meat ถูกเบิก</td>
-          <td style="font-size:0.82rem;color:var(--muted);">📤 เบิกออก ซีอิ๊วขาว | 16 → 15 ขวด</td>
-        </tr>
-        <tr>
-          <td>🚛</td>
-          <td><span class="aim-badge badge-blue">ส่งออก</span> บันทึกใบนำส่ง</td>
-          <td style="font-size:0.82rem;color:var(--muted);">🚛 ส่งออก บิล NT-xxx → NT | เนื้อ 5 ถุง</td>
-        </tr>
-        <tr>
-          <td>💰</td>
-          <td><span class="aim-badge badge-orange">ราคา</span> ปรับราคาสินค้า</td>
-          <td style="font-size:0.82rem;color:var(--muted);">💰 ปรับราคา SP-003 | 215 → 250 ฿/pack</td>
-        </tr>
-        <tr>
-          <td>🆕</td>
-          <td><span class="aim-badge badge-green">ใหม่</span> เพิ่มสินค้า</td>
-          <td style="font-size:0.82rem;color:var(--muted);">🆕 สินค้าใหม่ SP-999 น้ำมันมะพร้าว</td>
-        </tr>
-        <tr>
-          <td>🚫</td>
-          <td><span class="aim-badge badge-red">ปิด</span> ปิดใช้งานสินค้า</td>
-          <td style="font-size:0.82rem;color:var(--muted);">🚫 ปิดใช้งาน SP-050 ...</td>
-        </tr>
+        <tr><td>📥</td><td>บันทึกรับเนื้อสด</td><td style="font-size:0.82rem;color:var(--muted);">📥 รับเนื้อ SP-028 ลิ้นวัว | 5.2 กก. | คลัง A</td></tr>
+        <tr><td>🔄</td><td>สต๊อกเนื้อเปลี่ยนสถานะ</td><td style="font-size:0.82rem;color:var(--muted);">🔄 ส่งออกแล้ว MT-020 | In Stock → Delivered</td></tr>
+        <tr><td>📤</td><td>เบิก non-meat</td><td style="font-size:0.82rem;color:var(--muted);">📤 เบิกออก ซีอิ๊วขาว | 16 → 15 ขวด (เบิก 1)</td></tr>
+        <tr><td>🚛</td><td>บันทึกใบนำส่ง</td><td style="font-size:0.82rem;color:var(--muted);">🚛 ส่งออก บิล NT-xxx → NT | เนื้อ 5 ถุง | non-meat 3 รายการ</td></tr>
+        <tr><td>💰</td><td>ปรับราคาสินค้า</td><td style="font-size:0.82rem;color:var(--muted);">💰 ปรับราคา SP-003 ซีอิ๊ว | 215 → 250 ฿/pack</td></tr>
+        <tr><td>🆕</td><td>เพิ่มสินค้าใหม่</td><td style="font-size:0.82rem;color:var(--muted);">🆕 สินค้าใหม่ SP-999 น้ำมันมะพร้าว | ขวด</td></tr>
+        <tr><td>✅/🚫</td><td>เปิด/ปิดการใช้งานสินค้า</td><td style="font-size:0.82rem;color:var(--muted);">🚫 ปิดใช้งาน SP-050 เก่าแล้ว</td></tr>
       </tbody>
     </table>
+
+    <div class="box green" style="margin-top:12px"><span class="box-icon">💬</span><div>ถ้าน้องมี Discord: เพิ่มตัวเองเข้า channel #aim เพื่อรับ notification และสื่อสารกับไทน์ผ่านนั้นได้เลย</div></div>
   </div>
 
-  <!-- 4. Problem -->
+  <!-- 8. ปัญหา -->
   <div class="section" id="problem">
-    <div class="section-title">
-      <span class="num">4</span> ถ้าติดปัญหา
-    </div>
+    <div class="section-title"><span class="num">8</span> ถ้าติดปัญหา</div>
 
     <ol class="steps">
       <li>
-        <strong>ลองรีเฟรชหน้าก่อน</strong>
-        <span>กด F5 หรือดึงหน้าจอลง (บนมือถือ) — แก้ได้ 80% ของปัญหาทั่วไป</span>
+        <div class="step-body">
+          <strong>ลองรีเฟรชหน้าก่อน</strong>
+          <p>กด F5 บน PC หรือดึงหน้าจอลงบน มือถือ — แก้ได้ ~80% ของปัญหา</p>
+        </div>
       </li>
       <li>
-        <strong>ถ่ายภาพหน้าจอที่มีปัญหา</strong>
-        <span>เพื่อให้ไทน์เห็นว่า error คืออะไร</span>
+        <div class="step-body">
+          <strong>ถ่ายภาพหน้าจอที่มีปัญหา</strong>
+          <p>ถ่ายให้เห็น error message หรือสิ่งที่ผิดปกติ</p>
+        </div>
       </li>
       <li>
-        <strong>แจ้งไทน์ทันที — อย่าเดา อย่าแก้เอง</strong>
-        <span>ส่งรูปให้ไทน์ผ่าน Line หรือบอกตรงๆ — ระบบจะแก้ให้เร็วที่สุด</span>
+        <div class="step-body">
+          <strong>แจ้งไทน์ทันที — ห้ามเดาหรือแก้เอง</strong>
+          <p>ส่งรูปให้ไทน์ผ่าน Line หรือ Discord #aim — ไทน์เห็นระบบ real-time และจะช่วยแก้ให้เร็วที่สุด</p>
+        </div>
       </li>
       <li>
-        <strong>ถ้า login ไม่ได้เลย</strong>
-        <span>แจ้งไทน์ด่วน — ห้าม share password กับคนอื่น</span>
+        <div class="step-body">
+          <strong>ถ้า login ไม่ได้เลย</strong>
+          <p>แจ้งไทน์ด่วน — ห้าม share password กับคนอื่น และห้าม login ด้วยบัญชีคนอื่นแทน</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>ถ้ากรอกข้อมูลผิดหลังบันทึกไปแล้ว</strong>
+          <p>แจ้งไทน์พร้อมบอกว่า: บันทึกอะไร / วันไหน / ผิดอย่างไร — ไทน์จะแก้ไขให้ในระบบ</p>
+        </div>
       </li>
     </ol>
 
-    <div class="info-box green" style="margin-top:14px;">
-      <span class="info-box-icon">💬</span>
-      <div><strong>ไทน์ monitor ระบบ real-time ผ่าน AIM</strong> — ถ้าน้องทำอะไรผิดพลาด ไทน์จะเห็นและช่วยแก้ไขให้เอง</div>
-    </div>
+    <div class="box red" style="margin-top:12px"><span class="box-icon">🚫</span><div><strong>ห้ามทำ:</strong> แก้ไขข้อมูลย้อนหลังเอง / ลองกดหลายๆ ครั้งถ้าระบบค้าง / ใช้บัญชีคนอื่น</div></div>
+    <div class="box green"><span class="box-icon">✅</span><div><strong>ทำได้เลย:</strong> รีเฟรช / ถ่ายรูป / แจ้งไทน์ — ไม่มีการกรอกผิดครั้งไหนที่แก้ไม่ได้</div></div>
   </div>
 
-  <div style="text-align:center;color:var(--muted);font-size:0.8rem;margin-top:8px;">
-    NNTN Stock System • ครัวเนื้อในตำนาน
+  <div style="text-align:center;color:var(--muted);font-size:0.78rem;margin-top:8px;">
+    NNTN Stock System • ครัวเนื้อในตำนาน • เม.ย. 2026
   </div>
 
 </div>
