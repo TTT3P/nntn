@@ -106,11 +106,13 @@
     .card-meat     { --accent: #ef5350; }
     .card-cb       { --accent: #FFA726; }
     .card-hr       { --accent: #42A5F5; }
+    .card-sales    { --accent: #26C6DA; border-color: #00838F; }
 
     .card-nonmeat .icon::after { content: '🧅'; }
     .card-meat .icon::after    { content: '🥩'; }
     .card-cb .icon::after      { content: '📖'; }
     .card-hr .icon::after      { content: '👥'; }
+    .card-sales .icon::after   { content: '📊'; }
     .card-guide { --accent: #7E57C2; border-color: #512DA8; }
 
     footer {
@@ -166,6 +168,13 @@
     <div class="label">หม้อตุ๋น</div>
     <div class="desc">Kanban board — เปิดหม้อเช้า ปิดหม้อเย็น, yield tracking</div>
     <span class="badge badge-live">● LIVE</span>
+  </a>
+
+  <a class="card card-sales disabled" href="#">
+    <div class="icon">📊</div>
+    <div class="label">Sales Ops</div>
+    <div class="desc">ยอดขาย Grab/FS, menu matrix, FC%, recipe variance</div>
+    <span class="badge badge-soon">เร็วๆ นี้</span>
   </a>
 
   <a class="card card-hr disabled" href="#">
