@@ -514,7 +514,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const items = Array.isArray(allItems) ? allItems : []
     mtItems = items.filter(i => i.sku && i.sku.startsWith('MT'))
-    spItems = items.filter(i => i.sku && (i.sku.startsWith('SP') || i.sku.startsWith('MISC')))
+    spItems = items.filter(i => i.sku && (i.sku.startsWith('SP') || i.sku.startsWith('MISC') || i.sku.startsWith('PKG')))
 
     // Build sku → current_qty map for SP items
     ;(Array.isArray(stockRows) ? stockRows : []).forEach(r => {
