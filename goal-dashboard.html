@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="/nntn/auth.js"></script>
+<title>NNTN — Goal Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --ink: #ffffff;
+  --paper: #111111;
+  --surface: #1a1a1a;
+  --border: #2a2a2a;
+  --muted: #666666;
+  --accent: #8B0000;
+  --green: #2e7d32;
+  --green-text: #a5d6a7;
+  --warn: #ff5722;
+  --line: #2a2a2a;
+}
+body {
+  font-family: 'Sarabun', -apple-system, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ─── HEADER ─── */
+.header {
+  background: #0d0d0d;
+  border-bottom: 3px solid var(--accent);
+  padding: 20px 24px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.header-left .eyebrow {
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.header-left h1 {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+.header-right {
+  text-align: right;
+}
+.header-right .date-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.header-right .date-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ─── STATUS BAR ─── */
+.status-bar {
+  background: #161616;
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  gap: 32px;
+  overflow-x: auto;
+}
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: nowrap;
+}
+.stat-item .lbl {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.stat-item .val {
+  font-size: 16px;
+  font-weight: 700;
+}
+.val-green { color: var(--green-text); }
+.val-warn  { color: var(--warn); }
+.val-muted { color: var(--muted); }
+
+/* ─── MAIN LAYOUT ─── */
+.main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 720px) {
+  .main {
+    grid-template-columns: 1fr 1fr;
+    padding: 32px 24px 64px;
+  }
+  .section-full { grid-column: 1 / -1; }
+}
+
+/* ─── SECTION HEADER ─── */
+.section-title {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  border-left: 4px solid var(--accent);
+  padding-left: 10px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.section-title .count {
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: 0;
+  font-weight: 700;
+}
+
+/* ─── COMMITMENTS TABLE ─── */
+.commit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.commit-table th {
+  text-align: left;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 10px 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.commit-table td {
+  padding: 12px 10px 12px 0;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.commit-table tr:last-child td { border-bottom: 0; }
+.commit-row td:first-child { white-space: nowrap; }
+
+.who-badge {
+  display: inline-block;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.who-coo   { background: #3e1a1a; color: #ef9a9a; }
+.who-tyne  { background: #1a2a3e; color: #90caf9; }
+.who-wm    { background: #1a3e2a; color: #a5d6a7; }
+.who-cb    { background: #3e3a1a; color: #ffe082; }
+
+.due-chip {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.due-today { color: var(--warn); font-weight: 700; }
+
+.status-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #555;
+  margin-right: 4px;
+}
+.dot-pending { background: #ff9800; }
+.dot-done    { background: var(--green-text); }
+
+/* ─── ROOM CARDS ─── */
+.rooms-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.room-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 14px;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.15s, transform 0.1s;
+  position: relative;
+  overflow: hidden;
+}
+.room-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--room-accent, #333);
+}
+.room-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--room-accent, #555);
+}
+.room-card.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.room-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.room-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.3;
+}
+.room-badge {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  width: fit-content;
+}
+.badge-live { background: #1b5e20; color: #a5d6a7; }
+.badge-soon { background: #2a2a2a; color: #555; }
+
+/* ─── TODAY FOCUS ─── */
+.focus-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.focus-item {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+.focus-item:last-child { border-bottom: 0; }
+.focus-num {
+  width: 28px; height: 28px;
+  background: var(--border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.focus-num.hot {
+  background: var(--accent);
+  color: #fff;
+}
+.focus-body strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+.focus-body span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ─── FOOTER ─── */
+footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 10px;
+  color: #333;
+  letter-spacing: 1px;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="eyebrow">ครัวเนื้อในตำนาน</div>
+    <h1>Goal Dashboard</h1>
+  </div>
+  <div class="header-right">
+    <div class="date-label">วันนี้</div>
+    <div class="date-val" id="today-date">—</div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <div class="stat-item">
+    <div class="lbl">CW In Stock</div>
+    <div class="val val-green" id="cw-stock">265 ถุง</div>
+  </div>
+  <div class="stat-item">
+    <div class="lbl">Active Goals</div>
+    <div class="val" id="goal-count">7</div>
+  </div>
+  <div class="stat-item">
+    <div class="lbl">Due Today</div>
+    <div class="val val-warn" id="due-today-count">2</div>
+  </div>
+  <div class="stat-item">
+    <div class="lbl">Rooms Live</div>
+    <div class="val val-green">5 / 7</div>
+  </div>
+  <div class="stat-item">
+    <div class="lbl">Last Updated</div>
+    <div class="val val-muted">17/04/2026</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TODAY FOCUS (full width) -->
+  <div class="section-full">
+    <div class="section-title">
+      Today's Focus
+      <span class="count">3 items</span>
+    </div>
+    <ul class="focus-list">
+      <li class="focus-item">
+        <div class="focus-num hot">1</div>
+        <div class="focus-body">
+          <strong>goal-dashboard.html → deploy</strong>
+          <span>prototype เสร็จ → ทดสอบ + push ขึ้น GitHub Pages</span>
+        </div>
+      </li>
+      <li class="focus-item">
+        <div class="focus-num hot">2</div>
+        <div class="focus-body">
+          <strong>Brief #007 publish</strong>
+          <span>Web Master → AI agent non-coder post — due today</span>
+        </div>
+      </li>
+      <li class="focus-item">
+        <div class="focus-num">3</div>
+        <div class="focus-body">
+          <strong>GSC OAuth token setup</strong>
+          <span>upload googlea884db65b6625530.html + เซ็ต .env</span>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- ACTIVE COMMITMENTS -->
+  <div class="section-full">
+    <div class="section-title">
+      Active Commitments
+      <span class="count" id="commit-badge">7</span>
+    </div>
+    <table class="commit-table">
+      <thead>
+        <tr>
+          <th>From → To</th>
+          <th>What</th>
+          <th>Due</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="commit-row">
+          <td><span class="who-badge who-coo">COO</span><br><span style="font-size:10px;color:#555">→ ไทน์</span></td>
+          <td>Build <code style="background:#222;padding:1px 5px;border-radius:3px;font-size:12px">goal-dashboard.html</code> prototype</td>
+          <td><span class="due-chip">01/05</span></td>
+        </tr>
+        <tr class="commit-row">
+          <td><span class="who-badge who-coo">COO</span><br><span style="font-size:10px;color:#555">→ Web Master</span></td>
+          <td>รัน skill-creator eval บน 3 agent skills ใหม่</td>
+          <td><span class="due-chip">—</span></td>
+        </tr>
+        <tr class="commit-row">
+          <td><span class="who-badge who-wm">WM</span><br><span style="font-size:10px;color:#555">→ ไทน์</span></td>
+          <td>Brief #007 publish — AI agent non-coder post</td>
+          <td><span class="due-chip due-today">วันนี้</span></td>
+        </tr>
+        <tr class="commit-row">
+          <td><span class="who-badge who-tyne">ไทน์</span><br><span style="font-size:10px;color:#555">→ WM</span></td>
+          <td>upload googlea884db65b6625530.html (GSC verify)</td>
+          <td><span class="due-chip due-today">วันนี้</span></td>
+        </tr>
+        <tr class="commit-row">
+          <td><span class="who-badge who-tyne">ไทน์</span><br><span style="font-size:10px;color:#555">→ ไทน์</span></td>
+          <td>setup GSC OAuth token → <code style="background:#222;padding:1px 5px;border-radius:3px;font-size:12px">.env</code></td>
+          <td><span class="due-chip">—</span></td>
+        </tr>
+        <tr class="commit-row">
+          <td><span class="who-badge who-cb">CB</span><br><span style="font-size:10px;color:#555">COO → CB</span></td>
+          <td>RCP-002 + RCP-011 batch_size_g fix</td>
+          <td><span class="due-chip">—</span></td>
+        </tr>
+        <tr class="commit-row">
+          <td><span class="who-badge who-coo">COO</span><br><span style="font-size:10px;color:#555">→ ไทน์</span></td>
+          <td>Tier 2 ยกเครื่องใหญ่ (T2.1–T2.4)</td>
+          <td><span class="due-chip">เดือนนี้</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ROOMS -->
+  <div class="section-full">
+    <div class="section-title">Rooms</div>
+    <div class="rooms-grid">
+
+      <a class="room-card" href="./index.html" style="--room-accent:#4CAF50">
+        <div class="room-name">🧅 สต๊อกครัว</div>
+        <div class="room-desc">สต๊อก, รับ/เบิก, PO, loss, ทะเบียนวัตถุดิบ</div>
+        <span class="room-badge badge-live">● LIVE</span>
+      </a>
+
+      <a class="room-card" href="./meat-stock/index.html" style="--room-accent:#ef5350">
+        <div class="room-name">🥩 Meat Stock</div>
+        <div class="room-desc">CW, FIFO, คลัง A/B/C, NT/FS delivery</div>
+        <span class="room-badge badge-live">● LIVE</span>
+      </a>
+
+      <a class="room-card" href="./cookingbook/index.html" style="--room-accent:#FFA726">
+        <div class="room-name">📖 CookingBook</div>
+        <div class="room-desc">BOM, ต้นทุน, FC%, ราคาขาย, สูตรอาหาร</div>
+        <span class="room-badge badge-live">● LIVE</span>
+      </a>
+
+      <a class="room-card" href="./hub-delivery.html" style="--room-accent:#ef5350">
+        <div class="room-name">🚛 ออกใบนำส่ง</div>
+        <div class="room-desc">ส่งออกเนื้อตุ๋น + Non-meat cross-domain</div>
+        <span class="room-badge badge-live">● LIVE</span>
+      </a>
+
+      <a class="room-card" href="./meat-stock/index.html" style="--room-accent:#FFA726">
+        <div class="room-name">🔥 หม้อตุ๋น</div>
+        <div class="room-desc">Kanban board — เปิดหม้อเช้า ปิดหม้อเย็น</div>
+        <span class="room-badge badge-live">● LIVE</span>
+      </a>
+
+      <a class="room-card disabled" href="#" style="--room-accent:#26C6DA">
+        <div class="room-name">📊 Sales Ops</div>
+        <div class="room-desc">ยอดขาย Grab/FS, menu matrix, FC%</div>
+        <span class="room-badge badge-soon">เร็วๆ นี้</span>
+      </a>
+
+      <a class="room-card disabled" href="#" style="--room-accent:#42A5F5">
+        <div class="room-name">👥 HR</div>
+        <div class="room-desc">พนักงาน, payroll, สลิปเงินเดือน</div>
+        <span class="room-badge badge-soon">เร็วๆ นี้</span>
+      </a>
+
+      <a class="room-card" href="./guide.html" style="--room-accent:#7E57C2">
+        <div class="room-name">📖 คู่มือการใช้งาน</div>
+        <div class="room-desc">วิธีใช้ทุกหน้า step-by-step สำหรับทีมงาน</div>
+        <span class="room-badge badge-live">● พร้อมใช้</span>
+      </a>
+
+    </div>
+  </div>
+
+</div>
+
+<footer>NNTN Goal Dashboard v1.0 — 17/04/2026 · อัปเดต commitments ใน NNTN-Vault/commitments.md</footer>
+
+<script>
+  // Show today's date
+  const d = new Date();
+  const days = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  document.getElementById('today-date').textContent =
+    `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
+</script>
+</body>
+</html>
