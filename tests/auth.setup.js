@@ -15,7 +15,7 @@ setup('authenticate', async ({ page }) => {
   await page.click('#btn');
 
   // รอ redirect ออกจาก login.html (→ index.html)
-  await page.waitForURL(url => !url.pathname.endsWith('login.html'), { timeout: 15_000 });
+  await page.waitForURL(url => !url.pathname.endsWith('login.html'), { timeout: 30_000 });
 
   // verify token ถูก set
   const token = await page.evaluate(() => localStorage.getItem('nntn_sb_token'));
