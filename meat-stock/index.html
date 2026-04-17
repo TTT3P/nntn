@@ -1590,25 +1590,29 @@ async function submitClosePot() {
   try {
     const wasteKg = parseFloat(document.getElementById('cp-waste-kg')?.value || 0) || 0
     const wasteNote = document.getElementById('cp-waste-note')?.value?.trim() || ''
-    const outputs = [{
-      session_id: sessionId,
-      item_id: itemId,
-      kg_cooked: totalKg,
-      bag_count: bagWeights.length,
-      waste_kg: wasteKg,
-      note: wasteNote || null
-    }]
-    if (bypItem && bypWeights.length > 0) {
-      outputs.push({
-        session_id: sessionId,
-        item_id: bypItem.id,
-        kg_cooked: bypKg,
-        bag_count: bypWeights.length
-      })
-    }
-    await post('cook_outputs', outputs)
 
-    const newBags = bagWeights.map((g, i) => ({
+    // noOutput mode (เช่น กระดูกวัวต้มซุป) — ไม่ต้อง INSERT cook_outputs หรือถุงผลผลิต
+    if (!noOutput) {
+      const outputs = [{
+        session_id: sessionId,
+        item_id: itemId,
+        kg_cooked: totalKg,
+        bag_count: bagWeights.length,
+        waste_kg: wasteKg,
+        note: wasteNote || null
+      }]
+      if (bypItem && bypWeights.length > 0) {
+        outputs.push({
+          session_id: sessionId,
+          item_id: bypItem.id,
+          kg_cooked: bypKg,
+          bag_count: bypWeights.length
+        })
+      }
+      await post('cook_outputs', outputs)
+    }
+
+    const newBags = noOutput ? [] : bagWeights.map((g, i) => ({
       item_id: itemId,
       weight_g: g,
       warehouse: 'B',
@@ -1638,7 +1642,7 @@ async function submitClosePot() {
         })
       })
     }
-    await post('catch_weight', newBags)
+    if (newBags.length > 0) await post('catch_weight', newBags)
 
     const upRes = await fetch(`${SB}/rest/v1/cook_sessions?id=eq.${sessionId}`, {
       method: 'PATCH',
