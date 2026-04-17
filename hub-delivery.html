@@ -714,7 +714,7 @@ function renderMeatChips(n) {
 
   chipsEl.innerHTML = Object.entries(lots).sort().map(([lot, bags]) => {
     const chips = bags.map(b => {
-      const cw = b.legacy_cw_row ? `${b.legacy_cw_row}` : '#' + b.id.substring(0, 6)
+      const cw = b.legacy_cw_row ? `${b.legacy_cw_row}` : '#' + String(b.id).substring(0, 6)
       const kg = ((b.weight_g || 0) / 1000).toFixed(3)
       return `<div class="lot-chip selected" style="cursor:default">
         <div class="lot-name">${cw}</div>
@@ -760,7 +760,7 @@ function openBagModal(n) {
       const chips = lotBags.map(b => {
         const cw = b.legacy_cw_row ? `${b.legacy_cw_row}` : '#' + String(b.id).substring(0, 6)
         const kg = ((b.weight_g || 0) / 1000).toFixed(3)
-        const isSel = selectedBags.has(b.id) ? ' selected' : ''
+        const isSel = selectedBags.has(String(b.id)) ? ' selected' : ''
         return `<div class="lot-chip${isSel}" id="bagchip-${b.id}"
                      data-id="${b.id}" onclick="toggleBag('${b.id}')">
           <div class="lot-name">${cw}</div>
