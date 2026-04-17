@@ -1238,6 +1238,8 @@ function openClosePotModal(session) {
 
   // Lookup byproduct info from global items (has byproduct_item_id + byproduct_required)
   const rawItemFull = items.find(i => i.id === rawItemEmbed?.id)
+  // กระดูกวัว (และ item ที่ใช้ต้มซุปเฉยๆ) ไม่มี output ถุง
+  const noOutputMode = rawItemFull?.sku === 'SP-034' || (rawItemEmbed?.name||'').includes('กระดูก')
   const bypItemId = rawItemFull?.byproduct_item_id
   const bypItem = bypItemId ? items.find(i => i.id === bypItemId) : null
   const bypRequired = !!rawItemFull?.byproduct_required
@@ -1261,6 +1263,7 @@ function openClosePotModal(session) {
 
   showCookModal(`
   <div class="modal-box">
+    <input type="hidden" id="cp-no-output" value="${noOutputMode ? '1' : '0'}">
     <div class="modal-title">✏️ ปิดหม้อ — ${escHtml(potName)}</div>
     <div class="modal-sub">บันทึกผลผลิต + คำนวณ yield</div>
 
@@ -1269,7 +1272,10 @@ function openClosePotModal(session) {
       <div style="font-size:0.92rem">${escHtml(rawItemEmbed?.name || '—')}: <b>${rawKg.toFixed(3)} กก.</b></div>
     </div>
 
-    <div class="cook-sec">
+    ${noOutputMode ? `<div class="cook-sec" style="background:#E8F5E9;border:1.5px solid #A5D6A7">
+      <div style="color:#2e7d32;font-weight:700">🍲 ต้มซุป — ไม่มีผลผลิตถุง</div>
+      <div style="font-size:.85rem;color:var(--muted);margin-top:4px">บันทึกเพื่อ record การใช้วัตถุดิบ</div>
+    </div>` : `<div class="cook-sec">
       <div class="cook-sec-label">ผลผลิตหลัก (Main output)</div>
       <div class="row2">
         <div>
@@ -1284,9 +1290,9 @@ function openClosePotModal(session) {
         </div>
       </div>
       <div id="cp-bag-rows" style="margin-top:10px"></div>
-    </div>
+    </div>`}
 
-    ${bypSection}
+    ${noOutputMode ? '' : bypSection}
 
     <div class="cook-sec" id="cp-yield-box" style="display:none">
       <div class="cook-sec-label">Yield</div>
@@ -1550,8 +1556,11 @@ async function submitClosePot() {
     .map(el => parseFloat(el.value) || 0)
     .filter(g => g > 0)
 
-  if (!itemId) { alert('กรุณาเลือกเนื้อตุ๋น'); return }
-  if (bagWeights.length === 0) { alert('กรุณากรอกน้ำหนักอย่างน้อย 1 ถุง'); return }
+  const noOutput = document.getElementById('cp-no-output')?.value === '1'
+  if (!noOutput) {
+    if (!itemId) { alert('กรุณาเลือกเนื้อตุ๋น'); return }
+    if (bagWeights.length === 0) { alert('กรุณากรอกน้ำหนักอย่างน้อย 1 ถุง'); return }
+  }
 
   const totalKg = bagWeights.reduce((s, g) => s + g, 0) / 1000
 
