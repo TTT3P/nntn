@@ -481,7 +481,9 @@ let _modalBlock = null  // which block is the modal for
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 async function get(table, params = {}) {
   const q = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
-  const r = await fetch(`${SB}/rest/v1/${table}?${q}`, { headers: H })
+  const tok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+  const h = { ...H, Authorization: 'Bearer ' + tok }
+  const r = await fetch(`${SB}/rest/v1/${table}?${q}`, { headers: h })
   if (!r.ok) throw new Error(`GET ${table}: ${r.status}`)
   return r.json()
 }
