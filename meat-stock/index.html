@@ -1551,7 +1551,7 @@ function calcClosePotYield() {
 async function submitClosePot() {
   if (!currentClosePot) return
   const sessionId = currentClosePot.id
-  const itemId = document.getElementById('cp-item').value
+  const itemId = document.getElementById('cp-item')?.value || ''
   const bagWeights = Array.from(document.querySelectorAll('.cp-bw'))
     .map(el => parseFloat(el.value) || 0)
     .filter(g => g > 0)
