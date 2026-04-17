@@ -316,7 +316,8 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
   <button class="tab-btn active" onclick="switchTab('receive')">🛒 รับเนื้อสด</button>
   <button class="tab-btn" onclick="switchTab('produce')">🔥 หม้อตุ๋น</button>
   <button class="tab-btn" onclick="switchTab('process')">♻️ แปรรูป</button>
-<button class="tab-btn" onclick="switchTab('stock')">📊 สต๊อกปัจจุบัน</button>
+  <button class="tab-btn" onclick="switchTab('stock')">📊 สต๊อกปัจจุบัน</button>
+  <button class="tab-btn" onclick="switchTab('history')">📋 ประวัติรับเนื้อ</button>
 </div>
 </div>
 
@@ -691,7 +692,7 @@ async function submitReceive() {
   for (const card of cards) {
     const sel   = card.querySelector('select')
     const lotEl = card.querySelector('input[type=date]')
-    const bagInputs = card.querySelectorAll('input[type=number]')
+    const bagInputs = card.querySelectorAll('.bag-row input[type=number]')
     if (!sel || !lotEl) continue
     const item_id = sel.value
     const lot_date = lotEl.value || date
