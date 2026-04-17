@@ -796,7 +796,16 @@ function updateRecvSum(n) {
     const kg = g/1000
     total += kg
     const kgEl = document.getElementById(`recv-bkg-${n}-${idx+1}`)
-    if(kgEl) kgEl.textContent = g>0 ? kg.toFixed(3)+' กก.' : '—'
+    if (kgEl) {
+      if (g <= 0) {
+        kgEl.innerHTML = '—'
+      } else if (g < 500) {
+        kgEl.innerHTML = `<span style="color:#E65100;font-weight:700">${kg.toFixed(3)} กก. ⚠️ น้อยมาก</span>`
+      } else {
+        kgEl.textContent = kg.toFixed(3) + ' กก.'
+        kgEl.style.color = ''
+      }
+    }
   })
   document.getElementById(`recv-sum-${n}`).textContent = total.toFixed(3)
 }
@@ -819,6 +828,7 @@ async function submitReceive() {
     bagInputs.forEach((inp, idx) => {
       const g = parseFloat(inp.value)
       if (!g || g <= 0) return
+      if (g < 500 && !confirm(`⚠️ ถุงที่ ${idx+1}: น้ำหนัก ${g} กรัม (${(g/1000).toFixed(3)} กก.) — น้อยมากผิดปกติ\n\nใส่เป็นกรัมใช่ไหม? กด OK เพื่อบันทึกต่อ หรือ Cancel เพื่อแก้ไข`)) return
       rows.push({
         item_id,
         lot_date,
