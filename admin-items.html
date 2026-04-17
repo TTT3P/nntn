@@ -215,6 +215,7 @@
         <label>หมวด <span style="color:#C62828">*</span></label>
         <select id="f-category">
           <option value="">— เลือก —</option>
+          <option value="meat">🥩 เนื้อสด (ดิบ)</option>
           <option value="seasoning">🧂 เครื่องปรุงน้ำซุป</option>
           <option value="spice">🌿 สมุนไพร & เครื่องเทศ</option>
           <option value="vegetable">🥬 ผัก</option>
@@ -309,6 +310,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CAT_LABELS = {
+  meat:       '🥩 เนื้อสด (ดิบ)',
   seasoning:  '🧂 เครื่องปรุงน้ำซุป',
   spice:      '🌿 สมุนไพร & เครื่องเทศ',
   vegetable:  '🥬 ผัก',
@@ -477,6 +479,7 @@ function renderList() {
 function getPrefix(category) {
   if (category === 'srcp') return 'SRCP';
   if (category === 'pkg')  return 'PKG';
+  if (category === 'meat') return 'SP';
   return 'SP';
 }
 
