@@ -758,7 +758,7 @@ function openBagModal(n) {
   } else {
     body.innerHTML = Object.entries(lots).sort().map(([lot, lotBags]) => {
       const chips = lotBags.map(b => {
-        const cw = b.legacy_cw_row ? `${b.legacy_cw_row}` : '#' + b.id.substring(0, 6)
+        const cw = b.legacy_cw_row ? `${b.legacy_cw_row}` : '#' + String(b.id).substring(0, 6)
         const kg = ((b.weight_g || 0) / 1000).toFixed(3)
         const isSel = selectedBags.has(b.id) ? ' selected' : ''
         return `<div class="lot-chip${isSel}" id="bagchip-${b.id}"
