@@ -1,0 +1,34 @@
+name: Nightly Database Backup
+
+on:
+  schedule:
+    - cron: '0 13 * * *'   # 20:00 Bangkok (UTC+7 = 13:00 UTC)
+  workflow_dispatch:         # Manual trigger
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run backup
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BACKUP_DIR: ./backup-output
+        run: python3 scripts/backup.py
+
+      - name: Upload backup as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nntn-backup-${{ github.run_number }}-${{ github.run_id }}
+          path: ./backup-output/
+          retention-days: 90
+          if-no-files-found: error
