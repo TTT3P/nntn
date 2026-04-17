@@ -9,16 +9,16 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
-  --ink: #ffffff;
-  --paper: #111111;
-  --surface: #1a1a1a;
-  --border: #2a2a2a;
-  --muted: #666666;
+  --ink: #111111;
+  --paper: #fafafa;
+  --surface: #ffffff;
+  --border: #e0e0e0;
+  --muted: #888888;
   --accent: #8B0000;
   --green: #2e7d32;
-  --green-text: #a5d6a7;
-  --warn: #ff5722;
-  --line: #2a2a2a;
+  --green-text: #2e7d32;
+  --warn: #d32f2f;
+  --line: #e0e0e0;
 }
 body {
   font-family: 'Sarabun', -apple-system, sans-serif;
@@ -31,7 +31,7 @@ body {
 
 /* ─── HEADER ─── */
 .header {
-  background: #0d0d0d;
+  background: #ffffff;
   border-bottom: 3px solid var(--accent);
   padding: 20px 24px 16px;
   display: flex;
@@ -67,7 +67,7 @@ body {
 
 /* ─── STATUS BAR ─── */
 .status-bar {
-  background: #161616;
+  background: #f5f5f5;
   border-bottom: 1px solid var(--border);
   padding: 12px 24px;
   display: flex;
@@ -167,10 +167,10 @@ body {
   letter-spacing: 1px;
   text-transform: uppercase;
 }
-.who-coo   { background: #3e1a1a; color: #ef9a9a; }
-.who-tyne  { background: #1a2a3e; color: #90caf9; }
-.who-wm    { background: #1a3e2a; color: #a5d6a7; }
-.who-cb    { background: #3e3a1a; color: #ffe082; }
+.who-coo   { background: #fce8e8; color: #8B0000; }
+.who-tyne  { background: #e3f0fb; color: #1565c0; }
+.who-wm    { background: #e8f5e9; color: #2e7d32; }
+.who-cb    { background: #fff8e1; color: #e65100; }
 
 .due-chip {
   font-size: 10px;
@@ -196,7 +196,7 @@ body {
   gap: 12px;
 }
 .room-card {
-  background: var(--surface);
+  background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px 14px;
@@ -244,8 +244,8 @@ body {
   text-transform: uppercase;
   width: fit-content;
 }
-.badge-live { background: #1b5e20; color: #a5d6a7; }
-.badge-soon { background: #2a2a2a; color: #555; }
+.badge-live { background: #e8f5e9; color: #2e7d32; }
+.badge-soon { background: #f5f5f5; color: #999; }
 
 /* ─── TODAY FOCUS ─── */
 .focus-list {
@@ -265,14 +265,14 @@ body {
 .focus-item:last-child { border-bottom: 0; }
 .focus-num {
   width: 28px; height: 28px;
-  background: var(--border);
+  background: #eeeeee;
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
   font-weight: 900;
-  color: var(--muted);
+  color: #999;
   flex-shrink: 0;
 }
 .focus-num.hot {
