@@ -445,6 +445,27 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
 </div>
 
 
+<!-- ════ ประวัติรับเนื้อ ════ -->
+<div class="page" id="page-history">
+  <div class="card">
+    <div class="card-title">📋 ประวัติรับเนื้อเข้า <span style="font-size:.72rem;color:var(--muted);font-weight:400">50 รายการล่าสุด</span></div>
+    <table class="stock-table" id="history-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>รายการ</th>
+          <th>Lot</th>
+          <th style="text-align:right">กก.</th>
+          <th>คลัง</th>
+          <th>สถานะ</th>
+          <th>บันทึก</th>
+        </tr>
+      </thead>
+      <tbody id="history-rows"><tr><td colspan="7" class="loading">กำลังโหลด...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
 <!-- ════ สต๊อกปัจจุบัน ════ -->
 <div class="page" id="page-stock">
   <div class="kpi-grid" id="stock-kpis">
@@ -538,13 +559,49 @@ const post = (path, body) =>
 
 function today() { return new Date().toISOString().split('T')[0] }
 function fmtDate(d) { if(!d) return ''; const dt=new Date(d); return `${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}/${dt.getFullYear()}` }
+async function loadHistory() {
+  const tbody = document.getElementById('history-rows')
+  tbody.innerHTML = '<tr><td colspan="7" class="loading">กำลังโหลด...</td></tr>'
+  try {
+    const rows = await get('catch_weight', {
+      select: 'id,weight_g,lot_date,warehouse,status,notes,items(sku,name)',
+      order: 'id.desc',
+      limit: 50
+    })
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">ยังไม่มีรายการ</td></tr>'
+      return
+    }
+    tbody.innerHTML = rows.map(r => {
+      const kg = (r.weight_g / 1000).toFixed(3)
+      const warn = r.weight_g < 100
+      const statusColor = r.status === '✅ In Stock' ? 'color:#2e7d32;font-weight:700'
+        : r.status === '🚚 Delivered' ? 'color:#1565c0'
+        : r.status === '❌ Out' ? 'color:#c62828'
+        : 'color:var(--muted)'
+      return `<tr style="${warn ? 'background:#fff3e0' : ''}">
+        <td style="color:var(--muted);font-size:.8rem">#${r.id}</td>
+        <td><strong>${r.items?.sku||'?'}</strong> <span style="font-size:.85rem">${r.items?.name||''}</span></td>
+        <td style="font-size:.85rem">${fmtDate(r.lot_date)}</td>
+        <td style="text-align:right;font-weight:700;${warn?'color:#e65100':''}">${kg} กก.${warn?' ⚠️':''}</td>
+        <td style="font-size:.85rem">${r.warehouse||'?'}</td>
+        <td style="font-size:.8rem;${statusColor}">${r.status}</td>
+        <td style="font-size:.78rem;color:var(--muted)">${r.notes||''}</td>
+      </tr>`
+    }).join('')
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red-light)">โหลดไม่ได้: ${e.message}</td></tr>`
+  }
+}
+
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach((b,i) =>
-    b.classList.toggle('active', ['receive','produce','process','stock'][i]===name))
+    b.classList.toggle('active', ['receive','produce','process','stock','history'][i]===name))
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
   document.getElementById('page-'+name).classList.add('active')
   if(name==='stock')   loadStock()
   if(name==='produce') loadKanban()
+  if(name==='history') loadHistory()
 }
 
 // ── Global data ──
