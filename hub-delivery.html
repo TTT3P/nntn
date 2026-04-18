@@ -1712,6 +1712,10 @@ async function submitDelivery() {
     nmWithdrawals.forEach(w => {
       dlLines.push({ delivery_id: deliveryId, item_id: w.item_id, qty: w.qty, weight_g: null, catch_weight_id: null, note: w.note || null })
     })
+    console.log('[debug] dlLines:', dlLines.length, '| bags:', allBagIds.length, '| nm:', nmWithdrawals.length)
+    if (dlLines.length === 0) {
+      console.warn('[debug] dlLines empty! bagCache size:', Object.keys(bagCache).length, '| allBagIds:', allBagIds, '| nmWithdrawals:', nmWithdrawals)
+    }
     if (dlLines.length > 0) {
       const dlLinesRes = await fetch(`${SB}/rest/v1/delivery_lines`, {
         method: 'POST',
