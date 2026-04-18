@@ -1176,21 +1176,73 @@ function refreshDraftCard(id) {
 }
 
 async function submitDraft(draftId) {
-  if (!confirm('ยืนยันส่งออกจาก Draft? สต๊อกจะถูกตัดทันที')) return
-  const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
-  const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
-  const res = await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${draftId}`, { headers: DH })
-  const [d] = await res.json()
-  if (!d) { _hdToast('ไม่พบ Draft', 'error'); return }
-  // โหลด draft ลง form แล้วกด submit
+  const draft = window._draftCache[draftId]
+  if (!draft) { _hdToast('ไม่พบ Draft', 'error'); return }
+  if (!confirm('โหลด Draft เข้าฟอร์ม? ตรวจสอบแล้วค่อยกด 🚛 บันทึกส่งออก')) return
+
   switchTab('delivery')
-  if (d.date) document.getElementById('dl-date').value = d.date
+  if (draft.date) document.getElementById('dl-date').value = draft.date
   const branchMap = { NT: 'ครัวกลาง (NT)', FS: 'หน้าร้าน (FS)' }
-  if (d.branch) document.getElementById('dl-dest').value = branchMap[d.branch] || d.branch
-  // รอ suggestBillNum
-  await new Promise(r => setTimeout(r, 500))
-  _hdToast('โหลด Draft แล้ว — กด 🚛 บันทึกส่งออก เพื่อยืนยัน')
-  // Mark draft as submitted after delivery success
+  if (draft.branch) document.getElementById('dl-dest').value = branchMap[draft.branch] || draft.branch
+  if (draft.bill_no) document.getElementById('dl-bill').value = draft.bill_no
+
+  // Rebuild meat blocks grouped by item_id
+  const meatByItem = {}
+  ;(draft.meat_lines || []).forEach(m => {
+    if (!meatByItem[m.item_id]) meatByItem[m.item_id] = { itemId: m.item_id, name: m.name, bags: [] }
+    meatByItem[m.item_id].bags.push(m.bag_id)
+  })
+  document.getElementById('meat-blocks').innerHTML = ''
+  Object.keys(meatSel).forEach(k => delete meatSel[k])
+  const meatGroups = Object.values(meatByItem)
+  if (meatGroups.length === 0) {
+    addMeatBlock()
+  } else {
+    meatGroups.forEach(g => {
+      addMeatBlock()
+      const n = meatBlockCount
+      const sel = document.getElementById(`mb-sku-${n}`)
+      if (!sel) return
+      sel.value = g.itemId
+      const opt = sel.options[sel.selectedIndex]
+      const si  = document.getElementById(`mb-sku-${n}-search`)
+      if (si && opt?.text) si.value = opt.text
+      onMeatItemChange(n)
+      setTimeout(() => {
+        g.bags.forEach(bagId => {
+          if (bagCache[bagId]) meatSel[n].selectedBags.add(bagId)
+        })
+        renderMeatChips(n)
+      }, 80)
+    })
+  }
+
+  // Rebuild nm rows
+  document.getElementById('nm-rows').innerHTML = ''
+  nmRowCount = 0
+  const nmList = draft.nm_lines || []
+  if (nmList.length === 0) {
+    addNmRow()
+  } else {
+    nmList.forEach(saved => {
+      addNmRow()
+      const n   = nmRowCount
+      const sel = document.getElementById(`nm-item-${n}`)
+      if (sel && saved.item_id) {
+        sel.value = saved.item_id
+        const opt = sel.options[sel.selectedIndex]
+        const si  = document.getElementById(`nm-item-${n}-search`)
+        if (si && opt?.text) si.value = opt.text
+        onNmChange(n)
+      }
+      if (saved.qty)  document.getElementById(`nm-qty-${n}`).value  = saved.qty
+      if (saved.unit) document.getElementById(`nm-unit-${n}`).value = saved.unit
+    })
+  }
+
+  updatePreview()
+  await new Promise(r => setTimeout(r, 200))
+  _hdToast(`✅ โหลด Draft แล้ว — ตรวจสอบแล้วกด 🚛 บันทึกส่งออก (เนื้อ ${(draft.meat_lines||[]).length} ถุง / nm ${nmList.length} รายการ)`)
   window._pendingDraftId = draftId
 }
 
@@ -2096,6 +2148,18 @@ async function submitDelivery() {
     clearDraft()
     document.getElementById('preview-card').insertAdjacentHTML('beforebegin', successHtml)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    // Submitted from a Draft → delete draft row + jump to history
+    if (window._pendingDraftId) {
+      const pid = window._pendingDraftId
+      window._pendingDraftId = null
+      try {
+        const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+        const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+        await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${pid}`, { method: 'DELETE', headers: DH })
+      } catch(_) {}
+      setTimeout(() => { historyLoaded = false; switchTab('history') }, 900)
+    }
 
   } catch(e) {
     alert(`❌ บันทึกไม่สำเร็จ: ${friendlyErr(e.message)}`)
