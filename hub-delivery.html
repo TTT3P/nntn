@@ -1072,53 +1072,89 @@ let historyData = []   // array of bill groups
 async function loadHistory() {
   const listEl = document.getElementById('hist-list')
   listEl.innerHTML = '<div class="loading">กำลังโหลดประวัติ...</div>'
+  const searchVal = (document.getElementById('hist-search')?.value || '').toLowerCase()
 
   try {
-    // Fetch SP + MT records in parallel
-    const [spRows, mtRows] = await Promise.all([
-      get('stock_counts', {
-        select: 'id,item_id,qty,dispense_qty,note,counted_at,items(id,sku,name,unit)',
-        event_type: 'eq.dispense',
-        counted_by: 'eq.hub-delivery',
-        order: 'counted_at.desc',
-        limit: '500'
-      }),
-      get('catch_weight', {
-        select: 'id,item_id,weight_g,lot_date,legacy_cw_row,notes,updated_at,items(id,sku,name,unit)',
-        status: 'eq.🚚 Delivered',
-        order: 'updated_at.desc',
-        limit: '1000'
-      })
-    ])
+    const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+    const SHh = { ...H, Authorization: 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+    // ดึงจาก deliveries + lines โดยตรง
+    const res = await fetch(
+      `${SB}/rest/v1/deliveries?select=id,bill_no,branch,date,channel,delivery_lines(id,catch_weight_id,item_id,qty,weight_g,note,items(sku,name,unit))&order=date.desc,bill_no.desc&limit=100`,
+      { headers: SHh }
+    )
+    const deliveries = await res.json()
 
-    const groups = {}
+    if (!Array.isArray(deliveries) || deliveries.length === 0) {
+      listEl.innerHTML = '<div class="hist-empty">ยังไม่มีประวัติการส่ง</div>'
+      historyLoaded = true
+      return
+    }
 
-    // Group SP by bill number
-    ;(Array.isArray(spRows) ? spRows : []).forEach(r => {
-      const bill = parseBillNote(r.note || '').bill || '(ไม่มีเลขบิล)'
-      if (!groups[bill]) groups[bill] = { note: r.note || bill, rows: [], counted_at: r.counted_at }
-      groups[bill].rows.push({ ...r, _rowType: 'sp' })
-      if (r.counted_at > groups[bill].counted_at) groups[bill].counted_at = r.counted_at
+    let filtered = deliveries
+    if (searchVal) {
+      filtered = deliveries.filter(d =>
+        (d.bill_no||'').toLowerCase().includes(searchVal) ||
+        (d.branch||'').toLowerCase().includes(searchVal)
+      )
+    }
+
+    // Build historyData compatible with renderHistory (grouped by bill)
+    historyData = filtered.map(d => {
+      const lines = d.delivery_lines || []
+      const meatLines = lines.filter(l => l.catch_weight_id)
+      const nmLines = lines.filter(l => !l.catch_weight_id && l.item_id)
+      const totalKg = meatLines.reduce((s, l) => s + (l.weight_g || 0) / 1000, 0)
+      return {
+        bill_no: d.bill_no,
+        branch: d.branch,
+        date: d.date,
+        meat_count: meatLines.length,
+        nm_count: nmLines.length,
+        total_kg: totalKg,
+        nm_lines: nmLines,
+        delivery_id: d.id,
+        counted_at: d.date
+      }
     })
 
-    // Group MT (catch_weight delivered) by bill number — parse from notes
-    ;(Array.isArray(mtRows) ? mtRows : []).forEach(r => {
-      if (!r.notes || !r.notes.includes('→')) return
-      const bill = parseBillNote(r.notes).bill
-      if (!bill) return
-      const ts = r.updated_at || ''
-      if (!groups[bill]) groups[bill] = { note: r.notes, rows: [], counted_at: ts }
-      groups[bill].rows.push({ ...r, _rowType: 'mt' })
-      if (ts > groups[bill].counted_at) groups[bill].counted_at = ts
-    })
-
-    historyData = Object.values(groups).sort((a, b) => b.counted_at.localeCompare(a.counted_at))
     historyLoaded = true
-    renderHistory(historyData)
+    renderDeliveryHistory(historyData)
 
   } catch(e) {
     listEl.innerHTML = `<div class="warn-banner">❌ โหลดประวัติไม่ได้: ${e.message}</div>`
   }
+}
+
+function renderDeliveryHistory(deliveries) {
+  const listEl = document.getElementById('hist-list')
+  if (!deliveries.length) {
+    listEl.innerHTML = '<div class="hist-empty">ไม่พบประวัติการส่ง</div>'
+    return
+  }
+  listEl.innerHTML = deliveries.map((d, i) => {
+    const nmRows = (d.nm_lines||[]).map(l =>
+      `<div style="font-size:.82rem;padding:4px 8px;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between">
+        <span>${l.items?.name || '?'}</span>
+        <span style="color:var(--muted)">${l.qty} ${l.items?.unit||''}</span>
+      </div>`
+    ).join('')
+    const hasSub = d.nm_lines?.length > 0
+    return `<div class="hist-group" style="margin-bottom:10px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+      <div class="hist-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"
+           style="padding:12px 14px;cursor:pointer;background:#fafafa;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <span style="font-weight:700">${d.bill_no||'?'}</span>
+          <span style="font-size:.8rem;color:var(--muted);margin-left:8px">${d.branch} · ${fmtDate(d.date)}</span>
+        </div>
+        <div style="font-size:.82rem;color:var(--muted);display:flex;gap:10px">
+          <span>🥩 ${d.meat_count} ถุง/${d.total_kg.toFixed(3)}กก.</span>
+          ${d.nm_count > 0 ? `<span>🧂 ${d.nm_count} รายการ</span>` : ''}
+          <span>▼</span>
+        </div>
+      </div>
+      ${hasSub ? `<div style="display:none">${nmRows}</div>` : ''}
+    </div>`
+  }).join('')
 }
 
 function parseBillNote(note) {
@@ -1132,28 +1168,28 @@ function parseBillNote(note) {
 
 async function suggestBillNum() {
   const billEl = document.getElementById('dl-bill')
-  if (billEl.value.trim()) return  // ไม่ทับถ้ากรอกแล้ว
+  if (billEl.value.trim()) return
   const dateVal = document.getElementById('dl-date').value
   const dest    = document.getElementById('dl-dest').value
   if (!dateVal) return
-  const prefix = dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : 'OT'
-  const d = dateVal.replace(/-/g, '')
-  // ค้นบิลวันนี้ทั้ง stock_counts + catch_weight
-  const [scRows, cwRows] = await Promise.all([
-    get('stock_counts', { select: 'note', counted_by: 'eq.hub-delivery', note: `like.${prefix}-${d}*`, limit: '50' }),
-    get('catch_weight', { select: 'notes', status: 'eq.🚚 Delivered', notes: `like.${prefix}-${d}*`, limit: '50' })
-  ])
-  const allNotes = [
-    ...(Array.isArray(scRows) ? scRows.map(r => r.note || '') : []),
-    ...(Array.isArray(cwRows) ? cwRows.map(r => r.notes || '') : [])
-  ]
-  let maxSeq = 0
-  allNotes.forEach(n => {
-    const m = n.match(new RegExp(`${prefix}-${d}-(\\d+)`))
-    if (m) maxSeq = Math.max(maxSeq, parseInt(m[1]))
-  })
-  const seq = String(maxSeq + 1).padStart(2, '0')
-  billEl.value = `${prefix}-${d}-${seq}`
+  const tag = dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : 'OT'
+  const d   = dateVal.replace(/-/g, '')   // 20260418
+  const prefix = `${tag}${d}`             // NT20260418
+  // ค้นจาก deliveries table โดยตรง
+  const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+  const SHst = { ...H, Authorization: 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+  try {
+    const res  = await fetch(`${SB}/rest/v1/deliveries?bill_no=like.${prefix}*&select=bill_no&limit=50`, { headers: SHst })
+    const rows = await res.json()
+    let maxSeq = 0
+    ;(Array.isArray(rows) ? rows : []).forEach(r => {
+      const m = (r.bill_no || '').match(new RegExp(`${prefix}-(\\d+)`))
+      if (m) maxSeq = Math.max(maxSeq, parseInt(m[1]))
+    })
+    billEl.value = `${prefix}-${maxSeq + 1}`
+  } catch(_) {
+    billEl.value = `${prefix}-1`
+  }
   updatePreview()
 }
 
