@@ -1036,10 +1036,10 @@ function renderDraftCard(d) {
         <div class="hist-bill-meta">วันที่: ${d.date} · บันทึก ${dt} · โดย ${escHtml(d.created_by||'?')}</div>
         <div style="font-size:.82rem;margin-top:4px">🥩 ${meatCount} ถุง · 🧂 ${nmCount} รายการ</div>
       </div>
-      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0" onclick="event.stopPropagation()">
-        <button class="btn btn-sm btn-primary" onclick="submitDraft('${d.id}')">🚛 ส่งออก</button>
-        <button class="btn btn-sm" style="background:#fff0f0;color:#c62828;border:1px solid #ffcdd2" onclick="deleteDraft('${d.id}')">🗑</button>
-        <span style="color:var(--muted)">▼</span>
+      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+        <button class="btn btn-sm btn-primary" onclick="event.stopPropagation();submitDraft('${d.id}')">🚛 ส่งออก</button>
+        <button class="btn btn-sm" style="background:#fff0f0;color:#c62828;border:1px solid #ffcdd2" onclick="event.stopPropagation();deleteDraft('${d.id}')">🗑</button>
+        <span style="color:var(--muted);padding:4px 8px;cursor:pointer">▼</span>
       </div>
     </div>
     <div class="hist-bill-body" id="dc-body-${d.id}" style="display:none">
