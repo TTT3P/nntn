@@ -1186,7 +1186,9 @@ async function submitDraft(draftId) {
   if (draft.date) document.getElementById('dl-date').value = draft.date
   const branchMap = { NT: 'ครัวกลาง (NT)', FS: 'หน้าร้าน (FS)' }
   if (draft.branch) document.getElementById('dl-dest').value = branchMap[draft.branch] || draft.branch
-  if (draft.bill_no) document.getElementById('dl-bill').value = draft.bill_no
+  // Always regenerate bill_no — don't reuse draft's (may already be submitted)
+  document.getElementById('dl-bill').value = ''
+  await suggestBillNum()
 
   // Rebuild meat blocks grouped by item_id
   const meatByItem = {}
