@@ -1712,11 +1712,40 @@ function showSessionDetail(session) {
 
     ${session.notes ? `<div style="font-size:0.78rem;color:var(--muted);margin-top:8px">Notes: ${escHtml(session.notes)}</div>` : ''}
 
-    <div class="modal-actions">
-      <button class="btn-confirm" onclick="closeCookModal()">ปิด</button>
+    <div class="modal-actions" style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn-confirm" onclick="closeCookModal()" style="flex:2">ปิด</button>
+      ${session.status === 'done' ? `<button class="btn-danger" onclick="revertClosePot('${session.id}')" style="flex:1;background:#FFF3E0;color:#E65100;border:1px solid #FFB74D">↩️ ย้อนหม้อ</button>` : ''}
     </div>
   </div>
   `)
+}
+
+async function revertClosePot(sessionId) {
+  const reasons = ['น้ำหนักผิด', 'ลืม byproduct', 'เลือก item ผิด', 'อื่นๆ']
+  const prompt_text = reasons.map((r,i) => `${i+1}. ${r}`).join('\n')
+  const pick = prompt(`↩️ ย้อนหม้อนี้?\n\nระบบจะลบถุงผลผลิต + cook_outputs + คืน session ไป "กำลังตุ๋น"\n(ถุง input ยัง Out ตามเดิม)\n\nเลือกเหตุผล (1-${reasons.length}):\n${prompt_text}`)
+  if (pick === null) return
+  const idx = parseInt(pick) - 1
+  if (isNaN(idx) || idx < 0 || idx >= reasons.length) return alert('เหตุผลไม่ถูกต้อง')
+  const extra = (reasons[idx] === 'อื่นๆ') ? (prompt('อธิบายเหตุผล:') || '') : ''
+  const reason = extra ? `${reasons[idx]} — ${extra}` : reasons[idx]
+
+  if (!confirm(`ยืนยันย้อน?\n\nเหตุผล: ${reason}\n\n⚠️ ถุงผลผลิตจะถูกลบ — ถ้า deliver ไปแล้วจะ error`)) return
+
+  try {
+    const res = await fetch(`${SB}/rest/v1/rpc/revert_close_pot`, {
+      method: 'POST',
+      headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_session_id: sessionId, p_reason: reason })
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status} — ${await res.text()}`)
+    const result = await res.json()
+    closeCookModal()
+    alert(`✅ ย้อนหม้อสำเร็จ\nลบถุง: ${result.bags_deleted} ถุง\nลบ output: ${result.outputs_deleted} rows\nSession กลับเป็น: กำลังตุ๋น`)
+    await reloadCwAndKanban()
+  } catch(e) {
+    alert(`❌ ย้อนไม่สำเร็จ: ${e.message}`)
+  }
 }
 
 async function reloadCwAndKanban() {

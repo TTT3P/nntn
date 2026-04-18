@@ -1364,12 +1364,48 @@ function renderDeliveryHistory(deliveries) {
           <span>🥩 ${d.meat_count} ถุง/${d.total_kg.toFixed(3)}กก.</span>
           ${d.nm_count > 0 ? `<span>🧂 ${d.nm_count} รายการ</span>` : ''}
           <button class="btn btn-sm btn-outline-blue" onclick="event.stopPropagation();printHistBill(${i})" title="พิมพ์ใบนำส่ง">🖨</button>
+          <button class="btn btn-sm" onclick="event.stopPropagation();editHistBill(${i})" title="แก้ไข bill_no / branch / date" style="background:#FFF3E0;color:#E65100;border:1px solid #FFB74D">✏️</button>
           <span>▼</span>
         </div>
       </div>
       ${hasSub ? `<div style="display:none">${meatRows}${nmRows}</div>` : ''}
     </div>`
   }).join('')
+}
+
+async function editHistBill(i) {
+  const d = historyData[i]
+  if (!d) return
+  const newBill = prompt(`แก้ไข bill_no\n\nปัจจุบัน: ${d.bill_no}\n\nใส่ใหม่ (หรือเว้นว่างเพื่อไม่แก้):`, d.bill_no || '')
+  if (newBill === null) return
+  const newBranch = prompt(`แก้ไข branch\n\nปัจจุบัน: ${d.branch}\n\nใส่ใหม่ — NT หรือ FS:`, d.branch || '')
+  if (newBranch === null) return
+  const newDate = prompt(`แก้ไข date (YYYY-MM-DD)\n\nปัจจุบัน: ${d.date}`, d.date || '')
+  if (newDate === null) return
+
+  const patch = {}
+  if (newBill.trim() && newBill.trim() !== d.bill_no) patch.bill_no = newBill.trim()
+  if (['NT','FS'].includes(newBranch.trim()) && newBranch.trim() !== d.branch) patch.branch = newBranch.trim()
+  if (newDate.trim() && /^\d{4}-\d{2}-\d{2}$/.test(newDate.trim()) && newDate.trim() !== d.date) patch.date = newDate.trim()
+
+  if (Object.keys(patch).length === 0) return alert('ไม่มีการเปลี่ยนแปลง')
+  if (!confirm(`ยืนยันแก้ไข?\n\n${JSON.stringify(patch, null, 2)}`)) return
+
+  try {
+    const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+    const SH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+    const res = await fetch(`${SB}/rest/v1/deliveries?id=eq.${d.id}`, {
+      method: 'PATCH',
+      headers: { ...SH, Prefer: 'return=minimal' },
+      body: JSON.stringify(patch)
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status} — ${await res.text()}`)
+    alert('✅ แก้ไขแล้ว — refresh ประวัติ')
+    historyLoaded = false
+    loadHistory()
+  } catch(e) {
+    alert(`❌ แก้ไขไม่สำเร็จ: ${e.message}`)
+  }
 }
 
 function printHistBill(i) {

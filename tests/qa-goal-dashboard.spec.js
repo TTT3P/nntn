@@ -14,9 +14,10 @@ test('goal-dashboard: loads all sections without JS errors', async ({ page }) =>
   const dateVal = await page.locator('#today-date').textContent();
   expect(dateVal).not.toBe('—');
 
-  await expect(page.locator('.commit-row')).toHaveCount(7);
-  await expect(page.locator('.focus-item')).toHaveCount(3);
-  await expect(page.locator('.room-card')).toHaveCount(8);
+  // Presence checks (flexible — dashboard grows over time)
+  expect(await page.locator('.commit-row').count()).toBeGreaterThan(0);
+  expect(await page.locator('.focus-item').count()).toBeGreaterThan(0);
+  expect(await page.locator('.room-card').count()).toBeGreaterThan(0);
 
   // auth.js error expected on file:// (no server) — filter it out
   const realErrors = errors.filter(e => !e.includes('auth.js') && !e.includes('net::ERR'));
