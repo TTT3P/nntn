@@ -1336,13 +1336,21 @@ function renderDeliveryHistory(deliveries) {
     return
   }
   listEl.innerHTML = deliveries.map((d, i) => {
+    const meatRows = (d.meat_lines||[]).map(l => {
+      const name = l.items?.name || 'เนื้อตุ๋น'
+      const kg = l.weight_g ? (l.weight_g/1000).toFixed(3) : '?'
+      return `<div style="font-size:.82rem;padding:4px 8px;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between;background:#FFF8E1">
+        <span>🥩 ${name}</span>
+        <span style="color:var(--muted)">${kg} กก.</span>
+      </div>`
+    }).join('')
     const nmRows = (d.nm_lines||[]).map(l =>
       `<div style="font-size:.82rem;padding:4px 8px;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between">
         <span>${l.items?.name || '?'}</span>
         <span style="color:var(--muted)">${l.qty} ${l.items?.unit||''}</span>
       </div>`
     ).join('')
-    const hasSub = d.nm_lines?.length > 0
+    const hasSub = (d.meat_lines?.length || 0) + (d.nm_lines?.length || 0) > 0
     return `<div class="hist-group" style="margin-bottom:10px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
       <div class="hist-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"
            style="padding:12px 14px;cursor:pointer;background:#fafafa;display:flex;justify-content:space-between;align-items:center;gap:10px">
@@ -1357,7 +1365,7 @@ function renderDeliveryHistory(deliveries) {
           <span>▼</span>
         </div>
       </div>
-      ${hasSub ? `<div style="display:none">${nmRows}</div>` : ''}
+      ${hasSub ? `<div style="display:none">${meatRows}${nmRows}</div>` : ''}
     </div>`
   }).join('')
 }
