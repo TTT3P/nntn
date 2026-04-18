@@ -992,6 +992,8 @@ function switchTab(tab) {
 }
 
 // ─── Drafts ───────────────────────────────────────────────────────────────────
+window._draftCache = {}   // id → { nm_lines, meat_lines, ... } (mutable in-memory)
+
 async function loadDrafts() {
   const listEl = document.getElementById('drafts-list')
   listEl.innerHTML = '<div class="loading">กำลังโหลด...</div>'
@@ -1001,28 +1003,187 @@ async function loadDrafts() {
     const res = await fetch(`${SB}/rest/v1/delivery_drafts?status=eq.draft&order=created_at.desc&limit=50`, { headers: DH })
     const drafts = await res.json()
     if (!drafts.length) { listEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:24px">ยังไม่มี Draft ค้างอยู่</div>'; return }
-    listEl.innerHTML = drafts.map(d => {
-      const meatCount = (d.meat_lines || []).length
-      const nmCount   = (d.nm_lines   || []).length
-      const dt = new Date(d.created_at).toLocaleString('th-TH', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
-      return `<div class="card" style="margin-bottom:10px;border-left:4px solid #FFA000">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
-          <div>
-            <div style="font-weight:700">${d.bill_no || '(ยังไม่มีเลขบิล)'} → ${d.branch}</div>
-            <div style="font-size:.82rem;color:var(--muted)">วันที่: ${d.date} | บันทึก: ${dt} | โดย: ${d.created_by||'?'}</div>
-            <div style="font-size:.82rem;margin-top:4px">🥩 เนื้อ ${meatCount} ถุง &nbsp;|&nbsp; 🧂 Non-meat ${nmCount} รายการ</div>
-          </div>
-          <div style="display:flex;gap:8px;flex-shrink:0">
-            <button class="btn btn-sm btn-outline-blue" onclick="loadDraftToForm('${d.id}')">✏️ แก้ไข</button>
-            <button class="btn btn-sm btn-primary" onclick="submitDraft('${d.id}')">🚛 ส่งออก</button>
-            <button class="btn btn-sm" style="background:#fff0f0;color:#c62828;border:1px solid #ffcdd2" onclick="deleteDraft('${d.id}')">🗑 ลบ</button>
-          </div>
-        </div>
-      </div>`
-    }).join('')
+    window._draftCache = {}
+    drafts.forEach(d => {
+      d.nm_lines   = Array.isArray(d.nm_lines)   ? d.nm_lines   : []
+      d.meat_lines = Array.isArray(d.meat_lines) ? d.meat_lines : []
+      window._draftCache[d.id] = d
+    })
+    listEl.innerHTML = drafts.map(d => renderDraftCard(d)).join('')
+    drafts.forEach(d => makeSearchable(`dadd-item-${d.id}`, '— พิมพ์ค้นหา SP item —'))
   } catch(e) {
     listEl.innerHTML = `<div style="color:var(--red-light);padding:12px">โหลดไม่ได้: ${e.message}</div>`
   }
+}
+
+function renderDraftCard(d) {
+  const dt = new Date(d.created_at).toLocaleString('th-TH', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+  const meatCount = d.meat_lines.length
+  const nmCount   = d.nm_lines.length
+  const meatRows = d.meat_lines.map(m => `
+    <div class="hist-item-row" style="background:#FFF8E1">
+      <div class="hist-item-name">🥩 ${escHtml(m.name || 'เนื้อตุ๋น')}</div>
+      <div class="hist-item-qty">${((m.weight_g||0)/1000).toFixed(3)} <span style="font-size:0.75em;color:#888">กก.</span></div>
+      <div class="hist-item-unit" style="font-size:.72rem;color:#aaa">${escHtml(m.lot_date||'')}</div>
+      <span style="font-size:0.72rem;color:#E65100;padding:4px 8px;background:#FFF3E0;border-radius:6px">เนื้อตุ๋น</span>
+    </div>`).join('')
+  const nmRows = d.nm_lines.map((l, li) => renderDraftNmRow(d.id, li, l)).join('')
+  return `
+  <div class="hist-bill-card" id="dc-${d.id}" style="border-left:4px solid #FFA000">
+    <div class="hist-bill-header" onclick="toggleDraftCard('${d.id}')">
+      <div class="hist-bill-info">
+        <div class="hist-bill-num">${escHtml(d.bill_no || '(ยังไม่มีเลขบิล)')} → ${escHtml(d.branch||'')}</div>
+        <div class="hist-bill-meta">วันที่: ${d.date} · บันทึก ${dt} · โดย ${escHtml(d.created_by||'?')}</div>
+        <div style="font-size:.82rem;margin-top:4px">🥩 ${meatCount} ถุง · 🧂 ${nmCount} รายการ</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0" onclick="event.stopPropagation()">
+        <button class="btn btn-sm btn-primary" onclick="submitDraft('${d.id}')">🚛 ส่งออก</button>
+        <button class="btn btn-sm" style="background:#fff0f0;color:#c62828;border:1px solid #ffcdd2" onclick="deleteDraft('${d.id}')">🗑</button>
+        <span style="color:var(--muted)">▼</span>
+      </div>
+    </div>
+    <div class="hist-bill-body" id="dc-body-${d.id}" style="display:none">
+      ${meatRows}
+      <div id="dc-nm-${d.id}">${nmRows}</div>
+      <button class="hist-add-row-btn" onclick="showAddDraftNm('${d.id}')">+ เพิ่ม Non-meat</button>
+      <div class="hist-add-form" id="dadd-form-${d.id}">
+        <div class="add-form-row">
+          <select id="dadd-item-${d.id}">
+            <option value="">— เลือก SP item —</option>
+            ${spItems.map(i => `<option value="${i.id}" data-sku="${i.sku}" data-unit="${i.unit||''}" data-name="${i.name}">${i.sku} | ${escHtml(i.name)}</option>`).join('')}
+          </select>
+          <input type="number" id="dadd-qty-${d.id}" min="0" step="0.01" placeholder="จำนวน">
+        </div>
+        <div class="add-form-actions" style="display:flex;gap:8px">
+          <button class="hist-save-btn" style="flex:2" onclick="saveNewDraftNm('${d.id}')">บันทึก</button>
+          <button class="hist-cancel-btn" style="flex:1" onclick="cancelAddDraftNm('${d.id}')">ยกเลิก</button>
+        </div>
+      </div>
+    </div>
+  </div>`
+}
+
+function renderDraftNmRow(draftId, li, l) {
+  return `
+  <div class="hist-item-row" id="drow-${draftId}-${li}">
+    <div class="hist-item-name">${escHtml(l.name || l.item_id || '?')}</div>
+    <div class="hist-item-qty">${l.qty} <span style="font-size:0.75em;color:#888">${escHtml(l.unit||'')}</span></div>
+    <div class="hist-item-unit"></div>
+    <button class="hist-edit-btn" onclick="showEditDraftNm('${draftId}',${li})">✏️ แก้</button>
+    <button class="hist-del-btn" onclick="deleteDraftNm('${draftId}',${li})" title="ลบรายการนี้">🗑️</button>
+  </div>
+  <div class="hist-edit-row" id="dedit-${draftId}-${li}" style="display:none">
+    <label>จำนวน:</label>
+    <input type="number" id="dedit-input-${draftId}-${li}" value="${l.qty}" step="0.01" min="0">
+    <button class="hist-save-btn" onclick="saveEditDraftNm('${draftId}',${li})">บันทึก</button>
+    <button class="hist-cancel-btn" onclick="cancelEditDraftNm('${draftId}',${li})">ยกเลิก</button>
+    <div style="flex:1"></div>
+  </div>`
+}
+
+function toggleDraftCard(id) {
+  const body = document.getElementById(`dc-body-${id}`)
+  const header = document.querySelector(`#dc-${id} .hist-bill-header`)
+  if (!body) return
+  const open = body.style.display !== 'none'
+  body.style.display = open ? 'none' : 'block'
+  header.classList.toggle('open', !open)
+}
+
+function showAddDraftNm(id) {
+  document.getElementById(`dadd-form-${id}`).style.display = 'block'
+  const ssInput = document.querySelector(`#dadd-form-${id} .ss-input`)
+  ;(ssInput || document.getElementById(`dadd-item-${id}`)).focus()
+}
+
+function cancelAddDraftNm(id) {
+  const form = document.getElementById(`dadd-form-${id}`)
+  form.style.display = 'none'
+  document.getElementById(`dadd-item-${id}`).value = ''
+  const ssInput = form.querySelector('.ss-input')
+  if (ssInput) { ssInput.value = ''; const dd = form.querySelector('.ss-dropdown'); if (dd) dd.style.display = 'none' }
+  document.getElementById(`dadd-qty-${id}`).value = ''
+}
+
+async function saveNewDraftNm(id) {
+  const itemSel = document.getElementById(`dadd-item-${id}`)
+  const qtyEl   = document.getElementById(`dadd-qty-${id}`)
+  const itemId  = itemSel.value
+  const qty     = parseFloat(qtyEl.value)
+  if (!itemId) { alert('กรุณาเลือก SP item'); return }
+  if (isNaN(qty) || qty <= 0) { alert('กรุณากรอกจำนวนที่ถูกต้อง'); return }
+  const opt  = itemSel.options[itemSel.selectedIndex]
+  const unit = opt?.dataset?.unit || ''
+  const name = opt?.dataset?.name || ''
+  const draft = window._draftCache[id]
+  if (!draft) return
+  const newLines = [...draft.nm_lines, { item_id: itemId, name, qty, unit }]
+  try {
+    await persistDraftNmLines(id, newLines)
+    draft.nm_lines = newLines
+    refreshDraftCard(id)
+    _hdToast(`✅ เพิ่ม ${name} x${qty} ${unit}`)
+  } catch(e) { _hdToast('❌ บันทึกไม่สำเร็จ: ' + e.message, 'error') }
+}
+
+function showEditDraftNm(id, li) {
+  document.getElementById(`drow-${id}-${li}`).style.display = 'none'
+  document.getElementById(`dedit-${id}-${li}`).style.display = 'flex'
+  document.getElementById(`dedit-input-${id}-${li}`).focus()
+}
+
+function cancelEditDraftNm(id, li) {
+  document.getElementById(`drow-${id}-${li}`).style.display = ''
+  document.getElementById(`dedit-${id}-${li}`).style.display = 'none'
+}
+
+async function saveEditDraftNm(id, li) {
+  const qty = parseFloat(document.getElementById(`dedit-input-${id}-${li}`).value)
+  if (isNaN(qty) || qty <= 0) { alert('กรุณากรอกจำนวนที่ถูกต้อง'); return }
+  const draft = window._draftCache[id]
+  if (!draft) return
+  const newLines = draft.nm_lines.map((l, i) => i === li ? { ...l, qty } : l)
+  try {
+    await persistDraftNmLines(id, newLines)
+    draft.nm_lines = newLines
+    refreshDraftCard(id)
+    _hdToast('✅ บันทึกจำนวนใหม่แล้ว')
+  } catch(e) { _hdToast('❌ บันทึกไม่สำเร็จ: ' + e.message, 'error') }
+}
+
+async function deleteDraftNm(id, li) {
+  const draft = window._draftCache[id]
+  if (!draft) return
+  const line = draft.nm_lines[li]
+  if (!confirm(`ลบรายการ "${line?.name||'?'}" ออกจาก Draft?`)) return
+  const newLines = draft.nm_lines.filter((_, i) => i !== li)
+  try {
+    await persistDraftNmLines(id, newLines)
+    draft.nm_lines = newLines
+    refreshDraftCard(id)
+    _hdToast('🗑 ลบรายการแล้ว')
+  } catch(e) { _hdToast('❌ ลบไม่สำเร็จ: ' + e.message, 'error') }
+}
+
+async function persistDraftNmLines(draftId, newLines) {
+  const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+  const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock', 'Content-Type': 'application/json' }
+  const res = await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${draftId}`, {
+    method: 'PATCH', headers: DH, body: JSON.stringify({ nm_lines: newLines })
+  })
+  if (!res.ok) throw new Error(await res.text())
+}
+
+function refreshDraftCard(id) {
+  const draft = window._draftCache[id]
+  if (!draft) return
+  const card = document.getElementById(`dc-${id}`)
+  if (!card) return
+  const body = document.getElementById(`dc-body-${id}`)
+  const wasOpen = body && body.style.display !== 'none'
+  card.outerHTML = renderDraftCard(draft)
+  makeSearchable(`dadd-item-${id}`, '— พิมพ์ค้นหา SP item —')
+  if (wasOpen) toggleDraftCard(id)
 }
 
 async function submitDraft(draftId) {
@@ -1050,20 +1211,6 @@ async function deleteDraft(id) {
   const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
   await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${id}`, { method: 'DELETE', headers: DH })
   loadDrafts()
-}
-
-async function loadDraftToForm(id) {
-  const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
-  const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
-  const res = await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${id}`, { headers: DH })
-  const [d] = await res.json()
-  if (!d) return
-  // Switch to form tab and populate
-  switchTab('delivery')
-  if (d.date) document.getElementById('dl-date').value = d.date
-  if (d.branch) document.getElementById('dl-dest').value = d.branch === 'NT' ? 'ครัวกลาง (NT)' : d.branch === 'FS' ? 'หน้าร้าน (FS)' : d.branch
-  if (d.bill_no) document.getElementById('dl-bill').value = d.bill_no
-  _hdToast(`โหลด Draft แล้ว — เนื้อ ${(d.meat_lines||[]).length} ถุง / Non-meat ${(d.nm_lines||[]).length} รายการ`)
 }
 
 // ─── History ──────────────────────────────────────────────────────────────────
