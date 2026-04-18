@@ -279,11 +279,13 @@
 
     .footer {
       position: fixed;
-      bottom: 0; left: 0; right: 0;
+      bottom: calc(68px + env(safe-area-inset-bottom));
+      left: 0; right: 0;
       background: white;
       padding: 10px 16px;
       border-top: 1px solid var(--border);
       box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+      z-index: 101;
     }
     .submit-btn {
       width: 100%;
@@ -421,7 +423,7 @@
       border-radius: 8px; padding: 0 3px;
       display: none; align-items: center; justify-content: center;
     }
-    body { padding-bottom: calc(68px + env(safe-area-inset-bottom)) !important; }
+    body { padding-bottom: calc(140px + env(safe-area-inset-bottom)) !important; }
 
   </style>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
