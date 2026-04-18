@@ -976,7 +976,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
   document.getElementById(`tab-${tab}`).classList.add('active')
   document.getElementById(`tab-btn-${tab}`).classList.add('active')
-  if (tab === 'history' && !historyLoaded) loadHistory()
+  if (tab === 'history') loadHistory()
   if (tab === 'drafts') loadDrafts()
 }
 
