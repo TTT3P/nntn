@@ -364,16 +364,6 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
   </div>
 
   <!-- Draft banner -->
-  <div id="draft-banner" style="display:none;background:#FFF8E1;border:1.5px solid #FFA000;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:0.85rem;color:#5d4037">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-      <div>📋 <b>มี draft ค้างอยู่</b> — <span id="draft-info"></span></div>
-      <div style="display:flex;gap:8px;flex-shrink:0">
-        <button onclick="loadDraft()" style="background:#E65100;color:white;border:none;border-radius:6px;padding:6px 14px;font-family:inherit;font-size:0.82rem;cursor:pointer;font-weight:600">โหลด draft</button>
-        <button onclick="clearDraft()" style="background:none;border:1px solid #bbb;color:var(--muted);border-radius:6px;padding:6px 12px;font-family:inherit;font-size:0.82rem;cursor:pointer">ยกเลิก</button>
-      </div>
-    </div>
-  </div>
-
   <!-- ════ Tab: ออกใบนำส่ง ════ -->
   <div class="tab-pane active" id="tab-delivery">
 
@@ -544,7 +534,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     addNmRow()
 
     // Check for saved draft
-    checkDraft()
 
   } catch(e) {
     const is401 = e.message && e.message.includes('401')
@@ -2144,92 +2133,8 @@ function saveDraft() {
   } catch(e) {}
 }
 
-function checkDraft() {
-  try {
-    const raw = localStorage.getItem(DRAFT_KEY)
-    if (!raw) return
-    const d   = JSON.parse(raw)
-    const age = Math.round((Date.now() - d.ts) / 60000)
-    const ageStr = age < 60 ? `${age} นาทีที่แล้ว` : `${Math.round(age/60)} ชม.ที่แล้ว`
-    document.getElementById('draft-info').textContent =
-      `${d.date || '?'} → ${d.dest || '?'} (${ageStr})`
-    document.getElementById('draft-banner').style.display = 'block'
-  } catch(e) { clearDraft() }
-}
-
-function loadDraft() {
-  try {
-    const raw = localStorage.getItem(DRAFT_KEY)
-    if (!raw) return
-    const d = JSON.parse(raw)
-    document.getElementById('draft-banner').style.display = 'none'
-
-    // Header
-    if (d.date) document.getElementById('dl-date').value = d.date
-    if (d.dest) document.getElementById('dl-dest').value = d.dest
-    if (d.bill) document.getElementById('dl-bill').value = d.bill
-
-    // Meat blocks
-    document.getElementById('meat-blocks').innerHTML = ''
-    Object.keys(meatSel).forEach(k => delete meatSel[k])
-    const meatList = d.meat && d.meat.length ? d.meat : []
-    if (meatList.length === 0) {
-      addMeatBlock()
-    } else {
-      meatList.forEach(saved => {
-        addMeatBlock()
-        const n   = meatBlockCount
-        const sel = document.getElementById(`mb-sku-${n}`)
-        if (!sel) return
-        sel.value = saved.itemId
-        const opt = sel.options[sel.selectedIndex]
-        const si  = document.getElementById(`mb-sku-${n}-search`)
-        if (si && opt?.text) si.value = opt.text
-        onMeatItemChange(n)
-        // restore bags after state settles
-        setTimeout(() => {
-          saved.bags.forEach(bagId => {
-            if (bagCache[bagId]) meatSel[n].selectedBags.add(bagId)
-          })
-          renderMeatChips(n)
-        }, 80)
-      })
-    }
-
-    // NM rows
-    document.getElementById('nm-rows').innerHTML = ''
-    nmRowCount = 0
-    const nmList = d.nm && d.nm.length ? d.nm : []
-    if (nmList.length === 0) {
-      addNmRow()
-    } else {
-      nmList.forEach(saved => {
-        addNmRow()
-        const n   = nmRowCount
-        const sel = document.getElementById(`nm-item-${n}`)
-        if (sel && saved.itemId) {
-          sel.value = saved.itemId
-          const opt = sel.options[sel.selectedIndex]
-          const si  = document.getElementById(`nm-item-${n}-search`)
-          if (si && opt?.text) si.value = opt.text
-          onNmChange(n)
-        }
-        if (saved.qty)  document.getElementById(`nm-qty-${n}`).value  = saved.qty
-        if (saved.unit) document.getElementById(`nm-unit-${n}`).value = saved.unit
-        if (saved.note) {
-          const noteEl = document.getElementById(`nm-note-${n}`)
-          if (noteEl) { noteEl.value = saved.note; noteEl.style.display = '' }
-        }
-      })
-    }
-
-    updatePreview()
-  } catch(e) { console.error('loadDraft error', e) }
-}
-
 function clearDraft() {
   localStorage.removeItem(DRAFT_KEY)
-  document.getElementById('draft-banner').style.display = 'none'
 }
 
 // Auto-save on header changes
