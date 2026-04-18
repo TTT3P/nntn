@@ -1031,7 +1031,7 @@ async function submitDraft(draftId) {
   const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
   const res = await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${draftId}`, { headers: DH })
   const [d] = await res.json()
-  if (!d) { showToast('ไม่พบ Draft', 'error'); return }
+  if (!d) { _hdToast('ไม่พบ Draft', 'error'); return }
   // โหลด draft ลง form แล้วกด submit
   switchTab('delivery')
   if (d.date) document.getElementById('dl-date').value = d.date
@@ -1039,7 +1039,7 @@ async function submitDraft(draftId) {
   if (d.branch) document.getElementById('dl-dest').value = branchMap[d.branch] || d.branch
   // รอ suggestBillNum
   await new Promise(r => setTimeout(r, 500))
-  showToast('โหลด Draft แล้ว — กด 🚛 บันทึกส่งออก เพื่อยืนยัน')
+  _hdToast('โหลด Draft แล้ว — กด 🚛 บันทึกส่งออก เพื่อยืนยัน')
   // Mark draft as submitted after delivery success
   window._pendingDraftId = draftId
 }
@@ -1063,7 +1063,7 @@ async function loadDraftToForm(id) {
   if (d.date) document.getElementById('dl-date').value = d.date
   if (d.branch) document.getElementById('dl-dest').value = d.branch === 'NT' ? 'ครัวกลาง (NT)' : d.branch === 'FS' ? 'หน้าร้าน (FS)' : d.branch
   if (d.bill_no) document.getElementById('dl-bill').value = d.bill_no
-  showToast(`โหลด Draft แล้ว — เนื้อ ${(d.meat_lines||[]).length} ถุง / Non-meat ${(d.nm_lines||[]).length} รายการ`)
+  _hdToast(`โหลด Draft แล้ว — เนื้อ ${(d.meat_lines||[]).length} ถุง / Non-meat ${(d.nm_lines||[]).length} รายการ`)
 }
 
 // ─── History ──────────────────────────────────────────────────────────────────
@@ -1654,6 +1654,16 @@ function escHtml(s) {
 // ─── Submit ───────────────────────────────────────────────────────────────────
 let _submitting = false
 
+function _hdToast(msg, type) {
+  const el = document.createElement('div')
+  el.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+    background:${type==='error'?'#c62828':'#2e7d32'};color:#fff;
+    padding:10px 20px;border-radius:8px;font-size:.9rem;z-index:9999;max-width:90vw;text-align:center`
+  el.textContent = msg
+  document.body.appendChild(el)
+  setTimeout(() => el.remove(), 3500)
+}
+
 function friendlyErr(msg) {
   if (msg.includes('42501') || msg.includes('403') || msg.includes('permission denied'))
     return 'ไม่มีสิทธิ์บันทึก — กรุณา login ใหม่แล้วลองอีกครั้ง'
@@ -1666,7 +1676,7 @@ async function saveDraftToCloud() {
   const date = document.getElementById('dl-date').value
   const bill = document.getElementById('dl-bill').value.trim()
   const dest = document.getElementById('dl-dest').value
-  if (!date || !dest) { showToast('กรุณากรอกวันที่และปลายทางก่อน', 'error'); return }
+  if (!date || !dest) { _hdToast('กรุณากรอกวันที่และปลายทางก่อน', 'error'); return }
 
   const meatLines = []
   Object.entries(meatSel).forEach(([n, s]) => {
@@ -1693,7 +1703,7 @@ async function saveDraftToCloud() {
   })
 
   if (meatLines.length === 0 && nmLines.length === 0) {
-    showToast('กรุณาเลือกถุงเนื้อหรือ Non-meat ก่อน', 'error'); return
+    _hdToast('กรุณาเลือกถุงเนื้อหรือ Non-meat ก่อน', 'error'); return
   }
 
   const btn = document.getElementById('draft-btn')
@@ -1712,9 +1722,9 @@ async function saveDraftToCloud() {
       }])
     })
     if (!res.ok) throw new Error(await res.text())
-    showToast(`✅ บันทึก Draft แล้ว — ${meatLines.length} ถุง / ${nmLines.length} non-meat`)
+    _hdToast(`✅ บันทึก Draft แล้ว — ${meatLines.length} ถุง / ${nmLines.length} non-meat`)
   } catch(e) {
-    showToast('❌ Draft ไม่สำเร็จ: ' + e.message, 'error')
+    _hdToast('❌ Draft ไม่สำเร็จ: ' + e.message, 'error')
   } finally {
     btn.disabled = false; btn.textContent = '💾 บันทึก Draft'
   }
