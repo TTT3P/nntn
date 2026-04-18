@@ -1591,67 +1591,22 @@ async function submitClosePot() {
     const wasteKg = parseFloat(document.getElementById('cp-waste-kg')?.value || 0) || 0
     const wasteNote = document.getElementById('cp-waste-note')?.value?.trim() || ''
 
-    // noOutput mode (เช่น กระดูกวัวต้มซุป) — ไม่ต้อง INSERT cook_outputs หรือถุงผลผลิต
-    if (!noOutput) {
-      const outputs = [{
-        session_id: sessionId,
-        item_id: itemId,
-        kg_cooked: totalKg,
-        bag_count: bagWeights.length,
-        waste_kg: wasteKg,
-        note: wasteNote || null
-      }]
-      if (bypItem && bypWeights.length > 0) {
-        outputs.push({
-          session_id: sessionId,
-          item_id: bypItem.id,
-          kg_cooked: bypKg,
-          bag_count: bypWeights.length,
-          waste_kg: 0,
-          note: null
-        })
-      }
-      await post('cook_outputs', outputs)
-    }
-
-    const newBags = noOutput ? [] : bagWeights.map((g, i) => ({
-      item_id: itemId,
-      weight_g: g,
-      warehouse: 'B',
-      status: '✅ In Stock',
-      cook_session_id: sessionId,
-      bag_no: i + 1,
-      lot_date: today(),
-      date_recorded: today(),
-      source: 'meat-stock-kanban',
-      notes: currentClosePot.notes || ''
-    }))
-
-    if (bypItem && bypWeights.length > 0) {
-      const bypWarehouse = bypItem.category === 'meat_cooked' ? 'B' : 'A'
-      bypWeights.forEach((g, i) => {
-        newBags.push({
-          item_id: bypItem.id,
-          weight_g: g,
-          warehouse: bypWarehouse,
-          status: '✅ In Stock',
-          cook_session_id: sessionId,
-          bag_no: i + 1,
-          lot_date: today(),
-          date_recorded: today(),
-          source: 'meat-stock-kanban-byp',
-          notes: `by-product of ${currentClosePot.notes || sessionId.substring(0,6)}`
-        })
+    // Atomic RPC — cook_outputs + catch_weight + session status all-or-nothing
+    const rpcRes = await fetch(`${SB}/rest/v1/rpc/submit_close_pot`, {
+      method: 'POST',
+      headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        p_session_id:   sessionId,
+        p_main_item_id: noOutput ? null : itemId,
+        p_main_weights: noOutput ? [] : bagWeights,
+        p_byp_item_id:  (bypItem && bypWeights.length > 0) ? bypItem.id : null,
+        p_byp_weights:  bypWeights,
+        p_waste_kg:     wasteKg,
+        p_waste_note:   wasteNote,
+        p_rcp_code:     null
       })
-    }
-    if (newBags.length > 0) await post('catch_weight', newBags)
-
-    const upRes = await fetch(`${SB}/rest/v1/cook_sessions?id=eq.${sessionId}`, {
-      method: 'PATCH',
-      headers: {...H, Prefer:'return=minimal'},
-      body: JSON.stringify({ status: 'done' })
     })
-    if (!upRes.ok) throw new Error(`UPDATE session: HTTP ${upRes.status} — ${await upRes.text()}`)
+    if (!rpcRes.ok) throw new Error(`submit_close_pot RPC: HTTP ${rpcRes.status} — ${await rpcRes.text()}`)
 
     closeCookModal()
     alert(`✅ ปิดหม้อสำเร็จ\n${bagWeights.length} ถุง / ${totalKg.toFixed(3)} กก.${bypMsg}`)
