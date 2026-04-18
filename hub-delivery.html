@@ -1678,7 +1678,8 @@ async function submitDelivery() {
     }
 
     // 2. INSERT stock.deliveries header + stock.delivery_lines
-    const SH = { ...H, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+    const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+    const SH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
     let deliveryId = null
     try {
       const dlHeaderRes = await fetch(`${SB}/rest/v1/deliveries`, {
