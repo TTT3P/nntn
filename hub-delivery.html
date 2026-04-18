@@ -1848,8 +1848,10 @@ async function submitDelivery() {
 
     const dlLines = []
     allBagIds.forEach(id => {
-      const bag = bagCache[id]
+      const bag = bagCache[id] || cwBags.find(b => String(b.id) === String(id))
       if (!bag) return
+      // update bagCache if found via cwBags
+      if (!bagCache[id]) bagCache[id] = bag
       dlLines.push({ delivery_id: deliveryId, catch_weight_id: Number(id), item_id: bag.item_id, weight_g: bag.weight_g, qty: 1 })
     })
     nmWithdrawals.forEach(w => {
