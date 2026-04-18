@@ -1025,6 +1025,25 @@ async function loadDrafts() {
   }
 }
 
+async function submitDraft(draftId) {
+  if (!confirm('ยืนยันส่งออกจาก Draft? สต๊อกจะถูกตัดทันที')) return
+  const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+  const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+  const res = await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${draftId}`, { headers: DH })
+  const [d] = await res.json()
+  if (!d) { showToast('ไม่พบ Draft', 'error'); return }
+  // โหลด draft ลง form แล้วกด submit
+  switchTab('delivery')
+  if (d.date) document.getElementById('dl-date').value = d.date
+  const branchMap = { NT: 'ครัวกลาง (NT)', FS: 'หน้าร้าน (FS)' }
+  if (d.branch) document.getElementById('dl-dest').value = branchMap[d.branch] || d.branch
+  // รอ suggestBillNum
+  await new Promise(r => setTimeout(r, 500))
+  showToast('โหลด Draft แล้ว — กด 🚛 บันทึกส่งออก เพื่อยืนยัน')
+  // Mark draft as submitted after delivery success
+  window._pendingDraftId = draftId
+}
+
 async function deleteDraft(id) {
   if (!confirm('ลบ Draft นี้?')) return
   const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
