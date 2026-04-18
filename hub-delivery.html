@@ -2118,100 +2118,43 @@ async function submitDelivery() {
   btn.textContent = '⏳ กำลังบันทึก...'
   _submitting = true
 
-  const idList = allBagIds.map(id => `"${id}"`).join(',')
-
   try {
-    // 1. PATCH catch_weight → delivered
-    if (allBagIds.length > 0) {
-      const res = await fetch(`${SB}/rest/v1/catch_weight?id=in.(${idList})`, {
-        method: 'PATCH',
-        headers: { ...H, Prefer: 'return=minimal' },
-        body: JSON.stringify({ status: '🚚 Delivered', notes: `${bill} → ${dest} (${date})` })
-      })
-      if (!res.ok) {
-        const errText = await res.text()
-        // DB trigger error = ส่งออกไม่ได้เพราะสต๊อกไม่ครบ
-        if (errText.includes('Cannot deliver bag')) {
-          throw new Error(`❌ DB ปฏิเสธ: มีถุงที่ไม่ได้อยู่ใน In Stock — รีเฟรชแล้วลองใหม่`)
-        }
-        throw new Error(`catch_weight PATCH: HTTP ${res.status} — ${errText}`)
-      }
-    }
-
-    // 2. INSERT stock.deliveries header + stock.delivery_lines
+    // Atomic RPC — deliveries + lines + catch_weight + stock_counts all-or-nothing
     const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
     const SH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
-    let deliveryId = null
-    try {
-      const dlHeaderRes = await fetch(`${SB}/rest/v1/deliveries`, {
-        method: 'POST',
-        headers: { ...SH, Prefer: 'return=representation' },
-        body: JSON.stringify([{ bill_no: bill, branch: dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : dest, date, channel: 'hub-delivery' }])
+    const nmPayload = nmWithdrawals.map(w => ({
+      item_id: w.item_id,
+      qty:     w.qty,
+      note:    w.note,
+      is_misc: String(w.sku || '').startsWith('MISC'),
+      avail:   w.avail
+    }))
+    const rpcRes = await fetch(`${SB}/rest/v1/rpc/submit_delivery`, {
+      method: 'POST',
+      headers: { ...SH, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        p_bill:     bill,
+        p_branch:   dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : dest,
+        p_date:     date,
+        p_channel:  'hub-delivery',
+        p_bag_ids:  allBagIds.map(id => Number(id)),
+        p_nm_lines: nmPayload
       })
-      if (!dlHeaderRes.ok) throw new Error(`deliveries INSERT: HTTP ${dlHeaderRes.status} — ${await dlHeaderRes.text()}`)
-      const [dlHeader] = await dlHeaderRes.json()
-      deliveryId = dlHeader.id
-    } catch(e2) {
-      // Rollback catch_weight if deliveries INSERT failed
-      if (allBagIds.length > 0) {
-        try {
-          await fetch(`${SB}/rest/v1/catch_weight?id=in.(${idList})`, {
-            method: 'PATCH',
-            headers: { ...H, Prefer: 'return=minimal' },
-            body: JSON.stringify({ status: '✅ In Stock', notes: null })
-          })
-        } catch(_) {}
+    })
+    if (!rpcRes.ok) {
+      const errText = await rpcRes.text()
+      if (errText.includes('not In Stock') || errText.includes('Cannot deliver bag')) {
+        throw new Error(`❌ DB ปฏิเสธ: มีถุงที่ไม่ได้อยู่ใน In Stock — รีเฟรชแล้วลองใหม่`)
       }
-      throw e2
+      throw new Error(`submit_delivery RPC: HTTP ${rpcRes.status} — ${errText}`)
     }
 
-    const dlLines = []
-    allBagIds.forEach(id => {
-      const bag = bagCache[id] || cwBags.find(b => String(b.id) === String(id))
-      if (!bag) return
-      // update bagCache if found via cwBags
-      if (!bagCache[id]) bagCache[id] = bag
-      dlLines.push({ delivery_id: deliveryId, catch_weight_id: Number(id), item_id: bag.item_id, weight_g: bag.weight_g, qty: 1 })
-    })
+    // Update local nm stock cache
     nmWithdrawals.forEach(w => {
-      dlLines.push({ delivery_id: deliveryId, item_id: w.item_id, qty: w.qty, weight_g: null, catch_weight_id: null, note: w.note || null })
+      if (!String(w.sku || '').startsWith('MISC') && w.avail !== null) {
+        spStockBySku[w.sku] = w.avail - w.qty
+      }
     })
-    console.log('[debug] dlLines:', dlLines.length, '| bags:', allBagIds.length, '| nm:', nmWithdrawals.length)
-    if (dlLines.length === 0) {
-      console.warn('[debug] dlLines empty! bagCache size:', Object.keys(bagCache).length, '| allBagIds:', allBagIds, '| nmWithdrawals:', nmWithdrawals)
-    }
-    if (dlLines.length > 0) {
-      const dlLinesRes = await fetch(`${SB}/rest/v1/delivery_lines`, {
-        method: 'POST',
-        headers: { ...SH, Prefer: 'return=minimal' },
-        body: JSON.stringify(dlLines)
-      })
-      if (!dlLinesRes.ok) throw new Error(`delivery_lines INSERT: HTTP ${dlLinesRes.status} — ${await dlLinesRes.text()}`)
-    }
-
-    // 3. INSERT stock_counts withdrawal for each non-meat item (ข้าม MISC — ไม่มีสต๊อก)
-    const stockNm = nmWithdrawals.filter(w => !w.sku.startsWith('MISC'))
-    if (stockNm.length > 0) {
-      const inserts = stockNm.map(w => ({
-        item_id:      w.item_id,
-        qty:          w.avail !== null ? w.avail - w.qty : 0,
-        dispense_qty: w.qty,
-        event_type:   'dispense',
-        counted_by:   'hub-delivery',
-        note:         `${bill} → ${dest}`
-      }))
-      const res2 = await fetch(`${SB}/rest/v1/stock_counts`, {
-        method: 'POST',
-        headers: { ...H, Prefer: 'return=minimal' },
-        body: JSON.stringify(inserts)
-      })
-      if (!res2.ok) throw new Error(`stock_counts INSERT: HTTP ${res2.status} — ${await res2.text()}`)
-
-      // Update local stock cache
-      stockNm.forEach(w => {
-        if (w.avail !== null) spStockBySku[w.sku] = w.avail - w.qty
-      })
-    }
 
     btn.textContent = '✅ บันทึกแล้ว'
 
