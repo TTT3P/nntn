@@ -1354,7 +1354,7 @@ function renderDeliveryHistory(deliveries) {
     ).join('')
     const hasSub = (d.meat_lines?.length || 0) + (d.nm_lines?.length || 0) > 0
     return `<div class="hist-group" style="margin-bottom:10px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
-      <div class="hist-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"
+      <div class="hist-header" onclick="if(this.nextElementSibling)this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"
            style="padding:12px 14px;cursor:pointer;background:#fafafa;display:flex;justify-content:space-between;align-items:center;gap:10px">
         <div style="flex:1;min-width:0">
           <span style="font-weight:700">${d.bill_no||'?'}</span>
