@@ -426,8 +426,9 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
   </div>
 
   <!-- ════ Submit ════ -->
-  <div class="no-print">
-    <button class="btn btn-primary" id="submit-btn" onclick="submitDelivery()">🚛 บันทึกส่งออก</button>
+  <div class="no-print" style="display:flex;gap:10px">
+    <button class="btn" id="draft-btn" onclick="saveDraftToCloud()" style="flex:1;background:#f5f5f5;border:1.5px solid #bdbdbd;color:#333;font-weight:700">💾 บันทึก Draft</button>
+    <button class="btn btn-primary" id="submit-btn" onclick="submitDelivery()" style="flex:2">🚛 บันทึกส่งออก</button>
   </div>
 
   </div><!-- end tab-delivery -->
@@ -1576,6 +1577,64 @@ function friendlyErr(msg) {
   if (msg.includes('404')) return 'ไม่พบข้อมูล — กรุณารีเฟรชหน้าแล้วลองใหม่'
   // Strip raw JSON/code payload
   return msg.replace(/\s*—\s*\{.*\}[\s\S]*$/, '').replace(/\s*—\s*".*"$/, '')
+}
+
+async function saveDraftToCloud() {
+  const date = document.getElementById('dl-date').value
+  const bill = document.getElementById('dl-bill').value.trim()
+  const dest = document.getElementById('dl-dest').value
+  if (!date || !dest) { showToast('กรุณากรอกวันที่และปลายทางก่อน', 'error'); return }
+
+  const meatLines = []
+  Object.entries(meatSel).forEach(([n, s]) => {
+    if (!s.itemId || s.selectedBags.size === 0) return
+    const sel = document.getElementById(`mb-sku-${n}`)
+    const name = sel?.options[sel?.selectedIndex]?.dataset?.name || ''
+    s.selectedBags.forEach(id => {
+      const b = bagCache[id]
+      if (b) meatLines.push({ bag_id: id, item_id: s.itemId, name, weight_g: b.weight_g, lot_date: b.lot_date })
+    })
+  })
+
+  const nmLines = []
+  document.querySelectorAll('#nm-rows .nm-row-wrap').forEach(wrap => {
+    const n = wrap.id.replace('nm-row-', '')
+    const itemEl = document.getElementById(`nm-item-${n}`)
+    const qtyEl  = document.getElementById(`nm-qty-${n}`)
+    const unitEl = document.getElementById(`nm-unit-${n}`)
+    if (!itemEl?.value) return
+    const qty = parseFloat(qtyEl?.value) || 0
+    if (qty <= 0) return
+    const opt = itemEl.options[itemEl.selectedIndex]
+    nmLines.push({ item_id: itemEl.value, name: opt?.dataset?.name || '', qty, unit: unitEl?.value || '' })
+  })
+
+  if (meatLines.length === 0 && nmLines.length === 0) {
+    showToast('กรุณาเลือกถุงเนื้อหรือ Non-meat ก่อน', 'error'); return
+  }
+
+  const btn = document.getElementById('draft-btn')
+  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'
+
+  try {
+    const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+    const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+    const res = await fetch(`${SB}/rest/v1/delivery_drafts`, {
+      method: 'POST',
+      headers: { ...DH, Prefer: 'return=representation' },
+      body: JSON.stringify([{
+        bill_no: bill || null, branch: dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : dest,
+        date, meat_lines: meatLines, nm_lines: nmLines,
+        created_by: window.nntnCurrentUser || 'UNKNOWN', status: 'draft'
+      }])
+    })
+    if (!res.ok) throw new Error(await res.text())
+    showToast(`✅ บันทึก Draft แล้ว — ${meatLines.length} ถุง / ${nmLines.length} non-meat`)
+  } catch(e) {
+    showToast('❌ Draft ไม่สำเร็จ: ' + e.message, 'error')
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 บันทึก Draft'
+  }
 }
 
 async function submitDelivery() {
