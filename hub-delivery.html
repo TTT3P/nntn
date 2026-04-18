@@ -515,6 +515,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const items = Array.isArray(allItems) ? allItems : []
     mtItems = items.filter(i => i.sku && i.sku.startsWith('MT'))
     spItems = items.filter(i => i.sku && (i.sku.startsWith('SP') || i.sku.startsWith('MISC') || i.sku.startsWith('PKG')))
+    window._itemsById = {}
+    items.forEach(i => { window._itemsById[i.id] = i })
 
     // Build sku → current_qty map for SP items
     ;(Array.isArray(stockRows) ? stockRows : []).forEach(r => {
@@ -1267,16 +1269,29 @@ async function loadHistory() {
     const SHh = { ...H, Authorization: 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
     // ดึงจาก deliveries + lines โดยตรง
     const res = await fetch(
-      `${SB}/rest/v1/deliveries?select=id,bill_no,branch,date,channel,delivery_lines(id,catch_weight_id,item_id,qty,weight_g,note,items(sku,name,unit))&order=date.desc,bill_no.desc&limit=100`,
+      `${SB}/rest/v1/deliveries?select=id,bill_no,branch,date,channel,delivery_lines(id,catch_weight_id,item_id,qty,weight_g,note)&order=date.desc,bill_no.desc&limit=100`,
       { headers: SHh }
     )
     const deliveries = await res.json()
 
-    if (!Array.isArray(deliveries) || deliveries.length === 0) {
+    if (!Array.isArray(deliveries)) {
+      console.error('loadHistory: non-array response', deliveries)
+      listEl.innerHTML = `<div class="warn-banner">❌ โหลดประวัติไม่ได้: ${deliveries?.message || 'unknown'}</div>`
+      return
+    }
+    if (deliveries.length === 0) {
       listEl.innerHTML = '<div class="hist-empty">ยังไม่มีประวัติการส่ง</div>'
       historyLoaded = true
       return
     }
+
+    // Resolve item metadata client-side from window._itemsById
+    deliveries.forEach(d => {
+      (d.delivery_lines || []).forEach(l => {
+        const it = window._itemsById?.[l.item_id]
+        if (it) l.items = { sku: it.sku, name: it.name, unit: it.unit }
+      })
+    })
 
     let filtered = deliveries
     if (searchVal) {
