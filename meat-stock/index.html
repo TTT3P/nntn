@@ -1606,7 +1606,9 @@ async function submitClosePot() {
           session_id: sessionId,
           item_id: bypItem.id,
           kg_cooked: bypKg,
-          bag_count: bypWeights.length
+          bag_count: bypWeights.length,
+          waste_kg: 0,
+          note: null
         })
       }
       await post('cook_outputs', outputs)
