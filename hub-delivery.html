@@ -358,7 +358,8 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
 
   <!-- ════ Tabs ════ -->
   <div class="tabs no-print">
-    <button class="tab-btn active" id="tab-btn-delivery" onclick="switchTab('delivery')">🚛 ออกใบนำส่ง</button>
+    <button class="tab-btn active" id="tab-btn-delivery" onclick="switchTab('delivery')">📝 เตรียมใบ</button>
+    <button class="tab-btn" id="tab-btn-drafts" onclick="switchTab('drafts')">⏳ รอส่ง</button>
     <button class="tab-btn" id="tab-btn-history" onclick="switchTab('history')">📋 ประวัติ</button>
   </div>
 
@@ -432,6 +433,14 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
   </div>
 
   </div><!-- end tab-delivery -->
+
+  <!-- ════ Tab: รอส่ง (Drafts) ════ -->
+  <div class="tab-pane" id="tab-drafts">
+    <div class="card">
+      <div class="card-title">⏳ ใบนำส่งที่รอส่ง</div>
+      <div id="drafts-list"><div class="loading">กำลังโหลด...</div></div>
+    </div>
+  </div>
 
   <!-- ════ Tab: ประวัติ ════ -->
   <div class="tab-pane" id="tab-history">
@@ -978,9 +987,64 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
   document.getElementById(`tab-${tab}`).classList.add('active')
   document.getElementById(`tab-btn-${tab}`).classList.add('active')
-  if (tab === 'history' && !historyLoaded) {
-    loadHistory()
+  if (tab === 'history' && !historyLoaded) loadHistory()
+  if (tab === 'drafts') loadDrafts()
+}
+
+// ─── Drafts ───────────────────────────────────────────────────────────────────
+async function loadDrafts() {
+  const listEl = document.getElementById('drafts-list')
+  listEl.innerHTML = '<div class="loading">กำลังโหลด...</div>'
+  try {
+    const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+    const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+    const res = await fetch(`${SB}/rest/v1/delivery_drafts?status=eq.draft&order=created_at.desc&limit=50`, { headers: DH })
+    const drafts = await res.json()
+    if (!drafts.length) { listEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:24px">ยังไม่มี Draft ค้างอยู่</div>'; return }
+    listEl.innerHTML = drafts.map(d => {
+      const meatCount = (d.meat_lines || []).length
+      const nmCount   = (d.nm_lines   || []).length
+      const dt = new Date(d.created_at).toLocaleString('th-TH', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+      return `<div class="card" style="margin-bottom:10px;border-left:4px solid #FFA000">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+          <div>
+            <div style="font-weight:700">${d.bill_no || '(ยังไม่มีเลขบิล)'} → ${d.branch}</div>
+            <div style="font-size:.82rem;color:var(--muted)">วันที่: ${d.date} | บันทึก: ${dt} | โดย: ${d.created_by||'?'}</div>
+            <div style="font-size:.82rem;margin-top:4px">🥩 เนื้อ ${meatCount} ถุง &nbsp;|&nbsp; 🧂 Non-meat ${nmCount} รายการ</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-shrink:0">
+            <button class="btn btn-sm btn-outline-blue" onclick="loadDraftToForm('${d.id}')">✏️ แก้ไข</button>
+            <button class="btn btn-sm btn-primary" onclick="submitDraft('${d.id}')">🚛 ส่งออก</button>
+            <button class="btn btn-sm" style="background:#fff0f0;color:#c62828;border:1px solid #ffcdd2" onclick="deleteDraft('${d.id}')">🗑 ลบ</button>
+          </div>
+        </div>
+      </div>`
+    }).join('')
+  } catch(e) {
+    listEl.innerHTML = `<div style="color:var(--red-light);padding:12px">โหลดไม่ได้: ${e.message}</div>`
   }
+}
+
+async function deleteDraft(id) {
+  if (!confirm('ลบ Draft นี้?')) return
+  const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+  const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+  await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${id}`, { method: 'DELETE', headers: DH })
+  loadDrafts()
+}
+
+async function loadDraftToForm(id) {
+  const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+  const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+  const res = await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${id}`, { headers: DH })
+  const [d] = await res.json()
+  if (!d) return
+  // Switch to form tab and populate
+  switchTab('delivery')
+  if (d.date) document.getElementById('dl-date').value = d.date
+  if (d.branch) document.getElementById('dl-dest').value = d.branch === 'NT' ? 'ครัวกลาง (NT)' : d.branch === 'FS' ? 'หน้าร้าน (FS)' : d.branch
+  if (d.bill_no) document.getElementById('dl-bill').value = d.bill_no
+  showToast(`โหลด Draft แล้ว — เนื้อ ${(d.meat_lines||[]).length} ถุง / Non-meat ${(d.nm_lines||[]).length} รายการ`)
 }
 
 // ─── History ──────────────────────────────────────────────────────────────────
