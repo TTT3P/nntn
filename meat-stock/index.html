@@ -828,7 +828,9 @@ async function submitReceive() {
     bagInputs.forEach((inp, idx) => {
       const g = parseFloat(inp.value)
       if (!g || g <= 0) return
-      if (g < 500 && !confirm(`⚠️ ถุงที่ ${idx+1}: น้ำหนัก ${g} กรัม (${(g/1000).toFixed(3)} กก.) — น้อยมากผิดปกติ\n\nใส่เป็นกรัมใช่ไหม? กด OK เพื่อบันทึกต่อ หรือ Cancel เพื่อแก้ไข`)) return
+      // UX #3: Weight unit sanity guards
+      if (g < 50 && !confirm(`⚠️ ถุงที่ ${idx+1}: ${g} กรัม = ${(g/1000).toFixed(3)} กก. เบามากผิดปกติ\n\nน้องอาจกรอกเป็น "กก." โดยบังเอิญ? (5 กก. ต้องกรอก 5000)\n\nOK = บันทึกต่อ · Cancel = แก้ไข`)) return
+      if (g > 15000 && !confirm(`⚠️ ถุงที่ ${idx+1}: ${g} กรัม = ${(g/1000).toFixed(3)} กก. หนักผิดปกติ\n\nยืนยัน? OK = บันทึก · Cancel = แก้ไข`)) return
       rows.push({
         item_id,
         lot_date,
@@ -1577,6 +1579,11 @@ async function submitClosePot() {
   if (bypRequired && bypWeights.length === 0) {
     alert(`⚠️ ${bypItem?.name || 'By-product'} บังคับ — กรุณากรอกอย่างน้อย 1 ถุง`)
     return
+  }
+
+  // UX #2: Prompt if item has byproduct configured but น้องไม่กรอก (optional but easy to miss)
+  if (bypItem && !bypRequired && bypWeights.length === 0) {
+    if (!confirm(`🥩 รายการนี้มี "${bypItem.name}" เป็น by-product ที่ระบบรองรับ\n\nมั่นใจว่าไม่มี ${bypItem.name} จริง ๆ ?\n\n- กด OK = ไม่มี byproduct, ปิดหม้อต่อ\n- กด Cancel = กลับไปกรอก byproduct ก่อน`)) return
   }
 
   const bypKg = bypWeights.reduce((s, g) => s + g, 0) / 1000

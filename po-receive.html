@@ -831,7 +831,9 @@
             ${po.status === 'ordered' ? `
               <input class="qty-received-input" type="number" min="0" step="0.01"
                      placeholder="${l.qty_ordered ?? ''}" value="${l.qty_ordered ?? ''}"
-                     data-line-id="${l.id}" data-item-id="${l.item_id || l.items?.id || ''}" data-qty-ordered="${l.qty_ordered ?? ''}" />
+                     data-line-id="${l.id}" data-item-id="${l.item_id || l.items?.id || ''}"
+                     data-item-name="${l.items?.name || ''}" data-unit="${l.items?.unit || ''}"
+                     data-qty-ordered="${l.qty_ordered ?? ''}" />
             ` : `<div style="text-align:center;font-size:13px;color:var(--green-dark);font-weight:700">
                    รับ ${l.qty_received ?? '—'}
                  </div>`}
@@ -854,14 +856,12 @@
 
   async function confirmReceive(poId) {
     if (processingPOs.has(poId)) return;
-    processingPOs.add(poId);
-    const btn = document.querySelector(`button[onclick="confirmReceive('${poId}')"]`);
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
 
     const linesDiv = document.getElementById('lines-' + poId);
     const inputs   = linesDiv.querySelectorAll('.qty-received-input');
 
     const receives = [];
+    const summary  = [];
     inputs.forEach(inp => {
       const qty = parseFloat(inp.value);
       if (inp.dataset.itemId && qty > 0) {
@@ -870,14 +870,25 @@
           item_id:     inp.dataset.itemId,
           qty_received: qty
         });
+        summary.push(`• ${inp.dataset.itemName || 'item'}: ${qty} ${inp.dataset.unit || 'หน่วย'}`);
       }
     });
 
     if (receives.length === 0) {
-      processingPOs.delete(poId);
-      if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันรับของแล้ว'; }
       return toast('ไม่มีรายการที่รับได้');
     }
+
+    // UX #1: 2-step confirm — กัน PO-03 เคส (กดก่อนของมาจริง)
+    const confirmMsg =
+      `📦 ยืนยันว่า "ของถึงมือแล้วจริง ๆ " ?\n\n` +
+      `PO จะถูกปิดและสต๊อกจะเพิ่มทันที — รายการ:\n\n` +
+      summary.join('\n') +
+      `\n\n⚠️ ถ้าของยัง "ไม่ถึง" กด Cancel — รอของมาก่อนค่อยกด`;
+    if (!confirm(confirmMsg)) return;
+
+    processingPOs.add(poId);
+    const btn = document.querySelector(`button[onclick="confirmReceive('${poId}')"]`);
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
 
     const now = new Date().toISOString();
 
