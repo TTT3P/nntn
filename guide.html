@@ -457,18 +457,20 @@ header small { font-size: 0.75rem; opacity: 0.55; }
     <div class="box blue"><span class="box-icon">📍</span><div>ใช้เมื่อ: <strong>ส่งเนื้อ + ของ non-meat ออกจากครัวกลาง</strong> — ระบบออกใบนำส่งให้ทันที พร้อมปริ้น</div></div>
 
     <div class="tab-row">
-      <span class="tab-chip active">🚛 ออกใบนำส่ง</span>
+      <span class="tab-chip active">📝 เตรียมใบ</span>
+      <span class="tab-chip">⏳ รอส่ง</span>
       <span class="tab-chip">📋 ประวัติ</span>
     </div>
 
+    <div class="box yellow" style="background:var(--yellow-bg);border-left:3px solid var(--orange);padding:10px 12px;margin:10px 0"><span class="box-icon">🆕</span><div><strong>อัปเดต 18/04/2026:</strong> เพิ่มแท็บ <em>⏳ รอส่ง</em> สำหรับจัดการ Draft — บันทึกใบก่อน แก้ไขได้ ค่อยส่งจริงทีหลัง + แท็บ <em>📋 ประวัติ</em> มีปุ่ม 🖨 พิมพ์ย้อนหลังได้ทุกบิล</div></div>
+
     <div class="sub">
-      <div class="sub-title">ขั้นตอน</div>
+      <div class="sub-title">📝 แท็บเตรียมใบ — ขั้นตอนกรอก</div>
       <ol class="steps">
         <li>
           <div class="step-body">
-            <strong>เปิดหน้า Hub Delivery → tab 🚛 ออกใบนำส่ง</strong>
+            <strong>เปิดหน้า Hub Delivery</strong>
             <p><a href="hub-delivery.html" style="color:var(--blue-light)">hub-delivery.html</a></p>
-            <p style="margin-top:4px">ถ้าขึ้น banner "📋 มี draft ค้างอยู่" — กด "โหลด draft" เพื่อดึงข้อมูลที่กรอกไว้ครั้งก่อน หรือ "ยกเลิก" เพื่อเริ่มใหม่</p>
           </div>
         </li>
         <li>
@@ -476,41 +478,96 @@ header small { font-size: 0.75rem; opacity: 0.55; }
             <strong>กรอก "ข้อมูลใบนำส่ง"</strong>
             <div class="field-list">
               <div class="field"><span class="field-label">วันที่ส่ง</span><span class="field-val">ระบบใส่วันนี้ให้อัตโนมัติ</span></div>
-              <div class="field"><span class="field-label">ปลายทาง</span><span class="field-val">เลือก: <em>ครัวกลาง (NT)</em> / <em>หน้าร้าน (FS)</em> / <em>อื่นๆ</em></span></div>
-              <div class="field"><span class="field-label">เลขที่ใบนำส่ง</span><span class="field-val">ระบบเสนอให้อัตโนมัติ เช่น <em>NT-20260417-01</em> — เปลี่ยนได้ถ้าต้องการ</span></div>
+              <div class="field"><span class="field-label">ปลายทาง</span><span class="field-val">เลือก: <em>ครัวกลาง (NT)</em> / <em>หน้าร้าน (FS)</em></span></div>
+              <div class="field"><span class="field-label">เลขที่ใบนำส่ง</span><span class="field-val">ระบบเสนอ <strong>อัตโนมัติ</strong> เช่น <em>NT20260418-1</em> — ไม่ต้องพิมพ์เอง</span></div>
             </div>
           </div>
         </li>
         <li>
           <div class="step-body">
             <strong>Block 1 — เนื้อตุ๋น: เลือก SKU และถุง</strong>
-            <p>1) เลือก MT item จาก dropdown "พิมพ์ค้นหา MT item" → 2) กดปุ่ม "📦 เลือกถุง" → 3) แตะเลือกถุงใน popup → 4) กด "✅ ยืนยัน"</p>
-            <p style="margin-top:4px">ถ้าส่งหลาย SKU กดปุ่ม <span class="btn-mock btn-outline" style="font-size:0.75rem">+ เพิ่มรายการเนื้อ</span> เพื่อเพิ่ม block ใหม่</p>
+            <p>1) เลือก MT item → 2) กด "📦 เลือกถุง" → 3) แตะเลือกถุงใน popup → 4) กด "✅ ยืนยัน"</p>
+            <p style="margin-top:4px">หลาย SKU กด <span class="btn-mock btn-outline" style="font-size:0.75rem">+ เพิ่มรายการเนื้อ</span></p>
           </div>
         </li>
         <li>
           <div class="step-body">
             <strong>Block 2 — Non-meat: เลือกสินค้าและจำนวน</strong>
-            <p>ค้นหา SP item → กรอก qty และหน่วย — ระบบแสดงสต๊อกคงเหลือให้เห็น</p>
-            <p style="margin-top:4px"><strong>ส่งของที่ไม่มีใน stock</strong> (เช่น สแตน ร่มกันแดด): เลือก <em>MISC-001 รายการพิเศษ</em> → จะมีช่อง "ชื่อรายการ (บังคับ)" ให้พิมพ์ชื่อ</p>
+            <p>ค้นหา SP item → กรอก qty และหน่วย — รองรับทศนิยม (เช่น ผักบุ้ง 5.07 กก.)</p>
+            <p style="margin-top:4px"><strong>ของที่ไม่มีใน stock:</strong> เลือก <em>MISC-001 รายการพิเศษ</em> → พิมพ์ชื่อในช่อง "ชื่อรายการ (บังคับ)"</p>
           </div>
         </li>
         <li>
           <div class="step-body">
-            <strong>ตรวจสอบ Preview ใบนำส่ง</strong>
-            <p>ดูที่ card "👁 Preview ใบนำส่ง" — ตรวจให้ครบก่อนบันทึก ถ้าต้องการพิมพ์ใบให้กดปุ่ม <span class="btn-mock btn-blue" style="font-size:0.75rem">🖨 พิมพ์</span></p>
-          </div>
-        </li>
-        <li>
-          <div class="step-body">
-            <strong>กด <span class="btn-mock btn-red">🚛 บันทึกส่งออก</span></strong>
-            <p>ระบบจะถามยืนยัน — ระบุจำนวนถุงและรายการ — กด OK เพื่อบันทึก ถุงเนื้อจะเปลี่ยนสถานะเป็น "🚚 Delivered"</p>
+            <strong>เลือกปลายทาง: Draft หรือส่งจริง</strong>
+            <p>📋 <strong>Preview</strong> ดูความถูกต้อง — พิมพ์ตัวอย่างได้ด้วยปุ่ม <span class="btn-mock btn-blue" style="font-size:0.75rem">🖨 พิมพ์</span></p>
+            <p style="margin-top:6px">มี 2 ปุ่มท้ายฟอร์ม:</p>
+            <ul style="margin-left:18px;margin-top:4px">
+              <li><span class="btn-mock" style="background:#f5f5f5;color:#333;border:1px solid #bdbdbd;font-size:0.75rem">💾 บันทึก Draft</span> = เก็บไว้ก่อน <strong>ยังไม่ตัดสต๊อก</strong> ไปแท็บ ⏳ รอส่ง</li>
+              <li><span class="btn-mock btn-red">🚛 บันทึกส่งออก</span> = ส่งจริง <strong>ตัดสต๊อกทันที</strong></li>
+            </ul>
           </div>
         </li>
       </ol>
     </div>
 
-    <div class="box green"><span class="box-icon">💡</span><div><strong>ดูประวัติการส่ง:</strong> กด tab 📋 ประวัติ — ค้นหาบิลเก่า แก้ไขจำนวน หรือเพิ่มรายการที่ลืมกรอกได้</div></div>
+    <div class="sub">
+      <div class="sub-title">⏳ แท็บรอส่ง — จัดการ Draft</div>
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <strong>ดู Draft ที่บันทึกไว้</strong>
+            <p>Card ส้มแต่ละใบแสดง: เลขบิล → ปลายทาง · วันที่บันทึก · จำนวนเนื้อ/non-meat</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>คลิก ▼ เพื่อ expand — แก้ไข inline ได้</strong>
+            <ul style="margin-left:18px;margin-top:4px">
+              <li>✏️ แก้จำนวน non-meat</li>
+              <li>🗑️ ลบรายการออก</li>
+              <li>+ เพิ่ม Non-meat ใหม่</li>
+            </ul>
+            <p style="margin-top:6px;color:var(--muted);font-size:0.88rem">🥩 ถุงเนื้อ (พื้นเหลือง) = read-only — ต้องแก้จากฟอร์ม</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>ปุ่มบน card</strong>
+            <ul style="margin-left:18px;margin-top:4px">
+              <li><span class="btn-mock btn-red">🚛 ส่งออก</span> = โหลด draft เข้าฟอร์ม → ตรวจ Preview → กด 🚛 บันทึกส่งออก → เสร็จแล้ว <strong>ลบ draft + เด้งไปแท็บประวัติอัตโนมัติ</strong></li>
+              <li><span class="btn-mock" style="background:#fff0f0;color:#c62828;border:1px solid #ffcdd2;font-size:0.75rem">🗑</span> = ลบ draft ทิ้ง (ไม่ส่ง)</li>
+            </ul>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="sub">
+      <div class="sub-title">📋 แท็บประวัติ — ดูและพิมพ์ย้อนหลัง</div>
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <strong>เห็นทุกบิลที่ส่งออกแล้ว</strong>
+            <p>เรียงจากใหม่สุด — header แสดง: บิล · ปลายทาง · วันที่ · 🥩 ถุง/กก. · 🧂 รายการ</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>คลิก ▼ = ดูรายการในบิล</strong>
+            <p>🥩 ถุงเนื้อ (พื้นเหลือง) + 🧂 non-meat</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <strong>ปุ่ม <span class="btn-mock btn-blue">🖨</span> = พิมพ์ใบนำส่งย้อนหลัง</strong>
+            <p>เปิดหน้าต่างใหม่ + auto print dialog — ใช้ reprint บิลเก่าได้ทุกเมื่อ</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="box green"><span class="box-icon">💡</span><div><strong>Flow มาตรฐาน:</strong> 📝 เตรียมใบ → 💾 Draft → ⏳ รอส่ง (review) → 🚛 ส่งออก → 📋 ประวัติ (auto)</div></div>
   </div>
 
   <!-- 7. AIM -->
