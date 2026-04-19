@@ -1789,7 +1789,7 @@ function addProcInput() {
   procInputCount++
   const n = procInputCount
   // Curated list: SKU หลัก + เศษเนื้อ (category=meat_trim)
-  const MAIN_PROC_SKUS = ['MT-028','MT-019','SP-206','SP-101','SP-036','SP-037','SP-087']
+  const MAIN_PROC_SKUS = ['MT-028','MT-019','SP-206','SP-101','SP-036','SP-037','SP-087','SP-020','SP-031']
   const mainInStock = [...new Set(
     cwStock.filter(r => MAIN_PROC_SKUS.includes(r.item_sku)).map(r => r.item_name).filter(Boolean)
   )].sort()
