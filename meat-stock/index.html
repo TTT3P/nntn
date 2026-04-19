@@ -2240,9 +2240,9 @@ async function loadStock() {
       byWhGroups[target][nm].bags.push(r)
     })
 
-    // 0-stock: MT- และ SP-M- (raw cuts เช่น พิคานย่าไทย/ออส)
-    const MEAT_CATS=['meat_raw','meat_cooked','meat_portioned','meat_other']
-    items.filter(it=>it.sku&&(it.sku.startsWith('MT')||it.sku.startsWith('SP-M-'))).forEach(it=>{
+    // 0-stock: MT- (cooked/portion) และ SP- ที่เป็นเนื้อ (raw cuts เช่น สะโพกก้อน พิคานย่า)
+    const MEAT_CATS=['meat','meat_raw','meat_cooked','meat_portioned','meat_other']
+    items.filter(it=>it.sku&&it.is_active&&(it.sku.startsWith('MT')||it.sku.startsWith('SP-'))&&MEAT_CATS.includes(it.category)).forEach(it=>{
       if(!it.name||itemsInStock.has(it.name)) return
       if(it.category==='meat_trim'){
         if(!byWhGroups.SCRAP[it.name]) byWhGroups.SCRAP[it.name]={count:0,kg:0,lots:new Set(),bags:[],outOfStock:true}
