@@ -81,40 +81,21 @@
   `;
   document.head.appendChild(style);
 
-  // Nav config — supports { children: [...] } for expandable groups
+  // Nav config — flat (no sub-categories until we have real aggregate pages)
   const NAV = [
     { href: '/nntn/dashboard.html', icon: '🏠', label: 'Dashboard' },
     { section: 'Stock' },
-    {
-      icon: '🥩', label: 'Meat Stock', key: 'meat-stock', children: [
-        { href: '/nntn/meat-stock/#receive', label: 'รับเนื้อสด' },
-        { href: '/nntn/meat-stock/#cook', label: 'ปิดหม้อ' },
-        { href: '/nntn/meat-stock/#repack', label: 'แปรรูป' },
-        { href: '/nntn/meat-stock/', label: 'ทั้งหมด' }
-      ]
-    },
-    {
-      icon: '🚚', label: 'Delivery', key: 'delivery', children: [
-        { href: '/nntn/hub-delivery.html', label: 'ออกใบนำส่ง' },
-        { href: '/nntn/po-receive.html', label: 'PO Receive' },
-        { href: '/nntn/stock-dispense.html', label: 'Stock Dispense' }
-      ]
-    },
+    { href: '/nntn/meat-stock/', icon: '🥩', label: 'Meat Stock' },
+    { href: '/nntn/hub-delivery.html', icon: '🚚', label: 'ออกใบนำส่ง' },
+    { href: '/nntn/po-receive.html', icon: '📥', label: 'PO Receive' },
+    { href: '/nntn/stock-dispense.html', icon: '📤', label: 'Stock Dispense' },
     { href: '/nntn/production-history.html', icon: '♻️', label: 'Production History' },
     { section: 'Cookingbook' },
-    {
-      icon: '📖', label: 'Recipes', key: 'cookingbook', children: [
-        { href: '/nntn/cookingbook/menu-bom.html', label: 'Menu BOM' },
-        { href: '/nntn/production-log-form.html', label: 'Production Log' }
-      ]
-    },
+    { href: '/nntn/cookingbook/menu-bom.html', icon: '📖', label: 'Menu BOM' },
+    { href: '/nntn/production-log-form.html', icon: '📝', label: 'Production Log' },
     { section: 'Admin' },
-    {
-      icon: '🏷️', label: 'Items & BOM', key: 'admin', children: [
-        { href: '/nntn/admin-items.html', label: 'Items' },
-        { href: '/nntn/admin-bom.html', label: 'BOM Admin' }
-      ]
-    },
+    { href: '/nntn/admin-items.html', icon: '🏷️', label: 'Items' },
+    { href: '/nntn/admin-bom.html', icon: '🧪', label: 'BOM Admin' },
     { section: 'Reports' },
     { href: '/nntn/data-pipeline.html', icon: '📊', label: 'Data Pipeline' }
   ];
