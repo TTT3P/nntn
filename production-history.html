@@ -9,29 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   body { margin:0; background: var(--nntn-color-bg); font-family: var(--nntn-font-family); color: var(--nntn-color-text); font-size:var(--nntn-font-md); }
-  .app { display:grid; grid-template-columns: var(--nntn-sidebar-width) 1fr; min-height:100vh; }
-
-  /* sidebar */
-  .sidebar { background:#1a1d21; color:#d7dde2; padding: var(--nntn-space-4) 0; position:sticky; top:0; height:100vh; overflow:auto; }
-  .brand { padding: 0 var(--nntn-space-5) var(--nntn-space-5); border-bottom: 1px solid #2e3135; display:flex; align-items:center; gap:var(--nntn-space-2);}
-  .brand-logo { width:32px; height:32px; background: var(--nntn-color-primary); border-radius: var(--nntn-radius-md); display:flex; align-items:center; justify-content:center; font-size:18px; }
-  .brand-name { font-weight: var(--nntn-weight-semibold); font-size: var(--nntn-font-md); color: #fff; }
-  .brand-sub { font-size: var(--nntn-font-xs); color:#8c9196; margin-top:2px; }
-  .nav { padding: var(--nntn-space-4) var(--nntn-space-2); }
-  .nav-section { font-size: var(--nntn-font-xs); text-transform:uppercase; letter-spacing:0.06em; color:#6d7175; padding: var(--nntn-space-3) var(--nntn-space-3) var(--nntn-space-2); }
-  .nav-item { display:flex; align-items:center; gap:var(--nntn-space-3); padding: var(--nntn-space-2) var(--nntn-space-3); border-radius:var(--nntn-radius-md); cursor:pointer; color:#d7dde2; font-size:var(--nntn-font-sm); margin-bottom:2px; text-decoration:none; }
-  .nav-item:hover { background:#2e3135; }
-  .nav-item.active { background:#2e3135; color:#fff; font-weight:var(--nntn-weight-medium); }
-  .nav-item .icon { width:18px; text-align:center; }
-
-  /* main */
-  .main { display:flex; flex-direction:column; min-width:0; }
-  .topbar { background: var(--nntn-color-surface); border-bottom:1px solid var(--nntn-color-border); padding: var(--nntn-space-3) var(--nntn-space-6); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:var(--nntn-z-sticky); }
-  .breadcrumb { color: var(--nntn-color-text-subdued); font-size: var(--nntn-font-sm); }
-  .breadcrumb a { color: var(--nntn-color-info); text-decoration:none; }
-  .user-chip { background:var(--nntn-color-surface-subdued); padding:4px var(--nntn-space-3); border-radius:var(--nntn-radius-full); font-size:var(--nntn-font-sm); }
-
-  .content { padding: var(--nntn-space-6); max-width:1400px; width:100%; align-self:flex-start; }
+  .content { padding: var(--nntn-space-6); max-width:1400px; margin:0 auto; }
   .page-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:var(--nntn-space-5); gap:var(--nntn-space-4);}
   .page-head h1 { font-size:var(--nntn-font-2xl); font-weight:var(--nntn-weight-semibold); margin:0 0 var(--nntn-space-1); }
   .page-head .meta { color:var(--nntn-color-text-subdued); font-size:var(--nntn-font-sm); }
@@ -93,36 +71,12 @@
   .evt-meta { font-size:var(--nntn-font-xs); color:var(--nntn-color-text-subdued); margin-top:2px; }
   .evt-body { font-size:var(--nntn-font-sm); color:var(--nntn-color-text-subdued); margin-top:var(--nntn-space-1); }
 
-  @media (max-width:900px) { .app { grid-template-columns:1fr; } .sidebar { display:none; } .drawer { width:100%; } }
+  @media (max-width:900px) { .drawer { width:100%; } }
 </style>
 </head>
 <body class="nntn-scope">
 
-<div class="app">
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-logo">🥩</div>
-      <div><div class="brand-name">NNTN</div><div class="brand-sub">ครัวเนื้อในตำนาน</div></div>
-    </div>
-    <nav class="nav">
-      <a class="nav-item" href="/nntn/dashboard.html"><span class="icon">🏠</span> Dashboard</a>
-      <div class="nav-section">Stock</div>
-      <a class="nav-item" href="/nntn/meat-stock/"><span class="icon">🥩</span> Meat Stock</a>
-      <a class="nav-item" href="/nntn/hub-delivery.html"><span class="icon">🚚</span> Delivery</a>
-      <a class="nav-item" href="/nntn/po-receive.html"><span class="icon">📥</span> PO Receive</a>
-      <a class="nav-item active" href="/nntn/production-history.html"><span class="icon">♻️</span> Production History</a>
-      <div class="nav-section">Admin</div>
-      <a class="nav-item" href="/nntn/admin-items.html"><span class="icon">🏷️</span> Items</a>
-    </nav>
-  </aside>
-
-  <main class="main">
-    <div class="topbar">
-      <div class="breadcrumb"><a href="/nntn/dashboard.html">Dashboard</a> · Production History</div>
-      <span class="user-chip">👤 <span id="user-name">—</span></span>
-    </div>
-
-    <div class="content">
+<div class="content">
       <div class="page-head">
         <div>
           <h1>Production History</h1>
@@ -156,8 +110,6 @@
           </tbody>
         </table>
       </div>
-    </div>
-  </main>
 </div>
 
 <div class="drawer-bg" id="drawer-bg" onclick="closeDrawer()"></div>
@@ -181,8 +133,6 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let allRuns = [];
 let currentFilter = 'all';
-
-document.getElementById('user-name').textContent = localStorage.getItem('nntn_user') || 'guest';
 
 async function load() {
   const { data, error } = await sb.from('v_production_history').select('*').limit(500);
