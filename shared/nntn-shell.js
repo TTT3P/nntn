@@ -51,10 +51,16 @@
     #nntn-sidebar .brand-sub { font-size: var(--nntn-font-xs); color:#8c9196; margin-top:2px; }
     #nntn-sidebar nav { padding: var(--nntn-space-3) var(--nntn-space-2); }
     #nntn-sidebar .nav-section { font-size: var(--nntn-font-xs); text-transform:uppercase; letter-spacing:0.06em; color:#6d7175; padding: var(--nntn-space-3) var(--nntn-space-3) var(--nntn-space-2); }
-    #nntn-sidebar a.nav-item { display:flex; align-items:center; gap:var(--nntn-space-3); padding: var(--nntn-space-2) var(--nntn-space-3); border-radius:var(--nntn-radius-md); color:#d7dde2; margin-bottom:2px; text-decoration:none; cursor:pointer; }
-    #nntn-sidebar a.nav-item:hover { background:#2e3135; }
+    #nntn-sidebar a.nav-item, #nntn-sidebar .nav-group-head { display:flex; align-items:center; gap:var(--nntn-space-3); padding: var(--nntn-space-2) var(--nntn-space-3); border-radius:var(--nntn-radius-md); color:#d7dde2; margin-bottom:2px; text-decoration:none; cursor:pointer; user-select:none; }
+    #nntn-sidebar a.nav-item:hover, #nntn-sidebar .nav-group-head:hover { background:#2e3135; }
     #nntn-sidebar a.nav-item.active { background:#2e3135; color:#fff; font-weight:var(--nntn-weight-medium); }
-    #nntn-sidebar .nav-item .icon { width:18px; text-align:center; flex-shrink:0; }
+    #nntn-sidebar .nav-group-head.has-active { color:#fff; font-weight:var(--nntn-weight-medium); }
+    #nntn-sidebar .nav-item .icon, #nntn-sidebar .nav-group-head .icon { width:18px; text-align:center; flex-shrink:0; }
+    #nntn-sidebar .nav-group-head .chev { margin-left:auto; transition: transform var(--nntn-transition-fast); opacity:0.6; font-size:11px; }
+    #nntn-sidebar .nav-group.open .nav-group-head .chev { transform: rotate(90deg); }
+    #nntn-sidebar .nav-group-children { display:none; padding-left: var(--nntn-space-6); margin-top:2px; border-left: 1px solid #2e3135; margin-left:var(--nntn-space-4); }
+    #nntn-sidebar .nav-group.open .nav-group-children { display:block; }
+    #nntn-sidebar .nav-group-children a.nav-item { padding: 6px var(--nntn-space-3); font-size: 13px; }
 
     #nntn-topbar { grid-area: topbar; background: var(--nntn-color-surface); border-bottom: 1px solid var(--nntn-color-border); display:flex; align-items:center; justify-content:space-between; padding: 0 var(--nntn-space-6); }
     #nntn-topbar .breadcrumb { color: var(--nntn-color-text-subdued); font-size: var(--nntn-font-sm); }
@@ -75,24 +81,47 @@
   `;
   document.head.appendChild(style);
 
-  // Nav config
+  // Nav config — supports { children: [...] } for expandable groups
   const NAV = [
     { href: '/nntn/dashboard.html', icon: '🏠', label: 'Dashboard' },
     { section: 'Stock' },
-    { href: '/nntn/meat-stock/', icon: '🥩', label: 'Meat Stock' },
-    { href: '/nntn/hub-delivery.html', icon: '🚚', label: 'Delivery' },
-    { href: '/nntn/po-receive.html', icon: '📥', label: 'PO Receive' },
-    { href: '/nntn/stock-dispense.html', icon: '📤', label: 'Stock Dispense' },
+    {
+      icon: '🥩', label: 'Meat Stock', key: 'meat-stock', children: [
+        { href: '/nntn/meat-stock/#receive', label: 'รับเนื้อสด' },
+        { href: '/nntn/meat-stock/#cook', label: 'ปิดหม้อ' },
+        { href: '/nntn/meat-stock/#repack', label: 'แปรรูป' },
+        { href: '/nntn/meat-stock/', label: 'ทั้งหมด' }
+      ]
+    },
+    {
+      icon: '🚚', label: 'Delivery', key: 'delivery', children: [
+        { href: '/nntn/hub-delivery.html', label: 'ออกใบนำส่ง' },
+        { href: '/nntn/po-receive.html', label: 'PO Receive' },
+        { href: '/nntn/stock-dispense.html', label: 'Stock Dispense' }
+      ]
+    },
     { href: '/nntn/production-history.html', icon: '♻️', label: 'Production History' },
     { section: 'Cookingbook' },
-    { href: '/nntn/cookingbook/menu-bom.html', icon: '📖', label: 'Menu BOM' },
-    { href: '/nntn/production-log-form.html', icon: '📝', label: 'Production Log' },
+    {
+      icon: '📖', label: 'Recipes', key: 'cookingbook', children: [
+        { href: '/nntn/cookingbook/menu-bom.html', label: 'Menu BOM' },
+        { href: '/nntn/production-log-form.html', label: 'Production Log' }
+      ]
+    },
     { section: 'Admin' },
-    { href: '/nntn/admin-items.html', icon: '🏷️', label: 'Items' },
-    { href: '/nntn/admin-bom.html', icon: '🧪', label: 'BOM Admin' },
+    {
+      icon: '🏷️', label: 'Items & BOM', key: 'admin', children: [
+        { href: '/nntn/admin-items.html', label: 'Items' },
+        { href: '/nntn/admin-bom.html', label: 'BOM Admin' }
+      ]
+    },
     { section: 'Reports' },
     { href: '/nntn/data-pipeline.html', icon: '📊', label: 'Data Pipeline' }
   ];
+
+  const OPEN_KEY = 'nntn_nav_open';
+  let openGroups = {};
+  try { openGroups = JSON.parse(localStorage.getItem(OPEN_KEY) || '{}'); } catch (_) {}
 
   // Build layout
   document.body.innerHTML = '';
@@ -120,12 +149,29 @@
   `;
   document.body.appendChild(layout);
 
-  // Render nav items
+  // Render nav items (supports nested groups)
   const nav = document.getElementById('nntn-nav');
-  nav.innerHTML = NAV.map(n => {
-    if (n.section) return `<div class="nav-section">${n.section}</div>`;
-    return `<a class="nav-item" href="${n.href}" data-nav="${n.href}"><span class="icon">${n.icon}</span> ${n.label}</a>`;
-  }).join('');
+  function renderNav(activeHref) {
+    nav.innerHTML = NAV.map(n => {
+      if (n.section) return `<div class="nav-section">${n.section}</div>`;
+      if (n.children) {
+        const hasActive = n.children.some(c => c.href === activeHref);
+        const open = openGroups[n.key] || hasActive;
+        return `
+          <div class="nav-group ${open ? 'open' : ''}" data-group="${n.key}">
+            <div class="nav-group-head ${hasActive ? 'has-active' : ''}" data-toggle="${n.key}">
+              <span class="icon">${n.icon}</span> <span>${n.label}</span>
+              <span class="chev">▸</span>
+            </div>
+            <div class="nav-group-children">
+              ${n.children.map(c => `<a class="nav-item ${c.href === activeHref ? 'active' : ''}" href="${c.href}" data-nav="${c.href}">${c.label}</a>`).join('')}
+            </div>
+          </div>`;
+      }
+      return `<a class="nav-item ${n.href === activeHref ? 'active' : ''}" href="${n.href}" data-nav="${n.href}"><span class="icon">${n.icon}</span> ${n.label}</a>`;
+    }).join('');
+  }
+  renderNav('');
 
   // User
   document.getElementById('nntn-user').textContent = (localStorage.getItem('nntn_user') || 'user').slice(0, 20);
@@ -134,15 +180,24 @@
   const loader = document.getElementById('nntn-loader');
   const breadcrumb = document.getElementById('nntn-breadcrumb');
 
+  function findNav(href) {
+    for (const n of NAV) {
+      if (n.href === href) return { item: n, parent: null };
+      if (n.children) {
+        const c = n.children.find(x => x.href === href);
+        if (c) return { item: c, parent: n };
+      }
+    }
+    return { item: null, parent: null };
+  }
   function labelFromHref(href) {
-    const item = NAV.find(n => n.href === href);
-    return item ? item.label : href.replace(/^\/nntn\//, '').replace(/\.html$/, '');
+    const { item, parent } = findNav(href);
+    if (!item) return href.replace(/^\/nntn\//, '').replace(/\.html$/, '');
+    return parent ? `${parent.label} · ${item.label}` : item.label;
   }
 
   function setActive(href) {
-    document.querySelectorAll('#nntn-nav a.nav-item').forEach(a => {
-      a.classList.toggle('active', a.dataset.nav === href);
-    });
+    renderNav(href);
   }
 
   function updateBreadcrumb(href) {
@@ -170,8 +225,17 @@
     document.getElementById('nntn-sidebar').classList.remove('open');
   });
 
-  // Intercept nav clicks
+  // Intercept nav clicks (link OR group toggle)
   document.getElementById('nntn-nav').addEventListener('click', e => {
+    const toggle = e.target.closest('[data-toggle]');
+    if (toggle) {
+      const key = toggle.dataset.toggle;
+      const group = toggle.closest('.nav-group');
+      const isOpen = group.classList.toggle('open');
+      openGroups[key] = isOpen;
+      try { localStorage.setItem(OPEN_KEY, JSON.stringify(openGroups)); } catch (_) {}
+      return;
+    }
     const a = e.target.closest('a.nav-item');
     if (!a) return;
     e.preventDefault();
