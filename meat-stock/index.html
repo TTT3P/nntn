@@ -697,17 +697,10 @@ async function init() {
     'MT-011','MT-037','MT-018',                   // 75G บด/แม็กกี้/หมักนุ่ม
     'MT-039','MT-009'                             // 500g ลูกชิ้น/ลูกชิ้นเอ็น
   ]
-  const skuSel = document.getElementById('proc-sku-out')
-  const bySku = {}
-  items.forEach(i => { if (i.sku) bySku[i.sku] = i })
-  PROC_OUTPUT_SKUS.forEach(sku => {
-    const i = bySku[sku]
-    if (!i) return
-    const o = document.createElement('option')
-    o.value = i.id
-    o.textContent = `${i.sku} | ${i.name}`
-    skuSel.appendChild(o)
-  })
+  window._bySku = {}
+  items.forEach(i => { if (i.sku) window._bySku[i.sku] = i })
+  window._PROC_OUTPUT_SKUS = PROC_OUTPUT_SKUS
+  renderProcOutputDropdown(PROC_OUTPUT_SKUS)
 
   // Set today dates
   ;['recv-date','proc-date'].forEach(id => {
@@ -1785,11 +1778,67 @@ function updateRepackItemLabel() {
   }
 }
 
+// REPACK_MAP: main input SKU → allowed output SKUs (null = any output)
+// Source: NNTN guide 19/04/2026 (ไทน์ confirm)
+const REPACK_MAP = {
+  'MT-028': ['MT-040'],                    // สามชั้นตุ๋น → [75G]เนื้อตุ๋น
+  'MT-019': ['MT-018'],                    // เนื้อสดหมักนุ่ม → [75G]หมักนุ่ม
+  'SP-206': ['MT-043','MT-020'],           // พิคานย่าไทย (ดิบ) → 75G/100G
+  'SP-101': ['MT-008','MT-014'],           // พิคานย่าออส (ดิบ) → 75G/100G
+  'SP-036': ['MT-007'],                    // สันนอก (ดิบ) → [75G]แดดเดียว
+  'SP-037': ['MT-030','MT-031'],           // เนื้อสะโพกก้อน → กิวด้ง/เนื้อคุ้น
+  'SP-087': ['MT-037'],                    // เสือร้องไห้ออส[500g] → [75G]แม็กกี้
+  'SP-020': ['MT-039'],                    // ลูกชิ้นเนื้อ → [500g]ลูกชิ้นเนื้อ
+  'SP-031': ['MT-009'],                    // ลูกชิ้นเอ็นเนื้อ → [500g]ลูกชิ้นเอ็นเนื้อ
+  'SP-038': ['MT-011']                     // เนื้อบด → [75G]เนื้อบด
+}
+
+function renderProcOutputDropdown(skuList) {
+  const skuSel = document.getElementById('proc-sku-out')
+  if (!skuSel) return
+  const currentVal = skuSel.value
+  skuSel.innerHTML = '<option value="">— เลือก —</option>'
+  skuList.forEach(sku => {
+    const i = window._bySku?.[sku]
+    if (!i) return
+    const o = document.createElement('option')
+    o.value = i.id
+    o.textContent = `${i.sku} | ${i.name}`
+    if (i.id === currentVal) o.selected = true
+    skuSel.appendChild(o)
+  })
+}
+
+function updateProcOutputFilter() {
+  // Collect selected main input SKUs (ignore trim — trim = additive)
+  const inputSelects = document.querySelectorAll('[id^="proc-item-sel-"]')
+  const selectedMainSkus = new Set()
+  inputSelects.forEach(sel => {
+    const itemName = sel.value
+    if (!itemName) return
+    const item = Object.values(window._bySku || {}).find(i => i.name === itemName)
+    if (item && REPACK_MAP[item.sku]) {
+      selectedMainSkus.add(item.sku)
+    }
+  })
+  if (selectedMainSkus.size === 0) {
+    // No main input selected → show full list
+    renderProcOutputDropdown(window._PROC_OUTPUT_SKUS || [])
+    return
+  }
+  // Union of allowed outputs
+  const allowed = new Set()
+  selectedMainSkus.forEach(sku => {
+    (REPACK_MAP[sku] || []).forEach(o => allowed.add(o))
+  })
+  renderProcOutputDropdown([...allowed])
+}
+
 function addProcInput() {
   procInputCount++
   const n = procInputCount
   // Curated list: SKU หลัก + เศษเนื้อ (category=meat_trim)
-  const MAIN_PROC_SKUS = ['MT-028','MT-019','SP-206','SP-101','SP-036','SP-037','SP-087','SP-020','SP-031']
+  const MAIN_PROC_SKUS = ['MT-028','MT-019','SP-206','SP-101','SP-036','SP-037','SP-087','SP-020','SP-031','SP-038']
   const mainInStock = [...new Set(
     cwStock.filter(r => MAIN_PROC_SKUS.includes(r.item_sku)).map(r => r.item_name).filter(Boolean)
   )].sort()
@@ -1806,11 +1855,11 @@ function addProcInput() {
   div.style.marginBottom = '10px'
   div.innerHTML = `
     <div style="background:#f9f9f9;border-radius:8px;padding:10px;position:relative" id="proc-in-card-${n}">
-      <button class="btn-danger" onclick="document.getElementById('proc-in-card-${n}').remove();updateProcSum();updateRepackItemLabel()"
+      <button class="btn-danger" onclick="document.getElementById('proc-in-card-${n}').remove();updateProcSum();updateRepackItemLabel();updateProcOutputFilter()"
               style="position:absolute;top:8px;right:8px">✕</button>
       <div class="mb">
         <label>ประเภทเนื้อ</label>
-        <select id="proc-item-sel-${n}" onchange="loadProcBagChips(${n})">
+        <select id="proc-item-sel-${n}" onchange="loadProcBagChips(${n});updateProcOutputFilter()">
           <option value="">— เลือก item —</option>${itemOpts}
         </select>
       </div>
