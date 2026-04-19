@@ -937,17 +937,10 @@ init();
 </nav>
 <script>
 if(typeof lucide !== 'undefined') lucide.createIcons();
-(function(){
-  var b = document.getElementById('nntn-nav-badge');
-  if (!b) return;
-  fetch('https://emjqulzikpxorvpaaiww.supabase.co/rest/v1/items?select=id&current_status=eq.OUT',{
-    headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M'}
-  }).then(r=>r.json()).then(d=>{
-    if(d&&d.length>0){b.textContent=d.length>99?'99+':d.length;b.style.display='flex';}
-  }).catch(()=>{});
-})();
 </script>
 
 <script src="/nntn/shared/nntn-shell.js"></script>
+
+<script src="shared/nntn-nav-badge.js"></script>
 </body>
 </html>
