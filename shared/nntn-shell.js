@@ -83,9 +83,11 @@
 
   // Nav config — flat (no sub-categories until we have real aggregate pages)
   const NAV = [
-    { href: '/nntn/dashboard.html', icon: '🏠', label: 'Dashboard' },
+    { href: '/nntn/hub.html', icon: '🏠', label: 'Hub' },
+    { href: '/nntn/goal-dashboard.html', icon: '🎯', label: 'Goal Dashboard' },
     { section: 'Stock' },
     { href: '/nntn/meat-stock/', icon: '🥩', label: 'Meat Stock' },
+    { href: '/nntn/dashboard.html', icon: '🧂', label: 'Non-meat Stock' },
     { href: '/nntn/hub-delivery.html', icon: '🚚', label: 'ออกใบนำส่ง' },
     { href: '/nntn/po-receive.html', icon: '📥', label: 'PO Receive' },
     { href: '/nntn/stock-dispense.html', icon: '📤', label: 'Stock Dispense' },
