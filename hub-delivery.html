@@ -1016,7 +1016,7 @@ function renderDraftCard(d) {
       <div class="hist-item-name">🥩 ${escHtml(m.name || 'เนื้อตุ๋น')}</div>
       <div class="hist-item-qty">${((m.weight_g||0)/1000).toFixed(3)} <span style="font-size:0.75em;color:#888">กก.</span></div>
       <div class="hist-item-unit" style="font-size:.72rem;color:#aaa">${escHtml(m.lot_date||'')}</div>
-      <span style="font-size:0.72rem;color:#E65100;padding:4px 8px;background:#FFF3E0;border-radius:6px">เนื้อตุ๋น</span>
+      <button class="hist-del-btn" onclick="deleteDraftMeat('${d.id}','${m.bag_id}')" title="ลบถุงนี้ออกจาก Draft">🗑️</button>
     </div>`).join('')
   const nmRows = d.nm_lines.map((l, li) => renderDraftNmRow(d.id, li, l)).join('')
   return `
@@ -1035,6 +1035,23 @@ function renderDraftCard(d) {
     </div>
     <div class="hist-bill-body" id="dc-body-${d.id}" style="display:none">
       ${meatRows}
+      <button class="hist-add-row-btn" onclick="showAddDraftMeat('${d.id}')">+ เพิ่มถุงเนื้อ</button>
+      <div class="hist-add-form" id="dmadd-form-${d.id}">
+        <div class="add-form-row">
+          <select id="dmadd-item-${d.id}" onchange="renderDraftMeatBagPicker('${d.id}')">
+            <option value="">— เลือก SKU เนื้อ —</option>
+            ${Array.from(new Set(cwBags.map(b => b.item_id))).map(iid => {
+              const it = (window._itemsById||{})[iid] || {}
+              return `<option value="${iid}">${escHtml(it.sku||'')} | ${escHtml(it.name||iid)}</option>`
+            }).join('')}
+          </select>
+        </div>
+        <div id="dmadd-bags-${d.id}" style="margin:8px 0;max-height:200px;overflow-y:auto"></div>
+        <div class="add-form-actions" style="display:flex;gap:8px">
+          <button class="hist-save-btn" style="flex:2" onclick="saveNewDraftMeat('${d.id}')">บันทึก</button>
+          <button class="hist-cancel-btn" style="flex:1" onclick="cancelAddDraftMeat('${d.id}')">ยกเลิก</button>
+        </div>
+      </div>
       <div id="dc-nm-${d.id}">${nmRows}</div>
       <button class="hist-add-row-btn" onclick="showAddDraftNm('${d.id}')">+ เพิ่ม Non-meat</button>
       <div class="hist-add-form" id="dadd-form-${d.id}">
@@ -1154,6 +1171,84 @@ async function deleteDraftNm(id, li) {
     refreshDraftCard(id)
     _hdToast('🗑 ลบรายการแล้ว')
   } catch(e) { _hdToast('❌ ลบไม่สำเร็จ: ' + e.message, 'error') }
+}
+
+function showAddDraftMeat(id) {
+  document.getElementById(`dmadd-form-${id}`).style.display = 'block'
+  document.getElementById(`dmadd-item-${id}`).focus()
+}
+
+function cancelAddDraftMeat(id) {
+  const form = document.getElementById(`dmadd-form-${id}`)
+  form.style.display = 'none'
+  document.getElementById(`dmadd-item-${id}`).value = ''
+  document.getElementById(`dmadd-bags-${id}`).innerHTML = ''
+}
+
+function renderDraftMeatBagPicker(id) {
+  const itemId = document.getElementById(`dmadd-item-${id}`).value
+  const box = document.getElementById(`dmadd-bags-${id}`)
+  if (!itemId) { box.innerHTML = ''; return }
+  const draft = window._draftCache[id]
+  const usedInThis = new Set((draft?.meat_lines||[]).map(m => String(m.bag_id)))
+  const avail = cwBags.filter(b => b.item_id === itemId && !usedInThis.has(String(b.id)))
+  if (avail.length === 0) { box.innerHTML = '<div style="color:#999;padding:8px">ไม่มีถุงคงเหลือให้เลือก</div>'; return }
+  box.innerHTML = avail.map(b => `
+    <label style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid #eee;cursor:pointer">
+      <input type="checkbox" class="dmadd-bag-cb" data-bag="${b.id}">
+      <span style="flex:1">ถุง #${b.id}</span>
+      <span style="min-width:70px;text-align:right">${((b.weight_g||0)/1000).toFixed(3)} กก.</span>
+      <span style="font-size:.72rem;color:#888">${escHtml(b.lot_date||'')}</span>
+      <span style="font-size:.7rem;color:#aaa">${escHtml(b.warehouse||'')}</span>
+    </label>`).join('')
+}
+
+async function saveNewDraftMeat(id) {
+  const itemSel = document.getElementById(`dmadd-item-${id}`)
+  const itemId = itemSel.value
+  if (!itemId) { alert('กรุณาเลือก SKU เนื้อ'); return }
+  const checks = document.querySelectorAll(`#dmadd-bags-${id} .dmadd-bag-cb:checked`)
+  if (checks.length === 0) { alert('กรุณาเลือกถุงอย่างน้อย 1 ถุง'); return }
+  const draft = window._draftCache[id]
+  if (!draft) return
+  const item = (window._itemsById||{})[itemId] || {}
+  const newBags = []
+  checks.forEach(cb => {
+    const bagId = cb.dataset.bag
+    const b = bagCache[bagId]
+    if (!b) return
+    newBags.push({ item_id: itemId, bag_id: b.id, name: item.name || '', weight_g: b.weight_g, lot_date: b.lot_date })
+  })
+  const newLines = [...(draft.meat_lines||[]), ...newBags]
+  try {
+    await persistDraftMeatLines(id, newLines)
+    draft.meat_lines = newLines
+    refreshDraftCard(id)
+    _hdToast(`✅ เพิ่ม ${newBags.length} ถุง`)
+  } catch(e) { _hdToast('❌ บันทึกไม่สำเร็จ: ' + e.message, 'error') }
+}
+
+async function deleteDraftMeat(id, bagId) {
+  const draft = window._draftCache[id]
+  if (!draft) return
+  const line = (draft.meat_lines||[]).find(m => String(m.bag_id) === String(bagId))
+  if (!confirm(`ลบถุง #${bagId} (${line?.name||'?'} ${((line?.weight_g||0)/1000).toFixed(3)} กก.) ออกจาก Draft?`)) return
+  const newLines = (draft.meat_lines||[]).filter(m => String(m.bag_id) !== String(bagId))
+  try {
+    await persistDraftMeatLines(id, newLines)
+    draft.meat_lines = newLines
+    refreshDraftCard(id)
+    _hdToast('🗑 ลบถุงแล้ว')
+  } catch(e) { _hdToast('❌ ลบไม่สำเร็จ: ' + e.message, 'error') }
+}
+
+async function persistDraftMeatLines(draftId, newLines) {
+  const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+  const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock', 'Content-Type': 'application/json' }
+  const res = await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${draftId}`, {
+    method: 'PATCH', headers: DH, body: JSON.stringify({ meat_lines: newLines })
+  })
+  if (!res.ok) throw new Error(await res.text())
 }
 
 async function persistDraftNmLines(draftId, newLines) {
