@@ -1894,7 +1894,7 @@ function loadProcBagChips(n) {
       <div class="lot-chips" style="margin:0">
         ${lotBags.map(r => {
           const kg = ((r.weight_g||0)/1000).toFixed(3)
-          const cw = r.legacy_cw_row || '#'+r.id.substring(0,6)
+          const cw = r.legacy_cw_row || '#'+String(r.id).substring(0,6)
           return `<div class="lot-chip" id="pcbag-${n}-${r.id}"
                        data-id="${r.id}" data-kg="${(r.weight_g||0)/1000}"
                        data-name="${r.item_name||''}" data-item-id="${r.item_id||''}"
@@ -2555,7 +2555,7 @@ function openAdjModal(bag) {
   _adjDir = 'loss'
   _adjType = 'weight'
   const nm = bag.items?.name || bag.item_name || '?'
-  const cw = bag.legacy_cw_row || '#'+bag.id.substring(0,6)
+  const cw = bag.legacy_cw_row || '#'+String(bag.id).substring(0,6)
   const lot = bag.lot_date ? fmtDate(bag.lot_date.split('T')[0]) : '?'
   const wt = ((parseFloat(bag.weight_g)||0)/1000).toFixed(3)
   document.getElementById('adj-bag-info').textContent = `${nm} | ${cw} | lot ${lot} | ${wt} กก.`
