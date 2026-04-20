@@ -291,6 +291,27 @@ body {
   color: var(--muted);
 }
 
+/* ─── PROJECTS TABLE ─── */
+.proj-table { width:100%; border-collapse:collapse; font-size:13px; }
+.proj-table th { text-align:left; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); padding:0 10px 8px 0; border-bottom:1px solid var(--border); }
+.proj-table td { padding:8px 10px 8px 0; border-bottom:1px solid var(--border); vertical-align:top; }
+.proj-table tr:last-child td { border-bottom:0; }
+.proj-table tr.stuck td { background:#fff3f3; }
+.prio-chip { display:inline-block; min-width:22px; text-align:center; font-size:10px; font-weight:900; padding:2px 6px; border-radius:4px; background:#eee; color:#555; }
+.prio-chip.hi { background:var(--accent); color:#fff; }
+.status-chip { display:inline-block; font-size:9px; padding:2px 6px; border-radius:3px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+.status-active  { background:#e8f5e9; color:#2e7d32; }
+.status-blocked { background:#fce8e8; color:#8B0000; }
+.stuck-flag { display:inline-block; margin-left:6px; background:#d32f2f; color:#fff; font-size:9px; padding:1px 5px; border-radius:3px; font-weight:700; }
+
+/* ─── BLOCKED SPOTLIGHT ─── */
+.blocked-section { border:2px solid var(--warn); background:#fff7f7; border-radius:8px; padding:12px; }
+.blocked-item { padding:6px 0; border-bottom:1px dashed #f5c6c6; }
+.blocked-item:last-child { border-bottom:0; }
+.blocked-item strong { display:block; font-size:13px; color:var(--warn); }
+.blocked-item span { font-size:11px; color:var(--muted); }
+.empty-state { font-size:12px; color:var(--muted); padding:8px 0; font-style:italic; }
+
 /* ─── FOOTER ─── */
 footer {
   text-align: center;
@@ -342,35 +363,53 @@ footer {
 <!-- MAIN -->
 <div class="main">
 
-  <!-- TODAY FOCUS (full width) -->
+  <!-- TODAY FOCUS (live: top 3 active by priority) -->
   <div class="section-full">
     <div class="section-title">
       Today's Focus
-      <span class="count">2 items</span>
+      <span class="count" id="focus-badge">…</span>
     </div>
-    <ul class="focus-list">
-      <li class="focus-item">
-        <div class="focus-num hot">1</div>
-        <div class="focus-body">
-          <strong>CookingBook RCP-002 + RCP-011 batch_size_g fix</strong>
-          <span>COO → CookingBook — ตุ๊กตา yield ยังไม่ใส่ค่าจริง</span>
-        </div>
-      </li>
-      <li class="focus-item">
-        <div class="focus-num hot">2</div>
-        <div class="focus-body">
-          <strong>Tier 2 ยกเครื่องใหญ่ (T2.1–T2.4)</strong>
-          <span>COO → ไทน์ — month horizon</span>
-        </div>
-      </li>
+    <ul class="focus-list" id="focus-list">
+      <li class="empty-state">กำลังโหลด…</li>
     </ul>
   </div>
 
-  <!-- ACTIVE COMMITMENTS -->
+  <!-- BLOCKED SPOTLIGHT -->
+  <div class="section-full" id="blocked-wrap" style="display:none">
+    <div class="section-title">
+      ⚠️ Blocked
+      <span class="count" id="blocked-badge">0</span>
+    </div>
+    <div class="blocked-section" id="blocked-list"></div>
+  </div>
+
+  <!-- ACTIVE PROJECTS TABLE (all active + blocked, stuck-flagged) -->
+  <div class="section-full">
+    <div class="section-title">
+      Active Projects
+      <span class="count" id="proj-badge">…</span>
+    </div>
+    <table class="proj-table">
+      <thead>
+        <tr>
+          <th>Prio</th>
+          <th>Name</th>
+          <th>Room</th>
+          <th>Status</th>
+          <th>Next / Blocker</th>
+        </tr>
+      </thead>
+      <tbody id="proj-tbody">
+        <tr><td colspan="5" class="empty-state">กำลังโหลด…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ACTIVE COMMITMENTS (live) -->
   <div class="section-full">
     <div class="section-title">
       Active Commitments
-      <span class="count" id="commit-badge">2</span>
+      <span class="count" id="commit-badge">…</span>
     </div>
     <table class="commit-table">
       <thead>
@@ -380,17 +419,8 @@ footer {
           <th>Due</th>
         </tr>
       </thead>
-      <tbody>
-        <tr class="commit-row">
-          <td><span class="who-badge who-cb">COO → CB</span></td>
-          <td>RCP-002 + RCP-011 batch_size_g fix</td>
-          <td><span class="due-chip">—</span></td>
-        </tr>
-        <tr class="commit-row">
-          <td><span class="who-badge who-coo">COO → ไทน์</span></td>
-          <td>Tier 2 ยกเครื่องใหญ่ (T2.1–T2.4)</td>
-          <td><span class="due-chip">เดือนนี้</span></td>
-        </tr>
+      <tbody id="commit-tbody">
+        <tr><td colspan="3" class="empty-state">กำลังโหลด…</td></tr>
       </tbody>
     </table>
   </div>
@@ -459,15 +489,123 @@ footer {
 
 </div>
 
-<footer>NNTN Goal Dashboard v1.0 — 17/04/2026 · อัปเดต commitments ใน NNTN-Vault/commitments.md</footer>
+<footer>NNTN Goal Dashboard v2.0 — 20/04/2026 · live data · ใช้ Supabase SELECT (COO INSERT ผ่าน 7-step ปิดงาน)</footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // Show today's date
+  // Today date
   const d = new Date();
-  const days = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+  const days = ['อา','จ','อ','พ','พฤ','ศ','ส'];
   const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   document.getElementById('today-date').textContent =
     `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
+
+  // Supabase client (auth.js monkey-patched to inject user JWT on real server)
+  const sb = (window.NNTN_SB_URL && window.NNTN_SB_ANON)
+    ? supabase.createClient(window.NNTN_SB_URL, window.NNTN_SB_ANON)
+    : null;
+
+  const esc = s => (s ?? '—').toString().replace(/[<>&"]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;' }[c]));
+  const roomColor = r => ({ stock:'who-tyne', cookingbook:'who-cb', platform:'who-coo', coo:'who-coo', hr:'who-wm' }[r] || 'who-tyne');
+  const daysBetween = (a,b) => Math.floor((new Date(b) - new Date(a)) / 86400000);
+  const todayStr = new Date().toISOString().slice(0,10);
+
+  async function loadData() {
+    if (!sb) {
+      document.getElementById('focus-list').innerHTML = '<li class="empty-state">⚠️ ไม่มี Supabase config (file:// mode)</li>';
+      document.getElementById('proj-tbody').innerHTML = '<tr><td colspan="5" class="empty-state">⚠️ ใช้ผ่าน GitHub Pages เท่านั้น</td></tr>';
+      document.getElementById('commit-tbody').innerHTML = '<tr><td colspan="3" class="empty-state">⚠️ ใช้ผ่าน GitHub Pages เท่านั้น</td></tr>';
+      return;
+    }
+    try {
+      const [projRes, commitRes] = await Promise.all([
+        sb.from('projects').select('*, project_updates(session_date)').order('priority', { ascending: false }),
+        sb.from('commitments').select('*').eq('status','active').order('due_date', { ascending: true, nullsFirst: false })
+      ]);
+      if (projRes.error) throw projRes.error;
+      if (commitRes.error) throw commitRes.error;
+
+      const projects = projRes.data || [];
+      const commits = commitRes.data || [];
+
+      // Compute stuck per project (active + last update > 3d or none)
+      projects.forEach(p => {
+        const dates = (p.project_updates || []).map(u => u.session_date).sort();
+        const lastUpd = dates[dates.length - 1];
+        p._stuck = p.status === 'active' && (!lastUpd || daysBetween(lastUpd, todayStr) > 3);
+      });
+
+      // Widget 1 — Today's Focus (top 3 active by priority)
+      const focus = projects.filter(p => p.status === 'active').slice(0, 3);
+      document.getElementById('focus-badge').textContent = `${focus.length} items`;
+      const focusList = document.getElementById('focus-list');
+      focusList.innerHTML = focus.length === 0
+        ? '<li class="empty-state">ไม่มีงาน active</li>'
+        : focus.map((p, i) => `
+            <li class="focus-item">
+              <div class="focus-num hot">${i+1}</div>
+              <div class="focus-body">
+                <strong>${esc(p.name)}${p._stuck ? '<span class="stuck-flag">STUCK</span>' : ''}</strong>
+                <span>${esc(p.room)} — ${esc(p.next_action)}</span>
+              </div>
+            </li>`).join('');
+
+      // Widget 3 — Blocked spotlight
+      const blocked = projects.filter(p => p.status === 'blocked');
+      const blockedWrap = document.getElementById('blocked-wrap');
+      if (blocked.length > 0) {
+        blockedWrap.style.display = '';
+        document.getElementById('blocked-badge').textContent = blocked.length;
+        document.getElementById('blocked-list').innerHTML = blocked.map(p => `
+          <div class="blocked-item">
+            <strong>${esc(p.name)}</strong>
+            <span>${esc(p.room)} · blocker: ${esc(p.blocker)}</span>
+          </div>`).join('');
+      }
+
+      // Widget 2 — Active Projects table (active + blocked)
+      const rows = projects.filter(p => ['active','blocked'].includes(p.status));
+      document.getElementById('proj-badge').textContent = rows.length;
+      const tbody = document.getElementById('proj-tbody');
+      tbody.innerHTML = rows.length === 0
+        ? '<tr><td colspan="5" class="empty-state">ไม่มีงาน active</td></tr>'
+        : rows.map(p => `
+            <tr class="${p._stuck ? 'stuck' : ''}">
+              <td><span class="prio-chip ${p.priority >= 7 ? 'hi' : ''}">${p.priority ?? '—'}</span></td>
+              <td><strong>${esc(p.name)}</strong>${p._stuck ? '<span class="stuck-flag">STUCK</span>' : ''}</td>
+              <td><span class="who-badge ${roomColor(p.room)}">${esc(p.room)}</span></td>
+              <td><span class="status-chip status-${p.status}">${p.status}</span></td>
+              <td>${esc(p.status === 'blocked' ? p.blocker : p.next_action)}</td>
+            </tr>`).join('');
+
+      // Widget 6 — Commitments
+      document.getElementById('commit-badge').textContent = commits.length;
+      const ctbody = document.getElementById('commit-tbody');
+      ctbody.innerHTML = commits.length === 0
+        ? '<tr><td colspan="3" class="empty-state">ไม่มี commitment active</td></tr>'
+        : commits.map(c => {
+            const due = c.due_date || c.due_text || '—';
+            const isDueToday = c.due_date === todayStr;
+            return `
+              <tr class="commit-row">
+                <td><span class="who-badge ${roomColor(c.to_party.toLowerCase())}">${esc(c.from_party)} → ${esc(c.to_party)}</span></td>
+                <td>${esc(c.what)}</td>
+                <td><span class="due-chip ${isDueToday ? 'due-today' : ''}">${esc(due)}</span></td>
+              </tr>`;
+          }).join('');
+
+      // Status bar live counts
+      document.getElementById('goal-count').textContent = rows.length;
+      const dueToday = commits.filter(c => c.due_date === todayStr).length;
+      document.getElementById('due-today-count').textContent = dueToday;
+    } catch (e) {
+      console.error('[goal-dashboard]', e);
+      document.getElementById('focus-list').innerHTML = `<li class="empty-state">❌ โหลดไม่สำเร็จ: ${esc(e.message)}</li>`;
+      document.getElementById('proj-tbody').innerHTML = `<tr><td colspan="5" class="empty-state">❌ โหลดไม่สำเร็จ</td></tr>`;
+      document.getElementById('commit-tbody').innerHTML = `<tr><td colspan="3" class="empty-state">❌ โหลดไม่สำเร็จ</td></tr>`;
+    }
+  }
+  loadData();
 </script>
 </body>
 </html>
