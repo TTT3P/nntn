@@ -185,27 +185,43 @@
   (function patchFetch() {
     if (!window.fetch || window.fetch.__nntnPatched) return;
     var orig = window.fetch.bind(window);
+    function applyAuthHeader(init, tok) {
+      var h = init.headers;
+      if (h instanceof Headers) {
+        h.set('Authorization', 'Bearer ' + tok);
+      } else if (h && typeof h === 'object') {
+        h['Authorization'] = 'Bearer ' + tok;
+      } else {
+        init.headers = { 'Authorization': 'Bearer ' + tok, 'apikey': KEY };
+      }
+    }
     var wrapped = function patchedFetch(input, init) {
+      var isRest = false;
       try {
         var url = (typeof input === 'string') ? input : (input && input.url) || '';
+        isRest = (url.indexOf(SB + '/rest/v1') === 0 || url.indexOf(SB + '/auth/v1') === 0);
         if (url.indexOf(SB + '/rest/v1') === 0) {
           init = init || {};
-          var h = init.headers;
           var tok = window.__nntnCurrentToken || localStorage.getItem(TOKEN_KEY);
-          if (tok) {
-            if (h instanceof Headers) {
-              h.set('Authorization', 'Bearer ' + tok);
-            } else if (h && typeof h === 'object') {
-              h['Authorization'] = 'Bearer ' + tok;
-            } else {
-              init.headers = { 'Authorization': 'Bearer ' + tok, 'apikey': KEY };
-            }
-          }
+          if (tok) applyAuthHeader(init, tok);
         }
       } catch (e) {
         console.warn('[auth] fetch patch error:', e);
       }
-      return orig(input, init);
+      var p = orig(input, init);
+      if (!isRest || !init || init.__nntnAuthRetried) return p;
+      // Auto refresh + retry once on 401 (JWT expired)
+      return p.then(function (res) {
+        if (res.status !== 401) return res;
+        return refreshSession().then(function (ok) {
+          if (!ok) return res;
+          var newTok = window.__nntnCurrentToken || localStorage.getItem(TOKEN_KEY);
+          if (!newTok) return res;
+          init.__nntnAuthRetried = true;
+          applyAuthHeader(init, newTok);
+          return orig(input, init);
+        });
+      });
     };
     wrapped.__nntnPatched = true;
     window.fetch = wrapped;
