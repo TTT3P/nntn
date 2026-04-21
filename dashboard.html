@@ -407,19 +407,19 @@ async function loadStock() {
   if (!csErr && csData && csData.length > 0) {
     data = csData.map(r => ({ ...r, last_counted: r.counted_at, last_counted_by: r.counted_by }));
   } else {
-    // Fallback: build from public.items + public.stock_counts
-    const [{ data: items }, { data: counts }] = await Promise.all([
+    // Fallback: build from public.items + v_stock_unified (SoT)
+    const [{ data: items }, { data: unified }] = await Promise.all([
       sb.from('items').select('id,sku,name,category,unit,par_level').eq('is_active', true),
-      sb.from('stock_counts').select('item_id,qty,counted_at,counted_by').order('counted_at', { ascending: false })
+      sb.from('v_stock_unified').select('item_id,qty_on_hand,last_movement_at')
     ]);
 
     if (items && items.length > 0) {
-      const latestMap = {};
-      (counts || []).forEach(r => { if (!latestMap[r.item_id]) latestMap[r.item_id] = r; });
+      const qtyMap = {};
+      (unified || []).forEach(r => { qtyMap[r.item_id] = r; });
 
       data = items.map(item => {
-        const c = latestMap[item.id];
-        const qty = c ? (c.qty ?? 0) : 0;
+        const c = qtyMap[item.id];
+        const qty = c ? (c.qty_on_hand ?? 0) : 0;
         const par = item.par_level || 1;
         let status = 'OK';
         if (qty === null || qty === 0) status = 'OUT';
@@ -432,6 +432,7 @@ async function loadStock() {
           unit:           item.unit,
           par_level:      item.par_level,
           current_qty:    qty,
+          last_counted:   c?.last_movement_at,
           status,
           last_counted:    c?.counted_at || null,
           last_counted_by: c?.counted_by || null,

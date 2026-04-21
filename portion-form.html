@@ -239,15 +239,15 @@ async function loadStockAndBuild() {
   if (!items) return buildGrid({});
 
   const ids = items.map(i => i.id);
-  const { data: counts } = await sb.from('stock_counts').select('item_id,qty,counted_at')
-    .in('item_id', ids).order('counted_at', { ascending: false });
+  const { data: unified } = await sb.from('v_stock_unified').select('item_id,qty_on_hand')
+    .in('item_id', ids);
 
-  const latestMap = {};
-  (counts || []).forEach(r => { if (!latestMap[r.item_id]) latestMap[r.item_id] = r; });
+  const qtyMap = {};
+  (unified || []).forEach(r => { qtyMap[r.item_id] = r; });
 
   items.forEach(item => {
-    const c = latestMap[item.id];
-    stockMap[item.sku] = c ? c.qty : null;
+    const c = qtyMap[item.id];
+    stockMap[item.sku] = c ? c.qty_on_hand : null;
   });
 
   buildGrid();

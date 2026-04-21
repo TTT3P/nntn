@@ -340,20 +340,20 @@ const sbStock = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema
     document.getElementById('date-bar').textContent = `อัปเดตจาก Supabase · ${new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
   } else {
     const { data: items }  = await sb.from('items').select('id,par_level').eq('is_active', true);
-    const { data: counts } = await sb.from('stock_counts').select('item_id,qty,counted_at').order('counted_at', { ascending: false });
-    if (!items || !counts) { document.getElementById('date-bar').textContent = 'ไม่พบข้อมูลสต๊อก'; return; }
-    const latestMap = {};
-    counts.forEach(r => { if (!latestMap[r.item_id]) latestMap[r.item_id] = r; });
+    const { data: unified } = await sb.from('v_stock_unified').select('item_id,qty_on_hand,last_movement_at');
+    if (!items || !unified) { document.getElementById('date-bar').textContent = 'ไม่พบข้อมูลสต๊อก'; return; }
+    const qtyMap = {};
+    unified.forEach(r => { qtyMap[r.item_id] = r; });
     let out = 0, order = 0, low = 0, ok = 0, lastDate = null;
     items.forEach(item => {
-      const c = latestMap[item.id];
-      const qty = c ? c.qty : null;
+      const c = qtyMap[item.id];
+      const qty = c ? c.qty_on_hand : null;
       const par = item.par_level || 1;
       if (qty === null || qty === 0) out++;
       else if (qty < par) order++;
       else if (qty < par * 1.5) low++;
       else ok++;
-      if (c?.counted_at) { const d = new Date(c.counted_at); if (!lastDate || d > lastDate) lastDate = d; }
+      if (c?.last_movement_at) { const d = new Date(c.last_movement_at); if (!lastDate || d > lastDate) lastDate = d; }
     });
     document.getElementById('s-out').textContent   = out;
     document.getElementById('s-order').textContent = order;
