@@ -668,13 +668,13 @@ function switchTab(name) {
   if(name==='stock')   loadStock()
   if(name==='produce') loadKanban()
   if(name==='process') {
-    // Always refresh stock + re-render 1st input card · prevents stale dropdown
+    // Always refresh stock + initialize kitchen mode UI (onload doesn't auto-fire change event)
     loadStock().then(() => {
+      onProcTypeChange()
       const procInputs = document.getElementById('proc-inputs')
       if (procInputs && procInputs.children.length === 0) {
         addProcInput()
       } else {
-        // Re-render existing input cards by checking if their dropdowns are empty
         procInputs?.querySelectorAll('select[id^="proc-item-sel-"]').forEach(sel => {
           if (sel.options.length <= 1) {
             procInputs.innerHTML = ''
