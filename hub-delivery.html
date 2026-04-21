@@ -2179,9 +2179,47 @@ async function submitDelivery() {
   if (!bill) { alert('กรุณาระบุเลขที่ใบนำส่ง'); return }
   if (!date) { alert('กรุณาเลือกวันที่ส่ง'); return }
 
-  // Collect meat bags
-  const allBagIds = []
-  Object.values(meatSel).forEach(s => s.selectedBags.forEach(id => allBagIds.push(id)))
+  // Collect meat bags — if linked to a draft, refetch draft from DB as source of truth
+  //   (prevents stale form vs draft desync when user edits draft in another tab)
+  let allBagIds = []
+  let nmOverride = null
+  if (window._pendingDraftId) {
+    try {
+      const dTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+      const dH = { ...H, 'Authorization': 'Bearer ' + dTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+      const dRes = await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${window._pendingDraftId}&select=meat_lines,nm_lines`, { headers: dH })
+      if (!dRes.ok) throw new Error('fetch draft failed')
+      const dArr = await dRes.json()
+      const fresh = dArr?.[0]
+      if (!fresh) throw new Error('draft not found — may have been deleted')
+      const draftBagIds = (fresh.meat_lines || []).map(m => String(m.bag_id))
+      const formBagIds  = []
+      Object.values(meatSel).forEach(s => s.selectedBags.forEach(id => formBagIds.push(String(id))))
+      const draftSet = new Set(draftBagIds)
+      const formSet  = new Set(formBagIds)
+      const onlyForm  = formBagIds.filter(id => !draftSet.has(id))
+      const onlyDraft = draftBagIds.filter(id => !formSet.has(id))
+      if (onlyForm.length > 0 || onlyDraft.length > 0) {
+        const lines = []
+        if (onlyForm.length > 0)  lines.push(`• ในฟอร์มแต่ไม่อยู่ใน Draft (${onlyForm.length}): ${onlyForm.slice(0,10).join(', ')}${onlyForm.length>10?'…':''}`)
+        if (onlyDraft.length > 0) lines.push(`• ใน Draft แต่ไม่อยู่ในฟอร์ม (${onlyDraft.length}): ${onlyDraft.slice(0,10).join(', ')}${onlyDraft.length>10?'…':''}`)
+        const msg = `⚠️ Form กับ Draft ไม่ตรงกัน\n\n${lines.join('\n')}\n\n[ตกลง] = ใช้ Draft เป็นหลัก (ปลอดภัย · Draft คือสิ่งที่บันทึกไว้ล่าสุด)\n[ยกเลิก] = หยุด · ไปตรวจ Draft + Form เอง`
+        if (!confirm(msg)) return
+        // User chose draft → use draft as source + reload form to reflect
+        allBagIds = draftBagIds.map(Number)
+        nmOverride = fresh.nm_lines || null
+        _hdToast(`✅ ใช้ Draft เป็นหลัก · ${draftBagIds.length} ถุง`)
+      } else {
+        // in sync — use draft's bag order but verified equal
+        allBagIds = draftBagIds.map(Number)
+      }
+    } catch (e) {
+      alert('❌ ตรวจ Draft ไม่สำเร็จ: ' + e.message + '\nยกเลิก submit เพื่อความปลอดภัย')
+      return
+    }
+  } else {
+    Object.values(meatSel).forEach(s => s.selectedBags.forEach(id => allBagIds.push(Number(id))))
+  }
   // meat is optional — allow non-meat only delivery
 
   // Collect + validate non-meat rows — ใช้ querySelectorAll แทน index loop
@@ -2253,13 +2291,22 @@ async function submitDelivery() {
     // Atomic RPC — deliveries + lines + catch_weight + stock_counts all-or-nothing
     const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
     const SH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
-    const nmPayload = nmWithdrawals.map(w => ({
-      item_id: w.item_id,
-      qty:     w.qty,
-      note:    w.note,
-      is_misc: String(w.sku || '').startsWith('MISC'),
-      avail:   w.avail
-    }))
+    // If draft-linked + override was chosen, use draft's nm_lines instead of form's
+    const nmPayload = nmOverride
+      ? nmOverride.map(w => ({
+          item_id: w.item_id,
+          qty:     w.qty,
+          note:    w.note || null,
+          is_misc: String(w.sku || '').startsWith('MISC'),
+          avail:   w.avail ?? null
+        }))
+      : nmWithdrawals.map(w => ({
+          item_id: w.item_id,
+          qty:     w.qty,
+          note:    w.note,
+          is_misc: String(w.sku || '').startsWith('MISC'),
+          avail:   w.avail
+        }))
     const rpcRes = await fetch(`${SB}/rest/v1/rpc/submit_delivery`, {
       method: 'POST',
       headers: { ...SH, 'Content-Type': 'application/json' },
