@@ -739,6 +739,17 @@ async function init() {
 
   // Preload Kanban (Tab 2 is visible by default? only if user lands there — use lazy)
   // loadKanban() will be called via switchTab when user enters Tab 2
+
+  // Hash deep-link — allow #produce / #process / #stock / #history
+  const hash = (location.hash || '').replace('#', '').trim()
+  const validTabs = ['receive','produce','process','stock','history']
+  if (validTabs.includes(hash)) {
+    switchTab(hash)
+    // update active tab button visual
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', validTabs[i] === hash)
+    })
+  }
 }
 
 // ════ รับเนื้อสด ════
