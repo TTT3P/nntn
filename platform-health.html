@@ -86,6 +86,12 @@ tr:last-child td { border-bottom:0; }
     <div id="neg-list"><div class="empty">กำลังโหลด…</div></div>
   </div>
 
+  <!-- Audit recent (who did what) -->
+  <div class="section">
+    <h2>📜 Recent activity (audit trail)</h2>
+    <div id="audit-list"><div class="empty">กำลังโหลด…</div></div>
+  </div>
+
   <!-- DLQ stuck -->
   <div class="section">
     <h2>📮 Webhook DLQ stuck > 15 min</h2>
@@ -182,6 +188,28 @@ async function loadDLQ() {
       </tr>`).join('')}</tbody></table>`;
 }
 
+async function loadAudit() {
+  if (!sb) return;
+  const { data, error } = await sb.rpc('platform_audit_recent', { p_limit: 30 });
+  const list = document.getElementById('audit-list');
+  if (error) { list.innerHTML = `<div class="empty">❌ ${esc(error.message)}</div>`; return; }
+  const rows = data || [];
+  if (rows.length === 0) { list.innerHTML = '<div class="empty">ไม่มี activity</div>'; return; }
+  list.innerHTML = `<table>
+    <thead><tr><th>เวลา</th><th>Who</th><th>Table</th><th>Op</th><th>Detail</th></tr></thead>
+    <tbody>${rows.map(r => {
+      const t = new Date(r.ts);
+      const tStr = t.toLocaleString('th-TH', {month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+      return `<tr>
+        <td style="white-space:nowrap;color:var(--muted)">${esc(tStr)}</td>
+        <td><b>${esc(r.who || 'anon')}</b></td>
+        <td><span class="chip chip-ok">${esc(r.tbl)}</span></td>
+        <td>${esc(r.op)}</td>
+        <td style="color:var(--muted);font-size:.8rem">${esc(r.detail)}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
 async function loadSLOs() {
   if (!sb) return;
   const { data, error } = await sb.rpc('platform_slos');
@@ -222,7 +250,7 @@ async function loadAll() {
     document.getElementById('last-updated').textContent = '⚠️ ใช้ผ่าน GitHub Pages เท่านั้น (file:// ไม่มี Supabase config)';
     return;
   }
-  await Promise.all([loadSLOs(), loadDrift(), loadNegative(), loadDelivery(), loadDLQ(), loadInvariants()]);
+  await Promise.all([loadSLOs(), loadDrift(), loadNegative(), loadDelivery(), loadDLQ(), loadInvariants(), loadAudit()]);
   const now = new Date();
   document.getElementById('last-updated').textContent = `อัปเดตล่าสุด: ${now.toLocaleTimeString('th-TH')}`;
 }
