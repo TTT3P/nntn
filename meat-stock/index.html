@@ -425,8 +425,15 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
 
   <div class="card">
     <div class="card-title">📦 ผลผลิต (Output)</div>
-    <!-- ครัวกลาง: เลือก SKU ใหม่ -->
-    <div id="proc-out-sku-row" class="row2">
+    <!-- ครัวกลาง: multi-SKU groups (เลือก SKU ได้หลายตัวต่อ 1 ครั้ง) -->
+    <div id="proc-kitchen-groups" style="display:none">
+      <div id="pog-list"></div>
+      <button class="btn btn-outline btn-outline-green btn-sm" onclick="addProcOutGroup()" style="margin-top:6px">
+        + เพิ่มกลุ่ม SKU ผลผลิต
+      </button>
+    </div>
+    <!-- Mix mode: single SKU output (legacy) -->
+    <div id="proc-out-sku-row" class="row2" style="display:none">
       <div><label>SKU output</label>
         <select id="proc-sku-out">
           <option value="">— เลือก SKU —</option>
@@ -442,6 +449,7 @@ input:focus, select:focus { outline: none; border-color: var(--blue-light); }
       <label style="margin-top:8px">จำนวนถุงใหม่</label>
       <input type="number" id="proc-out-bags-repack" min="1" placeholder="0" oninput="updateProcBagRows()">
     </div>
+    <!-- Legacy single-group (non-kitchen modes: mix / repack bag rows) -->
     <div id="proc-bag-rows"><div class="loading">ระบุจำนวนถุงก่อน</div></div>
     <div class="sum-row">รวม output: <b id="proc-output-sum">0.000</b> กก.</div>
 
@@ -693,7 +701,7 @@ async function init() {
   // Process SKU output dropdown — curated list (portion/packed ที่ผลิตจากแปรรูป)
   const PROC_OUTPUT_SKUS = [
     'MT-020','MT-014','MT-043','MT-008',          // พิคานย่า 100G/75G ไทย+ออส
-    'MT-030','MT-031','MT-007','MT-040',          // 75G กิวด้ง/คุ้น/แดดเดียว/ตุ๋น
+    'MT-030','MT-007','MT-040',                   // 75G กิวด้ง/แดดเดียว/ตุ๋น (MT-031 คุ้น hard-deleted 20/04)
     'MT-011','MT-037','MT-018',                   // 75G บด/แม็กกี้/หมักนุ่ม
     'MT-039','MT-009'                             // 500g ลูกชิ้น/ลูกชิ้นเอ็น
   ]
@@ -1759,9 +1767,106 @@ async function reloadCwAndKanban() {
 // ════ แปรรูป ════
 function onProcTypeChange() {
   const type = document.getElementById('proc-type').value
-  document.getElementById('proc-out-sku-row').style.display   = type === 'repack' ? 'none' : ''
-  document.getElementById('proc-out-repack-row').style.display = type === 'repack' ? 'block' : 'none'
+  const isKitchen = type === 'kitchen'
+  const isRepack  = type === 'repack'
+  const isMix     = type === 'mix'
+  document.getElementById('proc-kitchen-groups').style.display = isKitchen ? 'block' : 'none'
+  document.getElementById('proc-out-sku-row').style.display = isMix ? '' : 'none'
+  document.getElementById('proc-out-repack-row').style.display = isRepack ? 'block' : 'none'
+  // Legacy single bag rows: used for mix mode (and repack via #proc-out-bags-repack)
+  document.getElementById('proc-bag-rows').style.display = isKitchen ? 'none' : ''
+  if (isKitchen && document.querySelectorAll('#pog-list .pog').length === 0) {
+    addProcOutGroup()
+  }
   updateRepackItemLabel()
+  updateProcOutputSum()
+}
+
+// ── Multi-output groups for kitchen mode ─────────────────────────────────
+let pogCount = 0
+function addProcOutGroup() {
+  pogCount++
+  const n = pogCount
+  const wrap = document.createElement('div')
+  wrap.className = 'pog'
+  wrap.id = `pog-${n}`
+  wrap.style.cssText = 'background:#f9f9f9;border-radius:8px;padding:10px;margin-bottom:10px;position:relative'
+  wrap.innerHTML = `
+    <button class="btn-danger" onclick="removeProcOutGroup(${n})" style="position:absolute;top:8px;right:8px">✕</button>
+    <div class="row2" style="margin-right:32px">
+      <div><label>SKU output</label>
+        <select id="pog-sku-${n}" onchange="updateProcOutputSum()">
+          <option value="">— เลือก SKU —</option>
+        </select>
+      </div>
+      <div><label>จำนวนถุง</label>
+        <input type="number" id="pog-bags-${n}" min="1" placeholder="0" oninput="updateProcOutGroupBagRows(${n})">
+      </div>
+    </div>
+    <div id="pog-bag-rows-${n}" style="margin-top:8px"><div class="loading">ระบุจำนวนถุงก่อน</div></div>
+    <div class="sum-row" style="margin-top:6px">รวมกลุ่ม: <b id="pog-sum-${n}">0.000</b> กก.</div>`
+  document.getElementById('pog-list').appendChild(wrap)
+  renderPogDropdown(n, computeAllowedOutputSkus())
+}
+
+function removeProcOutGroup(n) {
+  const el = document.getElementById(`pog-${n}`)
+  if (el) el.remove()
+  updateProcOutputSum()
+  // Always keep at least 1 group
+  if (document.querySelectorAll('#pog-list .pog').length === 0) addProcOutGroup()
+}
+
+function renderPogDropdown(n, skuList) {
+  const sel = document.getElementById(`pog-sku-${n}`)
+  if (!sel) return
+  const currentVal = sel.value
+  sel.innerHTML = '<option value="">— เลือก —</option>'
+  skuList.forEach(sku => {
+    const i = window._bySku?.[sku]
+    if (!i) return
+    const o = document.createElement('option')
+    o.value = i.id
+    o.textContent = `${i.sku} | ${i.name}`
+    if (i.id === currentVal) o.selected = true
+    sel.appendChild(o)
+  })
+}
+
+function computeAllowedOutputSkus() {
+  const inputSelects = document.querySelectorAll('[id^="proc-item-sel-"]')
+  const selectedMainSkus = new Set()
+  inputSelects.forEach(sel => {
+    const itemName = sel.value
+    if (!itemName) return
+    const item = Object.values(window._bySku || {}).find(i => i.name === itemName)
+    if (item && REPACK_MAP[item.sku]) selectedMainSkus.add(item.sku)
+  })
+  if (selectedMainSkus.size === 0) return window._PROC_OUTPUT_SKUS || []
+  const allowed = new Set()
+  selectedMainSkus.forEach(sku => (REPACK_MAP[sku] || []).forEach(o => allowed.add(o)))
+  return [...allowed]
+}
+
+function updateProcOutGroupBagRows(n) {
+  const cnt = parseInt(document.getElementById(`pog-bags-${n}`)?.value) || 0
+  const cont = document.getElementById(`pog-bag-rows-${n}`)
+  const existing = []
+  cont.querySelectorAll('input[type=number]').forEach(i => existing.push(i.value))
+  cont.innerHTML = ''
+  for (let i = 1; i <= cnt; i++) {
+    const row = document.createElement('div')
+    row.className = 'bag-row'
+    row.innerHTML = `
+      <div class="bag-no">${i}</div>
+      <input type="number" placeholder="กรัม" value="${existing[i-1]||''}"
+             oninput="updateProcOutputSum()" style="text-align:right">
+      <div class="bag-kg" id="pog-kg-${n}-${i}">—</div>
+      <div></div>`
+    cont.appendChild(row)
+  }
+  if (cnt === 0) cont.innerHTML = '<div class="loading">ระบุจำนวนถุงก่อน</div>'
+  updateProcOutputSum()
 }
 
 function updateRepackItemLabel() {
@@ -1832,6 +1937,11 @@ function updateProcOutputFilter() {
     (REPACK_MAP[sku] || []).forEach(o => allowed.add(o))
   })
   renderProcOutputDropdown([...allowed])
+  // Refresh all kitchen multi-SKU group dropdowns
+  document.querySelectorAll('#pog-list .pog').forEach(grp => {
+    const n = grp.id.replace('pog-', '')
+    renderPogDropdown(n, [...allowed])
+  })
 }
 
 function addProcInput() {
@@ -1954,12 +2064,29 @@ function updateProcBagRows() {
 }
 
 function updateProcOutputSum() {
-  let total=0
-  document.querySelectorAll('#proc-bag-rows input[type=number]').forEach((inp,idx)=>{
-    const g=parseFloat(inp.value)||0; total+=g/1000
-    const el=document.getElementById(`pcb-kg-${idx+1}`)
-    if(el) el.textContent=g>0?(g/1000).toFixed(3)+' กก.':'—'
-  })
+  const type = document.getElementById('proc-type')?.value
+  let total = 0
+  if (type === 'kitchen') {
+    document.querySelectorAll('#pog-list .pog').forEach(grp => {
+      const n = grp.id.replace('pog-', '')
+      let grpKg = 0
+      grp.querySelectorAll(`#pog-bag-rows-${n} input[type=number]`).forEach((inp, idx) => {
+        const g = parseFloat(inp.value) || 0
+        grpKg += g / 1000
+        const kgEl = document.getElementById(`pog-kg-${n}-${idx+1}`)
+        if (kgEl) kgEl.textContent = g > 0 ? (g/1000).toFixed(3)+' กก.' : '—'
+      })
+      const sumEl = document.getElementById(`pog-sum-${n}`)
+      if (sumEl) sumEl.textContent = grpKg.toFixed(3)
+      total += grpKg
+    })
+  } else {
+    document.querySelectorAll('#proc-bag-rows input[type=number]').forEach((inp,idx)=>{
+      const g=parseFloat(inp.value)||0; total+=g/1000
+      const el=document.getElementById(`pcb-kg-${idx+1}`)
+      if(el) el.textContent=g>0?(g/1000).toFixed(3)+' กก.':'—'
+    })
+  }
   document.getElementById('proc-output-sum').textContent=total.toFixed(3)
   updateProcYield()
 }
@@ -2006,35 +2133,59 @@ async function submitProcess() {
   })
   if (inputBags.length === 0) { alert('กรุณาเลือกถุงต้นทางอย่างน้อย 1 ถุง'); return }
 
-  // 2. Output item ID
-  let outItemId, outWarehouse
-  if (type === 'repack') {
-    outItemId   = inputBags[0].item_id
-    outWarehouse = 'B'
-  } else {
-    const sel = document.getElementById('proc-sku-out')
-    outItemId = sel.value
-    if (!outItemId) { alert('กรุณาเลือก SKU output'); return }
-    outWarehouse = 'C'
-  }
-
-  // 3. Output bags
+  // 2-3. Output bags — kitchen = multi-group · repack/mix = single group legacy
   const outputRows = []
-  document.querySelectorAll('#proc-bag-rows input[type=number]').forEach((inp, idx) => {
-    const g = parseFloat(inp.value)
-    if (!g || g <= 0) return
-    outputRows.push({
-      item_id:      outItemId,
-      lot_date:     date,
-      bag_no:       idx + 1,
-      weight_g:     g,
-      warehouse:    outWarehouse,
-      status:       '✅ In Stock',
-      date_recorded: date,
-      notes:        `แปรรูปจาก ${inputBags.length} ถุง (${type})`,
-      source:       'web-process'
+  if (type === 'kitchen') {
+    const groups = document.querySelectorAll('#pog-list .pog')
+    if (groups.length === 0) { alert('กรุณาเพิ่มกลุ่ม SKU ผลผลิตอย่างน้อย 1 กลุ่ม'); return }
+    let globalBagNo = 0
+    for (const grp of groups) {
+      const n = grp.id.replace('pog-', '')
+      const skuSel = document.getElementById(`pog-sku-${n}`)
+      const outId = skuSel?.value
+      if (!outId) { alert(`กรุณาเลือก SKU output ในทุกกลุ่ม (กลุ่มที่ ${n})`); return }
+      let grpHasBag = false
+      document.querySelectorAll(`#pog-bag-rows-${n} input[type=number]`).forEach(inp => {
+        const g = parseFloat(inp.value)
+        if (!g || g <= 0) return
+        globalBagNo++
+        grpHasBag = true
+        outputRows.push({
+          item_id:      outId,
+          lot_date:     date,
+          bag_no:       globalBagNo,
+          weight_g:     g,
+          warehouse:    'C',
+          status:       '✅ In Stock',
+          date_recorded: date,
+          notes:        `แปรรูปจาก ${inputBags.length} ถุง (kitchen)`,
+          source:       'web-process'
+        })
+      })
+      if (!grpHasBag) { alert(`กรุณากรอกน้ำหนัก output อย่างน้อย 1 ถุง (กลุ่มที่ ${n})`); return }
+    }
+  } else {
+    const outItemId = type === 'repack'
+      ? inputBags[0].item_id
+      : document.getElementById('proc-sku-out')?.value
+    if (!outItemId) { alert('กรุณาเลือก SKU output'); return }
+    const outWarehouse = type === 'repack' ? 'B' : 'C'
+    document.querySelectorAll('#proc-bag-rows input[type=number]').forEach((inp, idx) => {
+      const g = parseFloat(inp.value)
+      if (!g || g <= 0) return
+      outputRows.push({
+        item_id:      outItemId,
+        lot_date:     date,
+        bag_no:       idx + 1,
+        weight_g:     g,
+        warehouse:    outWarehouse,
+        status:       '✅ In Stock',
+        date_recorded: date,
+        notes:        `แปรรูปจาก ${inputBags.length} ถุง (${type})`,
+        source:       'web-process'
+      })
     })
-  })
+  }
   if (outputRows.length === 0) { alert('กรุณากรอกน้ำหนัก output อย่างน้อย 1 ถุง'); return }
 
   // 4. Scraps summary (for notes only — no item_id to insert)
@@ -2079,9 +2230,11 @@ async function submitProcess() {
     document.getElementById('proc-bag-rows').innerHTML = '<div class="loading">ระบุจำนวนถุงก่อน</div>'
     document.getElementById('proc-output-sum').textContent = '0.000'
     document.getElementById('proc-input-sum').textContent  = '0.000'
-    document.getElementById('proc-out-bags').value = ''
+    const pogList = document.getElementById('pog-list')
+    if (pogList) { pogList.innerHTML = ''; pogCount = 0 }
     procInputCount = 0
     addProcInput()
+    if (type === 'kitchen') addProcOutGroup()
     loadStock()
   } catch(e) {
     alert('❌ เกิดข้อผิดพลาด: ' + e.message)
