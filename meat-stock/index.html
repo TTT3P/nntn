@@ -667,6 +667,24 @@ function switchTab(name) {
   document.getElementById('page-'+name).classList.add('active')
   if(name==='stock')   loadStock()
   if(name==='produce') loadKanban()
+  if(name==='process') {
+    // Always refresh stock + re-render 1st input card · prevents stale dropdown
+    loadStock().then(() => {
+      const procInputs = document.getElementById('proc-inputs')
+      if (procInputs && procInputs.children.length === 0) {
+        addProcInput()
+      } else {
+        // Re-render existing input cards by checking if their dropdowns are empty
+        procInputs?.querySelectorAll('select[id^="proc-item-sel-"]').forEach(sel => {
+          if (sel.options.length <= 1) {
+            procInputs.innerHTML = ''
+            procInputCount = 0
+            addProcInput()
+          }
+        })
+      }
+    })
+  }
   if(name==='history') {
     const el = document.getElementById('history-date')
     if (el && !el.value) el.value = today()
@@ -1970,13 +1988,30 @@ function addProcInput() {
     cwStock.filter(r => MAIN_PROC_SKUS.includes(r.item_sku)).map(r => r.item_name).filter(Boolean)
   )].sort()
   const scrapInStock = [...new Set(
-    cwStock.filter(r => r.item_category === 'meat_trim').map(r => r.item_name).filter(Boolean)
+    cwStock.filter(r => r.item_category === 'meat_trim' && !MAIN_PROC_SKUS.includes(r.item_sku))
+      .map(r => r.item_name).filter(Boolean)
   )].sort()
   const mainOpts = mainInStock.map(nm => `<option value="${nm}">${nm}</option>`).join('')
   const scrapOpts = scrapInStock.map(nm => `<option value="${nm}">${nm}</option>`).join('')
   const itemOpts =
     (mainOpts ? `<optgroup label="หลัก">${mainOpts}</optgroup>` : '') +
     (scrapOpts ? `<optgroup label="เศษเนื้อ">${scrapOpts}</optgroup>` : '')
+  const isEmpty = mainInStock.length + scrapInStock.length === 0
+  if (isEmpty && cwStock.length === 0) {
+    // cwStock not loaded yet — retry after loadStock
+    setTimeout(() => {
+      if (typeof loadStock === 'function') {
+        loadStock().then(() => {
+          const sel = document.getElementById(`proc-item-sel-${n}`)
+          if (sel && sel.options.length <= 1) {
+            document.getElementById(`proc-in-card-${n}`)?.remove()
+            procInputCount--
+            addProcInput()
+          }
+        })
+      }
+    }, 100)
+  }
 
   const div = document.createElement('div')
   div.style.marginBottom = '10px'
