@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="/nntn/auth.js"></script>
+<title>NNTN — Sales Ops</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root { --ink:#111; --muted:#666; --bg:#f4f5f7; --card:#fff; --border:#e1e3e8;
+  --green:#1b7f3a; --warn:#d97706; --red:#b91c1c; --blue:#2563eb; --accent:#6b46a3;
+  --grab:#00b14f; --fs:#ef5350; }
+body { font-family:'Sarabun',sans-serif; background:var(--bg); color:var(--ink); font-size:15px; line-height:1.5; padding-bottom:40px; }
+header { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%); color:white; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; }
+header h1 { font-size:1.1rem; font-weight:900; letter-spacing:.5px; }
+header small { opacity:.7; font-size:.75rem; }
+header a { color:white; text-decoration:none; font-size:.85rem; opacity:.8; }
+.wrap { max-width:1100px; margin:0 auto; padding:16px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:18px; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; }
+.card .label { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:4px; }
+.card .val { font-size:1.6rem; font-weight:900; color:var(--ink); }
+.card .sub { font-size:.75rem; color:var(--muted); margin-top:3px; }
+.card.good .val { color:var(--green); }
+.card.bad .val { color:var(--red); }
+
+.section { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px; }
+.section h2 { font-size:.95rem; font-weight:700; border-left:4px solid var(--accent); padding-left:10px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; }
+.section h2 .meta { font-size:.7rem; color:var(--muted); font-weight:400; }
+
+.controls { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+.btn { background:#f3f4f6; border:1px solid var(--border); padding:6px 12px; border-radius:20px; font-size:.8rem; font-weight:600; cursor:pointer; }
+.btn:hover { background:#e5e7eb; }
+.btn.active { background:var(--accent); color:white; border-color:var(--accent); }
+
+table { width:100%; border-collapse:collapse; font-size:.85rem; }
+th { text-align:left; font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); padding:8px 10px 10px 0; border-bottom:1px solid var(--border); }
+td { padding:7px 10px 7px 0; border-bottom:1px solid #f3f4f6; vertical-align:top; }
+tr:last-child td { border-bottom:0; }
+tr.total-row td { border-top:2px solid var(--ink); font-weight:700; }
+.num { text-align:right; font-variant-numeric:tabular-nums; }
+.pos { color:var(--green); }
+.neg { color:var(--red); }
+.chip { display:inline-block; padding:2px 8px; border-radius:10px; font-size:.7rem; font-weight:700; }
+.chip-grab { background:#dcfce7; color:var(--grab); }
+.chip-fs { background:#fee2e2; color:var(--fs); }
+.chip-noodle { background:#dbeafe; color:var(--blue); }
+.chip-kitchen { background:#fef3c7; color:var(--warn); }
+
+.bar-chart { display:flex; flex-direction:column; gap:4px; margin-top:8px; }
+.bar-row { display:grid; grid-template-columns:70px 1fr 80px; gap:8px; align-items:center; font-size:.8rem; }
+.bar-row .label { color:var(--muted); font-variant-numeric:tabular-nums; }
+.bar-wrap { background:#f3f4f6; border-radius:3px; height:20px; position:relative; overflow:hidden; display:flex; }
+.bar-grab { background:var(--grab); height:100%; }
+.bar-fs { background:var(--fs); height:100%; }
+.bar-label { font-size:.72rem; font-weight:700; text-align:right; font-variant-numeric:tabular-nums; }
+
+.legend { display:flex; gap:12px; font-size:.75rem; color:var(--muted); margin-top:8px; }
+.legend .dot { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align:middle; }
+.empty { font-size:.85rem; color:var(--muted); padding:20px; text-align:center; font-style:italic; }
+.loading { text-align:center; padding:20px; color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>📊 Sales Ops Dashboard</h1>
+    <small>Daily revenue · MVP (Section 1)</small>
+  </div>
+  <a href="./hub.html">← Hub</a>
+</header>
+
+<div class="wrap">
+  <!-- Summary cards -->
+  <div class="grid" id="summary-cards">
+    <div class="card"><div class="label">วันนี้</div><div class="val" id="card-today">—</div><div class="sub" id="card-today-sub">loading…</div></div>
+    <div class="card"><div class="label">เมื่อวาน</div><div class="val" id="card-yday">—</div><div class="sub" id="card-yday-sub"></div></div>
+    <div class="card"><div class="label">7 วันย้อนหลัง</div><div class="val" id="card-7d">—</div><div class="sub" id="card-7d-sub"></div></div>
+    <div class="card"><div class="label">WoW change</div><div class="val" id="card-wow">—</div><div class="sub" id="card-wow-sub">vs สัปดาห์ที่แล้ว</div></div>
+  </div>
+
+  <!-- Daily revenue 14 days chart -->
+  <div class="section">
+    <h2>📈 รายได้รายวัน (14 วันย้อนหลัง) <span class="meta" id="chart-meta"></span></h2>
+    <div class="controls">
+      <button class="btn active" onclick="setRange(14)" id="btn-14d">14 วัน</button>
+      <button class="btn" onclick="setRange(30)" id="btn-30d">30 วัน</button>
+      <button class="btn" onclick="setRange(7)" id="btn-7d">7 วัน</button>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--grab)"></span>Grab</span>
+      <span><span class="dot" style="background:var(--fs)"></span>FS</span>
+    </div>
+    <div class="bar-chart" id="bar-chart"><div class="loading">กำลังโหลด…</div></div>
+  </div>
+
+  <!-- Daily breakdown table -->
+  <div class="section">
+    <h2>📋 รายวัน · แยก outlet + ช่องทาง</h2>
+    <div id="daily-table"><div class="loading">กำลังโหลด…</div></div>
+  </div>
+
+  <!-- By channel summary -->
+  <div class="section">
+    <h2>💰 สรุปรายช่องทาง (ช่วงที่เลือก)</h2>
+    <div id="channel-summary"><div class="loading">กำลังโหลด…</div></div>
+  </div>
+
+  <div class="section" style="background:#fefce8;border-color:#fef3c7">
+    <h2 style="border-color:var(--warn)">🚧 Next (Phase 2-3)</h2>
+    <ul style="padding-left:20px;font-size:.9rem;color:var(--muted);line-height:1.8">
+      <li>Phase 2: Menu Matrix (Stars · Puzzles · Dogs) — รอ CookingBook เติม ingredient cost</li>
+      <li>Phase 3: Weekly Variance (FC% forecast vs actual)</li>
+      <li>Backfill prod run 01-17/04 (gap)</li>
+    </ul>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const sb = (window.NNTN_SB_URL && window.NNTN_SB_ANON)
+  ? supabase.createClient(window.NNTN_SB_URL, window.NNTN_SB_ANON, {
+      db: { schema: 'sales_ops' },
+      global: { headers: {
+        'Accept-Profile': 'sales_ops',
+        'Content-Profile': 'sales_ops',
+        'Authorization': 'Bearer ' + (window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || window.NNTN_SB_ANON)
+      }}
+    })
+  : null;
+
+let currentRange = 14;
+const esc = s => (s ?? '—').toString().replace(/[<>&"]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;' }[c]));
+const fmt = n => new Intl.NumberFormat('th-TH').format(Math.round(+n || 0));
+const fmtShort = n => {
+  const v = +n || 0;
+  if (v >= 1000000) return '฿' + (v/1000000).toFixed(1) + 'M';
+  if (v >= 1000) return '฿' + (v/1000).toFixed(1) + 'k';
+  return '฿' + fmt(v);
+};
+
+async function loadAll() {
+  if (!sb) {
+    document.getElementById('bar-chart').innerHTML = '<div class="empty">⚠️ ใช้ผ่าน GitHub Pages เท่านั้น</div>';
+    return;
+  }
+  // Fetch daily revenue for range
+  const endDate = new Date();
+  const startDate = new Date(); startDate.setDate(startDate.getDate() - currentRange + 1);
+  const startStr = startDate.toISOString().split('T')[0];
+
+  const { data: rows, error } = await sb.from('v_daily_revenue')
+    .select('*')
+    .gte('sale_date', startStr)
+    .order('sale_date', { ascending: true });
+
+  if (error) {
+    document.getElementById('bar-chart').innerHTML = `<div class="empty">❌ ${esc(error.message)}</div>`;
+    return;
+  }
+
+  renderSummary(rows || []);
+  renderBarChart(rows || []);
+  renderDailyTable(rows || []);
+  renderChannelSummary(rows || []);
+  const now = new Date();
+  document.getElementById('chart-meta').textContent = 'อัปเดต ' + now.toLocaleTimeString('th-TH');
+}
+
+function renderSummary(rows) {
+  const byDate = {};
+  rows.forEach(r => {
+    const d = r.sale_date;
+    if (!byDate[d]) byDate[d] = 0;
+    byDate[d] += +r.total_revenue || 0;
+  });
+  const dates = Object.keys(byDate).sort();
+  const today = dates[dates.length - 1];
+  const yday = dates[dates.length - 2];
+  const last7 = dates.slice(-7).reduce((s,d) => s + byDate[d], 0);
+  const prev7 = dates.slice(-14, -7).reduce((s,d) => s + byDate[d], 0);
+  const wow = prev7 > 0 ? ((last7 - prev7) / prev7 * 100) : null;
+
+  const todayVal = byDate[today] || 0;
+  const ydayVal = byDate[yday] || 0;
+
+  document.getElementById('card-today').textContent = fmtShort(todayVal);
+  document.getElementById('card-today-sub').textContent = today ? `${today} · ${fmt(todayVal)} ฿` : 'ไม่มีข้อมูล';
+
+  document.getElementById('card-yday').textContent = fmtShort(ydayVal);
+  document.getElementById('card-yday-sub').textContent = yday ? `${yday}` : '';
+
+  document.getElementById('card-7d').textContent = fmtShort(last7);
+  document.getElementById('card-7d-sub').textContent = `รวม ${fmt(last7)} ฿`;
+
+  const wowEl = document.getElementById('card-wow');
+  const wowCard = wowEl.parentElement;
+  if (wow === null) {
+    wowEl.textContent = '—';
+    wowCard.classList.remove('good','bad');
+  } else {
+    wowEl.textContent = (wow >= 0 ? '+' : '') + wow.toFixed(1) + '%';
+    wowCard.classList.remove('good','bad');
+    wowCard.classList.add(wow >= 0 ? 'good' : 'bad');
+  }
+}
+
+function renderBarChart(rows) {
+  const byDate = {};
+  rows.forEach(r => {
+    const d = r.sale_date;
+    if (!byDate[d]) byDate[d] = { grab:0, fs:0 };
+    byDate[d].grab += +r.grab_revenue || 0;
+    byDate[d].fs   += +r.fs_revenue || 0;
+  });
+  const dates = Object.keys(byDate).sort();
+  const maxTotal = Math.max(...dates.map(d => byDate[d].grab + byDate[d].fs), 1);
+
+  const container = document.getElementById('bar-chart');
+  if (dates.length === 0) { container.innerHTML = '<div class="empty">ไม่มีข้อมูลช่วงนี้</div>'; return; }
+
+  container.innerHTML = dates.map(d => {
+    const g = byDate[d].grab;
+    const f = byDate[d].fs;
+    const total = g + f;
+    const gPct = (g / maxTotal * 100);
+    const fPct = (f / maxTotal * 100);
+    const dShort = d.slice(5); // MM-DD
+    return `<div class="bar-row">
+      <div class="label">${esc(dShort)}</div>
+      <div class="bar-wrap">
+        <div class="bar-grab" style="width:${gPct}%" title="Grab: ${fmt(g)}"></div>
+        <div class="bar-fs"   style="width:${fPct}%" title="FS: ${fmt(f)}"></div>
+      </div>
+      <div class="bar-label">${fmtShort(total)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderDailyTable(rows) {
+  if (rows.length === 0) { document.getElementById('daily-table').innerHTML = '<div class="empty">ไม่มีข้อมูล</div>'; return; }
+  const sorted = [...rows].sort((a,b) => (b.sale_date+b.branch_id).localeCompare(a.sale_date+a.branch_id));
+  let totalG = 0, totalF = 0;
+  const html = `<table>
+    <thead><tr><th>วันที่</th><th>Outlet</th><th class="num">Grab</th><th class="num">FS</th><th class="num">รวม</th></tr></thead>
+    <tbody>${sorted.map(r => {
+      totalG += +r.grab_revenue || 0;
+      totalF += +r.fs_revenue || 0;
+      const branchChip = r.branch_id.includes('KITCHEN') ? 'chip-kitchen' : 'chip-noodle';
+      const branchShort = r.branch_id.replace('NT-','');
+      return `<tr>
+        <td>${esc(r.sale_date)}</td>
+        <td><span class="chip ${branchChip}">${esc(branchShort)}</span></td>
+        <td class="num">${fmt(r.grab_revenue)}</td>
+        <td class="num">${fmt(r.fs_revenue)}</td>
+        <td class="num"><b>${fmt(r.total_revenue)}</b></td>
+      </tr>`;
+    }).join('')}
+    <tr class="total-row">
+      <td colspan="2">รวมทั้งหมด</td>
+      <td class="num">${fmt(totalG)}</td>
+      <td class="num">${fmt(totalF)}</td>
+      <td class="num">${fmt(totalG + totalF)}</td>
+    </tr>
+    </tbody></table>`;
+  document.getElementById('daily-table').innerHTML = html;
+}
+
+function renderChannelSummary(rows) {
+  const agg = {};
+  rows.forEach(r => {
+    const key = r.branch_id;
+    if (!agg[key]) agg[key] = { grab_rev:0, grab_ord:0, fs_rev:0, fs_bills:0 };
+    agg[key].grab_rev += +r.grab_revenue || 0;
+    agg[key].grab_ord += +r.grab_orders || 0;
+    agg[key].fs_rev   += +r.fs_revenue || 0;
+    agg[key].fs_bills += +r.fs_bills || 0;
+  });
+  if (Object.keys(agg).length === 0) { document.getElementById('channel-summary').innerHTML = '<div class="empty">ไม่มีข้อมูล</div>'; return; }
+  const html = `<table>
+    <thead><tr><th>Outlet</th><th class="num">Grab ฿</th><th class="num">Grab orders</th><th class="num">FS ฿</th><th class="num">FS bills</th><th class="num">รวม ฿</th><th class="num">AOV avg</th></tr></thead>
+    <tbody>${Object.entries(agg).map(([k,v]) => {
+      const tot = v.grab_rev + v.fs_rev;
+      const orders = v.grab_ord + v.fs_bills;
+      const aov = orders > 0 ? tot / orders : 0;
+      const chip = k.includes('KITCHEN') ? 'chip-kitchen' : 'chip-noodle';
+      return `<tr>
+        <td><span class="chip ${chip}">${esc(k.replace('NT-',''))}</span></td>
+        <td class="num">${fmt(v.grab_rev)}</td>
+        <td class="num">${v.grab_ord}</td>
+        <td class="num">${fmt(v.fs_rev)}</td>
+        <td class="num">${v.fs_bills}</td>
+        <td class="num"><b>${fmt(tot)}</b></td>
+        <td class="num">${fmt(aov)}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+  document.getElementById('channel-summary').innerHTML = html;
+}
+
+function setRange(n) {
+  currentRange = n;
+  document.querySelectorAll('.controls .btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + n + 'd').classList.add('active');
+  loadAll();
+}
+
+loadAll();
+setInterval(loadAll, 5 * 60 * 1000); // refresh 5min
+</script>
+</body>
+</html>
