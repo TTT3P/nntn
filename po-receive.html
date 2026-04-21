@@ -904,26 +904,16 @@
           .update({ qty_received: r.qty_received })
           .eq('id', r.line_id);
 
-        // อ่าน stock ปัจจุบัน (latest stock_counts)
-        const { data: latest } = await sb.from('stock_counts')
-          .select('qty')
-          .eq('item_id', r.item_id)
-          .order('counted_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        const currentQty = latest?.qty ?? 0;
-
-        // INSERT stock_counts — บวกของที่รับเข้าสต๊อก
-        const { error: insertErr } = await sb.from('stock_counts').insert({
-          item_id:    r.item_id,
-          qty:        currentQty + r.qty_received,
-          event_type: 'receive',
-          counted_by: 'PO-receive',
-          counted_at: now,
-          note:       `รับของจาก PO (${r.qty_received} หน่วย)`
+        // Use unified receive RPC — routes by item.type (meat→CW · non-meat→stock_counts)
+        const { data: receiveResult, error: rErr } = await sb.rpc('rpc_receive_universal', {
+          p_actor:    (window.nntnCurrentUser || 'PO-receive'),
+          p_item_id:  r.item_id,
+          p_qty:      r.qty_received,
+          p_unit_note: `PO ${poId}`,
+          p_bags:     null   // non-meat path · meat raw handled by รับเนื้อสด form
         });
-        if (insertErr) throw new Error(`stock insert ล้มเหลว (${r.item_id}): ${insertErr.message}`);
+        if (rErr) throw new Error(`rpc_receive_universal ล้มเหลว (${r.item_id}): ${rErr.message}`);
+        if (!receiveResult?.ok) throw new Error(`receive rejected: ${JSON.stringify(receiveResult)}`);
       }
 
       toast(`✅ รับของแล้ว — stock +${receives.length} รายการ`);

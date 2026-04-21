@@ -509,7 +509,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         order: 'lot_date.asc',
         limit: 2000
       }),
-      get('current_stock', { select: 'sku,current_qty', limit: 500 })
+      get('v_stock_unified', { select: 'sku,qty_on_hand', limit: 500 })
     ])
 
     const items = Array.isArray(allItems) ? allItems : []
@@ -521,7 +521,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Build sku → current_qty map for SP items
     ;(Array.isArray(stockRows) ? stockRows : []).forEach(r => {
       if (r.sku && r.sku.startsWith('SP')) {
-        spStockBySku[r.sku] = parseFloat(r.current_qty) || 0
+        spStockBySku[r.sku] = parseFloat(r.qty_on_hand) || 0
       }
     })
 

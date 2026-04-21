@@ -567,13 +567,10 @@
     var locsResult = await sbStock.from('locations').select('id,code,name').eq('is_active', true);
     locations = locsResult.data || [];
 
-    // Load current stock from stock_counts (latest row per item)
-    var csResult = await sb.from('stock_counts')
-      .select('item_id,qty')
-      .order('counted_at', { ascending: false });
-    var _seen = {};
+    // Load current stock from v_stock_unified (single source of truth · sm running sum)
+    var csResult = await sb.from('v_stock_unified').select('item_id,qty_on_hand');
     (csResult.data || []).forEach(function(r) {
-      if (!_seen[r.item_id]) { _seen[r.item_id] = true; stockMap[r.item_id] = parseFloat(r.qty || 0); }
+      stockMap[r.item_id] = parseFloat(r.qty_on_hand || 0);
     });
 
     loadLog();
