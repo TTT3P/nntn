@@ -62,6 +62,12 @@ tr:last-child td { border-bottom:0; }
     <div class="card" id="c-dlq"><div class="label">DLQ stuck</div><div class="val">—</div><div class="sub">rows ยัง delivered=false</div></div>
   </div>
 
+  <!-- SLOs (service level objectives) -->
+  <div class="section">
+    <h2>🎯 SLOs · Service Level Objectives</h2>
+    <div id="slo-list"><div class="empty">กำลังโหลด…</div></div>
+  </div>
+
   <!-- Invariants (8 checks) -->
   <div class="section">
     <h2>🔬 System invariants</h2>
@@ -176,6 +182,26 @@ async function loadDLQ() {
       </tr>`).join('')}</tbody></table>`;
 }
 
+async function loadSLOs() {
+  if (!sb) return;
+  const { data, error } = await sb.rpc('platform_slos');
+  const list = document.getElementById('slo-list');
+  if (error) { list.innerHTML = `<div class="empty">❌ ${esc(error.message)}</div>`; return; }
+  const rows = data || [];
+  list.innerHTML = `<table>
+    <thead><tr><th>SLO</th><th>Target</th><th>Current</th><th>Status</th><th>Budget</th></tr></thead>
+    <tbody>${rows.map(r => {
+      const chip = r.status === 'ok' ? 'chip-ok' : 'chip-crit';
+      return `<tr>
+        <td><b>${esc(r.slo)}</b></td>
+        <td style="color:var(--muted)">${esc(r.target)}</td>
+        <td>${esc(r.current)}</td>
+        <td><span class="chip ${chip}">${r.status.toUpperCase()}</span></td>
+        <td style="color:var(--muted);font-size:.8rem">${esc(r.budget_remaining)}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
 async function loadInvariants() {
   if (!sb) return;
   const { data, error } = await sb.rpc('platform_invariants');
@@ -196,7 +222,7 @@ async function loadAll() {
     document.getElementById('last-updated').textContent = '⚠️ ใช้ผ่าน GitHub Pages เท่านั้น (file:// ไม่มี Supabase config)';
     return;
   }
-  await Promise.all([loadDrift(), loadNegative(), loadDelivery(), loadDLQ(), loadInvariants()]);
+  await Promise.all([loadSLOs(), loadDrift(), loadNegative(), loadDelivery(), loadDLQ(), loadInvariants()]);
   const now = new Date();
   document.getElementById('last-updated').textContent = `อัปเดตล่าสุด: ${now.toLocaleTimeString('th-TH')}`;
 }
