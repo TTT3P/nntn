@@ -903,7 +903,7 @@ function updatePreview() {
     state.selectedBags.forEach(id => {
       const b = bagCache[id]
       if (!b) return
-      const cw = b.legacy_cw_row ? `${b.legacy_cw_row}` : '#' + id.substring(0, 6)
+      const cw = b.legacy_cw_row ? `${b.legacy_cw_row}` : '#' + String(id).substring(0, 6)
       const lot = fmtDate(b.lot_date)
       const kg  = ((b.weight_g || 0) / 1000).toFixed(3)
       meatRows.push({ name, cw, lot, kg: parseFloat(kg) })
