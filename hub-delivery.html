@@ -2346,10 +2346,22 @@ async function submitDelivery() {
     })
     if (!rpcRes.ok) {
       const errText = await rpcRes.text()
+      // Parse INSUFFICIENT_STOCK for specific SKU list (from check_stock_before_dispense trigger)
+      // Format: "INSUFFICIENT_STOCK: <SKU> <name> — on hand <x>, trying to dispense <y>"
+      if (errText.includes('INSUFFICIENT_STOCK')) {
+        const matches = [...errText.matchAll(/INSUFFICIENT_STOCK: ([^—]+)— on hand ([\d.]+), trying to dispense ([\d.]+)/g)]
+        const lines = matches.length > 0
+          ? matches.map(m => `• ${m[1].trim()} — มี ${m[2]} เบิก ${m[3]}`).join('\n')
+          : errText.split('INSUFFICIENT_STOCK:')[1]?.split('\\n')[0] || errText
+        throw new Error(`❌ สต๊อกไม่พอ — เบิกเกินที่มี\n\n${lines}\n\nกรุณานับสต๊อกจริง + ปรับก่อนเบิก`)
+      }
       if (errText.includes('not In Stock') || errText.includes('Cannot deliver bag')) {
         throw new Error(`❌ DB ปฏิเสธ: มีถุงที่ไม่ได้อยู่ใน In Stock — รีเฟรชแล้วลองใหม่`)
       }
-      throw new Error(`submit_delivery RPC: HTTP ${rpcRes.status} — ${errText}`)
+      if (errText.includes('duplicate key') && errText.includes('bill_no')) {
+        throw new Error(`❌ เลขที่บิลนี้ซ้ำกับที่มีอยู่แล้ว — กรุณาเปลี่ยนเลขใบนำส่ง`)
+      }
+      throw new Error(`❌ บันทึกไม่สำเร็จ\nสาเหตุ: ${errText.slice(0, 300)}`)
     }
 
     // Update local nm stock cache
