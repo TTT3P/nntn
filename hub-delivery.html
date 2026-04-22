@@ -1077,9 +1077,25 @@ function renderDraftCard(d) {
 }
 
 function renderDraftNmRow(draftId, li, l) {
+  // Stock indicator — bright red if insufficient, green if OK
+  const item = window._itemsById?.[l.item_id]
+  const sku = item?.sku || ''
+  const isMisc = String(sku).startsWith('MISC')
+  let stockBadge = ''
+  if (!isMisc && sku && spStockBySku[sku] !== undefined) {
+    const have = spStockBySku[sku]
+    const need = parseFloat(l.qty) || 0
+    if (have <= 0) {
+      stockBadge = `<span style="color:#c62828;font-weight:700;font-size:0.8em;margin-left:6px">❌ ของหมด</span>`
+    } else if (have < need) {
+      stockBadge = `<span style="color:#ef6c00;font-weight:700;font-size:0.8em;margin-left:6px">⚠️ มี ${have} · ไม่พอ</span>`
+    } else {
+      stockBadge = `<span style="color:#2e7d32;font-weight:600;font-size:0.8em;margin-left:6px">✓ มี ${have}</span>`
+    }
+  }
   return `
   <div class="hist-item-row" id="drow-${draftId}-${li}">
-    <div class="hist-item-name">${escHtml(l.name || l.item_id || '?')}</div>
+    <div class="hist-item-name">${escHtml(l.name || l.item_id || '?')}${stockBadge}</div>
     <div class="hist-item-qty">${l.qty} <span style="font-size:0.75em;color:#888">${escHtml(l.unit||'')}</span></div>
     <div class="hist-item-unit"></div>
     <button class="hist-edit-btn" onclick="showEditDraftNm('${draftId}',${li})">✏️ แก้</button>
