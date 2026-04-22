@@ -420,10 +420,11 @@ Source: `~/Documents/Claude-Work/ไฟล์/AI-Strategy/brand identity/Logo - 
 
 | Token | Hex (approx) | Usage |
 |---|---|---|
-| `brand-green` | `#0F5132` | Primary type, main brand surface |
-| `brand-gold` | `#C9A27A` | Accent, diamond ornament, CTA |
-| `brand-cream` | `#E8C9A8` | Warm background variant |
+| `brand-green` | `#005135` | Primary type, main brand surface (sampled from logo) |
+| `brand-gold` | `#D59569` | Accent, diamond ornament, warm background (sampled) |
 | `ink-black` / `paper-white` | `#000` / `#FFF` | Mono print + dark mode |
+
+> 2 brand colors only (green + gold). Variant 02 "cream bg" is the same `brand-gold` used as surface. Do not invent a third.
 
 Logo theme = heritage modern (serif Thai + diamond ornament) — **not** minimalist flat. 5 variants available (green-on-white / green-on-cream / gold-on-green / black-on-white / white-on-black) in both Horizontal + Vertical.
 
