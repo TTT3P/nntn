@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>NNTN · System Map (As-Is → To-Be)</title>
+<link rel="stylesheet" href="tokens.css?v=20260422b" />
+<script>
+  try {
+    var saved = localStorage.getItem('nntn_theme');
+    if (saved === 'warm' || saved === null) {
+      localStorage.removeItem('nntn_theme');
+      document.documentElement.removeAttribute('data-theme');
+    }
+  } catch(e){}
+</script>
+<style>
+  body { background: var(--color-bg-app); color: var(--color-ink-800); }
+  .wrap { max-width: 1440px; margin: 0 auto; padding: 48px 32px 96px; }
+
+  .topline {
+    display:flex; gap:14px; align-items:center;
+    font-family: var(--font-mono); font-size:12px; letter-spacing:2px;
+    text-transform:uppercase; color:var(--color-ink-600);
+    margin-bottom: var(--space-5);
+  }
+  .topline .dot {
+    width:10px; height:10px; border-radius:50%;
+    background: var(--color-primary-600);
+    box-shadow: 0 0 0 4px var(--color-primary-100);
+  }
+  .topline .crumbs { margin-left:auto; color:var(--color-ink-500); }
+
+  h1 {
+    font-family: var(--font-serif); font-weight:400;
+    font-size: 64px; line-height:1.05; letter-spacing:-0.015em;
+    color: var(--color-ink-900); margin: 0 0 var(--space-3);
+    max-width: 900px;
+  }
+  .lede {
+    font-size: 19px; line-height:1.55; color: var(--color-ink-700);
+    max-width: 780px; margin: 0 0 var(--space-8);
+  }
+  .lede b { color: var(--color-primary-700); font-weight:700; }
+
+  /* Stat strip */
+  .stats {
+    display:grid; grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4); margin-bottom: var(--space-8);
+  }
+  @media (max-width:960px){ .stats{ grid-template-columns: 1fr 1fr; } }
+  .stat {
+    background: var(--color-bg-surface);
+    border: var(--border-subtle); border-radius: var(--radius-lg);
+    padding: var(--space-5);
+  }
+  .stat__k { font-family:var(--font-mono); font-size:11px; letter-spacing:1.5px;
+             color:var(--color-ink-500); text-transform:uppercase; }
+  .stat__v { font-size: 44px; font-weight: 800; color:var(--color-ink-900);
+             line-height:1; margin-top: 6px; letter-spacing:-0.02em;
+             font-family: var(--font-serif); font-weight:400;}
+  .stat__sub { font-size:13px; color:var(--color-ink-600); margin-top: 8px; }
+  .stat--accent { background: linear-gradient(180deg, #FBF3DC 0%, #F5E0A4 100%);
+                  border-color: var(--color-accent-300); }
+  .stat--accent .stat__k { color: var(--color-accent-700); }
+  .stat--green  { background: var(--grad-stat-green); border-color: var(--color-primary-200);}
+  .stat--green  .stat__k { color: var(--color-primary-800); }
+
+  /* Section heads */
+  .section-h {
+    display:flex; justify-content:space-between; align-items:baseline;
+    border-bottom: var(--border-subtle); padding-bottom: var(--space-3);
+    margin: var(--space-8) 0 var(--space-5);
+  }
+  .section-h h2 { font-size: 26px; margin:0; font-weight:700; color:var(--color-ink-900); }
+  .section-h .hint { font-family:var(--font-mono); font-size:11px;
+                     letter-spacing:1.5px; color:var(--color-ink-500); text-transform:uppercase;}
+
+  /* Two-column comparison */
+  .compare {
+    display:grid; grid-template-columns: 1fr 44px 1fr; gap: var(--space-5);
+    align-items: start;
+  }
+  @media (max-width: 1100px){ .compare{ grid-template-columns: 1fr; } .compare__arrow{display:none;} }
+
+  .col-h {
+    display:flex; align-items:center; gap: 10px;
+    font-family: var(--font-mono); font-size:11px; letter-spacing:1.5px;
+    text-transform:uppercase; margin-bottom: var(--space-3);
+  }
+  .col-h__pill {
+    padding: 4px 10px; border-radius: var(--radius-pill);
+    font-size: 11px; font-weight: 600;
+  }
+  .col--asis .col-h__pill { background: var(--color-ink-200); color: var(--color-ink-700); }
+  .col--tobe .col-h__pill { background: var(--color-primary-100); color: var(--color-primary-700); }
+  .col-h__count { color:var(--color-ink-500); margin-left:auto; }
+
+  .compare__arrow {
+    display:grid; place-items:center; height: 60px;
+    font-size: 28px; color: var(--color-accent-600);
+  }
+  .compare__arrow::before {
+    content:"◆"; font-size: 14px; color: var(--color-accent-500);
+    display:block; margin-bottom: 8px;
+  }
+
+  /* Page node */
+  .node-list { display:flex; flex-direction:column; gap: 6px; }
+  .node {
+    display:grid; grid-template-columns: 34px 1fr auto;
+    gap: 10px; align-items: center;
+    background: var(--color-bg-surface);
+    border: var(--border-subtle); border-radius: var(--radius-md);
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  .node__ic {
+    width: 28px; height: 28px; border-radius: 6px;
+    display:grid; place-items:center; font-size: 14px;
+    background: var(--color-ink-100); color: var(--color-ink-700);
+  }
+  .node__name { color: var(--color-ink-900); font-weight: 500;
+                overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .node__tag {
+    font-family:var(--font-mono); font-size: 10px; letter-spacing:1px;
+    padding: 2px 6px; border-radius: var(--radius-xs);
+    background: var(--color-ink-100); color: var(--color-ink-600);
+  }
+  .node--kill   { opacity: .45; text-decoration: line-through; }
+  .node--merge  { border-left: 3px solid var(--color-accent-500); }
+  .node--keep   { }
+  .node--split  { border-left: 3px solid var(--color-primary-500); }
+  .node--new    { background: var(--color-primary-50);
+                  border-color: var(--color-primary-200);
+                  border-left: 3px solid var(--color-primary-600); }
+  .node--new .node__ic { background: var(--color-primary-600); color: #fff; }
+  .node--new .node__name { color: var(--color-primary-800); font-weight: 600; }
+  .node--new .node__tag { background: var(--color-primary-100); color: var(--color-primary-700); }
+
+  /* IA layers diagram */
+  .ia-layers {
+    background: var(--color-bg-surface); border: var(--border-subtle);
+    border-radius: var(--radius-lg); padding: var(--space-7);
+    margin-bottom: var(--space-6);
+  }
+  .layer { display:flex; gap: var(--space-4); align-items: stretch; padding: var(--space-4) 0; }
+  .layer + .layer { border-top: 1px dashed var(--color-ink-200); }
+  .layer__label {
+    width: 140px; flex-shrink:0;
+    font-family: var(--font-mono); font-size:11px; letter-spacing:1.5px;
+    text-transform:uppercase; color: var(--color-ink-500);
+    padding-top: 4px;
+  }
+  .layer__num {
+    font-family: var(--font-serif); font-size: 32px; font-weight:400;
+    color: var(--color-primary-600); line-height:1;
+  }
+  .layer__body { flex: 1; }
+  .layer__title { font-size: 18px; font-weight: 700; color: var(--color-ink-900);
+                  margin: 0 0 6px; }
+  .layer__desc { font-size: 14px; line-height: 1.55; color: var(--color-ink-700); margin:0 0 var(--space-3);}
+  .layer__tags { display:flex; flex-wrap:wrap; gap: 6px; }
+  .layer__tag {
+    padding: 5px 10px; border-radius: var(--radius-pill);
+    font-size: 12px; font-weight: 500;
+    background: var(--color-ink-100); color: var(--color-ink-800);
+  }
+  .layer__tag.is-primary { background: var(--color-primary-100); color: var(--color-primary-700); }
+  .layer__tag.is-accent  { background: var(--color-accent-50); color: var(--color-accent-700); }
+
+  /* Flow lifecycle strip */
+  .lifecycle {
+    display:grid; grid-template-columns: repeat(5, 1fr) ;
+    gap: 12px; margin: var(--space-5) 0 var(--space-8);
+    padding: var(--space-5);
+    background: var(--color-primary-50);
+    border: 1px solid var(--color-primary-200);
+    border-radius: var(--radius-lg);
+  }
+  @media (max-width: 960px){ .lifecycle { grid-template-columns: 1fr 1fr; } }
+  .stage {
+    position: relative;
+    padding: var(--space-4);
+    background: var(--color-bg-surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-primary-200);
+  }
+  .stage__num {
+    font-family: var(--font-mono); font-size:10px; letter-spacing:1.5px;
+    color: var(--color-primary-700);
+  }
+  .stage__title { font-size: 15px; font-weight: 700; color: var(--color-ink-900);
+                  margin: 4px 0; }
+  .stage__loc { font-size: 12px; color: var(--color-ink-600); font-family: var(--font-mono); }
+  .stage__tables { font-size: 11px; color: var(--color-ink-500); margin-top: 6px; font-family: var(--font-mono);}
+
+  /* Bugs table */
+  .bugs {
+    background: var(--color-bg-surface); border: var(--border-subtle);
+    border-radius: var(--radius-lg); overflow: hidden;
+  }
+  .bugs table { width: 100%; border-collapse: collapse; }
+  .bugs th, .bugs td { text-align: left; padding: 14px 16px; border-bottom: 1px solid var(--color-ink-200); }
+  .bugs th { background: var(--color-ink-50); font-size: 12px; text-transform: uppercase;
+             letter-spacing: 1px; color: var(--color-ink-600); font-weight:600; }
+  .bugs td { font-size: 14px; vertical-align: top; }
+  .bugs tr:last-child td { border-bottom: none; }
+  .bug-id { font-family: var(--font-mono); font-weight:700; }
+  .bug-sev {
+    display:inline-block; padding: 2px 8px; border-radius: var(--radius-pill);
+    font-size: 11px; font-weight:700;
+  }
+  .bug-sev--p1 { background: var(--color-danger-50); color: var(--color-danger-700); }
+  .bug-sev--p2 { background: var(--color-warning-50); color: var(--color-warning-700); }
+  .bug-sev--p3 { background: var(--color-ink-100); color: var(--color-ink-700); }
+  .bug-plan { color: var(--color-primary-700); font-weight: 600; }
+
+  /* Footer nav */
+  .phase-nav {
+    margin-top: var(--space-9); display:grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+  }
+  @media (max-width: 960px){ .phase-nav { grid-template-columns: 1fr 1fr; } }
+  .phase {
+    padding: var(--space-5); border-radius: var(--radius-lg);
+    background: var(--color-bg-surface); border: var(--border-subtle);
+    display:flex; flex-direction:column; gap: 8px;
+    text-decoration: none; color: inherit;
+    transition: transform .15s, border-color .15s, box-shadow .15s;
+  }
+  .phase:hover { transform: translateY(-2px); border-color: var(--color-primary-300); box-shadow: var(--shadow-md); }
+  .phase__num {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing:1.5px;
+    color: var(--color-ink-500);
+  }
+  .phase__t { font-size: 17px; font-weight: 700; color: var(--color-ink-900);}
+  .phase__d { font-size: 13px; color: var(--color-ink-600); line-height:1.5; }
+  .phase--current { background: var(--color-primary-50); border-color: var(--color-primary-500);}
+  .phase--current .phase__num { color: var(--color-primary-700); }
+  .phase--pending { opacity: .55; }
+
+  .legend {
+    display:flex; gap: var(--space-5); flex-wrap:wrap;
+    font-size: 12px; color: var(--color-ink-600);
+    margin-bottom: var(--space-5);
+    font-family: var(--font-mono);
+  }
+  .legend span { display:inline-flex; align-items:center; gap: 6px; }
+  .legend .sw { width: 14px; height: 14px; border-radius: 3px; }
+  .sw--kill   { background: var(--color-ink-200); }
+  .sw--merge  { background: var(--color-accent-500); }
+  .sw--keep   { background: var(--color-ink-300); }
+  .sw--split  { background: var(--color-primary-400); }
+  .sw--new    { background: var(--color-primary-600); }
+
+  .diamond { color: var(--color-accent-600); font-size: 10px; vertical-align: middle; margin: 0 4px;}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <div class="topline">
+    <span class="dot"></span>
+    <span>NNTN · Design Spike</span>
+    <span class="crumbs">PHASE 1A / 4 · SYSTEM MAP</span>
+  </div>
+
+  <h1>จาก 47 หน้า → 25 หน้า<br/>โดยไม่ทิ้ง feature เดียว</h1>
+  <p class="lede">
+    ปัจจุบันระบบ NNTN โตจากการค่อยๆ ต่อ feature ทีละชิ้น — ผลคือ <b>งานเดียวมีหลายหน้า</b> (prep 5 หน้า · นับ 3 หน้า · สต๊อก 3 หน้า) และ <b>domain โผล่ใน URL</b> (meat-stock แยกจาก non-meat) ที่บังคับให้น้องครัวต้องรู้ว่าของอะไรเป็น meat หรือ non-meat ก่อนใช้งาน
+    <br/><br/>
+    Redesign นี้ <b>ย้าย domain ไปหลังบ้าน</b> — user เลือก task ก่อน (รับ/ผลิต/ส่ง/นับ) ระบบเลือกฟิลด์ตาม <code>items.type</code> เหมือนที่ <code>rpc_receive_universal</code> ทำอยู่แล้ว
+  </p>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat__k">As-Is Pages</div>
+      <div class="stat__v">47</div>
+      <div class="stat__sub">รวม deprecated stubs 6 · mock 5</div>
+    </div>
+    <div class="stat stat--green">
+      <div class="stat__k">To-Be Pages</div>
+      <div class="stat__v">25</div>
+      <div class="stat__sub">−47% · keep every real feature</div>
+    </div>
+    <div class="stat stat--accent">
+      <div class="stat__k">Bugs in Redesign Scope</div>
+      <div class="stat__v">3</div>
+      <div class="stat__sub">B2 · B5 · B6 (UI fixable)</div>
+    </div>
+    <div class="stat">
+      <div class="stat__k">Hero Prototype</div>
+      <div class="stat__v" style="font-size:26px;line-height:1.2;margin-top:12px">hub-<br/>delivery</div>
+      <div class="stat__sub">touches 3 domains · fixes B2+B6</div>
+    </div>
+  </div>
+
+  <!-- IA Layers -->
+  <div class="section-h">
+    <h2>IA 3 ชั้น <span class="diamond">◆</span> hybrid task/lifecycle/domain</h2>
+    <span class="hint">Primary · Secondary · Admin</span>
+  </div>
+
+  <div class="ia-layers">
+    <div class="layer">
+      <div class="layer__label">
+        <div class="layer__num">01</div>
+        <div style="margin-top:8px">PRIMARY</div>
+      </div>
+      <div class="layer__body">
+        <h3 class="layer__title">By Task — สำหรับน้องครัว (mobile, 90% ของเวลาการใช้งาน)</h3>
+        <p class="layer__desc">เข้ามาปุ๊บเห็น 5 กริยา: <b>รับ / ผลิต / ส่ง / นับ / รายงาน</b> — ไม่ต้องตัดสินใจก่อนว่าของเป็น meat หรือ non-meat · ระบบเลือกฟิลด์ให้เอง</p>
+        <div class="layer__tags">
+          <span class="layer__tag is-primary">รับของ</span>
+          <span class="layer__tag is-primary">ผลิต/แปรรูป</span>
+          <span class="layer__tag is-primary">ส่งออก</span>
+          <span class="layer__tag is-primary">นับสต๊อก</span>
+          <span class="layer__tag is-primary">รายงาน</span>
+        </div>
+      </div>
+    </div>
+    <div class="layer">
+      <div class="layer__label">
+        <div class="layer__num">02</div>
+        <div style="margin-top:8px">SECONDARY</div>
+      </div>
+      <div class="layer__body">
+        <h3 class="layer__title">By Item Lifecycle — สำหรับ audit/trace (desktop, ไทน์)</h3>
+        <p class="layer__desc">เมื่อ drill-in รายตัว เห็น timeline เดียว: <b>รับ → คลัง A → คลัง B → แปรรูป → คลัง C → ส่ง → ขาย</b> · ผูกกับ <code>v_stock_unified</code> และ event log</p>
+        <div class="layer__tags">
+          <span class="layer__tag">คลัง A (staging, 17 bags)</span>
+          <span class="layer__tag">คลัง B (cooking, 72)</span>
+          <span class="layer__tag">คลัง C (ready, 317)</span>
+          <span class="layer__tag">ส่ง NT/FS</span>
+        </div>
+      </div>
+    </div>
+    <div class="layer">
+      <div class="layer__label">
+        <div class="layer__num">03</div>
+        <div style="margin-top:8px">ADMIN</div>
+      </div>
+      <div class="layer__body">
+        <h3 class="layer__title">By Domain — เฉพาะ admin/config (ไทน์)</h3>
+        <p class="layer__desc">Master data ที่ไม่ค่อยแตะ: items, BOM, suppliers, par levels, platform health · แยก URL เพราะ cognitive scope ต่างและ permission ต่าง</p>
+        <div class="layer__tags">
+          <span class="layer__tag is-accent">admin/items</span>
+          <span class="layer__tag is-accent">admin/bom</span>
+          <span class="layer__tag is-accent">admin/config</span>
+          <span class="layer__tag is-accent">platform-health</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lifecycle strip -->
+  <div class="section-h">
+    <h2>Item Lifecycle <span class="diamond">◆</span> 5 stages across คลัง A→B→C</h2>
+    <span class="hint">backend mapping kept identical to blueprint §3/§10</span>
+  </div>
+
+  <div class="lifecycle">
+    <div class="stage">
+      <div class="stage__num">STAGE 01</div>
+      <div class="stage__title">รับของ</div>
+      <div class="stage__loc">→ คลัง A</div>
+      <div class="stage__tables">rpc_receive_universal<br/>catch_weight OR stock_counts</div>
+    </div>
+    <div class="stage">
+      <div class="stage__num">STAGE 02</div>
+      <div class="stage__title">เตรียม/ตุ๋น</div>
+      <div class="stage__loc">คลัง A → B</div>
+      <div class="stage__tables">rpc_production_execute<br/>cook_sessions · cw status</div>
+    </div>
+    <div class="stage">
+      <div class="stage__num">STAGE 03</div>
+      <div class="stage__title">แปรรูป/แบ่ง</div>
+      <div class="stage__loc">คลัง B → C</div>
+      <div class="stage__tables">rpc_repack_execute<br/>portion_log · prep_log</div>
+    </div>
+    <div class="stage">
+      <div class="stage__num">STAGE 04</div>
+      <div class="stage__title">ส่งออก</div>
+      <div class="stage__loc">คลัง C → NT/FS</div>
+      <div class="stage__tables">stock.submit_delivery<br/>deliveries · delivery_lines</div>
+    </div>
+    <div class="stage">
+      <div class="stage__num">STAGE 05</div>
+      <div class="stage__title">ตรวจนับ/ปรับ</div>
+      <div class="stage__loc">any คลัง</div>
+      <div class="stage__tables">rpc_count_adjust<br/>stock_counts event=count</div>
+    </div>
+  </div>
+
+  <!-- Consolidation map -->
+  <div class="section-h">
+    <h2>Page-level Map <span class="diamond">◆</span> As-Is → To-Be</h2>
+    <span class="hint">22 pages consolidated · 6 deprecated killed · 4 new surfaces</span>
+  </div>
+
+  <div class="legend">
+    <span><span class="sw sw--kill"></span>ลบ/รวม (deprecate)</span>
+    <span><span class="sw sw--merge"></span>รวม (consolidate)</span>
+    <span><span class="sw sw--keep"></span>คงไว้ (keep)</span>
+    <span><span class="sw sw--split"></span>แตก (split monolith)</span>
+    <span><span class="sw sw--new"></span>ใหม่ (new surface)</span>
+  </div>
+
+  <!-- PRIMARY TASKS -->
+  <h3 style="font-size:18px;font-weight:700;margin:var(--space-7) 0 var(--space-3);color:var(--color-primary-700);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;">Primary · Task-based (5 tasks)</h3>
+  <div class="compare">
+    <div class="col col--asis">
+      <div class="col-h"><span class="col-h__pill">As-Is</span><span>การใช้งานปัจจุบัน</span><span class="col-h__count">12 pages</span></div>
+      <div class="node-list">
+        <!-- Receive -->
+        <div class="node node--merge"><div class="node__ic">📥</div><div class="node__name">po-receive.html <span style="color:var(--color-ink-500);font-size:12px">· 1064 LoC · ⚠ B1</span></div><span class="node__tag">MERGE</span></div>
+        <div class="node node--kill"><div class="node__ic">🗑</div><div class="node__name">receiving-form.html</div><span class="node__tag">DEPR</span></div>
+        <div class="node node--merge"><div class="node__ic">📥</div><div class="node__name">meat-stock/index.html <code style="font-size:11px">#receive tab</code></div><span class="node__tag">EXTRACT</span></div>
+        <!-- Prep -->
+        <div class="node node--merge"><div class="node__ic">🔪</div><div class="node__name">production-log-form.html · 946</div><span class="node__tag">MERGE</span></div>
+        <div class="node node--merge"><div class="node__ic">🔪</div><div class="node__name">prep-form.html · 430</div><span class="node__tag">MERGE</span></div>
+        <div class="node node--merge"><div class="node__ic">🔪</div><div class="node__name">portion-form.html · 401</div><span class="node__tag">MERGE</span></div>
+        <div class="node node--merge"><div class="node__ic">🔪</div><div class="node__name">meat-stock#produce tab</div><span class="node__tag">EXTRACT</span></div>
+        <!-- Delivery -->
+        <div class="node node--merge"><div class="node__ic">🚚</div><div class="node__name">hub-delivery.html · 2477 · ⚠ B2 B6</div><span class="node__tag">KEEP+FIX</span></div>
+        <div class="node node--kill"><div class="node__ic">🗑</div><div class="node__name">withdrawal-form.html</div><span class="node__tag">DEPR</span></div>
+        <!-- Count -->
+        <div class="node node--merge"><div class="node__ic">📝</div><div class="node__name">stock-form.html · 529</div><span class="node__tag">MERGE</span></div>
+        <div class="node node--merge"><div class="node__ic">📝</div><div class="node__name">count-sheet.html · 316</div><span class="node__tag">MERGE</span></div>
+        <div class="node node--merge"><div class="node__ic">📝</div><div class="node__name">count-sheet-weekly.html · 293</div><span class="node__tag">MERGE</span></div>
+        <!-- Report -->
+        <div class="node node--merge"><div class="node__ic">📊</div><div class="node__name">stock-report.html · 579</div><span class="node__tag">MERGE</span></div>
+        <div class="node node--merge"><div class="node__ic">📊</div><div class="node__name">count-log.html · 163 · ⚠ B5</div><span class="node__tag">MERGE</span></div>
+      </div>
+    </div>
+
+    <div class="compare__arrow">→</div>
+
+    <div class="col col--tobe">
+      <div class="col-h"><span class="col-h__pill">To-Be</span><span>หลัง redesign</span><span class="col-h__count">5 surfaces</span></div>
+      <div class="node-list">
+        <div class="node node--new"><div class="node__ic">📥</div><div class="node__name">/รับ <span style="opacity:.7;font-weight:500;font-size:12px">· universal receive (routes by items.type)</span></div><span class="node__tag">NEW</span></div>
+        <div class="node node--new"><div class="node__ic">🔪</div><div class="node__name">/ผลิต <span style="opacity:.7;font-weight:500;font-size:12px">· unified prep/produce/repack/portion</span></div><span class="node__tag">NEW</span></div>
+        <div class="node node--new"><div class="node__ic">🚚</div><div class="node__name">/ส่ง <span style="opacity:.7;font-weight:500;font-size:12px">· meat bags + nm qty in one bill (fix B2 B6)</span></div><span class="node__tag">NEW</span></div>
+        <div class="node node--new"><div class="node__ic">📝</div><div class="node__name">/นับ <span style="opacity:.7;font-weight:500;font-size:12px">· adaptive daily/weekly/spot mode</span></div><span class="node__tag">NEW</span></div>
+        <div class="node node--new"><div class="node__ic">📊</div><div class="node__name">/รายงาน <span style="opacity:.7;font-weight:500;font-size:12px">· unified event timeline + filter + qty column (fix B5)</span></div><span class="node__tag">NEW</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECONDARY / Item lifecycle -->
+  <h3 style="font-size:18px;font-weight:700;margin:var(--space-8) 0 var(--space-3);color:var(--color-primary-700);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;">Secondary · Lifecycle drill-in (detail + history)</h3>
+  <div class="compare">
+    <div class="col col--asis">
+      <div class="col-h"><span class="col-h__pill">As-Is</span><span class="col-h__count">6 pages</span></div>
+      <div class="node-list">
+        <div class="node node--merge"><div class="node__ic">📦</div><div class="node__name">index.html (non-meat stock) · 411</div><span class="node__tag">MERGE</span></div>
+        <div class="node node--merge"><div class="node__ic">📦</div><div class="node__name">dashboard.html · 567</div><span class="node__tag">MERGE</span></div>
+        <div class="node node--split"><div class="node__ic">🐂</div><div class="node__name">meat-stock/index.html · 🔴 2895 LoC monolith</div><span class="node__tag">SPLIT</span></div>
+        <div class="node node--merge"><div class="node__ic">📋</div><div class="node__name">production-log-view.html · 272</div><span class="node__tag">MERGE</span></div>
+        <div class="node node--merge"><div class="node__ic">📋</div><div class="node__name">production-history.html · 322</div><span class="node__tag">MERGE</span></div>
+        <div class="node node--merge"><div class="node__ic">📋</div><div class="node__name">prep-log-view.html · 326</div><span class="node__tag">MERGE</span></div>
+      </div>
+    </div>
+    <div class="compare__arrow">→</div>
+    <div class="col col--tobe">
+      <div class="col-h"><span class="col-h__pill">To-Be</span><span class="col-h__count">4 surfaces</span></div>
+      <div class="node-list">
+        <div class="node node--new"><div class="node__ic">📦</div><div class="node__name">/คลัง <span style="opacity:.7;font-size:12px;font-weight:500">· unified stock view (filter by domain/warehouse)</span></div><span class="node__tag">NEW</span></div>
+        <div class="node node--new"><div class="node__ic">🔍</div><div class="node__name">/คลัง/:sku <span style="opacity:.7;font-size:12px;font-weight:500">· item detail + full lifecycle timeline</span></div><span class="node__tag">NEW</span></div>
+        <div class="node node--new"><div class="node__ic">🐂</div><div class="node__name">/คลัง/bag/:id <span style="opacity:.7;font-size:12px;font-weight:500">· catch-weight bag trace (cw status transitions)</span></div><span class="node__tag">NEW</span></div>
+        <div class="node node--new"><div class="node__ic">🏠</div><div class="node__name">/ (hub) <span style="opacity:.7;font-size:12px;font-weight:500">· today's ops snapshot · mobile home</span></div><span class="node__tag">NEW</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <h3 style="font-size:18px;font-weight:700;margin:var(--space-8) 0 var(--space-3);color:var(--color-primary-700);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;">Admin · Config + CookingBook + Sales</h3>
+  <div class="compare">
+    <div class="col col--asis">
+      <div class="col-h"><span class="col-h__pill">As-Is</span><span class="col-h__count">18 pages</span></div>
+      <div class="node-list">
+        <div class="node node--keep"><div class="node__ic">⚙</div><div class="node__name">admin-items.html · 678</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">⚙</div><div class="node__name">admin-bom.html · 412</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">⚙</div><div class="node__name">admin-config.html · 422</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🛡</div><div class="node__name">platform-health.html · 262</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🎯</div><div class="node__name">goal-dashboard.html · 611</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">📚</div><div class="node__name">guide.html · 805</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🚪</div><div class="node__name">login.html · 184</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🥣</div><div class="node__name">cookingbook/menu.html</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🥣</div><div class="node__name">cookingbook/menu-bom.html</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🥣</div><div class="node__name">cookingbook/bom-detail.html</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🥣</div><div class="node__name">cookingbook/ingredients.html</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🥣</div><div class="node__name">cookingbook/prep-rcp.html</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--merge"><div class="node__ic">🥣</div><div class="node__name">cookingbook/index.html · 65</div><span class="node__tag">MERGE</span></div>
+        <div class="node node--keep"><div class="node__ic">💰</div><div class="node__name">sales-ops.html · 312</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--merge"><div class="node__ic">🔌</div><div class="node__name">data-pipeline.html · 1501 · ⚠ B7</div><span class="node__tag">AUDIT</span></div>
+        <div class="node node--kill"><div class="node__ic">🗑</div><div class="node__name">daily-form.html</div><span class="node__tag">DEPR</span></div>
+        <div class="node node--kill"><div class="node__ic">🗑</div><div class="node__name">bom-view.html</div><span class="node__tag">DEPR</span></div>
+        <div class="node node--kill"><div class="node__ic">🗑</div><div class="node__name">4× design/mock/demo/diagram</div><span class="node__tag">DEPR</span></div>
+      </div>
+    </div>
+    <div class="compare__arrow">→</div>
+    <div class="col col--tobe">
+      <div class="col-h"><span class="col-h__pill">To-Be</span><span class="col-h__count">16 surfaces</span></div>
+      <div class="node-list">
+        <div class="node node--keep"><div class="node__ic">⚙</div><div class="node__name">admin/items</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">⚙</div><div class="node__name">admin/bom</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">⚙</div><div class="node__name">admin/config</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🛡</div><div class="node__name">admin/health</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🎯</div><div class="node__name">goal</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">📚</div><div class="node__name">guide</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🚪</div><div class="node__name">login</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🥣</div><div class="node__name">cookingbook/menu</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🥣</div><div class="node__name">cookingbook/menu-bom</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🥣</div><div class="node__name">cookingbook/bom-detail</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🥣</div><div class="node__name">cookingbook/ingredients</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">🥣</div><div class="node__name">cookingbook/prep-rcp</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--keep"><div class="node__ic">💰</div><div class="node__name">sales-ops</div><span class="node__tag">KEEP</span></div>
+        <div class="node node--new"><div class="node__ic">🔌</div><div class="node__name">admin/data-pipeline <span style="opacity:.7;font-weight:500;font-size:12px">· audited + documented</span></div><span class="node__tag">FIXED</span></div>
+        <div class="node node--new"><div class="node__ic">🍽</div><div class="node__name">cookingbook (root, reshaped hub)</div><span class="node__tag">NEW</span></div>
+        <div class="node node--new"><div class="node__ic">🏠</div><div class="node__name">app.html shell (iframe host)</div><span class="node__tag">KEEP</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Total summary -->
+  <div style="margin-top: var(--space-8); padding: var(--space-5) var(--space-6); background: var(--color-primary-50); border: 1px solid var(--color-primary-200); border-radius: var(--radius-lg); display:flex; justify-content:space-between; flex-wrap:wrap; gap: var(--space-4);">
+    <div>
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:1.5px;color:var(--color-primary-700);">TOTAL</div>
+      <div style="font-size:18px;font-weight:700;color:var(--color-ink-900);margin-top:4px;">
+        Primary <b style="color:var(--color-primary-700)">5</b> + Secondary <b style="color:var(--color-primary-700)">4</b> + Admin <b style="color:var(--color-primary-700)">16</b> = <b style="color:var(--color-primary-700);font-size:22px">25 surfaces</b>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--color-ink-700);max-width:520px;line-height:1.55;">
+      ยังรักษาทุก feature ที่ทำงานอยู่จริง · เพิ่ม item-detail + bag-trace เป็นหน้าใหม่ (ไม่มีใน as-is) · cutover แบบ side-by-side ได้ เพราะ URL path ใหม่ไม่ทับของเก่า
+    </div>
+  </div>
+
+  <!-- Bugs scope -->
+  <div class="section-h">
+    <h2>Bugs in redesign scope <span class="diamond">◆</span> what UI fixes, what backend fixes</h2>
+    <span class="hint">from BLUEPRINT §5</span>
+  </div>
+  <div class="bugs">
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Severity</th><th>Issue</th><th>Redesign plan</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="bug-id">B2</span></td>
+          <td><span class="bug-sev bug-sev--p1">P1</span></td>
+          <td>hub-delivery draft not deleted after submit → stale drafts block re-submit</td>
+          <td class="bug-plan">UI FIX · submit success → auto-clear local draft + server-side DELETE in submit_delivery flow</td>
+        </tr>
+        <tr>
+          <td><span class="bug-id">B5</span></td>
+          <td><span class="bug-sev bug-sev--p3">P3</span></td>
+          <td>count-log doesn't show receive/dispense events → user confuses +10 adjust with true qty</td>
+          <td class="bug-plan">UI FIX · /รายงาน shows unified timeline + <code>qty_on_hand</code> column</td>
+        </tr>
+        <tr>
+          <td><span class="bug-id">B6</span></td>
+          <td><span class="bug-sev bug-sev--p3">P3</span></td>
+          <td>4-bill scatter when shipping combined meat+nm (FS-1 + -NM + -M2 + -NM2)</td>
+          <td class="bug-plan">UI FIX · /ส่ง = one unified bill surface · group in history by (date, branch, bill_prefix)</td>
+        </tr>
+        <tr>
+          <td><span class="bug-id">B1</span></td>
+          <td><span class="bug-sev bug-sev--p1">P1</span></td>
+          <td>rpc_receive_universal delta inflation when before&gt;0</td>
+          <td style="color:var(--color-ink-600)">BACKEND FIX · UI must not assume delta==qty (already handled in receive design)</td>
+        </tr>
+        <tr>
+          <td><span class="bug-id">B3</span></td>
+          <td><span class="bug-sev bug-sev--p2">P2</span></td>
+          <td>PKG bundle (PKG-009) dispense no cascade to sub-items</td>
+          <td style="color:var(--color-ink-600)">BACKEND FIX · UI ready to show "bundle contents" drawer when CookingBook BOM lands</td>
+        </tr>
+        <tr>
+          <td><span class="bug-id">B4</span></td>
+          <td><span class="bug-sev bug-sev--p3">P3</span></td>
+          <td>platform_slo_log cron not writing</td>
+          <td style="color:var(--color-ink-600)">OPS · not in redesign scope</td>
+        </tr>
+        <tr>
+          <td><span class="bug-id">B7</span></td>
+          <td><span class="bug-sev bug-sev--p3">P3</span></td>
+          <td>data-pipeline.html purpose unclear (1501 LoC)</td>
+          <td class="bug-plan">AUDIT · moved under /admin · document or deprecate post-redesign</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Phase nav -->
+  <div class="section-h">
+    <h2>Phase plan <span class="diamond">◆</span> where we are now</h2>
+    <span class="hint">4 phases · phase 1A = this page</span>
+  </div>
+
+  <div class="phase-nav">
+    <a class="phase phase--current">
+      <div class="phase__num">PHASE 1A · NOW</div>
+      <div class="phase__t">System map</div>
+      <div class="phase__d">IA ตัดสินใจแล้ว · 47→25 · bug scope ชัดเจน</div>
+    </a>
+    <a class="phase phase--pending" href="#">
+      <div class="phase__num">PHASE 1B</div>
+      <div class="phase__t">Tokens v2</div>
+      <div class="phase__d">Heritage green + gold diamond · 2-3 type pairings ให้เลือก</div>
+    </a>
+    <a class="phase phase--pending" href="#">
+      <div class="phase__num">PHASE 1C</div>
+      <div class="phase__t">Core components</div>
+      <div class="phase__d">Mobile-first primitives · list, drawer, sheet, bag pill, qty stepper</div>
+    </a>
+    <a class="phase phase--pending" href="#">
+      <div class="phase__num">PHASE 1D</div>
+      <div class="phase__t">hub-delivery hero</div>
+      <div class="phase__d">Clickable prototype · progressive task flow · fixes B2+B6</div>
+    </a>
+  </div>
+
+</main>
+</body>
+</html>

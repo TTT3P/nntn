@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · Design System Spike</title>
+<link rel="stylesheet" href="tokens.css?v=1776874424070" />
+<link rel="stylesheet" href="app.css?v=1776874424070" />
+<style>
+  /* ───── Theme overrides ─────
+     Default theme ("warm") comes from tokens.css?v=1776874424070; others override primary + gradients. */
+  html[data-theme="blue"]{
+    --color-primary-50:#EBF4FF;--color-primary-100:#D0E3FC;--color-primary-300:#6FA8F5;
+    --color-primary-500:#2563EB;--color-primary-600:#1D4ED8;--color-primary-700:#1E40AF;--color-primary-800:#1E3A8A;
+    --grad-stat-orange:linear-gradient(180deg,#DBEAFE 0%,#BFDBFE 100%);
+    --grad-sidebar:linear-gradient(180deg,#2563EB 0%,#1D4ED8 100%);
+    --shadow-primary:0 8px 20px rgba(37,99,235,.25);
+    --shadow-focus:0 0 0 3px rgba(37,99,235,.25);
+  }
+  html[data-theme="green"]{
+    --color-primary-50:#ECFDF5;--color-primary-100:#D1FAE5;--color-primary-300:#6EE7B7;
+    --color-primary-500:#10B981;--color-primary-600:#059669;--color-primary-700:#047857;--color-primary-800:#065F46;
+    --grad-stat-orange:linear-gradient(180deg,#D1FAE5 0%,#A7F3D0 100%);
+    --grad-sidebar:linear-gradient(180deg,#059669 0%,#047857 100%);
+    --shadow-primary:0 8px 20px rgba(5,150,105,.25);
+    --shadow-focus:0 0 0 3px rgba(5,150,105,.25);
+  }
+  html[data-theme="dark"]{
+    --color-primary-500:#FB923C;--color-primary-600:#F97316;--color-primary-700:#EA580C;
+    --color-ink-900:#F5F2EF;--color-ink-800:#E8E2DC;--color-ink-700:#D6CFC8;
+    --color-ink-500:#8F857C;--color-ink-300:#433A33;--color-ink-200:#2A231E;--color-ink-100:#1A1410;--color-ink-50:#0F0C09;
+    --color-bg-app:#0F0C09;--color-bg-surface:#1A1410;--color-bg-raised:#1A1410;
+    --grad-sidebar:linear-gradient(180deg,#1A1410 0%,#0F0C09 100%);
+    --grad-stat-orange:linear-gradient(180deg,#2A231E 0%,#1A1410 100%);
+    --grad-stat-green:linear-gradient(180deg,#0A2E1E 0%,#062218 100%);
+    --grad-stat-red:linear-gradient(180deg,#3A1612 0%,#2A0F0A 100%);
+    --grad-stat-amber:linear-gradient(180deg,#3A2A0A 0%,#2A1F08 100%);
+  }
+  html[data-theme="sakura"]{
+    --color-primary-50:#FDF2F8;--color-primary-100:#FCE7F3;--color-primary-300:#F9A8D4;
+    --color-primary-500:#EC4899;--color-primary-600:#DB2777;--color-primary-700:#BE185D;--color-primary-800:#9D174D;
+    --grad-stat-orange:linear-gradient(180deg,#FCE7F3 0%,#FBCFE8 100%);
+    --grad-sidebar:linear-gradient(180deg,#EC4899 0%,#DB2777 100%);
+    --shadow-primary:0 8px 20px rgba(219,39,119,.25);
+    --shadow-focus:0 0 0 3px rgba(219,39,119,.25);
+  }
+
+  /* ───── Landing layout ───── */
+  .landing { max-width: 1240px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  .landing__topbar {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom: var(--space-7);
+  }
+  .brandline {
+    display:flex; align-items:center; gap: 12px;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--color-ink-600);
+  }
+  .brandline__dot {
+    width:10px; height:10px; border-radius:50%;
+    background: var(--color-primary-600);
+    box-shadow: 0 0 0 4px var(--color-primary-100);
+  }
+
+  /* Theme picker pill */
+  .theme-picker {
+    display:inline-flex; gap:10px; align-items:center;
+    padding: 8px 12px;
+    background: var(--color-bg-surface);
+    border: var(--border-subtle);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-sm);
+  }
+  .theme-picker__label {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--color-ink-500); padding: 0 6px 0 2px;
+  }
+  .theme-swatch {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 2px solid transparent; cursor: pointer; padding: 0;
+    transition: transform .14s var(--ease-out), border-color .14s var(--ease-out);
+    position: relative;
+  }
+  .theme-swatch:hover { transform: scale(1.12); }
+  .theme-swatch[aria-pressed="true"] { border-color: var(--color-ink-900); }
+  .theme-swatch[aria-pressed="true"]::after {
+    content:""; position:absolute; inset:-7px;
+    border: 1px dashed var(--color-ink-400); border-radius:50%;
+  }
+  .theme-swatch--warm   { background: linear-gradient(135deg,#F05A1A,#E8441A); }
+  .theme-swatch--blue   { background: linear-gradient(135deg,#2563EB,#1D4ED8); }
+  .theme-swatch--green  { background: linear-gradient(135deg,#10B981,#047857); }
+  .theme-swatch--dark   { background: linear-gradient(135deg,#1A1410 50%,#F97316 50%); }
+  .theme-swatch--sakura { background: linear-gradient(135deg,#EC4899,#BE185D); }
+
+  /* Hero */
+  .hero { margin-bottom: var(--space-8); }
+  .hero__eyebrow {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--color-primary-700);
+    margin-bottom: var(--space-3);
+  }
+  .hero h1 {
+    font-size: 56px; line-height: 1.05; font-weight: 800;
+    color: var(--color-ink-900); letter-spacing: -0.02em;
+    margin: 0 0 var(--space-4); max-width: 820px;
+  }
+  .hero p {
+    font-size: 18px; line-height: 1.55; color: var(--color-ink-600);
+    max-width: 680px; margin: 0;
+  }
+
+  /* Pages grid */
+  .section-head {
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding-bottom: var(--space-4);
+    border-bottom: var(--border-subtle);
+    margin-bottom: var(--space-5);
+  }
+  .section-head h2 {
+    font-size: 22px; font-weight: 700; margin:0;
+    color: var(--color-ink-900);
+  }
+  .section-head__hint {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--color-ink-500); letter-spacing: 1px;
+  }
+  .pages-grid {
+    display:grid; grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-5);
+    margin-bottom: var(--space-8);
+  }
+  @media (max-width: 920px){ .pages-grid{ grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 640px){ .pages-grid{ grid-template-columns: 1fr; } }
+
+  .page-card {
+    display:flex; flex-direction:column; gap: var(--space-3);
+    background: var(--color-bg-surface);
+    border: var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    text-decoration: none; color: inherit;
+    transition: transform .15s var(--ease-out), box-shadow .15s var(--ease-out), border-color .15s var(--ease-out);
+    position: relative; overflow: hidden;
+  }
+  .page-card::before {
+    content:""; position:absolute; inset: 0 0 auto 0; height: 3px;
+    background: var(--color-primary-500);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform .25s var(--ease-out);
+  }
+  .page-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary-300);
+  }
+  .page-card:hover::before { transform: scaleX(1); }
+  .page-card__num {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--color-ink-500); letter-spacing: 1.5px;
+  }
+  .page-card__title {
+    font-size: 20px; font-weight: 700; color: var(--color-ink-900);
+    margin: 0;
+  }
+  .page-card__desc {
+    font-size: 14px; line-height: 1.5; color: var(--color-ink-600);
+    margin: 0; flex: 1;
+  }
+  .page-card__foot {
+    display:flex; justify-content:space-between; align-items:center;
+    padding-top: var(--space-3);
+    border-top: var(--border-subtle);
+    margin-top: auto;
+  }
+  .page-card__file {
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--color-ink-500);
+  }
+  .page-card__arrow {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--color-ink-100);
+    display:grid; place-items:center;
+    transition: background .15s, color .15s;
+  }
+  .page-card:hover .page-card__arrow {
+    background: var(--color-primary-500);
+    color: #fff;
+  }
+
+  /* Principles strip */
+  .principles {
+    display:grid; grid-template-columns: repeat(3,1fr);
+    gap: var(--space-5);
+    padding: var(--space-6);
+    background: var(--color-primary-50);
+    border: 1px solid var(--color-primary-100);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-8);
+  }
+  @media (max-width: 920px){ .principles{ grid-template-columns: 1fr; } }
+  .principle__num {
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--color-primary-700); letter-spacing: 1.5px;
+    margin-bottom: var(--space-2);
+  }
+  .principle__title {
+    font-size: 16px; font-weight: 700; color: var(--color-ink-900);
+    margin: 0 0 var(--space-2);
+  }
+  .principle__body {
+    font-size: 13px; line-height: 1.55; color: var(--color-ink-700); margin: 0;
+  }
+
+  /* Direction blocks */
+  .directions { display:grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
+  @media (max-width: 920px){ .directions{ grid-template-columns: 1fr; } }
+  .direction {
+    border: var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    background: var(--color-bg-surface);
+  }
+  .direction--active { border-color: var(--color-primary-500); box-shadow: var(--shadow-sm); }
+  .direction__tag {
+    display:inline-block;
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 3px 8px; border-radius: var(--radius-pill);
+    margin-bottom: var(--space-3);
+  }
+  .direction--active .direction__tag { background: var(--color-primary-100); color: var(--color-primary-700); }
+  .direction--planned .direction__tag { background: var(--color-ink-100); color: var(--color-ink-600); }
+  .direction h3 { font-size: 20px; margin: 0 0 var(--space-2); color: var(--color-ink-900); }
+  .direction p { font-size: 14px; line-height: 1.55; color: var(--color-ink-600); margin: 0; }
+
+  .footer {
+    margin-top: var(--space-8); padding-top: var(--space-6);
+    border-top: var(--border-subtle);
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--color-ink-500); letter-spacing: 1px;
+    display:flex; justify-content:space-between;
+  }
+</style>
+</head>
+<body>
+
+<main class="landing">
+
+  <div class="landing__topbar">
+    <div class="brandline"><span class="brandline__dot"></span>NNTN · Design System Spike</div>
+
+    <div class="theme-picker" role="radiogroup" aria-label="เลือกธีม">
+      <span class="theme-picker__label">Theme</span>
+      <button class="theme-swatch theme-swatch--warm"   data-theme="warm"   aria-pressed="true"  title="Warm Orange"></button>
+      <button class="theme-swatch theme-swatch--blue"   data-theme="blue"   aria-pressed="false" title="Cool Blue"></button>
+      <button class="theme-swatch theme-swatch--green"  data-theme="green"  aria-pressed="false" title="Forest Green"></button>
+      <button class="theme-swatch theme-swatch--sakura" data-theme="sakura" aria-pressed="false" title="Sakura Pink"></button>
+      <button class="theme-swatch theme-swatch--dark"   data-theme="dark"   aria-pressed="false" title="Midnight Dark"></button>
+    </div>
+  </div>
+
+  <section class="hero">
+    <div class="hero__eyebrow">NNTN · 40 YEARS OF TRADITION BEEF STEW</div>
+    <h1 class="heritage-title" style="font-family:var(--font-serif);font-weight:400;font-size:64px;line-height:1.08;letter-spacing:-0.015em">ระบบจัดการร้าน <br/><span style="color:var(--color-primary-600)">สืบทอดรสชาติ ๔๐ ปี</span></h1>
+    <p style="font-size:18px">Design system + ต้นแบบ 8 หน้าจอ สำหรับร้านเนื้อตุ๋น NNTN — ตีกรอบ visual language แบบ heritage (เขียวเข้ม + ทองเพชร) และวางแนวทางแก้ปัญหาสต๊อก 3 ระบบ (แปรรูป / non-meat / catch-weight) ให้อยู่ภายใต้ UI เดียวกัน</p>
+  </section>
+
+  <!-- Principles -->
+  <div class="principles">
+    <div class="principle">
+      <div class="principle__num">01</div>
+      <h3 class="principle__title">Show gaps, don't hide them</h3>
+      <p class="principle__body">ใช้ <strong>∅</strong> (NULL) เป็น first-class state — ช่องว่างไม่ใช่ศูนย์, มันคือข้อมูลที่ยังไม่ได้กรอก และต้องเห็นชัด</p>
+    </div>
+    <div class="principle">
+      <div class="principle__num">02</div>
+      <h3 class="principle__title">Partial dispense = first-class</h3>
+      <p class="principle__body">เบิก 12 kg ได้จริง 9 kg? แสดง 9/12 พร้อม badge "partial" — ไม่บังคับให้แก้ตัวเลข</p>
+    </div>
+    <div class="principle">
+      <div class="principle__num">03</div>
+      <h3 class="principle__title">Every write is traceable</h3>
+      <p class="principle__body">ทุก action ลง activity log อัตโนมัติ — เห็นได้ในหน้า Dashboard และ Stock Detail</p>
+    </div>
+  </div>
+
+  <!-- Pages -->
+  <div class="section-head">
+    <h2>หน้าจอต้นแบบ</h2>
+    <span class="section-head__hint">8 screens · click เพื่อดู</span>
+  </div>
+
+  <div class="pages-grid">
+    <a class="page-card" href="components.html">
+      <div class="page-card__num">00 · FOUNDATION</div>
+      <h3 class="page-card__title">Component Showcase</h3>
+      <p class="page-card__desc">Colors, type scale, buttons, stat cards, badges, form, sortable table, modal — ครบทุก token และ component</p>
+      <div class="page-card__foot"><span class="page-card__file">components.html</span><span class="page-card__arrow">→</span></div>
+    </a>
+
+    <a class="page-card" href="dashboard.html">
+      <div class="page-card__num">01 · OVERVIEW</div>
+      <h3 class="page-card__title">ภาพรวมร้าน</h3>
+      <p class="page-card__desc">Stat strip, sales chart, มูลค่าตามหมวด, วัตถุดิบใกล้หมด, กิจกรรมวันนี้</p>
+      <div class="page-card__foot"><span class="page-card__file">dashboard.html</span><span class="page-card__arrow">→</span></div>
+    </a>
+
+    <a class="page-card" href="stock.html">
+      <div class="page-card__num">02 · STOCK</div>
+      <h3 class="page-card__title">สต๊อกวัตถุดิบ</h3>
+      <p class="page-card__desc">Category tree, รายการทั้งหมด 26 SKU, NULL (∅) gap indicators</p>
+      <div class="page-card__foot"><span class="page-card__file">stock.html</span><span class="page-card__arrow">→</span></div>
+    </a>
+
+    <a class="page-card" href="register.html">
+      <div class="page-card__num">03 · REGISTER</div>
+      <h3 class="page-card__title">ลงทะเบียนสินค้าใหม่</h3>
+      <p class="page-card__desc">Stepper + blocked-save errors + unit picker รองรับทั้ง 3 ระบบสต๊อก</p>
+      <div class="page-card__foot"><span class="page-card__file">register.html</span><span class="page-card__arrow">→</span></div>
+    </a>
+
+    <a class="page-card" href="receive.html">
+      <div class="page-card__num">04 · RECEIVE</div>
+      <h3 class="page-card__title">รับของเข้าสต๊อก</h3>
+      <p class="page-card__desc">Catch-weight handling, success toast, อ้างอิง PO, เลขน้ำหนัก 2 ค่า</p>
+      <div class="page-card__foot"><span class="page-card__file">receive.html</span><span class="page-card__arrow">→</span></div>
+    </a>
+
+    <a class="page-card" href="prep.html">
+      <div class="page-card__num">05 · PREP</div>
+      <h3 class="page-card__title">แปรรูปเนื้อสัตว์</h3>
+      <p class="page-card__desc">Partial-dispense pattern · เบิก 12 kg → ได้จริง 9/12 kg + reason code</p>
+      <div class="page-card__foot"><span class="page-card__file">prep.html</span><span class="page-card__arrow">→</span></div>
+    </a>
+  </div>
+
+  <!-- Directions -->
+  <div class="section-head">
+    <h2>แนวทางการออกแบบ</h2>
+    <span class="section-head__hint">2 directions</span>
+  </div>
+
+  <div class="directions">
+    <div class="direction direction--active">
+      <span class="direction__tag">Direction A · built</span>
+      <h3>Operator-friendly</h3>
+      <p>Sarabun 600, spacing โปร่ง, hit target ≥ 44px, สีส้มร้อนเป็น accent เดียว — เหมาะกับคนหน้าร้านที่ใช้งานเร่งรีบบนแท็บเล็ต</p>
+    </div>
+    <div class="direction direction--planned">
+      <span class="direction__tag">Direction B · v0.2</span>
+      <h3>Pro-tool · "Bloomberg for noodles"</h3>
+      <p>Density สูง, mono font เด่น, keyboard-first, หลายคอลัมน์ต่อ viewport — สำหรับเจ้าของร้านที่อยากเห็นทุกอย่างในจอเดียว</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>NNTN · Design Spike v0.1 · เมษายน 2026</span>
+    <span>tokens.css?v=1776874424070 · app.css?v=1776874424070 · sidebar.js?v=1776874424070</span>
+  </div>
+
+</main>
+
+<script>
+  (function(){
+    const root = document.documentElement;
+    const saved = localStorage.getItem('nntn_theme') || 'warm';
+    applyTheme(saved);
+
+    document.querySelectorAll('.theme-swatch').forEach(btn => {
+      btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
+    });
+
+    function applyTheme(name){
+      if (name === 'warm') root.removeAttribute('data-theme');
+      else root.setAttribute('data-theme', name);
+      localStorage.setItem('nntn_theme', name);
+      document.querySelectorAll('.theme-swatch').forEach(b => {
+        b.setAttribute('aria-pressed', b.dataset.theme === name ? 'true' : 'false');
+      });
+    }
+  })();
+</script>
+
+</body>
+</html>

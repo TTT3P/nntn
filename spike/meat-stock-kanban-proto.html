@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · meat-stock#stock kanban (Phase 3B)</title>
+<link rel="stylesheet" href="tokens.css?v=20260422b" />
+<script>
+  try {
+    var saved = localStorage.getItem('nntn_theme');
+    if (saved === 'warm' || saved === null) {
+      localStorage.removeItem('nntn_theme');
+      document.documentElement.removeAttribute('data-theme');
+    }
+  } catch(e){}
+</script>
+<style>
+  body { background: var(--color-bg-app); color: var(--color-ink-800); font-family: var(--font-sans);}
+  .page { max-width: 1760px; margin: 0 auto; padding: 32px 24px 100px;}
+
+  .top { display:flex; gap:14px; align-items:center; font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-ink-600); margin-bottom: var(--space-5);}
+  .top .dot { width:10px; height:10px; border-radius:50%; background: var(--color-primary-600); box-shadow: 0 0 0 4px var(--color-primary-100);}
+  .top .crumbs { margin-left:auto; color: var(--color-ink-500);}
+  .back-link { color: var(--color-primary-700); text-decoration: none; border-bottom: 1px dotted currentColor;}
+
+  h1.page-h { font-family: var(--font-display); font-weight: 500; font-size: 48px; line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 var(--space-3); color: var(--color-ink-900); max-width: 920px;}
+  h1 .hi { color: var(--color-primary-700);}
+  .page-lede { font-size: 17px; line-height: 1.6; color: var(--color-ink-700); max-width: 900px; margin: 0 0 var(--space-4);}
+  .page-lede b { color: var(--color-primary-700);}
+  .pill { display:inline-block; font-family: var(--font-mono); font-size: 11px; background: var(--color-ink-100); color: var(--color-ink-800); padding: 2px 6px; border-radius: 3px;}
+
+  /* Desktop app frame */
+  .app { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); overflow: hidden;}
+  .app__chrome { display:flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--color-ink-50); border-bottom: 1px solid var(--color-ink-200); font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-600);}
+  .app__chrome .bullets { display:flex; gap: 6px;}
+  .app__chrome .bullets i { width: 11px; height: 11px; border-radius: 50%; background: var(--color-ink-200);}
+  .app__chrome .bullets i:nth-child(1){ background: #E06A55;} .app__chrome .bullets i:nth-child(2){ background: #E3B341;} .app__chrome .bullets i:nth-child(3){ background: var(--color-success-500);}
+  .app__chrome .url { background: #fff; padding: 4px 10px; border-radius: 3px; border: 1px solid var(--color-ink-200);}
+
+  .app__hd { padding: 20px 28px 18px; border-bottom: 1px solid var(--color-ink-200); display:grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; background: linear-gradient(180deg, #fff 0%, #FAFAF5 100%);}
+  .app__hd h2 { font-family: var(--font-display); font-weight: 500; font-size: 30px; letter-spacing: -0.01em; color: var(--color-ink-900); margin: 0;}
+  .app__hd .sub { font-size: 13px; color: var(--color-ink-600); margin-top: 4px; font-family: var(--font-mono); letter-spacing: .3px;}
+  .app__hd .sub b { color: var(--color-primary-700);}
+
+  .tabs { display:flex; gap: 4px; margin-top: 12px;}
+  .tabs__i { padding: 8px 14px; border-radius: 6px 6px 0 0; font-size: 13px; color: var(--color-ink-600); cursor: pointer; border-bottom: 2px solid transparent;}
+  .tabs__i.active { background: var(--color-primary-600); color: #fff; border-bottom-color: var(--color-primary-600); font-weight: 600;}
+  .tabs__i:not(.active):hover { background: var(--color-ink-100);}
+
+  .toolbar { padding: 12px 28px; border-bottom: 1px solid var(--color-ink-200); display:flex; gap: 10px; align-items: center; background: #fff;}
+  .toolbar .grp { display:flex; gap: 4px; background: var(--color-ink-100); border-radius: 6px; padding: 3px;}
+  .toolbar .grp button { background: none; border: none; padding: 6px 12px; font-size: 12px; color: var(--color-ink-600); border-radius: 4px; cursor: pointer; font-weight: 600;}
+  .toolbar .grp button.active { background: #fff; color: var(--color-ink-900); box-shadow: var(--shadow-xs);}
+  .toolbar .search { margin-left: auto; display:flex; gap: 8px; align-items: center; padding: 6px 12px; border: 1px solid var(--color-ink-200); border-radius: 6px; background: #fff; min-width: 280px; font-size: 13px; color: var(--color-ink-500);}
+  .toolbar .search i { font-size: 14px;}
+  .toolbar .btn { padding: 7px 14px; background: var(--color-primary-600); color: #fff; border-radius: 6px; font-size: 13px; font-weight: 600; border: none; cursor: pointer;}
+  .toolbar .btn--ghost { background: #fff; color: var(--color-ink-800); border: 1px solid var(--color-ink-300);}
+
+  /* Stat strip */
+  .stat-strip { padding: 16px 28px; background: var(--color-ink-50); border-bottom: 1px solid var(--color-ink-200); display:grid; grid-template-columns: repeat(6, 1fr); gap: 16px;}
+  .stat { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 12px 14px;}
+  .stat__k { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.2px; color: var(--color-ink-500); text-transform: uppercase;}
+  .stat__v { font-family: var(--font-mono); font-weight: 700; font-size: 24px; color: var(--color-ink-900); margin-top: 4px; font-variant-numeric: tabular-nums; line-height: 1;}
+  .stat__v small { font-family: var(--font-sans); font-weight: 500; font-size: 13px; color: var(--color-ink-500); margin-left: 4px;}
+  .stat__s { font-size: 11px; color: var(--color-ink-600); margin-top: 6px;}
+  .stat--alert .stat__v { color: #8F1A0B;}
+  .stat--gold { background: var(--grad-stat-orange); border-color: var(--color-accent-300);}
+  .stat--gold .stat__v { color: var(--color-primary-900);}
+
+  /* Kanban */
+  .kanban-wrap { padding: 20px 28px; background: var(--color-ink-50);}
+  .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;}
+  .col { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column;}
+  .col__hd { padding: 12px 14px; border-bottom: 2px solid var(--col-accent, var(--color-ink-200)); display:grid; grid-template-columns: 1fr auto; align-items: center;}
+  .col__t { font-family: var(--font-display); font-weight: 600; font-size: 17px; color: var(--color-ink-900);}
+  .col__s { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .4px; margin-top: 2px;}
+  .col__n { font-family: var(--font-mono); font-weight: 700; font-size: 18px; color: var(--col-accent, var(--color-ink-900)); font-variant-numeric: tabular-nums;}
+  .col__body { padding: 10px; flex: 1; min-height: 600px; background: #FCFCFA;}
+
+  .col-a { --col-accent: #2F7A3F;}
+  .col-b { --col-accent: #C9962C;}
+  .col-c { --col-accent: #1F4E2A;}
+  .col-alert { --col-accent: #8F1A0B;}
+  .col-alert .col__hd { background: #FDF4F1;}
+
+  /* Bag card */
+  .bag { background: #fff; border: 1px solid var(--color-ink-200); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; cursor: grab; position: relative; transition: box-shadow .15s, transform .15s;}
+  .bag:hover { box-shadow: var(--shadow-md); transform: translateY(-1px);}
+  .bag.dragging { opacity: 0.6; border-style: dashed;}
+  .bag__hd { display:grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;}
+  .bag__sku { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .3px; line-height: 1.2;}
+  .bag__t { font-size: 13px; font-weight: 700; color: var(--color-ink-900); margin-top: 2px; line-height: 1.3;}
+  .bag__w { font-family: var(--font-mono); font-weight: 700; font-size: 14px; color: var(--color-primary-700); font-variant-numeric: tabular-nums; text-align: right; line-height: 1;}
+  .bag__w-unit { font-size: 9px; color: var(--color-ink-500); text-align: right; letter-spacing: .3px; margin-top: 1px;}
+
+  .bag__meta { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--color-ink-200); display:grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 10px; font-family: var(--font-mono); color: var(--color-ink-600);}
+  .bag__meta b { color: var(--color-ink-800); letter-spacing: .2px;}
+
+  .bag__tag { position: absolute; top: -4px; right: -4px; background: var(--color-accent-500); color: var(--color-primary-900); font-family: var(--font-mono); font-weight: 700; font-size: 9px; padding: 2px 6px; border-radius: 3px; box-shadow: var(--shadow-sm); letter-spacing: .3px;}
+  .bag__tag--danger { background: #8F1A0B; color: #fff;}
+  .bag__tag--green { background: var(--color-success-500); color: #fff;}
+
+  .bag--alert { border-color: #F0B7A8; background: linear-gradient(180deg, #FDF4F1 0%, #fff 60%);}
+  .bag--aging { border-color: var(--color-accent-300); background: linear-gradient(180deg, #FBF3DC 0%, #fff 60%);}
+  .bag--fresh { border-color: var(--color-success-100);}
+
+  .col__group { padding: 6px 10px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; color: var(--color-ink-500); text-transform: uppercase; margin-top: 6px;}
+  .col__group:first-child { margin-top: 0;}
+
+  /* inline card filler — stacked bags */
+  .bag-stack { background: var(--color-ink-50); border: 1px dashed var(--color-ink-300); border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; font-size: 11px; color: var(--color-ink-600); text-align: center; font-family: var(--font-mono); letter-spacing: .3px;}
+
+  /* Transfer ghost (being dragged) */
+  .transfer-ghost { position: absolute; top: 40%; left: 48%; background: #fff; border: 2px solid var(--color-accent-500); padding: 10px 14px; border-radius: 8px; box-shadow: 0 12px 28px rgba(201, 150, 44, .4); z-index: 10; pointer-events: none; transform: rotate(-2deg);}
+  .transfer-ghost .bag__t { font-size: 12px;}
+  .transfer-ghost .bag__w { color: var(--color-accent-600);}
+
+  /* Transfer feedback line (SVG overlay) */
+  .transfer-line { position: absolute; inset: 0; pointer-events: none;}
+
+  /* Page section frame */
+  .frame { position: relative; margin-bottom: var(--space-8);}
+  .frame__cap { margin: 14px auto 0; text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-500); letter-spacing: 1.3px; text-transform: uppercase; max-width: 900px;}
+  .frame__cap b { color: var(--color-primary-700); font-weight: 600; letter-spacing: .5px;}
+
+  .rule { text-align: center; color: var(--color-accent-600); margin: var(--space-8) 0 var(--space-6); letter-spacing: 14px;}
+
+  .annot-strip { display:grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: var(--space-5);}
+  @media (max-width: 1020px){ .annot-strip { grid-template-columns: repeat(2, 1fr);}}
+  .annot { background: var(--color-bg-surface); border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 14px 16px;}
+  .annot__h { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-accent-600); margin-bottom: 6px; font-weight: 700;}
+  .annot__t { font-family: var(--font-display); font-weight: 500; font-size: 20px; color: var(--color-ink-900); margin: 0 0 8px; letter-spacing: -0.005em;}
+  .annot p { font-size: 13px; line-height: 1.55; color: var(--color-ink-700); margin: 0;}
+  .annot code { font-family: var(--font-mono); font-size: 11px; background: var(--color-ink-100); padding: 1px 5px; border-radius: 3px; color: var(--color-ink-800);}
+
+  /* Side detail panel (when bag clicked) */
+  .detail-section { display:grid; grid-template-columns: 1fr 420px; gap: 24px; align-items: start;}
+  @media (max-width: 1200px){ .detail-section { grid-template-columns: 1fr;}}
+  .detail-panel { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-md);}
+  .detail-panel__h { display:grid; grid-template-columns: 1fr auto; align-items: start; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid var(--color-ink-200); margin-bottom: 14px;}
+  .detail-panel__sku { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .3px;}
+  .detail-panel__t { font-family: var(--font-display); font-weight: 500; font-size: 22px; color: var(--color-ink-900); margin-top: 4px;}
+  .detail-panel__w { font-family: var(--font-mono); font-weight: 700; font-size: 32px; color: var(--color-primary-700); font-variant-numeric: tabular-nums; line-height: 1;}
+  .detail-panel__wu { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .3px; text-align: right; margin-top: 2px;}
+  .dk { display:grid; grid-template-columns: 110px 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--color-ink-200); font-size: 13px;}
+  .dk:last-child { border-bottom: none;}
+  .dk .k { font-family: var(--font-mono); font-size: 10px; letter-spacing: .4px; color: var(--color-ink-500); text-transform: uppercase; padding-top: 3px;}
+  .dk .v { color: var(--color-ink-900);}
+  .dk .v b { font-weight: 700;}
+  .dk .v.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums;}
+  .detail-panel__hist { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--color-ink-200);}
+  .detail-panel__hist h4 { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-primary-700); margin: 0 0 8px; font-weight: 700;}
+  .hist-row { display:grid; grid-template-columns: 16px 80px 1fr auto; gap: 8px; padding: 6px 0; border-bottom: 1px dashed var(--color-ink-100); font-size: 12px; align-items: center;}
+  .hist-row .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-ink-300); margin-top: 4px;}
+  .hist-row.t-receive .dot { background: var(--color-success-500);}
+  .hist-row.t-produce .dot { background: var(--color-accent-500);}
+  .hist-row.t-transfer .dot { background: var(--color-primary-600);}
+  .hist-row .ts { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .2px;}
+  .hist-row .who { color: var(--color-ink-800);}
+  .hist-row .who b { display:block; font-weight: 700; color: var(--color-ink-900);}
+  .hist-row .who small { color: var(--color-ink-500); font-size: 10px;}
+  .hist-row .qty { font-family: var(--font-mono); font-weight: 700; color: var(--color-ink-900); font-variant-numeric: tabular-nums;}
+
+  .detail-actions { margin-top: 14px; display:grid; grid-template-columns: 1fr 1fr; gap: 8px;}
+  .detail-actions button { padding: 10px 12px; border-radius: 6px; border: none; font-family: var(--font-sans); font-weight: 600; font-size: 13px; cursor: pointer;}
+  .detail-actions button.primary { background: var(--color-primary-600); color: #fff;}
+  .detail-actions button.ghost { background: #fff; color: var(--color-ink-800); border: 1px solid var(--color-ink-300);}
+  .detail-actions button.danger { background: #fff; color: #8F1A0B; border: 1px solid #F0B7A8;}
+
+  /* System contract */
+  .contract { background: var(--color-bg-surface); border: 1px solid var(--color-ink-200); border-radius: var(--radius-lg); padding: var(--space-5); margin-top: var(--space-7);}
+  .contract h2 { font-family: var(--font-display); font-weight: 500; font-size: 32px; letter-spacing: -0.01em; color: var(--color-ink-900); margin: 0 0 var(--space-3);}
+  .contract p.lede { font-size: 14px; color: var(--color-ink-700); line-height: 1.6; margin: 0 0 var(--space-4); max-width: 880px;}
+  .contract-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 14px;}
+  @media (max-width: 860px){ .contract-grid { grid-template-columns: 1fr;}}
+  .contract-col { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 18px;}
+  .contract-col h3 { font-family: var(--font-display); font-size: 18px; font-weight: 600; margin: 0 0 10px;}
+  .contract-col h3 small { font-family: var(--font-mono); font-size: 10px; background: var(--color-primary-50); color: var(--color-primary-800); padding: 2px 6px; border-radius: 3px; letter-spacing: .3px; margin-left: 6px; font-weight: 700;}
+  .trace { background: #0D1117; color: #C9D1D9; font-family: var(--font-mono); font-size: 12px; line-height: 1.6; border-radius: var(--radius-md); padding: 12px 14px; overflow-x: auto; margin-top: 6px;}
+  .trace .c1 { color: #7D8590;} .trace .ok { color: #3FB950;} .trace .k { color: #79C0FF;} .trace .n { color: #FFA657;} .trace .s { color: #A5D6FF;}
+
+  .next-strip { margin-top: var(--space-7); background: var(--color-primary-50); border: 1px solid var(--color-primary-200); border-radius: var(--radius-lg); padding: var(--space-5); display:grid; grid-template-columns: 1fr auto; gap: var(--space-4); align-items: center;}
+  .next-strip h2 { font-family: var(--font-display); font-weight: 500; font-size: 26px; margin: 0 0 4px; color: var(--color-ink-900);}
+  .next-strip p { font-size: 14px; color: var(--color-ink-700); margin: 0;}
+  .next-strip a { padding: 12px 20px; border-radius: var(--radius-md); background: var(--color-primary-600); color: #fff; text-decoration: none; font-weight: 700; font-size: 14px;}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="top">
+    <span class="dot"></span>
+    <span>NNTN · Design Spike</span>
+    <span class="crumbs">PHASE 3B · meat-stock#stock · <a class="back-link" href="index.html">← hub</a></span>
+  </div>
+
+  <h1 class="page-h">คลังเนื้อ · <span class="hi">17 + 72 + 317 ถุง จัดเก็บใน 3 คลัง</span></h1>
+  <p class="page-lede">
+    หน้าวิว <span class="pill">meat-stock#stock</span> สำหรับ heritage beef · 406 ถุงรวม 3 คลัง (A/B/C · <span class="pill">catch_weight=true</span>) · <b>drag-to-transfer</b> ระหว่างคลัง + column อายุ (aging) + คอลัมน์ low-stock · bag card มี weight, depositor, received_at, expire_at · คลิกเพื่อดู bag history · ไม่มี global aggregate — <b>ทุกตัวเลขคือ per-bag</b>
+  </p>
+
+  <!-- Annotation strip -->
+  <div class="annot-strip">
+    <div class="annot">
+      <div class="annot__h">WHY KANBAN</div>
+      <h3 class="annot__t">3 คลังจริง ≠ table rows</h3>
+      <p>Table เห็นแต่ยอดรวม · user ไม่รู้ถุงไหนอยู่ตรงไหน · Kanban ให้เห็น layout จริง + <b>drag</b> = transfer · ตรงกับ mental model "ยกถุงจากคลังนึงไปอีกคลัง"</p>
+    </div>
+    <div class="annot">
+      <div class="annot__h">AGING COLUMN</div>
+      <h3 class="annot__t">รายการใกล้หมดอายุ</h3>
+      <p>คลัง B (แช่แข็ง) ถุงเก่า &gt;14 วัน ย้ายขึ้นบน · สี gold + tag "D-3" เตือน · กัน FIFO ผิด — <code>v_meat_stock_aging</code></p>
+    </div>
+    <div class="annot">
+      <div class="annot__h">LOW-STOCK ALERT</div>
+      <h3 class="annot__t">คอลัมน์ด่วน</h3>
+      <p>SKU ที่ <code>avail &lt; par</code> โผล่ในคอลัมน์สีแดง · click → ไป <code>produce</code> ทันที · ไม่ต้องไปแดชบอร์ด</p>
+    </div>
+    <div class="annot">
+      <div class="annot__h">DRAG = TRANSFER</div>
+      <h3 class="annot__t">1 ลาก = 1 rpc_transfer</h3>
+      <p><code>rpc_meat_transfer(bag_id, to_wh, by)</code> · atomic · ออก event 2 ตัว (OUT from A, IN to B) · เห็นใน movement log พร้อม actor + reason</p>
+    </div>
+  </div>
+
+  <!-- ═════════ Full desktop kanban view ═════════ -->
+  <div class="frame">
+    <div class="app">
+      <div class="app__chrome">
+        <div class="bullets"><i></i><i></i><i></i></div>
+        <div class="url">app.nntn.kitchen/stock/meat</div>
+      </div>
+
+      <div class="app__hd">
+        <div>
+          <h2>meat-stock · คลังเนื้อสด + แปรรูป</h2>
+          <div class="sub">406 bags · <b>67.84 kg</b> total · last receive <b>22/04 05:14</b> · last count <b>Week 17</b></div>
+          <div class="tabs">
+            <div class="tabs__i active">🧊 คลัง (kanban)</div>
+            <div class="tabs__i">⚙️ produce</div>
+            <div class="tabs__i">📋 movements</div>
+            <div class="tabs__i">📊 aging</div>
+          </div>
+        </div>
+        <div style="display:flex; gap: 8px;">
+          <button class="btn btn--ghost" style="padding: 8px 14px; border: 1px solid var(--color-ink-300); background: #fff; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">📋 ล่าสุด</button>
+          <button style="padding: 8px 18px; background: var(--color-primary-600); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 700;">+ รับเนื้อ</button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="grp">
+          <button class="active">ทั้งหมด</button>
+          <button>MT-019 (สด)</button>
+          <button>MT-020 (สัน)</button>
+          <button>MT-022 (ตุ๋น)</button>
+          <button>MT-031 (ลูกชิ้น)</button>
+          <button>MT-040 (สับ)</button>
+        </div>
+        <div class="grp" style="margin-left: 10px;">
+          <button>age ↑</button>
+          <button class="active">by SKU</button>
+          <button>par ↓</button>
+        </div>
+        <div class="search"><i>🔍</i><span>ค้นหา bag_id หรือ SKU…</span></div>
+        <button class="btn btn--ghost">⊕ filter</button>
+      </div>
+
+      <div class="stat-strip">
+        <div class="stat">
+          <div class="stat__k">คลัง A · แช่เย็น</div>
+          <div class="stat__v">17 <small>bags</small></div>
+          <div class="stat__s">สดวันนี้ · 2.3 kg</div>
+        </div>
+        <div class="stat">
+          <div class="stat__k">คลัง B · แช่แข็ง</div>
+          <div class="stat__v">72 <small>bags</small></div>
+          <div class="stat__s">stock 12.8 kg · 3 aging</div>
+        </div>
+        <div class="stat">
+          <div class="stat__k">คลัง C · สาขา</div>
+          <div class="stat__v">317 <small>bags</small></div>
+          <div class="stat__s">52.7 kg · 2 สาขา</div>
+        </div>
+        <div class="stat stat--alert">
+          <div class="stat__k">⚠ low stock</div>
+          <div class="stat__v">4 <small>SKU</small></div>
+          <div class="stat__s">ต้อง produce ด่วน</div>
+        </div>
+        <div class="stat stat--gold">
+          <div class="stat__k">⌛ aging</div>
+          <div class="stat__v">3 <small>bags</small></div>
+          <div class="stat__s">&gt;14 วัน · FIFO เสี่ยง</div>
+        </div>
+        <div class="stat">
+          <div class="stat__k">วันนี้ in/out</div>
+          <div class="stat__v">+18 / −12</div>
+          <div class="stat__s">+6 net · 22/04</div>
+        </div>
+      </div>
+
+      <!-- Kanban -->
+      <div class="kanban-wrap" style="position: relative;">
+        <div class="kanban">
+
+          <!-- Col A — แช่เย็น -->
+          <div class="col col-a">
+            <div class="col__hd">
+              <div>
+                <div class="col__t">🧊 A · แช่เย็น (0–4°C)</div>
+                <div class="col__s">ห้องเย็นชั้น 1 · สดวันนี้</div>
+              </div>
+              <div class="col__n">17</div>
+            </div>
+            <div class="col__body">
+
+              <div class="col__group">รับเข้าวันนี้ 22/04 · 05:14</div>
+
+              <div class="bag bag--fresh">
+                <span class="bag__tag bag__tag--green">สด</span>
+                <div class="bag__hd">
+                  <div>
+                    <div class="bag__sku">MT-019 · bag #2041</div>
+                    <div class="bag__t">เนื้อสดหมักนุ่ม</div>
+                  </div>
+                  <div>
+                    <div class="bag__w">0.548</div>
+                    <div class="bag__w-unit">kg</div>
+                  </div>
+                </div>
+                <div class="bag__meta">
+                  <div>รับ <b>22/04 05:14</b></div>
+                  <div>หมด <b>25/04</b></div>
+                  <div>ลุงเจริญ</div>
+                  <div>↑ DLV-2204-03</div>
+                </div>
+              </div>
+
+              <div class="bag bag--fresh">
+                <div class="bag__hd">
+                  <div>
+                    <div class="bag__sku">MT-019 · bag #2042</div>
+                    <div class="bag__t">เนื้อสดหมักนุ่ม</div>
+                  </div>
+                  <div>
+                    <div class="bag__w">0.521</div>
+                    <div class="bag__w-unit">kg</div>
+                  </div>
+                </div>
+                <div class="bag__meta">
+                  <div>รับ <b>22/04 05:14</b></div>
+                  <div>หมด <b>25/04</b></div>
+                  <div>ลุงเจริญ</div>
+                  <div>↑ DLV-2204-03</div>
+                </div>
+              </div>
+
+              <div class="bag bag--fresh">
+                <div class="bag__hd">
+                  <div>
+                    <div class="bag__sku">MT-020 · bag #2043</div>
+                    <div class="bag__t">สันนอกสดวันนี้</div>
+                  </div>
+                  <div>
+                    <div class="bag__w">0.612</div>
+                    <div class="bag__w-unit">kg</div>
+                  </div>
+                </div>
+                <div class="bag__meta">
+                  <div>รับ <b>22/04 05:14</b></div>
+                  <div>หมด <b>25/04</b></div>
+                  <div>ลุงเจริญ</div>
+                  <div>↑ DLV-2204-03</div>
+                </div>
+              </div>
+
+              <div class="bag-stack">+ 14 ถุงอื่น · ทั้งหมด 17 bags / 8.9 kg</div>
+
+            </div>
+          </div>
+
+          <!-- Col B — แช่แข็ง -->
+          <div class="col col-b">
+            <div class="col__hd">
+              <div>
+                <div class="col__t">❄️ B · แช่แข็ง (−18°C)</div>
+                <div class="col__s">ครัวแปรรูป · pool กลาง</div>
+              </div>
+              <div class="col__n">72</div>
+            </div>
+            <div class="col__body">
+
+              <div class="col__group">⚠ ใกล้หมดอายุ · FIFO</div>
+
+              <div class="bag bag--aging">
+                <span class="bag__tag">D-3</span>
+                <div class="bag__hd">
+                  <div>
+                    <div class="bag__sku">MT-022 · bag #1892</div>
+                    <div class="bag__t">เนื้อตุ๋นชิ้นใหญ่</div>
+                  </div>
+                  <div>
+                    <div class="bag__w">0.482</div>
+                    <div class="bag__w-unit">kg</div>
+                  </div>
+                </div>
+                <div class="bag__meta">
+                  <div>รับ <b>07/04</b></div>
+                  <div>หมด <b>25/04</b></div>
+                  <div>หล่อฟาร์ม</div>
+                  <div>15 วัน</div>
+                </div>
+              </div>
+
+              <div class="bag bag--aging">
+                <span class="bag__tag">D-5</span>
+                <div class="bag__hd">
+                  <div>
+                    <div class="bag__sku">MT-022 · bag #1894</div>
+                    <div class="bag__t">เนื้อตุ๋นชิ้นใหญ่</div>
+                  </div>
+                  <div>
+                    <div class="bag__w">0.521</div>
+                    <div class="bag__w-unit">kg</div>
+                  </div>
+                </div>
+                <div class="bag__meta">
+                  <div>รับ <b>09/04</b></div>
+                  <div>หมด <b>27/04</b></div>
+                  <div>หล่อฟาร์ม</div>
+                  <div>13 วัน</div>
+                </div>
+              </div>
+
+              <div class="col__group">ปกติ</div>
+
+              <div class="bag">
+                <div class="bag__hd">
+                  <div>
+                    <div class="bag__sku">MT-031 · bag #1934</div>
+                    <div class="bag__t">ลูกชิ้นเนื้อตุ๋น</div>
+                  </div>
+                  <div>
+                    <div class="bag__w">0.250</div>
+                    <div class="bag__w-unit">kg/แพ็ค</div>
+                  </div>
+                </div>
+                <div class="bag__meta">
+                  <div>produce <b>18/04</b></div>
+                  <div>หมด <b>02/05</b></div>
+                  <div>แปรรูป B</div>
+                  <div>yield 0.92</div>
+                </div>
+              </div>
+
+              <div class="bag">
+                <div class="bag__hd">
+                  <div>
+                    <div class="bag__sku">MT-031 · bag #1935</div>
+                    <div class="bag__t">ลูกชิ้นเนื้อตุ๋น</div>
+                  </div>
+                  <div>
+                    <div class="bag__w">0.248</div>
+                    <div class="bag__w-unit">kg/แพ็ค</div>
+                  </div>
+                </div>
+                <div class="bag__meta">
+                  <div>produce <b>18/04</b></div>
+                  <div>หมด <b>02/05</b></div>
+                  <div>แปรรูป B</div>
+                  <div>yield 0.92</div>
+                </div>
+              </div>
+
+              <div class="bag-stack">+ 67 ถุงอื่น · ทั้งหมด 72 bags / 12.8 kg</div>
+
+            </div>
+          </div>
+
+          <!-- Col C — สาขา -->
+          <div class="col col-c">
+            <div class="col__hd">
+              <div>
+                <div class="col__t">🏪 C · คลังสาขา</div>
+                <div class="col__s">NT + FS · พร้อมขาย</div>
+              </div>
+              <div class="col__n">317</div>
+            </div>
+            <div class="col__body">
+
+              <div class="col__group">NT · สาขานนทบุรี · 194</div>
+
+              <div class="bag">
+                <div class="bag__hd">
+                  <div>
+                    <div class="bag__sku">MT-019 · bag #2012</div>
+                    <div class="bag__t">เนื้อสดหมักนุ่ม</div>
+                  </div>
+                  <div>
+                    <div class="bag__w">0.502</div>
+                    <div class="bag__w-unit">kg</div>
+                  </div>
+                </div>
+                <div class="bag__meta">
+                  <div>ย้าย <b>21/04</b></div>
+                  <div>ขาย ≈ 25/04</div>
+                  <div>สาขา NT</div>
+                  <div>pending 6</div>
+                </div>
+              </div>
+
+              <div class="bag">
+                <div class="bag__hd">
+                  <div>
+                    <div class="bag__sku">MT-040 · bag #2031</div>
+                    <div class="bag__t">เนื้อสับ (บ)</div>
+                  </div>
+                  <div>
+                    <div class="bag__w">0.250</div>
+                    <div class="bag__w-unit">kg/แพ็ค</div>
+                  </div>
+                </div>
+                <div class="bag__meta">
+                  <div>produce <b>20/04</b></div>
+                  <div>หมด <b>04/05</b></div>
+                  <div>สาขา NT</div>
+                  <div>yield 0.88</div>
+                </div>
+              </div>
+
+              <div class="bag-stack">+ 192 ถุงอื่น · NT</div>
+
+              <div class="col__group">FS · สาขาพระราม 9 · 123</div>
+
+              <div class="bag">
+                <div class="bag__hd">
+                  <div>
+                    <div class="bag__sku">MT-022 · bag #2005</div>
+                    <div class="bag__t">เนื้อตุ๋นชิ้นใหญ่</div>
+                  </div>
+                  <div>
+                    <div class="bag__w">0.498</div>
+                    <div class="bag__w-unit">kg</div>
+                  </div>
+                </div>
+                <div class="bag__meta">
+                  <div>ย้าย <b>19/04</b></div>
+                  <div>หมด <b>28/04</b></div>
+                  <div>สาขา FS</div>
+                  <div>by พี่แอน</div>
+                </div>
+              </div>
+
+              <div class="bag-stack">+ 122 ถุงอื่น · FS</div>
+
+            </div>
+          </div>
+
+          <!-- Col alert -->
+          <div class="col col-alert">
+            <div class="col__hd">
+              <div>
+                <div class="col__t">⚠ ต้อง produce</div>
+                <div class="col__s">avail &lt; par · per SKU</div>
+              </div>
+              <div class="col__n">4</div>
+            </div>
+            <div class="col__body">
+
+              <div class="bag bag--alert">
+                <span class="bag__tag bag__tag--danger">−40%</span>
+                <div class="bag__hd">
+                  <div>
+                    <div class="bag__sku">MT-031 · ลูกชิ้นเนื้อตุ๋น</div>
+                    <div class="bag__t" style="color: #8F1A0B;">6 / 10 par</div>
+                  </div>
+                </div>
+                <div class="bag__meta">
+                  <div>avail <b>6</b></div>
+                  <div>par <b>10</b></div>
+                  <div>last produce 18/04</div>
+                  <div>→ <a href="meat-produce-proto.html" style="color: var(--color-primary-700); font-weight: 700; text-decoration: none;">produce</a></div>
+                </div>
+              </div>
+
+              <div class="bag bag--alert">
+                <span class="bag__tag bag__tag--danger">−60%</span>
+                <div class="bag__hd">
+                  <div>
+                    <div class="bag__sku">MT-040 · เนื้อสับ (บ)</div>
+                    <div class="bag__t" style="color: #8F1A0B;">10 / 25 par</div>
+                  </div>
+                </div>
+                <div class="bag__meta">
+                  <div>avail <b>10</b></div>
+                  <div>par <b>25</b></div>
+                  <div>last 20/04</div>
+                  <div>→ <a href="meat-produce-proto.html" style="color: var(--color-primary-700); font-weight: 700; text-decoration: none;">produce</a></div>
+                </div>
+              </div>
+
+              <div class="bag bag--alert">
+                <span class="bag__tag">−20%</span>
+                <div class="bag__hd">
+                  <div>
+                    <div class="bag__sku">MT-034 · ลูกชิ้นเอ็น</div>
+                    <div class="bag__t" style="color: #8F1A0B;">4 / 5 par</div>
+                  </div>
+                </div>
+                <div class="bag__meta">
+                  <div>avail <b>4</b></div>
+                  <div>par <b>5</b></div>
+                  <div>last 17/04</div>
+                  <div>→ <a href="meat-produce-proto.html" style="color: var(--color-primary-700); font-weight: 700; text-decoration: none;">produce</a></div>
+                </div>
+              </div>
+
+              <div class="bag bag--alert">
+                <span class="bag__tag">−10%</span>
+                <div class="bag__hd">
+                  <div>
+                    <div class="bag__sku">MT-041 · เนื้อสับ (ด)</div>
+                    <div class="bag__t" style="color: #8F1A0B;">9 / 10 par</div>
+                  </div>
+                </div>
+                <div class="bag__meta">
+                  <div>avail <b>9</b></div>
+                  <div>par <b>10</b></div>
+                  <div>last 20/04</div>
+                  <div>→ <a href="meat-produce-proto.html" style="color: var(--color-primary-700); font-weight: 700; text-decoration: none;">produce</a></div>
+                </div>
+              </div>
+
+              <div style="margin-top: 14px; padding: 10px; background: var(--color-primary-50); border: 1px solid var(--color-primary-200); border-radius: 6px; font-size: 11px; color: var(--color-primary-900); text-align: center; line-height: 1.5;">
+                💡 4 SKU ต้อง produce วันนี้<br/>
+                ≈ ใช้เนื้อตุ๋น <b>3.8 kg</b><br/>
+                จากคลัง B · <b>aging bags</b> ก่อน
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Transfer ghost demo (static) -->
+        <svg class="transfer-line" viewBox="0 0 1600 800" preserveAspectRatio="none">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#C9962C"/>
+            </marker>
+          </defs>
+          <path d="M 320 350 Q 560 280, 780 320" stroke="#C9962C" stroke-width="2" stroke-dasharray="6 4" fill="none" marker-end="url(#arrow)" opacity=".7"/>
+        </svg>
+
+        <div class="transfer-ghost">
+          <div class="bag__sku" style="font-size: 10px; color: var(--color-ink-500); font-family: var(--font-mono);">bag #2041 · กำลังย้าย</div>
+          <div class="bag__t">MT-019 · เนื้อสดหมักนุ่ม</div>
+          <div style="display:grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 4px; font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-700);">
+            <div>A → B</div>
+            <div class="bag__w" style="font-size: 14px;">0.548 kg</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="frame__cap">full kanban view · <b>drag bag between columns</b> · static screenshot of transfer mid-action</div>
+  </div>
+
+  <!-- ═════════ Detail panel (after click) ═════════ -->
+  <div class="rule">◆ ◆ ◆</div>
+
+  <section class="detail-section">
+    <div>
+      <div style="font-family: var(--font-mono); font-size: 11px; color: var(--color-accent-600); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px;">CLICK ON BAG · SIDE PANEL</div>
+      <h2 style="font-family: var(--font-display); font-weight: 500; font-size: 32px; letter-spacing: -0.01em; color: var(--color-ink-900); margin: 0 0 16px;">เปิดดู bag เดียว · ประวัติครบ</h2>
+      <div style="font-size: 15px; line-height: 1.65; color: var(--color-ink-700); max-width: 520px;">
+        <p>คลิก bag card → side panel เปิด · <b>bag_id</b> เป็น unique PK · ทุก event ที่ทำกับถุงนี้ (receive → produce → transfer → consume) ร้อยเรียงตาม timeline · actor ทุกคนมีชื่อ · ไม่ผ่าน summary</p>
+        <p style="margin-top: 14px;">ช่วยตอบคำถามซ้ำ ๆ: "ถุงนี้มาจากไหน?" · "ใครย้ายมา?" · "produce จาก batch อะไร?" · เดิมต้องเปิด 3 ตาราง · ตอนนี้ 1 คลิก</p>
+        <p style="margin-top: 14px;">Actions ด้านล่าง:</p>
+        <ul style="padding-left: 18px; margin-top: 8px;">
+          <li><b>Transfer</b> → ย้ายคลัง (เหมือน drag)</li>
+          <li><b>Split</b> → แบ่งถุง (0.548 → 0.3 + 0.248)</li>
+          <li><b>Dispose</b> → ออกจาก stock + note บังคับ</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="detail-panel">
+      <div class="detail-panel__h">
+        <div>
+          <div class="detail-panel__sku">bag #2041 · MT-019</div>
+          <div class="detail-panel__t">เนื้อสดหมักนุ่ม</div>
+        </div>
+        <div>
+          <div class="detail-panel__w">0.548</div>
+          <div class="detail-panel__wu">kg</div>
+        </div>
+      </div>
+
+      <div class="dk"><div class="k">คลัง</div><div class="v"><b>A · แช่เย็น</b> (0–4°C)</div></div>
+      <div class="dk"><div class="k">รับเข้า</div><div class="v mono">22/04 05:14 · DLV-2204-03</div></div>
+      <div class="dk"><div class="k">supplier</div><div class="v">ลุงเจริญ · po-0422-lung</div></div>
+      <div class="dk"><div class="k">หมดอายุ</div><div class="v mono">25/04 (3 วัน)</div></div>
+      <div class="dk"><div class="k">ราคาต้นทุน</div><div class="v mono">฿168.50</div></div>
+      <div class="dk"><div class="k">catch_weight</div><div class="v mono">✓ per-bag · 0.548 (ไม่ใช่ 1.0 default)</div></div>
+
+      <div class="detail-panel__hist">
+        <h4>ประวัติ · 3 events</h4>
+
+        <div class="hist-row t-receive">
+          <div class="dot"></div>
+          <div class="ts">22/04 05:14</div>
+          <div class="who"><b>รับจาก ลุงเจริญ</b><small>ลุงเจริญ · receive · DLV-2204-03</small></div>
+          <div class="qty">+0.548</div>
+        </div>
+
+        <div class="hist-row t-transfer" style="opacity: .5;">
+          <div class="dot"></div>
+          <div class="ts">— ไม่มี —</div>
+          <div class="who"><small>ยังอยู่คลัง A · ไม่เคยย้าย</small></div>
+          <div class="qty">—</div>
+        </div>
+
+        <div class="hist-row t-produce" style="opacity: .5;">
+          <div class="dot"></div>
+          <div class="ts">— ไม่มี —</div>
+          <div class="who"><small>ยังไม่ถูกใช้ในการ produce</small></div>
+          <div class="qty">—</div>
+        </div>
+      </div>
+
+      <div class="detail-actions">
+        <button class="primary">→ Transfer</button>
+        <button class="ghost">Split bag</button>
+        <button class="ghost" style="grid-column: span 2;">ดู in movements log →</button>
+        <button class="danger" style="grid-column: span 2;">🗑 Dispose · ต้องใส่ note</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ Contract ═════════ -->
+  <div class="contract">
+    <h2>rpc_meat_transfer · drag-to-move contract</h2>
+    <p class="lede">
+      Drag-drop UI → 1 rpc call · atomic · ออก 2 movement events (OUT จาก source, IN to dest) · ไม่ใช่ bulk update columns · ใช้ pattern เดียวกับ <code>rpc_po_receive</code> เพื่อให้ข้อมูลเดินทางผ่าน movement log เป็น audit trail เสมอ
+    </p>
+    <div class="contract-grid">
+
+      <div class="contract-col">
+        <h3>client · drag drop <small>react-dnd</small></h3>
+        <div class="trace">
+<span class="c1">// onDrop handler</span>
+<span class="k">async function</span> handleDrop(bag, toWarehouseId) {
+  <span class="c1">// optimistic UI — move card locally</span>
+  moveBagInState(bag.id, toWarehouseId);
+
+  <span class="k">try</span> {
+    <span class="k">await</span> rpc(<span class="s">"rpc_meat_transfer"</span>, {
+      p_actor: currentUser,
+      p_bag_id: bag.id,
+      p_to_wh: toWarehouseId,
+      p_reason: <span class="s">"manual transfer"</span>  <span class="c1">// optional</span>
+    });
+  } <span class="k">catch</span> (err) {
+    <span class="ok">// rollback — move card back</span>
+    rollbackBag(bag.id);
+    toast.error(err.message);
+  }
+}
+        </div>
+      </div>
+
+      <div class="contract-col">
+        <h3>server rpc_meat_transfer <small>EXISTS</small></h3>
+        <div class="trace">
+<span class="c1">-- already in meat-stock/transfer.sql</span>
+<span class="k">CREATE FUNCTION</span> rpc_meat_transfer(
+  p_actor   text,
+  p_bag_id  uuid,
+  p_to_wh   text,
+  p_reason  text <span class="k">DEFAULT</span> <span class="k">NULL</span>
+) <span class="k">RETURNS</span> jsonb <span class="k">AS</span> $$
+<span class="k">BEGIN</span>
+  <span class="c1">-- emit OUT from current warehouse</span>
+  <span class="k">INSERT INTO</span> stock_movements(...) VALUES (..., <span class="s">'transfer_out'</span>);
+  <span class="c1">-- emit IN to new warehouse</span>
+  <span class="k">INSERT INTO</span> stock_movements(...) VALUES (..., <span class="s">'transfer_in'</span>);
+  <span class="c1">-- update bag.warehouse</span>
+  <span class="k">UPDATE</span> meat_bags <span class="k">SET</span> warehouse_id = p_to_wh <span class="k">WHERE</span> id = p_bag_id;
+  <span class="k">RETURN</span> jsonb_build_object(<span class="s">'ok'</span>, <span class="k">true</span>);
+<span class="k">END</span>; $$ <span class="k">LANGUAGE</span> plpgsql;
+<span class="ok">-- trigger updates sm (source -1, dest +1 per bag)</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Next strip -->
+  <div class="next-strip">
+    <div>
+      <h2>ถัดไป · Phase 3C — platform-health</h2>
+      <p>SLO dashboard · trigger fire rates, rpc p99, B1/B2/B6 regression watch</p>
+    </div>
+    <a href="index.html">→ กลับ hub</a>
+  </div>
+
+</div>
+
+</body>
+</html>

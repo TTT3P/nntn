@@ -1,0 +1,285 @@
+/* ==========================================================================
+   NNTN Design Tokens — "40 Years of Tradition Beef Stew"
+   Heritage green primary + gold accent. Warm paper neutrals.
+   Consume via CSS custom properties. No build step required.
+   ========================================================================== */
+
+/* ---------- Font (Thai-first, Sarabun) ------------------------------------ */
+/* Pairing C · Heritage Display — Trirong (slab serif display) + Noto Sans Thai (body) + IBM Plex Mono (code/numeric). Sarabun kept as fallback. */
+@import url("https://fonts.googleapis.com/css2?family=Trirong:wght@400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+
+:root {
+  /* ---------- Brand palette ----------------------------------------------
+     Primary = deep forest green (mature, formal, premium heritage).
+     Accent  = gold/orange diamond ornament from the NNTN logo (CTAs,
+     ornaments, warning highlights). */
+  --color-primary-50:  #EAF2EC;
+  --color-primary-100: #CFE0D2;
+  --color-primary-200: #A5C3AB;
+  --color-primary-300: #75A07D;
+  --color-primary-400: #4A7E54;
+  --color-primary-500: #2F6138;  /* core brand */
+  --color-primary-600: #1F4E2A;  /* CTA default — deep forest green */
+  --color-primary-700: #173D20;  /* CTA hover */
+  --color-primary-800: #0F2E17;
+  --color-primary-900: #08200E;
+
+  /* ---------- Accent (gold/orange diamond ornament) ---------------------- */
+  --color-accent-50:   #FBF3DC;
+  --color-accent-100:  #F5E0A4;
+  --color-accent-300:  #E8C265;
+  --color-accent-500:  #C9962C;  /* heritage gold */
+  --color-accent-600:  #A87A1B;
+  --color-accent-700:  #7E5A11;
+
+  /* ---------- Neutrals (warm paper ink, heritage feel) ------------------ */
+  --color-ink-900:  #141A13;
+  --color-ink-800:  #1E2520;
+  --color-ink-700:  #3A4239;
+  --color-ink-600:  #5F6860;
+  --color-ink-500:  #838B84;
+  --color-ink-400:  #ABB2AC;
+  --color-ink-300:  #D2D5D0;
+  --color-ink-200:  #E6E8E3;
+  --color-ink-100:  #F0F1EC;
+  --color-ink-50:   #F8F7F1;
+
+  /* ---------- Semantic ---------------------------------------------------- */
+  --color-success-50:  #E8F2EA;
+  --color-success-100: #C7DFCD;
+  --color-success-500: #2F7A3F;
+  --color-success-600: #1F6330;
+  --color-success-700: #134A22;
+
+  --color-warning-50:  #FBF3DC;
+  --color-warning-100: #F5E0A4;
+  --color-warning-500: #C9962C;
+  --color-warning-600: #A87A1B;
+  --color-warning-700: #7E5A11;
+
+  --color-danger-50:   #FADFD7;
+  --color-danger-100:  #F0B7A8;
+  --color-danger-500:  #B03224;
+  --color-danger-600:  #8F1A0B;
+  --color-danger-700:  #6E1307;
+
+  --color-info-50:   #E5EEE9;
+  --color-info-500:  #2F5E4A;
+
+  /* ---------- Surfaces --------------------------------------------------- */
+  --color-bg-app:     var(--color-ink-50);
+  --color-bg-surface: #FFFFFF;
+  --color-bg-raised:  #FFFFFF;
+  --color-bg-sunken:  var(--color-ink-100);
+  --color-bg-inverse: var(--color-ink-900);
+
+  /* Tinted surfaces used in stat cards (soft wash gradients) */
+  --grad-stat-orange: linear-gradient(180deg, #FBEFCC 0%, #F5DE94 100%);  /* gold wash */
+  --grad-stat-green:  linear-gradient(180deg, #DCEADE 0%, #B7D2BC 100%);
+  --grad-stat-red:    linear-gradient(180deg, #FADFD7 0%, #F0B7A8 100%);
+  --grad-stat-amber:  linear-gradient(180deg, #FBECC7 0%, #F5D57F 100%);
+  --grad-sidebar:     linear-gradient(180deg, #1F4E2A 0%, #0F2E17 100%);
+
+  /* ---------- Borders --------------------------------------------------- */
+  --border-subtle:  1px solid var(--color-ink-200);
+  --border-default: 1px solid var(--color-ink-300);
+  --border-strong:  1px solid var(--color-ink-400);
+  --border-focus:   2px solid var(--color-primary-600);
+
+  /* ---------- Radius ---------------------------------------------------- */
+  --radius-xs:  4px;
+  --radius-sm:  6px;    /* slightly tighter — heritage feel */
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  18px;
+  --radius-2xl: 24px;
+  --radius-pill: 999px;
+
+  /* ---------- Spacing scale (4pt) --------------------------------------- */
+  --space-0: 0;
+  --space-1: 4px;   --space-2: 8px;   --space-3: 12px;  --space-4: 16px;
+  --space-5: 20px;  --space-6: 24px;  --space-7: 32px;  --space-8: 40px;
+  --space-9: 48px;  --space-10: 64px; --space-11: 80px; --space-12: 96px;
+
+  /* ---------- Layout ---------------------------------------------------- */
+  --layout-sidebar-w: 260px;
+  --layout-sidebar-w-collapsed: 72px;
+  --layout-topbar-h: 72px;
+  --layout-content-max: 1440px;
+  --layout-content-pad: 32px;
+
+  /* ---------- Typography ------------------------------------------------
+     Sarabun 400–800 for UI; Prata as optional serif for heritage headings
+     and hero moments (wordmark feel). Headings carry extra weight. */
+  /* Body / UI — Noto Sans Thai (no-loop, clean at small sizes) */
+  --font-sans: "Noto Sans Thai", "Sarabun", "IBM Plex Sans Thai",
+               -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Display / Heritage — Trirong slab serif (Cadson Demak). Use ONLY on
+     hero, wordmark, section titles. Never on forms, tables, buttons. */
+  --font-serif: "Trirong", "Prata", Georgia, serif;
+  --font-display: "Trirong", "Prata", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --fs-display: 56px;  --lh-display: 1.12;  --fw-display: 800;
+  --fs-h1:      36px;  --lh-h1:      1.22;  --fw-h1:      800;
+  --fs-h2:      26px;  --lh-h2:      1.28;  --fw-h2:      700;
+  --fs-h3:      20px;  --lh-h3:      1.35;  --fw-h3:      700;
+  --fs-h4:      18px;  --lh-h4:      1.4;   --fw-h4:      600;
+  --fs-body-lg: 16px;  --lh-body-lg: 1.55;  --fw-body:    400;
+  --fs-body:    15px;  --lh-body:    1.55;
+  --fs-body-sm: 14px;  --lh-body-sm: 1.5;
+  --fs-caption: 13px;  --lh-caption: 1.45;
+  --fs-micro:   12px;  --lh-micro:   1.4;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  --fs-stat:    40px;  --lh-stat:    1.05;  --fw-stat:    800;
+  --fs-stat-sm: 28px;  --lh-stat-sm: 1.1;   --fw-stat-sm: 700;
+
+  /* ---------- Shadows (cool, green-ink tinted) -------------------------- */
+  --shadow-xs: 0 1px 2px rgba(20, 26, 19, 0.05);
+  --shadow-sm: 0 1px 3px rgba(20, 26, 19, 0.07), 0 1px 2px rgba(20, 26, 19, 0.05);
+  --shadow-md: 0 4px 12px rgba(20, 26, 19, 0.08), 0 2px 4px rgba(20, 26, 19, 0.05);
+  --shadow-lg: 0 12px 24px rgba(20, 26, 19, 0.10), 0 4px 8px rgba(20, 26, 19, 0.05);
+  --shadow-xl: 0 24px 48px rgba(20, 26, 19, 0.14), 0 8px 16px rgba(20, 26, 19, 0.07);
+  --shadow-focus: 0 0 0 3px rgba(47, 97, 56, 0.28);
+  --shadow-primary: 0 8px 20px rgba(31, 78, 42, 0.28);
+
+  /* ---------- Motion ---------------------------------------------------- */
+  --ease-out:      cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out:   cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast:   120ms;
+  --dur-base:   200ms;
+  --dur-slow:   320ms;
+
+  /* ---------- Z-index --------------------------------------------------- */
+  --z-base: 0; --z-sticky: 100; --z-sidebar: 200;
+  --z-dropdown: 500; --z-modal-bg: 900; --z-modal: 1000; --z-toast: 1100;
+
+  /* ---------- Category accents (tuned to heritage palette) ------------- */
+  --cat-noodle:   #C9962C;   /* เส้น — heritage gold */
+  --cat-meat:     #8F1A0B;   /* เนื้อสัตว์ — beef stew deep red */
+  --cat-veg:      #2F6138;   /* ผัก — forest green */
+  --cat-sauce:    #5B3B82;   /* เครื่องปรุง */
+  --cat-other:    #5F6860;
+}
+
+/* ==========================================================================
+   Themes — set on <html data-theme="..."> by sidebar.js
+   Default (no attribute) = Heritage Green. Others override primary + gradients.
+   ========================================================================== */
+
+/* "warm" theme kept as an alternate (original warm orange-red direction) */
+html[data-theme="warm"] {
+  --color-primary-50:  #FFF3ED;
+  --color-primary-100: #FFE2D1;
+  --color-primary-300: #FF9F6D;
+  --color-primary-500: #F05A1A;
+  --color-primary-600: #E8441A;
+  --color-primary-700: #C5360D;
+  --color-primary-800: #9B2B0A;
+  --grad-stat-orange: linear-gradient(180deg, #FFE9D8 0%, #FFD4B0 100%);
+  --grad-sidebar:     linear-gradient(180deg, #F05A1A 0%, #E8441A 100%);
+  --shadow-focus:     0 0 0 3px rgba(240, 90, 26, 0.25);
+  --shadow-primary:   0 8px 20px rgba(232, 68, 26, 0.25);
+}
+
+html[data-theme="blue"] {
+  --color-primary-50:  #EBF4FF; --color-primary-100: #D0E3FC;
+  --color-primary-300: #6FA8F5; --color-primary-500: #2563EB;
+  --color-primary-600: #1D4ED8; --color-primary-700: #1E40AF; --color-primary-800: #1E3A8A;
+  --grad-stat-orange: linear-gradient(180deg, #DBEAFE 0%, #BFDBFE 100%);
+  --grad-sidebar:     linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);
+  --shadow-primary:   0 8px 20px rgba(37, 99, 235, 0.25);
+  --shadow-focus:     0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+html[data-theme="sakura"] {
+  --color-primary-50:  #FDF2F8; --color-primary-100: #FCE7F3;
+  --color-primary-300: #F9A8D4; --color-primary-500: #EC4899;
+  --color-primary-600: #DB2777; --color-primary-700: #BE185D; --color-primary-800: #9D174D;
+  --grad-stat-orange: linear-gradient(180deg, #FCE7F3 0%, #FBCFE8 100%);
+  --grad-sidebar:     linear-gradient(180deg, #EC4899 0%, #DB2777 100%);
+  --shadow-primary:   0 8px 20px rgba(219, 39, 119, 0.25);
+  --shadow-focus:     0 0 0 3px rgba(219, 39, 119, 0.25);
+}
+
+/* Midnight Tech — dark + cyan, no orange */
+html[data-theme="dark"] {
+  --color-primary-50:  #0B2A2F; --color-primary-100: #0F3A42;
+  --color-primary-300: #1A7A8F; --color-primary-500: #06B6D4;
+  --color-primary-600: #0891B2; --color-primary-700: #0E7490; --color-primary-800: #155E75;
+
+  --color-ink-900: #E6EDF3; --color-ink-800: #C9D1D9; --color-ink-700: #A5ADBA;
+  --color-ink-600: #7D8590; --color-ink-500: #6E7681; --color-ink-400: #484F58;
+  --color-ink-300: #30363D; --color-ink-200: #21262D; --color-ink-100: #161B22; --color-ink-50: #0D1117;
+
+  --color-success-500: #3FB950; --color-warning-500: #E3B341;
+  --color-danger-500: #F85149;  --color-info-500:    #58A6FF;
+
+  --color-bg-app: #0D1117; --color-bg-surface: #161B22; --color-bg-raised: #1C2128;
+  --color-bg-sunken: #0A0E13; --color-bg-inverse: #E6EDF3;
+
+  --grad-stat-orange: linear-gradient(180deg, #0F3A42 0%, #0B2A2F 100%);
+  --grad-stat-green:  linear-gradient(180deg, #0F3F28 0%, #0A2E1E 100%);
+  --grad-stat-red:    linear-gradient(180deg, #3A1612 0%, #2A0F0A 100%);
+  --grad-stat-amber:  linear-gradient(180deg, #3A2A0A 0%, #2A1F08 100%);
+  --grad-sidebar:     linear-gradient(180deg, #0D1117 0%, #010409 100%);
+
+  --border-subtle:  1px solid #21262D;
+  --border-default: 1px solid #30363D;
+  --border-strong:  1px solid #484F58;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3);
+  --shadow-lg: 0 12px 24px rgba(0,0,0,0.6), 0 4px 8px rgba(0,0,0,0.4);
+  --shadow-focus:  0 0 0 3px rgba(6, 182, 212, 0.35);
+  --shadow-primary: 0 8px 20px rgba(6, 182, 212, 0.35), 0 0 24px rgba(6, 182, 212, 0.15);
+
+  --cat-noodle: #F0B429; --cat-meat: #F85149;
+  --cat-veg: #3FB950;    --cat-sauce: #A371F7; --cat-other: #7D8590;
+}
+html[data-theme="dark"] body { color: var(--color-ink-800); }
+html[data-theme="dark"] ::selection { background: rgba(6,182,212,0.35); color: var(--color-ink-900); }
+
+/* ==========================================================================
+   Base reset + body defaults
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--color-ink-800);
+  background: var(--color-bg-app);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: inherit; text-decoration: none; }
+img, svg { display: block; max-width: 100%; }
+
+::selection { background: var(--color-primary-100); color: var(--color-primary-900); }
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-sm);
+}
+
+/* Heritage heading utility — Trirong slab serif. Scope = hero surfaces
+   only (brand, section dividers, hub headings). Pair with Noto Sans Thai
+   body. Do not apply to form labels, table cells, or button text. */
+.heritage-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.heritage-title--bold { font-weight: 600; }
+
+/* Tabular numerics for stock counts, weights, SKUs. */
+.tabular { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }

@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · count-entry prototype (Phase 3A)</title>
+<link rel="stylesheet" href="tokens.css?v=20260422b" />
+<script>
+  try {
+    var saved = localStorage.getItem('nntn_theme');
+    if (saved === 'warm' || saved === null) {
+      localStorage.removeItem('nntn_theme');
+      document.documentElement.removeAttribute('data-theme');
+    }
+  } catch(e){}
+</script>
+<style>
+  body { background: var(--color-bg-app); color: var(--color-ink-800); font-family: var(--font-sans); }
+  .page { max-width: 1440px; margin: 0 auto; padding: 32px 24px 100px; }
+
+  .top { display:flex; gap:14px; align-items:center; font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-ink-600); margin-bottom: var(--space-5);}
+  .top .dot { width:10px; height:10px; border-radius:50%; background: var(--color-primary-600); box-shadow: 0 0 0 4px var(--color-primary-100);}
+  .top .crumbs { margin-left:auto; color: var(--color-ink-500);}
+  .back-link { color: var(--color-primary-700); text-decoration: none; border-bottom: 1px dotted currentColor;}
+
+  h1.page-h { font-family: var(--font-display); font-weight: 500; font-size: 48px; line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 var(--space-3); color: var(--color-ink-900); max-width: 920px;}
+  h1 .hi { color: var(--color-primary-700);}
+  .page-lede { font-size: 17px; line-height: 1.6; color: var(--color-ink-700); max-width: 840px; margin: 0 0 var(--space-4);}
+  .page-lede b { color: var(--color-primary-700);}
+
+  .showcase { display: grid; grid-template-columns: 390px 1fr; gap: 48px; margin-bottom: var(--space-8); align-items: start;}
+  @media (max-width: 1020px){ .showcase { grid-template-columns: 1fr; justify-items: start;}}
+  .showcase--reverse { grid-template-columns: 1fr 390px;}
+  @media (max-width: 1020px){ .showcase--reverse { grid-template-columns: 1fr;}}
+
+  .annot__h { font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-accent-600); margin: 0 0 4px;}
+  .annot__t { font-family: var(--font-display); font-weight: 500; font-size: 28px; letter-spacing: -0.01em; color: var(--color-ink-900); margin: 0 0 var(--space-3);}
+  .annot ul { padding-left: 18px; color: var(--color-ink-700); font-size: 14px; line-height: 1.6;}
+  .annot li { margin-bottom: 8px;}
+  .annot li b { color: var(--color-ink-900);}
+  .pill { display:inline-block; font-family: var(--font-mono); font-size: 11px; background: var(--color-ink-100); color: var(--color-ink-800); padding: 2px 6px; border-radius: 3px;}
+
+  /* Phone */
+  .phone { width: 390px; height: 780px; border-radius: 48px; padding: 14px; background: #1A1F1A; box-shadow: 0 28px 70px rgba(8, 32, 14, 0.38); margin: 0 auto;}
+  .phone__screen { width: 100%; height: 100%; border-radius: 36px; background: var(--color-bg-app); overflow: hidden; display: flex; flex-direction: column;}
+  .phone__bar { display: flex; justify-content: space-between; padding: 14px 28px 6px; font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--color-ink-900);}
+
+  .hd { padding: 14px 20px 12px; background: #fff; border-bottom: 1px solid var(--color-ink-200); display:grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center;}
+  .hd .back { width: 36px; height: 36px; border-radius: 50%; background: var(--color-ink-100); color: var(--color-ink-700); display:grid; place-items: center; font-size: 18px;}
+  .hd .t { font-family: var(--font-display); font-weight: 500; font-size: 19px; color: var(--color-ink-900); line-height: 1.1;}
+  .hd .s { font-size: 11px; color: var(--color-ink-500); font-family: var(--font-mono); margin-top: 2px;}
+  .hd .more { width: 36px; height: 36px; display:grid; place-items: center; color: var(--color-ink-600); font-size: 20px;}
+
+  /* progress */
+  .progbar { padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--color-ink-200); display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;}
+  .progbar__track { height: 6px; background: var(--color-ink-100); border-radius: 3px; overflow: hidden;}
+  .progbar__fill { height: 100%; background: var(--color-primary-600); width: 42%;}
+  .progbar__n { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-700); font-weight: 700;}
+  .progbar__n b { color: var(--color-primary-700);}
+
+  .body { flex:1; overflow-y: auto; padding: 14px 16px;}
+
+  .cta { padding: 12px 14px 20px; background: #fff; border-top: 1px solid var(--color-ink-200);}
+  .cta .btn { display: inline-flex; width: 100%; padding: 15px 20px; border-radius: var(--radius-md); border: none; font-family: var(--font-sans); font-weight: 700; font-size: 15px; cursor: pointer; justify-content: center; align-items: center; gap: 8px; line-height: 1;}
+  .cta .btn--primary { background: var(--color-primary-600); color: #fff; box-shadow: var(--shadow-primary);}
+  .cta .btn--gold { background: var(--color-accent-500); color: var(--color-primary-900); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.12);}
+  .cta .btn--subtle { background: var(--color-ink-100); color: var(--color-ink-900);}
+
+  .field-h { font-size: 12px; font-weight: 700; color: var(--color-ink-800); margin: 14px 2px 6px; letter-spacing: .2px;}
+
+  /* Sheet picker */
+  .sheet-pick { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 14px; margin-bottom: 10px; display:grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; cursor: pointer;}
+  .sheet-pick.active { border-color: var(--color-primary-600); box-shadow: 0 0 0 2px var(--color-primary-100);}
+  .sheet-pick__ic { width: 36px; height: 44px; background: var(--color-accent-100); color: var(--color-primary-900); border-radius: 4px; display:grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 10px; letter-spacing: .3px; line-height: 1.15; text-align: center; border: 1px solid var(--color-accent-300);}
+  .sheet-pick__t { font-size: 14px; font-weight: 700; color: var(--color-ink-900);}
+  .sheet-pick__s { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .3px; margin-top: 3px;}
+  .sheet-pick__arrow { color: var(--color-ink-400); font-size: 18px;}
+
+  /* Row (SKU to enter) */
+  .row-card { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 10px; position: relative;}
+  .row-card.done { border-color: var(--color-success-500); background: linear-gradient(180deg, #F3F9F4 0%, #fff 60%);}
+  .row-card.warn { border-color: var(--color-accent-500); background: linear-gradient(180deg, #FBF3DC 0%, #fff 60%);}
+  .row-card.current { border-color: var(--color-primary-600); box-shadow: 0 0 0 3px var(--color-primary-100);}
+  .row-card__h { display:grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center;}
+  .row-card__ix { width: 24px; height: 24px; border-radius: 50%; background: var(--color-ink-100); color: var(--color-ink-700); display:grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 11px;}
+  .row-card.done .row-card__ix { background: var(--color-success-500); color: #fff;}
+  .row-card.warn .row-card__ix { background: var(--color-accent-500); color: var(--color-primary-900);}
+  .row-card.current .row-card__ix { background: var(--color-primary-600); color: #fff;}
+  .row-card__t { font-size: 14px; font-weight: 700; color: var(--color-ink-900);}
+  .row-card__sku { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); margin-top: 2px; letter-spacing: .2px;}
+  .row-card__act { font-size: 18px; color: var(--color-ink-400);}
+
+  .row-card__input-block { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--color-ink-200); display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end;}
+  .row-card__input-lbl { font-family: var(--font-mono); font-size: 10px; letter-spacing: .5px; color: var(--color-ink-600); text-transform: uppercase; margin-bottom: 4px;}
+  .row-card__input { width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--color-ink-300); font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: var(--color-ink-900); text-align: right; background: #fff; font-variant-numeric: tabular-nums;}
+  .row-card__unit { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-600); letter-spacing: .3px; padding-bottom: 8px;}
+
+  .row-card__summary { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--color-ink-200); display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 11px;}
+  .row-card__summary .k { color: var(--color-ink-500); font-family: var(--font-mono); font-size: 9px; letter-spacing: .5px; text-transform: uppercase;}
+  .row-card__summary .v { font-family: var(--font-mono); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--color-ink-900); font-size: 13px; margin-top: 2px;}
+  .row-card__summary .v.pos { color: var(--color-success-700);}
+  .row-card__summary .v.neg { color: #8F1A0B;}
+  .row-card__summary .v.zero { color: var(--color-ink-500);}
+
+  .row-card__warn { margin-top: 8px; background: #FBF3DC; border: 1px solid var(--color-accent-300); border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #5A4915; display:grid; grid-template-columns: 20px 1fr; gap: 8px;}
+  .row-card__warn .ic { width:18px; height:18px; border-radius: 50%; background: var(--color-accent-500); color: var(--color-primary-900); display:grid; place-items: center; font-weight: 700; font-size: 10px;}
+
+  .row-card__note { margin-top: 8px; width: 100%; padding: 8px 10px; border: 1px dashed var(--color-ink-300); border-radius: 6px; font-size: 12px; font-family: var(--font-sans); color: var(--color-ink-800); background: #fff;}
+
+  /* Review summary */
+  .review { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 14px;}
+  .review__h { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-primary-700); margin-bottom: 8px; font-weight: 700;}
+  .review__row { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--color-ink-100); font-size: 12px; align-items: center;}
+  .review__row:last-child { border-bottom: none;}
+  .review__row b { color: var(--color-ink-900); font-size: 13px;}
+  .review__row .delta { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 700; padding: 2px 8px; border-radius: 3px; font-size: 11px;}
+  .review__row .delta.pos { background: #DCEADE; color: #134A22;}
+  .review__row .delta.neg { background: #FADFD7; color: #8F1A0B;}
+  .review__row .delta.zero { background: var(--color-ink-100); color: var(--color-ink-600);}
+  .review__row .qty { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 700; color: var(--color-ink-900); font-size: 14px; min-width: 36px; text-align: right;}
+
+  .review-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--color-ink-200); display:grid; grid-template-columns: 1fr auto; font-size: 11px; color: var(--color-ink-600); font-family: var(--font-mono);}
+  .review-footer b { color: var(--color-primary-800); font-size: 13px;}
+
+  /* success */
+  .success-hero { background: linear-gradient(180deg, #DCEADE 0%, #B7D2BC 100%); border-radius: var(--radius-lg); padding: 22px 18px; text-align: center; margin-bottom: 14px;}
+  .success-hero__ic { width: 60px; height: 60px; background: var(--color-success-500); border-radius: 50%; color: #fff; font-size: 28px; margin: 0 auto 12px; display:grid; place-items: center; box-shadow: 0 6px 18px rgba(62, 142, 85, 0.3);}
+  .success-hero__t { font-family: var(--font-display); font-size: 24px; font-weight: 600; color: var(--color-primary-900); margin: 0 0 4px;}
+  .success-hero__n { font-family: var(--font-mono); font-size: 14px; color: var(--color-primary-800); font-weight: 600;}
+
+  .success-stat { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;}
+  .success-stat__cell { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 12px 14px;}
+  .success-stat__k { font-family: var(--font-mono); font-size: 9px; letter-spacing: 1px; color: var(--color-ink-500); text-transform: uppercase;}
+  .success-stat__v { font-family: var(--font-mono); font-weight: 700; font-size: 20px; color: var(--color-ink-900); margin-top: 4px; font-variant-numeric: tabular-nums;}
+  .success-stat__v.pos { color: var(--color-success-700);}
+  .success-stat__v.neg { color: #8F1A0B;}
+
+  .success-link { background: var(--color-primary-50); border: 1px solid var(--color-primary-200); border-radius: var(--radius-md); padding: 12px 14px; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; text-decoration: none; color: var(--color-primary-900); margin-bottom: 10px;}
+  .success-link__ic { width: 32px; height: 32px; background: var(--color-primary-700); color: #fff; border-radius: 6px; display:grid; place-items: center; font-size: 14px;}
+  .success-link__t { font-size: 13px; font-weight: 700;}
+  .success-link__s { font-size: 10px; color: var(--color-primary-700); font-family: var(--font-mono); margin-top: 2px;}
+
+  /* Rule */
+  .rule { text-align: center; color: var(--color-accent-600); margin: var(--space-8) 0 var(--space-6); letter-spacing: 14px;}
+
+  .frame-cap { margin: 10px auto 0; text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-500); letter-spacing: 1.3px; text-transform: uppercase; max-width: 390px;}
+  .frame-cap b { color: var(--color-primary-700); font-weight: 600; letter-spacing: .5px;}
+
+  /* Contract + paired pages */
+  .contract { background: var(--color-bg-surface); border: 1px solid var(--color-ink-200); border-radius: var(--radius-lg); padding: var(--space-5); margin-top: var(--space-7);}
+  .contract h2 { font-family: var(--font-display); font-weight: 500; font-size: 32px; letter-spacing: -0.01em; color: var(--color-ink-900); margin: 0 0 var(--space-3);}
+  .contract p.lede { font-size: 14px; color: var(--color-ink-700); line-height: 1.6; margin: 0 0 var(--space-4); max-width: 880px;}
+  .contract-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 14px;}
+  @media (max-width: 860px){ .contract-grid { grid-template-columns: 1fr;}}
+  .contract-col { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 18px;}
+  .contract-col h3 { font-family: var(--font-display); font-size: 18px; font-weight: 600; margin: 0 0 10px;}
+  .contract-col h3 small { font-family: var(--font-mono); font-size: 10px; background: var(--color-primary-50); color: var(--color-primary-800); padding: 2px 6px; border-radius: 3px; letter-spacing: .3px; margin-left: 6px; font-weight: 700;}
+  .trace { background: #0D1117; color: #C9D1D9; font-family: var(--font-mono); font-size: 12px; line-height: 1.6; border-radius: var(--radius-md); padding: 12px 14px; overflow-x: auto; margin-top: 6px;}
+  .trace .c1 { color: #7D8590;}
+  .trace .ok { color: #3FB950;}
+  .trace .k { color: #79C0FF;}
+  .trace .n { color: #FFA657;}
+  .trace .s { color: #A5D6FF;}
+
+  /* Next strip */
+  .next-strip { margin-top: var(--space-7); background: var(--color-primary-50); border: 1px solid var(--color-primary-200); border-radius: var(--radius-lg); padding: var(--space-5); display:grid; grid-template-columns: 1fr auto; gap: var(--space-4); align-items: center;}
+  .next-strip h2 { font-family: var(--font-display); font-weight: 500; font-size: 26px; margin: 0 0 4px; color: var(--color-ink-900);}
+  .next-strip p { font-size: 14px; color: var(--color-ink-700); margin: 0;}
+  .next-strip a { padding: 12px 20px; border-radius: var(--radius-md); background: var(--color-primary-600); color: #fff; text-decoration: none; font-weight: 700; font-size: 14px;}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="top">
+    <span class="dot"></span>
+    <span>NNTN · Design Spike</span>
+    <span class="crumbs">PHASE 3A · count-entry · <a class="back-link" href="index.html">← hub</a></span>
+  </div>
+
+  <h1 class="page-h">กระดาษ → ระบบ · <span class="hi">พิมพ์ทีละช่องจากใบนับ</span></h1>
+  <p class="page-lede">
+    Companion page ของ <a href="count-sheet-weekly-proto.html" class="back-link">count-sheet-weekly</a> · น้องนับในครัวเสร็จ · <b>เปิดหน้านี้จาก QR บนใบพิมพ์</b> · พิมพ์ตัวเลขตามใบ · UI โชว์ delta preview ต่อ SKU · กดยืนยัน → <span class="pill">rpc_count_adjust</span> รายตัว · ทุก adjustment ขึ้น <a href="count-sheet-weekly-proto.html" class="back-link">count-log</a> ด้วย note = "count-sheet 22/04"
+  </p>
+
+  <!-- ═════════ Screen 1 — Pick paper sheet ═════════ -->
+  <div class="rule">◆ ◆ ◆</div>
+
+  <section class="showcase">
+    <div>
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__bar"><span>19:12</span><span>◆ 62%</span></div>
+          <div class="hd">
+            <div class="back">←</div>
+            <div>
+              <div class="t">พิมพ์ผลนับ</div>
+              <div class="s">Paper → rpc_count_adjust</div>
+            </div>
+            <div class="more">⋯</div>
+          </div>
+          <div class="body">
+
+            <div class="field-h">เลือกใบที่จะพิมพ์เข้า</div>
+
+            <div class="sheet-pick active">
+              <div class="sheet-pick__ic">W17<br/>22/04</div>
+              <div>
+                <div class="sheet-pick__t">Week 17 · วันนี้ 22/04</div>
+                <div class="sheet-pick__s">NT · 12 SKU · พิมพ์ 07:02</div>
+              </div>
+              <div class="sheet-pick__arrow">›</div>
+            </div>
+
+            <div class="sheet-pick">
+              <div class="sheet-pick__ic">W16<br/>15/04</div>
+              <div>
+                <div class="sheet-pick__t">Week 16 · สัปดาห์ก่อน</div>
+                <div class="sheet-pick__s">NT · 12 SKU · เสร็จแล้ว ✓</div>
+              </div>
+              <div class="sheet-pick__arrow">›</div>
+            </div>
+
+            <div class="sheet-pick">
+              <div class="sheet-pick__ic">W17<br/>FS</div>
+              <div>
+                <div class="sheet-pick__t">Week 17 · สาขา FS</div>
+                <div class="sheet-pick__s">รอพิมพ์ · 0/12</div>
+              </div>
+              <div class="sheet-pick__arrow">›</div>
+            </div>
+
+            <div class="field-h">หรือ</div>
+            <div class="sheet-pick" style="background: var(--color-accent-100); border-color: var(--color-accent-300);">
+              <div class="sheet-pick__ic" style="background: var(--color-accent-500); color: var(--color-primary-900); border-color: transparent;">📷</div>
+              <div>
+                <div class="sheet-pick__t">สแกน QR บนใบ</div>
+                <div class="sheet-pick__s">เปิดกล้อง · เล็ง QR ตรงหัวกระดาษ</div>
+              </div>
+              <div class="sheet-pick__arrow">›</div>
+            </div>
+
+          </div>
+          <div class="cta">
+            <button class="btn btn--primary">→ Week 17 NT · เริ่ม</button>
+          </div>
+        </div>
+      </div>
+      <div class="frame-cap">screen 01 · <b>เลือกใบ</b> · QR scan fallback</div>
+    </div>
+
+    <div class="annot">
+      <div class="annot__h">SCREEN 01 · sheet picker</div>
+      <h2 class="annot__t">จับคู่ใบกระดาษกับ session ในระบบ</h2>
+      <ul>
+        <li><b>QR บนใบคือ deep link</b> — ใบ count-sheet-weekly พิมพ์ QR หัวกระดาษ · scan แล้วเข้าหน้านี้พร้อม week + branch + SKU list โหลดเอง · น้องไม่ต้องเลือกเอง</li>
+        <li><b>Fallback list</b> — ถ้า QR เลอะ/ฉีก สามารถเลือกจากลิสต์ 3 sheet ล่าสุด · มี indicator "เสร็จแล้ว ✓" / "รอพิมพ์" / "พิมพ์ไปแล้ว X/12"</li>
+        <li><b>Multi-branch support</b> — NT + FS แต่ละสาขามี sheet แยก · ไม่ปนกัน · branch ติดที่ rpc_count_adjust ด้วย (note field)</li>
+        <li><b>"พิมพ์ค่ำ" workflow</b> — ตามที่ blueprint เขียน · น้องนับตอนเย็น · พิมพ์หลัง 18:00 · timestamp ติดเป็น actor context · ไม่สับสนกับ ops กลางวัน</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ═════════ Screen 2 — Per-row entry (w/ delta preview) ═════════ -->
+  <div class="rule">◆ ◆ ◆</div>
+
+  <section class="showcase showcase--reverse">
+    <div class="annot">
+      <div class="annot__h">SCREEN 02 · per-SKU entry · delta preview</div>
+      <h2 class="annot__t">พิมพ์ปุ๊บ · เห็น delta ปั๊บ</h2>
+      <ul>
+        <li><b>1 row = 1 rpc call</b> — <code>rpc_count_adjust(actor, item, counted_qty, note)</code> · trigger คำนวณ delta = counted − current_sm_sum · transparent</li>
+        <li><b>Progress bar บน</b> — 5/12 · น้องรู้ว่าเหลืออีกเท่าไหร่ · ถ้ามีสาย/ถูกขัดเรียก resume ได้ (localStorage draft)</li>
+        <li><b>3 states per row</b> — current (อยู่ใน input), done (เขียวผ่าน), warn (ดูแปลก — ห่าง &gt;20%) · น้องเห็นภาพรวม</li>
+        <li><b>Delta ช่อง: +/− / เท่ากัน</b> — สีบอก direction · ถ้า +3 เขียว · −2 แดงอ่อน · เท่ากัน (0) เทา · pattern ซ้ำกับใน count-log แล้ว</li>
+        <li><b>Warn-trigger: auto-focus note</b> — MT-040 ห่าง -2 ≈ 8% ยังปกติ · แต่ SRCP-004 ถ้าห่าง +8 ขวด UI ขอ note บังคับ · ดัก fat-finger ก่อน commit</li>
+        <li><b>Scan paper → typed validation</b> — future: OCR ใบกระดาษ + auto-fill · ตอนนี้ manual type ก่อน · lean start</li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__bar"><span>19:14</span><span>◆ 62%</span></div>
+          <div class="hd">
+            <div class="back">←</div>
+            <div>
+              <div class="t">Week 17 · NT · 22/04</div>
+              <div class="s">กรอกตามใบกระดาษ</div>
+            </div>
+            <div class="more">⋯</div>
+          </div>
+          <div class="progbar">
+            <div class="progbar__track"><div class="progbar__fill"></div></div>
+            <div class="progbar__n"><b>5</b>/12</div>
+          </div>
+          <div class="body">
+
+            <!-- done row -->
+            <div class="row-card done">
+              <div class="row-card__h">
+                <div class="row-card__ix">✓</div>
+                <div>
+                  <div class="row-card__t">MT-019 · เนื้อสดหมักนุ่ม</div>
+                  <div class="row-card__sku">520g/ถุง · ค่าคาด 13</div>
+                </div>
+                <div class="row-card__act">›</div>
+              </div>
+              <div class="row-card__summary">
+                <div><div class="k">paper</div><div class="v">12</div></div>
+                <div><div class="k">expected</div><div class="v">13</div></div>
+                <div><div class="k">delta</div><div class="v neg">−1</div></div>
+              </div>
+            </div>
+
+            <!-- warn row (MT-040) -->
+            <div class="row-card warn">
+              <div class="row-card__h">
+                <div class="row-card__ix">!</div>
+                <div>
+                  <div class="row-card__t">MT-040 · เนื้อสับ (บ)</div>
+                  <div class="row-card__sku">250g/แพ็ค · ค่าคาด 24</div>
+                </div>
+                <div class="row-card__act">›</div>
+              </div>
+              <div class="row-card__summary">
+                <div><div class="k">paper</div><div class="v">22</div></div>
+                <div><div class="k">expected</div><div class="v">24</div></div>
+                <div><div class="k">delta</div><div class="v neg">−2</div></div>
+              </div>
+              <div class="row-card__warn">
+                <div class="ic">i</div>
+                <div>ห่าง −8% · ใกล้ threshold · กรอก note เพื่อ audit ง่ายขึ้น</div>
+              </div>
+              <input class="row-card__note" value="เจอ 2 แพ็คชำรุด เตรียม dispose พรุ่งนี้" />
+            </div>
+
+            <!-- current row (SRCP-004) -->
+            <div class="row-card current">
+              <div class="row-card__h">
+                <div class="row-card__ix">6</div>
+                <div>
+                  <div class="row-card__t">SRCP-004 · พริกน้ำส้ม</div>
+                  <div class="row-card__sku">150g/ขวด · ค่าคาด 32</div>
+                </div>
+                <div class="row-card__act">›</div>
+              </div>
+              <div class="row-card__input-block">
+                <div>
+                  <div class="row-card__input-lbl">นับจริง (ตามใบ)</div>
+                  <input class="row-card__input" value="32" />
+                </div>
+                <div class="row-card__unit">ขวด</div>
+              </div>
+              <div class="row-card__summary">
+                <div><div class="k">expected</div><div class="v">32</div></div>
+                <div><div class="k">delta</div><div class="v zero">0</div></div>
+                <div><div class="k">rpc</div><div class="v" style="color: var(--color-primary-700); font-size: 10px;">skip (no-op)</div></div>
+              </div>
+            </div>
+
+            <!-- pending rows -->
+            <div class="row-card">
+              <div class="row-card__h">
+                <div class="row-card__ix">7</div>
+                <div>
+                  <div class="row-card__t">SRCP-002 · น้ำจิ้มแจ่ว</div>
+                  <div class="row-card__sku">100g/ถ้วย · ค่าคาด 18</div>
+                </div>
+                <div class="row-card__act">›</div>
+              </div>
+            </div>
+
+            <div class="row-card">
+              <div class="row-card__h">
+                <div class="row-card__ix">8</div>
+                <div>
+                  <div class="row-card__t">SRCP-009 · ซอสมะขาม</div>
+                  <div class="row-card__sku">200g/ขวด · ค่าคาด 14</div>
+                </div>
+                <div class="row-card__act">›</div>
+              </div>
+            </div>
+
+          </div>
+          <div class="cta">
+            <button class="btn btn--primary">บันทึก + ไปถัดไป →</button>
+          </div>
+        </div>
+      </div>
+      <div class="frame-cap">screen 02 · <b>per-row entry</b> · delta preview + warn</div>
+    </div>
+  </section>
+
+  <!-- ═════════ Screen 3 — Review batch + commit ═════════ -->
+  <div class="rule">◆ ◆ ◆</div>
+
+  <section class="showcase">
+    <div>
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__bar"><span>19:24</span><span>◆ 58%</span></div>
+          <div class="hd">
+            <div class="back">←</div>
+            <div>
+              <div class="t">ยืนยัน batch</div>
+              <div class="s">12 rpc calls · atomic</div>
+            </div>
+            <div class="more">⋯</div>
+          </div>
+          <div class="progbar">
+            <div class="progbar__track"><div class="progbar__fill" style="width: 100%;"></div></div>
+            <div class="progbar__n"><b>12</b>/12 ✓</div>
+          </div>
+          <div class="body">
+
+            <div class="review">
+              <div class="review__h">SUMMARY · 8 changes + 4 no-ops</div>
+
+              <div class="review__row">
+                <div><b>MT-019</b><div style="font-size: 10px; color: var(--color-ink-500); font-family: var(--font-mono); margin-top: 2px;">เนื้อสดหมักนุ่ม</div></div>
+                <div class="qty">12</div>
+                <div class="delta neg">−1</div>
+              </div>
+              <div class="review__row">
+                <div><b>MT-031</b><div style="font-size: 10px; color: var(--color-ink-500); font-family: var(--font-mono); margin-top: 2px;">ลูกชิ้นเนื้อตุ๋น</div></div>
+                <div class="qty">8</div>
+                <div class="delta zero">0</div>
+              </div>
+              <div class="review__row">
+                <div><b>MT-022</b><div style="font-size: 10px; color: var(--color-ink-500); font-family: var(--font-mono); margin-top: 2px;">เนื้อตุ๋นชิ้นใหญ่</div></div>
+                <div class="qty">6</div>
+                <div class="delta pos">+1</div>
+              </div>
+              <div class="review__row">
+                <div><b>MT-040</b><div style="font-size: 10px; color: var(--color-ink-500); font-family: var(--font-mono); margin-top: 2px;">เนื้อสับ · มี note</div></div>
+                <div class="qty">22</div>
+                <div class="delta neg">−2</div>
+              </div>
+              <div class="review__row">
+                <div><b>SRCP-004</b><div style="font-size: 10px; color: var(--color-ink-500); font-family: var(--font-mono); margin-top: 2px;">พริกน้ำส้ม</div></div>
+                <div class="qty">32</div>
+                <div class="delta zero">0</div>
+              </div>
+              <div class="review__row">
+                <div><b>SRCP-002</b><div style="font-size: 10px; color: var(--color-ink-500); font-family: var(--font-mono); margin-top: 2px;">น้ำจิ้มแจ่ว</div></div>
+                <div class="qty">17</div>
+                <div class="delta neg">−1</div>
+              </div>
+              <div class="review__row">
+                <div><b>SRCP-009</b><div style="font-size: 10px; color: var(--color-ink-500); font-family: var(--font-mono); margin-top: 2px;">ซอสมะขาม</div></div>
+                <div class="qty">14</div>
+                <div class="delta zero">0</div>
+              </div>
+              <div class="review__row" style="opacity: .6;">
+                <div style="font-size: 11px; color: var(--color-ink-500); font-family: var(--font-mono);">+ 5 รายการอื่น</div>
+                <div></div>
+                <div></div>
+              </div>
+
+              <div class="review-footer">
+                <div>note แนบ → "count-sheet 22/04 · ค่ำ"<br/>actor = น้อง</div>
+                <b>8 rpc calls</b>
+              </div>
+            </div>
+
+            <div style="margin-top: 10px; font-size: 11px; line-height: 1.5; color: var(--color-ink-600); text-align: center; font-family: var(--font-mono); letter-spacing: .2px;">
+              กด commit → ทำ 8 rpc_count_adjust ในคำขอเดียว<br/>ถ้าอันไหน fail → rollback ทั้ง batch · atomic
+            </div>
+
+          </div>
+          <div class="cta">
+            <div style="display:grid; grid-template-columns: auto 1fr; gap: 8px;">
+              <button class="btn btn--subtle" style="padding: 15px 18px;">← แก้</button>
+              <button class="btn btn--gold">✓ commit 8 changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="frame-cap">screen 03 · <b>review</b> · batch commit · atomic</div>
+    </div>
+
+    <div class="annot">
+      <div class="annot__h">SCREEN 03 · review + commit</div>
+      <h2 class="annot__t">กด commit ครั้งเดียว · 8 rpc · atomic</h2>
+      <ul>
+        <li><b>Skip no-ops</b> — delta = 0 ไม่ส่งเข้า rpc · ประหยัด call + noise ใน count-log · summary บอกชัดเจน "8 changes + 4 no-ops"</li>
+        <li><b>Atomic batch</b> — ถ้า rpc row 5 fail → rollback ทั้งหมด · ป้องกัน partial state · frontend wrap ใน single transaction (stock.batch_count_adjust — เพิ่มใหม่)</li>
+        <li><b>Note auto-composed</b> — "count-sheet 22/04 · ค่ำ" + actor → แต่ละ row ใน <code>v_count_adjust_log</code> filter ได้ง่าย · ไทน์ query by note prefix</li>
+        <li><b>Edit เสริม</b> — ปุ่ม "← แก้" กลับไปหน้า entry ได้ · ไม่ต้องเริ่มใหม่ · localStorage เก็บ draft</li>
+        <li><b>Warn row แสดง indicator</b> — "MT-040 · เนื้อสับ · มี note" ให้ไทน์เห็นว่าทำไมถึงห่าง · readable ใน count-log ต่อ</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ═════════ Screen 4 — Success + link to log ═════════ -->
+  <div class="rule">◆ ◆ ◆</div>
+
+  <section class="showcase showcase--reverse">
+    <div class="annot">
+      <div class="annot__h">SCREEN 04 · success</div>
+      <h2 class="annot__t">เสร็จแล้ว · ดูได้ที่ count-log ทันที</h2>
+      <ul>
+        <li><b>Explicit link to count-log</b> — decision 22/04 · 185d3e4 pair · transparency mechanism · ไทน์ตรวจ adjustment ทั้งหมดจากหน้า count-log (ไม่มี RLS lockdown)</li>
+        <li><b>Summary stat</b> — ∑ positive / ∑ negative · ให้เห็น net drift · ถ้า net สูงมากอาจมี process issue (ของหาย? lost receiving?)</li>
+        <li><b>Next sheet prefetch</b> — เสาร์อาทิตย์มีใบนับอีก · UI เสนอ "พรุ่งนี้ · Week 18" + ปุ่มตั้ง reminder</li>
+        <li><b>Offline-safe</b> — ถ้า commit เกิดขณะ network drop · localStorage เก็บ unfinished batch · UI pop "pending commit" ตอนกลับออนไลน์</li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__bar"><span>19:24</span><span>◆ 58%</span></div>
+          <div class="hd">
+            <div class="back">✓</div>
+            <div>
+              <div class="t">บันทึกสำเร็จ</div>
+              <div class="s">8 adjustments · atomic</div>
+            </div>
+            <div class="more">⋯</div>
+          </div>
+          <div class="body">
+
+            <div class="success-hero">
+              <div class="success-hero__ic">✓</div>
+              <div class="success-hero__t">Week 17 · 22/04 เสร็จ</div>
+              <div class="success-hero__n">8 rows commited · 4 skipped</div>
+            </div>
+
+            <div class="success-stat">
+              <div class="success-stat__cell">
+                <div class="success-stat__k">∑ positive</div>
+                <div class="success-stat__v pos">+ 1</div>
+              </div>
+              <div class="success-stat__cell">
+                <div class="success-stat__k">∑ negative</div>
+                <div class="success-stat__v neg">− 8</div>
+              </div>
+            </div>
+
+            <div style="font-size: 11px; color: var(--color-ink-600); text-align: center; font-family: var(--font-mono); letter-spacing: .2px; margin: 10px 2px 14px;">
+              net drift = −7 · ปกติ (loss ปกติสัปดาห์)
+            </div>
+
+            <a class="success-link" href="#">
+              <div class="success-link__ic">📋</div>
+              <div>
+                <div class="success-link__t">ดูที่ count-log</div>
+                <div class="success-link__s">v_count_adjust_log · filter week 17</div>
+              </div>
+              <div style="color: var(--color-primary-700); font-size: 18px;">›</div>
+            </a>
+
+            <a class="success-link" style="background: var(--color-bg-surface); border-color: var(--color-ink-200);" href="count-sheet-weekly-proto.html">
+              <div class="success-link__ic" style="background: var(--color-ink-700);">🖨</div>
+              <div>
+                <div class="success-link__t" style="color: var(--color-ink-900);">พิมพ์ใบ Week 18</div>
+                <div class="success-link__s" style="color: var(--color-ink-500);">เตรียมสัปดาห์ถัดไป</div>
+              </div>
+              <div style="color: var(--color-ink-500); font-size: 18px;">›</div>
+            </a>
+
+            <div style="margin-top: 12px; padding: 10px 12px; background: var(--color-accent-100); border-radius: 6px; font-size: 11px; color: var(--color-primary-900); text-align: center;">
+              👍 กำหนด reminder วันจันทร์ 18:00 ตั้งแล้ว
+            </div>
+
+          </div>
+          <div class="cta">
+            <button class="btn btn--primary">เสร็จ · กลับหน้าหลัก</button>
+          </div>
+        </div>
+      </div>
+      <div class="frame-cap">screen 04 · <b>success</b> · link to count-log</div>
+    </div>
+  </section>
+
+  <!-- ═════════ Contract + paired loop ═════════ -->
+  <div class="contract">
+    <h2>Paper → RPC · atomic contract</h2>
+    <p class="lede">
+      หน้านี้ไม่ใช่ form ธรรมดา · ต้องเข้าใจว่าแต่ละ row = 1 trigger fire ใน stock_counts + sm · batch ทั้งหมด wrap ใน single transaction เพื่อ atomicity · เอา pattern เดียวกับ <code>stock.submit_delivery</code>
+    </p>
+
+    <div class="contract-grid">
+      <div class="contract-col">
+        <h3>client-side batch <small>NEW</small></h3>
+        <div class="trace">
+<span class="c1">// aggregate per-row → one rpc call</span>
+<span class="k">async function</span> commitBatch(rows) {
+  <span class="k">const</span> payload = rows
+    .filter(r =&gt; r.delta !== <span class="n">0</span>)
+    .map(r =&gt; ({
+      item_id: r.item_id,
+      counted_qty: r.paper_qty,
+      note: <span class="s">`count-sheet ${weekOf} · ${slot}`</span>
+    }));
+
+  <span class="k">await</span> rpc(<span class="s">"batch_count_adjust"</span>, {
+    p_actor: actor,
+    p_rows: payload   <span class="c1">// jsonb[]</span>
+  });
+  <span class="ok">// atomic — all commit OR all fail</span>
+}
+        </div>
+      </div>
+
+      <div class="contract-col">
+        <h3>server rpc_batch_count_adjust <small>NEW · wrap existing</small></h3>
+        <div class="trace">
+<span class="c1">-- wraps existing rpc_count_adjust</span>
+<span class="k">CREATE FUNCTION</span> rpc_batch_count_adjust(
+  p_actor text,
+  p_rows  jsonb
+) <span class="k">RETURNS</span> jsonb <span class="k">AS</span> $$
+<span class="k">DECLARE</span>
+  r jsonb;
+<span class="k">BEGIN</span>
+  <span class="k">FOR</span> r <span class="k">IN</span> <span class="k">SELECT</span> * <span class="k">FROM</span> jsonb_array_elements(p_rows)
+  <span class="k">LOOP</span>
+    <span class="k">PERFORM</span> rpc_count_adjust(
+      p_actor, (r-&gt;&gt;<span class="s">'item_id'</span>)::uuid,
+      (r-&gt;&gt;<span class="s">'counted_qty'</span>)::numeric,
+      r-&gt;&gt;<span class="s">'note'</span>
+    );
+  <span class="k">END LOOP</span>;
+  <span class="k">RETURN</span> jsonb_build_object(<span class="s">'ok'</span>, true, <span class="s">'count'</span>, jsonb_array_length(p_rows));
+<span class="k">END</span>; $$ <span class="k">LANGUAGE</span> plpgsql;
+<span class="ok">-- fails any row → entire tx rolls back (pg default)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Next strip -->
+  <div class="next-strip">
+    <div>
+      <h2>ถัดไป · Phase 3B — meat-stock#stock kanban</h2>
+      <p>คลัง A/B/C visualisation · 17+72+317 bags · drag-to-transfer + low-stock alert column</p>
+    </div>
+    <a href="index.html">→ กลับ hub</a>
+  </div>
+
+</div>
+
+</body>
+</html>

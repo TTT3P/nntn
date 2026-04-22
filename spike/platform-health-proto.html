@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · platform-health SLO (Phase 3C)</title>
+<link rel="stylesheet" href="tokens.css?v=20260422b" />
+<script>
+  try {
+    var saved = localStorage.getItem('nntn_theme');
+    if (saved === 'warm' || saved === null) {
+      localStorage.removeItem('nntn_theme');
+      document.documentElement.removeAttribute('data-theme');
+    }
+  } catch(e){}
+</script>
+<style>
+  body { background: var(--color-bg-app); color: var(--color-ink-800); font-family: var(--font-sans);}
+  .page { max-width: 1760px; margin: 0 auto; padding: 32px 24px 100px;}
+
+  .top { display:flex; gap:14px; align-items:center; font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-ink-600); margin-bottom: var(--space-5);}
+  .top .dot { width:10px; height:10px; border-radius:50%; background: var(--color-primary-600); box-shadow: 0 0 0 4px var(--color-primary-100);}
+  .top .crumbs { margin-left:auto; color: var(--color-ink-500);}
+  .back-link { color: var(--color-primary-700); text-decoration: none; border-bottom: 1px dotted currentColor;}
+
+  h1.page-h { font-family: var(--font-display); font-weight: 500; font-size: 48px; line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 var(--space-3); color: var(--color-ink-900); max-width: 980px;}
+  h1 .hi { color: var(--color-primary-700);}
+  .page-lede { font-size: 17px; line-height: 1.6; color: var(--color-ink-700); max-width: 960px; margin: 0 0 var(--space-4);}
+  .page-lede b { color: var(--color-primary-700);}
+  .pill { display:inline-block; font-family: var(--font-mono); font-size: 11px; background: var(--color-ink-100); color: var(--color-ink-800); padding: 2px 6px; border-radius: 3px;}
+
+  /* Overall health bar */
+  .status-strip { background: linear-gradient(180deg, #fff 0%, #FAFAF5 100%); border: 1px solid var(--color-ink-200); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: var(--space-6); display:grid; grid-template-columns: auto 1fr auto; gap: 32px; align-items: center; box-shadow: var(--shadow-md);}
+  .status-dot { width: 72px; height: 72px; border-radius: 50%; background: var(--color-success-500); display:grid; place-items: center; color: #fff; font-size: 32px; box-shadow: 0 0 0 8px #DCEADE, 0 0 0 14px #E8F2EA;}
+  .status-txt h2 { font-family: var(--font-display); font-weight: 500; font-size: 28px; margin: 0; color: var(--color-ink-900); letter-spacing: -0.01em;}
+  .status-txt .s { font-size: 14px; color: var(--color-ink-600); margin-top: 4px; font-family: var(--font-mono); letter-spacing: .3px;}
+  .status-txt b { color: var(--color-primary-700);}
+  .status-stat { display:grid; grid-template-columns: repeat(3, auto); gap: 28px; text-align: right;}
+  .status-stat .k { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; color: var(--color-ink-500); text-transform: uppercase;}
+  .status-stat .v { font-family: var(--font-mono); font-weight: 700; font-size: 26px; color: var(--color-primary-800); font-variant-numeric: tabular-nums; margin-top: 3px; line-height: 1;}
+  .status-stat .v.ok { color: var(--color-success-700);}
+  .status-stat .v.warn { color: var(--color-accent-600);}
+
+  /* SLO row card */
+  .slo-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: var(--space-6);}
+  @media (max-width: 1100px) { .slo-grid { grid-template-columns: 1fr;}}
+  .slo { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 18px 20px;}
+  .slo__h { display:grid; grid-template-columns: 1fr auto; gap: 14px; align-items: start; margin-bottom: 12px;}
+  .slo__t { font-family: var(--font-display); font-weight: 500; font-size: 20px; color: var(--color-ink-900); letter-spacing: -0.005em;}
+  .slo__sub { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-500); margin-top: 4px; letter-spacing: .3px;}
+  .slo__sub b { color: var(--color-primary-700);}
+  .slo__badge { font-family: var(--font-mono); font-weight: 700; font-size: 10px; padding: 4px 10px; border-radius: 3px; letter-spacing: .3px; text-transform: uppercase; align-self: start;}
+  .slo__badge.healthy { background: var(--color-success-500); color: #fff;}
+  .slo__badge.watch { background: var(--color-accent-500); color: var(--color-primary-900);}
+  .slo__badge.breach { background: #8F1A0B; color: #fff;}
+
+  .slo__figure { display:grid; grid-template-columns: auto 1fr; gap: 16px; align-items: end; padding: 12px 0; border-top: 1px dashed var(--color-ink-200); border-bottom: 1px dashed var(--color-ink-200);}
+  .slo__big { font-family: var(--font-mono); font-weight: 700; font-size: 44px; color: var(--color-ink-900); font-variant-numeric: tabular-nums; line-height: 1;}
+  .slo__big.ok { color: var(--color-success-700);}
+  .slo__big.warn { color: var(--color-accent-600);}
+  .slo__big.breach { color: #8F1A0B;}
+  .slo__big-unit { font-family: var(--font-mono); font-size: 12px; color: var(--color-ink-500); font-weight: 500;}
+  .slo__target { font-size: 12px; font-family: var(--font-mono); color: var(--color-ink-600); line-height: 1.6; padding-bottom: 2px;}
+  .slo__target b { color: var(--color-ink-900);}
+
+  .slo__bar-wrap { margin-top: 10px;}
+  .slo__bar { height: 8px; background: var(--color-ink-100); border-radius: 4px; overflow: hidden; position: relative;}
+  .slo__bar-fill { height: 100%; background: var(--color-success-500); border-radius: 4px;}
+  .slo__bar-fill.warn { background: var(--color-accent-500);}
+  .slo__bar-fill.breach { background: #8F1A0B;}
+  .slo__bar-ticks { display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; font-family: var(--font-mono); font-size: 9px; color: var(--color-ink-500); margin-top: 4px; letter-spacing: .3px;}
+
+  /* 30-day spark chart */
+  .slo__chart { margin-top: 10px; height: 60px; position: relative;}
+  .slo__chart svg { width: 100%; height: 100%;}
+  .slo__chart .axis { fill: var(--color-ink-400); font-family: var(--font-mono); font-size: 9px;}
+
+  /* Trigger / RPC table */
+  .panel { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); overflow: hidden; margin-bottom: var(--space-6);}
+  .panel__h { padding: 16px 20px; border-bottom: 1px solid var(--color-ink-200); display:grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; background: linear-gradient(180deg, #fff 0%, #FAFAF5 100%);}
+  .panel__t { font-family: var(--font-display); font-weight: 500; font-size: 22px; margin: 0; color: var(--color-ink-900); letter-spacing: -0.005em;}
+  .panel__s { font-size: 13px; color: var(--color-ink-600); font-family: var(--font-mono); margin-top: 4px; letter-spacing: .2px;}
+  .panel__s b { color: var(--color-primary-700);}
+
+  .rpc-tbl { width: 100%; border-collapse: collapse;}
+  .rpc-tbl th { text-align: left; padding: 10px 20px; background: var(--color-ink-50); border-bottom: 1px solid var(--color-ink-200); font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.2px; color: var(--color-ink-600); text-transform: uppercase; font-weight: 700;}
+  .rpc-tbl th.num { text-align: right;}
+  .rpc-tbl td { padding: 12px 20px; border-bottom: 1px solid var(--color-ink-100); font-size: 13px; vertical-align: middle;}
+  .rpc-tbl tr:hover td { background: var(--color-ink-50);}
+  .rpc-tbl td.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums;}
+  .rpc-tbl td.num { text-align: right;}
+  .rpc-tbl b { color: var(--color-ink-900); font-weight: 700;}
+  .rpc-tbl .rpc-name { font-family: var(--font-mono); font-size: 12px; color: var(--color-primary-800); background: var(--color-primary-50); padding: 2px 8px; border-radius: 3px; font-weight: 700; letter-spacing: .2px;}
+  .rpc-tbl .flag { font-family: var(--font-mono); font-size: 10px; padding: 3px 8px; border-radius: 3px; letter-spacing: .3px; text-transform: uppercase; font-weight: 700; display: inline-block;}
+  .rpc-tbl .flag.ok { background: #DCEADE; color: #134A22;}
+  .rpc-tbl .flag.watch { background: #FBF3DC; color: #5A4915;}
+  .rpc-tbl .flag.breach { background: #FADFD7; color: #8F1A0B;}
+
+  .rpc-tbl .sparkline { width: 80px; height: 24px;}
+
+  /* Regression watch rows */
+  .watch-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: var(--space-6);}
+  @media (max-width: 1020px) { .watch-grid { grid-template-columns: 1fr;}}
+  .watch { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 16px 18px; border-top: 3px solid var(--color-success-500);}
+  .watch.warn { border-top-color: var(--color-accent-500);}
+  .watch.breach { border-top-color: #8F1A0B;}
+  .watch__tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; color: var(--color-success-700); text-transform: uppercase; font-weight: 700;}
+  .watch.warn .watch__tag { color: var(--color-accent-600);}
+  .watch.breach .watch__tag { color: #8F1A0B;}
+  .watch__t { font-family: var(--font-display); font-weight: 500; font-size: 18px; margin: 6px 0 10px; color: var(--color-ink-900);}
+  .watch__desc { font-size: 13px; color: var(--color-ink-700); line-height: 1.5; margin-bottom: 12px;}
+  .watch__desc code { font-family: var(--font-mono); font-size: 11px; background: var(--color-ink-100); padding: 1px 5px; border-radius: 3px;}
+  .watch__figure { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 12px; border-top: 1px dashed var(--color-ink-200);}
+  .watch__kv .k { font-family: var(--font-mono); font-size: 9px; letter-spacing: .8px; color: var(--color-ink-500); text-transform: uppercase;}
+  .watch__kv .v { font-family: var(--font-mono); font-weight: 700; font-size: 18px; color: var(--color-ink-900); margin-top: 3px; font-variant-numeric: tabular-nums;}
+  .watch__kv .v.ok { color: var(--color-success-700);}
+  .watch__kv .v.warn { color: var(--color-accent-600);}
+  .watch__kv .v.breach { color: #8F1A0B;}
+  .watch__last { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--color-ink-200); font-size: 11px; color: var(--color-ink-600); font-family: var(--font-mono); letter-spacing: .2px;}
+  .watch__last b { color: var(--color-primary-700);}
+
+  /* Event feed */
+  .feed { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 18px 20px; max-height: 520px; overflow-y: auto;}
+  .feed__row { display:grid; grid-template-columns: 16px 90px 1fr auto; gap: 12px; padding: 10px 0; border-bottom: 1px dashed var(--color-ink-100); font-size: 13px; align-items: start;}
+  .feed__row:last-child { border-bottom: none;}
+  .feed__dot { width: 10px; height: 10px; border-radius: 50%; background: var(--color-ink-300); margin-top: 4px; flex-shrink: 0;}
+  .feed__row.ok .feed__dot { background: var(--color-success-500);}
+  .feed__row.warn .feed__dot { background: var(--color-accent-500);}
+  .feed__row.breach .feed__dot { background: #8F1A0B;}
+  .feed__row.info .feed__dot { background: var(--color-primary-600);}
+  .feed__ts { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .2px; padding-top: 2px;}
+  .feed__body b { display:block; font-weight: 700; color: var(--color-ink-900); font-size: 13px;}
+  .feed__body { color: var(--color-ink-700); line-height: 1.45;}
+  .feed__body small { font-size: 11px; color: var(--color-ink-500); font-family: var(--font-mono); letter-spacing: .2px;}
+  .feed__body code { font-family: var(--font-mono); font-size: 11px; background: var(--color-ink-100); padding: 1px 4px; border-radius: 3px; color: var(--color-ink-800);}
+  .feed__qty { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-600); letter-spacing: .2px; text-align: right; padding-top: 2px; flex-shrink: 0;}
+  .feed__qty b { color: var(--color-primary-700);}
+
+  /* Two-column layout */
+  .two-col { display:grid; grid-template-columns: 2fr 1fr; gap: 18px; margin-bottom: var(--space-6);}
+  @media (max-width: 1200px) { .two-col { grid-template-columns: 1fr;}}
+
+  /* Section heading */
+  .section-h { margin-top: var(--space-8); margin-bottom: var(--space-4);}
+  .section-h .kicker { font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; color: var(--color-accent-600); text-transform: uppercase; margin-bottom: 6px;}
+  .section-h h2 { font-family: var(--font-display); font-weight: 500; font-size: 32px; letter-spacing: -0.01em; color: var(--color-ink-900); margin: 0 0 6px;}
+  .section-h p { font-size: 14px; color: var(--color-ink-700); line-height: 1.55; margin: 0; max-width: 820px;}
+
+  .rule { text-align: center; color: var(--color-accent-600); margin: var(--space-8) 0 var(--space-6); letter-spacing: 14px;}
+
+  /* Contract */
+  .contract { background: var(--color-bg-surface); border: 1px solid var(--color-ink-200); border-radius: var(--radius-lg); padding: var(--space-5); margin-top: var(--space-7);}
+  .contract h2 { font-family: var(--font-display); font-weight: 500; font-size: 32px; letter-spacing: -0.01em; color: var(--color-ink-900); margin: 0 0 var(--space-3);}
+  .contract p.lede { font-size: 14px; color: var(--color-ink-700); line-height: 1.6; margin: 0 0 var(--space-4); max-width: 880px;}
+  .trace { background: #0D1117; color: #C9D1D9; font-family: var(--font-mono); font-size: 12px; line-height: 1.6; border-radius: var(--radius-md); padding: 12px 14px; overflow-x: auto;}
+  .trace .c1 { color: #7D8590;} .trace .ok { color: #3FB950;} .trace .k { color: #79C0FF;} .trace .n { color: #FFA657;} .trace .s { color: #A5D6FF;}
+
+  .next-strip { margin-top: var(--space-7); background: var(--color-primary-50); border: 1px solid var(--color-primary-200); border-radius: var(--radius-lg); padding: var(--space-5); display:grid; grid-template-columns: 1fr auto; gap: var(--space-4); align-items: center;}
+  .next-strip h2 { font-family: var(--font-display); font-weight: 500; font-size: 26px; margin: 0 0 4px; color: var(--color-ink-900);}
+  .next-strip p { font-size: 14px; color: var(--color-ink-700); margin: 0;}
+  .next-strip a { padding: 12px 20px; border-radius: var(--radius-md); background: var(--color-primary-600); color: #fff; text-decoration: none; font-weight: 700; font-size: 14px;}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="top">
+    <span class="dot"></span>
+    <span>NNTN · Design Spike</span>
+    <span class="crumbs">PHASE 3C · platform-health · <a class="back-link" href="index.html">← hub</a></span>
+  </div>
+
+  <h1 class="page-h">Platform health · <span class="hi">SLO, trigger fires, regression watch</span></h1>
+  <p class="page-lede">
+    <span class="pill">dev/ops view</span> เดียวที่รวม <b>SLO</b> 4 ตัวหลัก · <b>RPC p99</b> ของทุก rpc · <b>trigger fire rate</b> (sm update) · <b>regression watch</b> สำหรับ bug ที่เราเพิ่งปิด (B1 receive_delta, B2 meat-raw split, B6 catch-weight) เพื่อไม่ให้กลับมาอีก · เป้าหมาย: ถ้าหน้านี้เขียว = ทุก workflow ใน hub ทำงานถูก
+  </p>
+
+  <!-- ═════════ Status strip ═════════ -->
+  <div class="status-strip">
+    <div class="status-dot">✓</div>
+    <div class="status-txt">
+      <h2>ทุกระบบทำงานปกติ</h2>
+      <div class="s">last check <b>22/04 19:28</b> · uptime <b>99.94%</b> · 30-day rolling · ไม่มี breach 7 วันล่าสุด</div>
+    </div>
+    <div class="status-stat">
+      <div>
+        <div class="k">rpc p99</div>
+        <div class="v ok">284<small style="font-size:11px;"> ms</small></div>
+      </div>
+      <div>
+        <div class="k">trigger fire/hr</div>
+        <div class="v">342</div>
+      </div>
+      <div>
+        <div class="k">errors 24h</div>
+        <div class="v warn">7</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════ SLO cards ═════════ -->
+  <div class="section-h">
+    <div class="kicker">SECTION · SLO targets</div>
+    <h2>4 Service-Level Objectives</h2>
+    <p>Target ตั้งจากสถิติ 2 เดือนหลังเปลี่ยน pattern · เป้าหมาย 99.5% p95 · ถ้าหลุด target &gt; 12 ชม → Zak ได้ alert</p>
+  </div>
+
+  <div class="slo-grid">
+
+    <div class="slo">
+      <div class="slo__h">
+        <div>
+          <div class="slo__t">1. receive → stock transparent</div>
+          <div class="slo__sub">B1 fix · <b>rpc_po_receive</b> ส่ง delta · ไม่ส่ง absolute · trigger update sm ตาม delta</div>
+        </div>
+        <span class="slo__badge healthy">Healthy</span>
+      </div>
+      <div class="slo__figure">
+        <div>
+          <div class="slo__big ok">99.96<span class="slo__big-unit">%</span></div>
+        </div>
+        <div class="slo__target">target <b>99.5%</b><br/>4 errors / 9,841 receive<br/>last breach: —</div>
+      </div>
+      <div class="slo__bar-wrap">
+        <div class="slo__bar"><div class="slo__bar-fill" style="width: 99.96%;"></div></div>
+        <div class="slo__bar-ticks"><span>0</span><span>33%</span><span>66%</span><span style="text-align:right;">target</span></div>
+      </div>
+      <div class="slo__chart">
+        <svg viewBox="0 0 300 60" preserveAspectRatio="none">
+          <line x1="0" y1="15" x2="300" y2="15" stroke="#D2D5D0" stroke-dasharray="3 3" stroke-width="1"/>
+          <polyline points="0,18 30,16 60,20 90,15 120,17 150,14 180,18 210,15 240,16 270,15 300,16" fill="none" stroke="#2F7A3F" stroke-width="2"/>
+          <text x="296" y="12" text-anchor="end" class="axis">99.5%</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="slo">
+      <div class="slo__h">
+        <div>
+          <div class="slo__t">2. meat-raw split integrity</div>
+          <div class="slo__sub">B2 fix · <b>rpc_meat_split</b> · 1 bag แยก → n bags · ∑weight ตรงกับต้นทาง</div>
+        </div>
+        <span class="slo__badge healthy">Healthy</span>
+      </div>
+      <div class="slo__figure">
+        <div>
+          <div class="slo__big ok">100.0<span class="slo__big-unit">%</span></div>
+        </div>
+        <div class="slo__target">target <b>100%</b><br/>0 errors / 2,134 splits<br/>last breach: 11/02 (pre-fix)</div>
+      </div>
+      <div class="slo__bar-wrap">
+        <div class="slo__bar"><div class="slo__bar-fill" style="width: 100%;"></div></div>
+        <div class="slo__bar-ticks"><span>0</span><span>33%</span><span>66%</span><span style="text-align:right;">100%</span></div>
+      </div>
+      <div class="slo__chart">
+        <svg viewBox="0 0 300 60" preserveAspectRatio="none">
+          <line x1="0" y1="15" x2="300" y2="15" stroke="#D2D5D0" stroke-dasharray="3 3" stroke-width="1"/>
+          <polyline points="0,15 30,15 60,15 90,15 120,15 150,15 180,15 210,15 240,15 270,15 300,15" fill="none" stroke="#2F7A3F" stroke-width="2"/>
+          <text x="296" y="12" text-anchor="end" class="axis">100%</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="slo">
+      <div class="slo__h">
+        <div>
+          <div class="slo__t">3. catch-weight per-bag</div>
+          <div class="slo__sub">B6 fix · MT-* bags เก็บน้ำหนักจริงต่อถุง · ไม่ใช่ default 1.0 × count</div>
+        </div>
+        <span class="slo__badge watch">Watch</span>
+      </div>
+      <div class="slo__figure">
+        <div>
+          <div class="slo__big warn">98.8<span class="slo__big-unit">%</span></div>
+        </div>
+        <div class="slo__target">target <b>99%</b><br/>41 bags / 3,420 มี w=1.0 suspicious<br/>last breach: <b>21/04</b> (14 bags)</div>
+      </div>
+      <div class="slo__bar-wrap">
+        <div class="slo__bar"><div class="slo__bar-fill warn" style="width: 98.8%;"></div></div>
+        <div class="slo__bar-ticks"><span>0</span><span>33%</span><span>66%</span><span style="text-align:right;">99% target</span></div>
+      </div>
+      <div class="slo__chart">
+        <svg viewBox="0 0 300 60" preserveAspectRatio="none">
+          <line x1="0" y1="15" x2="300" y2="15" stroke="#D2D5D0" stroke-dasharray="3 3" stroke-width="1"/>
+          <polyline points="0,16 30,15 60,18 90,17 120,20 150,16 180,22 210,19 240,26 270,24 300,22" fill="none" stroke="#C9962C" stroke-width="2"/>
+          <circle cx="240" cy="26" r="3" fill="#C9962C"/>
+          <text x="296" y="12" text-anchor="end" class="axis">99% target</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="slo">
+      <div class="slo__h">
+        <div>
+          <div class="slo__t">4. trigger freshness &lt; 200ms</div>
+          <div class="slo__sub">Stock change → sm update p99 latency · ระบบต้องเห็น delta ภายใน 200 ms</div>
+        </div>
+        <span class="slo__badge healthy">Healthy</span>
+      </div>
+      <div class="slo__figure">
+        <div>
+          <div class="slo__big ok">142<span class="slo__big-unit"> ms</span></div>
+        </div>
+        <div class="slo__target">target <b>&lt;200ms</b><br/>p99 last hour · 2,341 fires<br/>last breach: 03/04 (217ms)</div>
+      </div>
+      <div class="slo__bar-wrap">
+        <div class="slo__bar"><div class="slo__bar-fill" style="width: 71%;"></div></div>
+        <div class="slo__bar-ticks"><span>0</span><span>66ms</span><span>132ms</span><span style="text-align:right;">200ms budget</span></div>
+      </div>
+      <div class="slo__chart">
+        <svg viewBox="0 0 300 60" preserveAspectRatio="none">
+          <line x1="0" y1="15" x2="300" y2="15" stroke="#D2D5D0" stroke-dasharray="3 3" stroke-width="1"/>
+          <polyline points="0,28 30,30 60,22 90,26 120,32 150,24 180,36 210,28 240,30 270,26 300,30" fill="none" stroke="#2F7A3F" stroke-width="2"/>
+          <text x="296" y="12" text-anchor="end" class="axis">200ms</text>
+        </svg>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═════════ RPC latency table ═════════ -->
+  <div class="rule">◆ ◆ ◆</div>
+
+  <div class="section-h">
+    <div class="kicker">SECTION · RPC latency</div>
+    <h2>18 RPCs · p50 · p95 · p99 · calls/24h</h2>
+    <p>ทุก RPC ตัวที่เปิดใน hub ปัจจุบัน · เรียงตาม calls · แสดง p99 budget ตามความสำคัญ (receive = 500ms, produce = 800ms, count_adjust = 300ms)</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel__h">
+      <div>
+        <h3 class="panel__t">RPC latency · last 24h</h3>
+        <div class="panel__s">total <b>41,203 calls</b> · <b>7 errors</b> · median p99 <b>284 ms</b></div>
+      </div>
+      <div style="display:flex; gap: 8px;">
+        <button style="padding: 6px 12px; background: #fff; border: 1px solid var(--color-ink-300); border-radius: 6px; font-size: 12px; cursor: pointer;">24h</button>
+        <button style="padding: 6px 12px; background: var(--color-ink-900); color: #fff; border: 1px solid var(--color-ink-900); border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 700;">7d</button>
+        <button style="padding: 6px 12px; background: #fff; border: 1px solid var(--color-ink-300); border-radius: 6px; font-size: 12px; cursor: pointer;">30d</button>
+      </div>
+    </div>
+    <table class="rpc-tbl">
+      <thead>
+        <tr>
+          <th>RPC</th>
+          <th>surface</th>
+          <th class="num">calls</th>
+          <th class="num">p50</th>
+          <th class="num">p95</th>
+          <th class="num">p99</th>
+          <th class="num">budget</th>
+          <th>trend</th>
+          <th>status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="rpc-name">rpc_po_receive</span></td>
+          <td>po-receive</td>
+          <td class="mono num">1,412</td>
+          <td class="mono num">82</td>
+          <td class="mono num">186</td>
+          <td class="mono num"><b>247</b></td>
+          <td class="mono num" style="color: var(--color-ink-500);">500ms</td>
+          <td><svg class="sparkline" viewBox="0 0 80 24"><polyline points="0,14 10,12 20,16 30,13 40,15 50,11 60,14 70,12 80,14" fill="none" stroke="#2F7A3F" stroke-width="1.5"/></svg></td>
+          <td><span class="flag ok">OK</span></td>
+        </tr>
+        <tr>
+          <td><span class="rpc-name">rpc_meat_produce</span></td>
+          <td>meat#produce</td>
+          <td class="mono num">214</td>
+          <td class="mono num">341</td>
+          <td class="mono num">612</td>
+          <td class="mono num"><b>764</b></td>
+          <td class="mono num" style="color: var(--color-ink-500);">800ms</td>
+          <td><svg class="sparkline" viewBox="0 0 80 24"><polyline points="0,12 10,10 20,14 30,11 40,15 50,13 60,10 70,8 80,10" fill="none" stroke="#2F7A3F" stroke-width="1.5"/></svg></td>
+          <td><span class="flag ok">OK</span></td>
+        </tr>
+        <tr>
+          <td><span class="rpc-name">rpc_meat_split</span></td>
+          <td>meat#split</td>
+          <td class="mono num">189</td>
+          <td class="mono num">124</td>
+          <td class="mono num">218</td>
+          <td class="mono num"><b>298</b></td>
+          <td class="mono num" style="color: var(--color-ink-500);">500ms</td>
+          <td><svg class="sparkline" viewBox="0 0 80 24"><polyline points="0,15 10,13 20,16 30,12 40,14 50,12 60,15 70,13 80,14" fill="none" stroke="#2F7A3F" stroke-width="1.5"/></svg></td>
+          <td><span class="flag ok">OK</span></td>
+        </tr>
+        <tr>
+          <td><span class="rpc-name">rpc_meat_transfer</span></td>
+          <td>meat#stock</td>
+          <td class="mono num">421</td>
+          <td class="mono num">68</td>
+          <td class="mono num">142</td>
+          <td class="mono num"><b>189</b></td>
+          <td class="mono num" style="color: var(--color-ink-500);">400ms</td>
+          <td><svg class="sparkline" viewBox="0 0 80 24"><polyline points="0,14 10,13 20,15 30,12 40,14 50,13 60,12 70,14 80,13" fill="none" stroke="#2F7A3F" stroke-width="1.5"/></svg></td>
+          <td><span class="flag ok">OK</span></td>
+        </tr>
+        <tr>
+          <td><span class="rpc-name">rpc_count_adjust</span></td>
+          <td>count-entry</td>
+          <td class="mono num">284</td>
+          <td class="mono num">48</td>
+          <td class="mono num">112</td>
+          <td class="mono num"><b>167</b></td>
+          <td class="mono num" style="color: var(--color-ink-500);">300ms</td>
+          <td><svg class="sparkline" viewBox="0 0 80 24"><polyline points="0,16 10,14 20,15 30,13 40,14 50,12 60,13 70,14 80,12" fill="none" stroke="#2F7A3F" stroke-width="1.5"/></svg></td>
+          <td><span class="flag ok">OK</span></td>
+        </tr>
+        <tr style="background: #FBF3DC;">
+          <td><span class="rpc-name">rpc_batch_count_adjust</span></td>
+          <td>count-entry</td>
+          <td class="mono num">34</td>
+          <td class="mono num">421</td>
+          <td class="mono num">892</td>
+          <td class="mono num" style="color: var(--color-accent-700);"><b>1,240</b></td>
+          <td class="mono num" style="color: var(--color-ink-500);">800ms</td>
+          <td><svg class="sparkline" viewBox="0 0 80 24"><polyline points="0,14 10,13 20,14 30,16 40,12 50,18 60,8 70,6 80,4" fill="none" stroke="#C9962C" stroke-width="1.5"/></svg></td>
+          <td><span class="flag watch">WATCH</span></td>
+        </tr>
+        <tr>
+          <td><span class="rpc-name">rpc_meat_dispose</span></td>
+          <td>meat#stock</td>
+          <td class="mono num">28</td>
+          <td class="mono num">112</td>
+          <td class="mono num">201</td>
+          <td class="mono num"><b>284</b></td>
+          <td class="mono num" style="color: var(--color-ink-500);">400ms</td>
+          <td><svg class="sparkline" viewBox="0 0 80 24"><polyline points="0,14 10,13 20,15 30,12 40,14 50,13 60,11 70,13 80,12" fill="none" stroke="#2F7A3F" stroke-width="1.5"/></svg></td>
+          <td><span class="flag ok">OK</span></td>
+        </tr>
+        <tr>
+          <td><span class="rpc-name">rpc_produce_revert</span></td>
+          <td>meat#produce</td>
+          <td class="mono num">3</td>
+          <td class="mono num">384</td>
+          <td class="mono num">521</td>
+          <td class="mono num"><b>612</b></td>
+          <td class="mono num" style="color: var(--color-ink-500);">1000ms</td>
+          <td><svg class="sparkline" viewBox="0 0 80 24"><polyline points="0,14 10,14 20,14 30,14 40,12 50,14 60,14 70,14 80,10" fill="none" stroke="#2F7A3F" stroke-width="1.5"/></svg></td>
+          <td><span class="flag ok">OK</span></td>
+        </tr>
+        <tr>
+          <td><span class="rpc-name">rpc_count_sheet_gen</span></td>
+          <td>count-sheet</td>
+          <td class="mono num">2</td>
+          <td class="mono num">1,210</td>
+          <td class="mono num">—</td>
+          <td class="mono num"><b>—</b></td>
+          <td class="mono num" style="color: var(--color-ink-500);">2000ms</td>
+          <td><svg class="sparkline" viewBox="0 0 80 24"><polyline points="0,14 80,14" fill="none" stroke="#ABB2AC" stroke-width="1.5"/></svg></td>
+          <td><span class="flag ok">OK</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═════════ Regression watch ═════════ -->
+  <div class="section-h">
+    <div class="kicker">SECTION · regression watch</div>
+    <h2>Bugs ที่เราพึ่งปิด · ห้ามกลับมา</h2>
+    <p>3 regression watches ที่ run ทุกชั่วโมง · หา pattern เดิมในข้อมูลใหม่ · ถ้าเจอปุ๊บ = alert ไปหา Zak และ Grace · นี่คือ safety net หลังจาก 22/04</p>
+  </div>
+
+  <div class="watch-grid">
+    <div class="watch">
+      <div class="watch__tag">✓ B1 · receive_delta</div>
+      <div class="watch__t">rpc_po_receive ส่ง delta เสมอ</div>
+      <div class="watch__desc">
+        Query scan <code>stock_movements</code> หา receive events ที่ s1.sm_after − s1.sm_before ≠ p_qty · ถ้าเจอ → rpc ส่ง absolute แทน delta กลับมา
+      </div>
+      <div class="watch__figure">
+        <div class="watch__kv"><div class="k">last scan</div><div class="v">19:00</div></div>
+        <div class="watch__kv"><div class="k">mismatches</div><div class="v ok">0</div></div>
+      </div>
+      <div class="watch__last">streak · <b>61 วัน</b> clean · pre-fix 11 events/วัน</div>
+    </div>
+
+    <div class="watch warn">
+      <div class="watch__tag">⚠ B6 · catch_weight</div>
+      <div class="watch__t">MT-* bags ต้องมี weight จริง</div>
+      <div class="watch__desc">
+        Query <code>meat_bags</code> WHERE weight = 1.000 AND sku LIKE 'MT-%' · ค่า default 1.0 = suspicious · อาจเป็น UI ไม่เซฟน้ำหนัก ตอน receive
+      </div>
+      <div class="watch__figure">
+        <div class="watch__kv"><div class="k">last scan</div><div class="v">19:00</div></div>
+        <div class="watch__kv"><div class="k">suspicious</div><div class="v warn">14</div></div>
+      </div>
+      <div class="watch__last">spike · <b>21/04 07:00</b> · po-receive form bug? ต้อง investigate</div>
+    </div>
+
+    <div class="watch">
+      <div class="watch__tag">✓ B2 · split integrity</div>
+      <div class="watch__t">meat-raw split ∑weight ตรง</div>
+      <div class="watch__desc">
+        สำหรับทุก split event · ∑ weight(child bags) ต้อง = weight(parent) ± 0.01 kg (tolerance) · ถ้าเกินนี้ = ข้อมูลเพี้ยน
+      </div>
+      <div class="watch__figure">
+        <div class="watch__kv"><div class="k">last scan</div><div class="v">19:00</div></div>
+        <div class="watch__kv"><div class="k">mismatches</div><div class="v ok">0</div></div>
+      </div>
+      <div class="watch__last">streak · <b>83 วัน</b> clean · trigger-based · can't bypass</div>
+    </div>
+  </div>
+
+  <!-- ═════════ Event feed + trigger fires ═════════ -->
+  <div class="two-col">
+
+    <div class="panel">
+      <div class="panel__h">
+        <div>
+          <h3 class="panel__t">Live event feed</h3>
+          <div class="panel__s">last 20 · refresh 10s · rpc + trigger + slo events</div>
+        </div>
+        <span style="font-family: var(--font-mono); font-size: 10px; background: #DCEADE; color: #134A22; padding: 4px 10px; border-radius: 3px; letter-spacing: .3px; font-weight: 700;">🟢 LIVE</span>
+      </div>
+      <div class="feed">
+        <div class="feed__row ok">
+          <div class="feed__dot"></div>
+          <div class="feed__ts">19:28:04</div>
+          <div class="feed__body"><b>rpc_meat_transfer</b><small>bag #2041 · A → B · 0.548kg · ลุงนัก</small></div>
+          <div class="feed__qty">142ms</div>
+        </div>
+        <div class="feed__row ok">
+          <div class="feed__dot"></div>
+          <div class="feed__ts">19:27:51</div>
+          <div class="feed__body"><b>rpc_count_adjust</b><small>SRCP-004 · 32 ขวด · delta 0 · ไทน์</small></div>
+          <div class="feed__qty">84ms</div>
+        </div>
+        <div class="feed__row info">
+          <div class="feed__dot"></div>
+          <div class="feed__ts">19:27:50</div>
+          <div class="feed__body"><b>trigger · sm update</b><small>SRCP-004 · before 32 · after 32 · no-op skip</small></div>
+          <div class="feed__qty">18ms</div>
+        </div>
+        <div class="feed__row ok">
+          <div class="feed__dot"></div>
+          <div class="feed__ts">19:27:14</div>
+          <div class="feed__body"><b>rpc_count_adjust</b><small>MT-040 · 22 แพ็ค · delta −2 · note attached</small></div>
+          <div class="feed__qty">112ms</div>
+        </div>
+        <div class="feed__row warn">
+          <div class="feed__dot"></div>
+          <div class="feed__ts">19:26:48</div>
+          <div class="feed__body"><b>SLO watch · catch_weight</b><small>MT-019 bag #2044 · weight=1.000 · flagged suspicious</small></div>
+          <div class="feed__qty">—</div>
+        </div>
+        <div class="feed__row ok">
+          <div class="feed__dot"></div>
+          <div class="feed__ts">19:25:12</div>
+          <div class="feed__body"><b>rpc_meat_produce</b><small>MT-031 ลูกชิ้น · batch #2204A · yield 0.92 · 4.2kg → 12 bags</small></div>
+          <div class="feed__qty">764ms</div>
+        </div>
+        <div class="feed__row info">
+          <div class="feed__dot"></div>
+          <div class="feed__ts">19:25:11</div>
+          <div class="feed__body"><b>trigger · 3 sm updates</b><small>MT-022 -4.2 · MT-031 +12 · inputs→outputs link</small></div>
+          <div class="feed__qty">31ms</div>
+        </div>
+        <div class="feed__row ok">
+          <div class="feed__dot"></div>
+          <div class="feed__ts">19:24:03</div>
+          <div class="feed__body"><b>rpc_batch_count_adjust</b><small>8 rows · Week 17 NT · ไทน์</small></div>
+          <div class="feed__qty">892ms</div>
+        </div>
+        <div class="feed__row info">
+          <div class="feed__dot"></div>
+          <div class="feed__ts">19:20:00</div>
+          <div class="feed__body"><b>cron · slo scan</b><small>4 SLOs scanned · 1 watch (catch-weight) · 3 ok</small></div>
+          <div class="feed__qty">—</div>
+        </div>
+        <div class="feed__row ok">
+          <div class="feed__dot"></div>
+          <div class="feed__ts">19:12:34</div>
+          <div class="feed__body"><b>rpc_po_receive</b><small>PO-0422-lung · +17 bags · receive_delta pattern · ลุงเจริญ</small></div>
+          <div class="feed__qty">247ms</div>
+        </div>
+        <div class="feed__row info">
+          <div class="feed__dot"></div>
+          <div class="feed__ts">19:12:33</div>
+          <div class="feed__body"><b>trigger · 17 sm updates</b><small>MT-019 +11 · MT-020 +6 · all delta-based · B1 pattern OK</small></div>
+          <div class="feed__qty">142ms</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="panel__h">
+          <div>
+            <h3 class="panel__t">Trigger fires · 24h</h3>
+            <div class="panel__s">heartbeat of the system</div>
+          </div>
+        </div>
+        <div style="padding: 16px 20px;">
+          <div style="display:grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--color-ink-100);">
+            <div>
+              <div style="font-size: 13px; font-weight: 700; color: var(--color-ink-900);">sm update</div>
+              <div style="font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .3px;">stock_movements → stock_master sum</div>
+            </div>
+            <div style="font-family: var(--font-mono); font-weight: 700; font-size: 18px; color: var(--color-primary-700); font-variant-numeric: tabular-nums;">8,214</div>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--color-ink-100);">
+            <div>
+              <div style="font-size: 13px; font-weight: 700; color: var(--color-ink-900);">po_auto_close</div>
+              <div style="font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .3px;">PO รับครบ → close</div>
+            </div>
+            <div style="font-family: var(--font-mono); font-weight: 700; font-size: 18px; color: var(--color-primary-700); font-variant-numeric: tabular-nums;">34</div>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--color-ink-100);">
+            <div>
+              <div style="font-size: 13px; font-weight: 700; color: var(--color-ink-900);">aging_flag</div>
+              <div style="font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .3px;">bag_age &gt; 14d · daily 06:00</div>
+            </div>
+            <div style="font-family: var(--font-mono); font-weight: 700; font-size: 18px; color: var(--color-accent-600); font-variant-numeric: tabular-nums;">3</div>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--color-ink-100);">
+            <div>
+              <div style="font-size: 13px; font-weight: 700; color: var(--color-ink-900);">low_stock_alert</div>
+              <div style="font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .3px;">avail &lt; par · per SKU</div>
+            </div>
+            <div style="font-family: var(--font-mono); font-weight: 700; font-size: 18px; color: #8F1A0B; font-variant-numeric: tabular-nums;">4</div>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--color-ink-100);">
+            <div>
+              <div style="font-size: 13px; font-weight: 700; color: var(--color-ink-900);">produce_chain</div>
+              <div style="font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .3px;">input_bags → output_bags link</div>
+            </div>
+            <div style="font-family: var(--font-mono); font-weight: 700; font-size: 18px; color: var(--color-primary-700); font-variant-numeric: tabular-nums;">214</div>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px 0;">
+            <div>
+              <div style="font-size: 13px; font-weight: 700; color: var(--color-ink-900);">count_log_append</div>
+              <div style="font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .3px;">adjustment → v_count_adjust_log</div>
+            </div>
+            <div style="font-family: var(--font-mono); font-weight: 700; font-size: 18px; color: var(--color-primary-700); font-variant-numeric: tabular-nums;">284</div>
+          </div>
+          <div style="margin-top: 12px; padding: 10px 12px; background: var(--color-ink-50); border-radius: 6px; font-size: 11px; color: var(--color-ink-600); text-align: center; font-family: var(--font-mono); letter-spacing: .2px;">
+            Total <b style="color: var(--color-primary-800);">8,753 fires / 24h</b> · ≈ 365/hr
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═════════ Contract ═════════ -->
+  <div class="contract">
+    <h2>SLO scan · regression watch contract</h2>
+    <p class="lede">
+      SLOs run ทุกชั่วโมง · watch run ทุกชั่วโมง · ผลเขียนเข้า <code>platform_slo_history</code> · dashboard query จาก view นี้เท่านั้น · ไม่เรียก live · lightweight · เปิด 50 ครั้ง/วันก็ไม่โหลด DB
+    </p>
+    <div class="trace">
+<span class="c1">-- regression watch #2 · catch_weight suspicious bags</span>
+<span class="k">CREATE MATERIALIZED VIEW</span> slo_catch_weight_watch <span class="k">AS</span>
+<span class="k">SELECT</span>
+  now() <span class="k">AS</span> scanned_at,
+  count(*) <span class="k">FILTER</span> (<span class="k">WHERE</span> weight = <span class="n">1.000</span>) <span class="k">AS</span> suspicious,
+  count(*) <span class="k">AS</span> total,
+  1.0 - (count(*) <span class="k">FILTER</span> (<span class="k">WHERE</span> weight = <span class="n">1.000</span>)::float / count(*)) <span class="k">AS</span> pct_ok
+<span class="k">FROM</span> meat_bags
+<span class="k">WHERE</span> sku_code <span class="k">LIKE</span> <span class="s">'MT-%'</span>
+  <span class="k">AND</span> created_at &gt; now() - interval <span class="s">'30 days'</span>;
+
+<span class="c1">-- cron · pg_cron every hour</span>
+<span class="k">SELECT</span> cron.schedule(<span class="s">'slo_scan'</span>, <span class="s">'0 * * * *'</span>, $$
+  <span class="k">REFRESH MATERIALIZED VIEW</span> slo_catch_weight_watch;
+  <span class="k">INSERT INTO</span> platform_slo_history (slo_name, pct, scanned_at)
+  <span class="k">SELECT</span> <span class="s">'catch_weight'</span>, pct_ok, now() <span class="k">FROM</span> slo_catch_weight_watch;
+
+  <span class="ok">-- alert if pct_ok &lt; 0.99 for &gt; 12h</span>
+  <span class="k">IF</span> (<span class="k">SELECT</span> bool_and(pct &lt; <span class="n">0.99</span>)
+      <span class="k">FROM</span> platform_slo_history
+      <span class="k">WHERE</span> slo_name=<span class="s">'catch_weight'</span>
+        <span class="k">AND</span> scanned_at &gt; now() - interval <span class="s">'12 hours'</span>) <span class="k">THEN</span>
+    <span class="k">PERFORM</span> notify_ops(<span class="s">'SLO breach · catch_weight'</span>);
+  <span class="k">END IF</span>;
+$$);
+    </div>
+  </div>
+
+  <!-- Next strip / wrap -->
+  <div class="next-strip">
+    <div>
+      <h2>Phase 3 complete · design spike pipeline เต็ม</h2>
+      <p>เห็น SLO + regression watch หลังจาก prototype flows หลัก · ระบบกลับมาโปร่งใสและพร้อม review</p>
+    </div>
+    <a href="index.html">→ กลับ hub</a>
+  </div>
+
+</div>
+
+</body>
+</html>

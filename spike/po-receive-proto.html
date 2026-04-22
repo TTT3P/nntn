@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · po-receive prototype (Phase 2A)</title>
+<link rel="stylesheet" href="tokens.css?v=20260422b" />
+<script>
+  try {
+    var saved = localStorage.getItem('nntn_theme');
+    if (saved === 'warm' || saved === null) {
+      localStorage.removeItem('nntn_theme');
+      document.documentElement.removeAttribute('data-theme');
+    }
+  } catch(e){}
+</script>
+<style>
+  body { background: var(--color-bg-app); color: var(--color-ink-800); font-family: var(--font-sans); }
+  .page { max-width: 1440px; margin: 0 auto; padding: 32px 24px 100px; }
+
+  .top { display:flex; gap:14px; align-items:center; font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-ink-600); margin-bottom: var(--space-5);}
+  .top .dot { width:10px; height:10px; border-radius:50%; background: var(--color-primary-600); box-shadow: 0 0 0 4px var(--color-primary-100);}
+  .top .crumbs { margin-left:auto; color: var(--color-ink-500);}
+  .back-link { color: var(--color-primary-700); text-decoration: none; border-bottom: 1px dotted currentColor;}
+
+  h1.page-h { font-family: var(--font-display); font-weight: 500; font-size: 48px; line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 var(--space-3); color: var(--color-ink-900); max-width: 900px;}
+  h1 .hi { color: var(--color-primary-700);}
+  .page-lede { font-size: 17px; line-height: 1.6; color: var(--color-ink-700); max-width: 820px; margin: 0 0 var(--space-4);}
+  .page-lede b { color: var(--color-primary-700);}
+
+  .bug-strip { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: var(--space-7);}
+  @media (max-width: 960px){ .bug-strip { grid-template-columns: 1fr;}}
+  .bug { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-lg); padding: 18px 20px; display:grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start;}
+  .bug__ic { width: 46px; height: 46px; border-radius: var(--radius-md); color: #fff; display:grid; place-items: center; font-family: var(--font-display); font-weight: 600; font-size: 20px; flex-shrink: 0;}
+  .bug--b1 .bug__ic { background: var(--color-danger-500);}
+  .bug--feat .bug__ic { background: var(--color-accent-500); color: var(--color-primary-900);}
+  .bug--meat .bug__ic { background: #8F1A0B;}
+  .bug__id { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-ink-500); margin-bottom: 4px;}
+  .bug__t  { font-family: var(--font-display); font-weight: 600; font-size: 18px; margin: 0 0 4px; color: var(--color-ink-900);}
+  .bug__d  { font-size: 13px; line-height: 1.55; color: var(--color-ink-700);}
+  .bug__fix { display:inline-flex; align-items: center; gap:6px; margin-top: 8px; font-size: 12px; color: var(--color-primary-700); font-weight: 600; font-family: var(--font-mono); letter-spacing: .3px;}
+  .bug__fix::before { content: "→ FIX"; background: var(--color-primary-100); color: var(--color-primary-800); padding: 2px 6px; border-radius: 3px; font-size: 9px;}
+
+  /* Showcase */
+  .showcase { display: grid; grid-template-columns: 390px 1fr; gap: 48px; margin-bottom: var(--space-8); align-items: start;}
+  @media (max-width: 1020px){ .showcase { grid-template-columns: 1fr; justify-items: start;}}
+  .showcase--reverse { grid-template-columns: 1fr 390px;}
+  @media (max-width: 1020px){ .showcase--reverse { grid-template-columns: 1fr;}}
+
+  .annot__h { font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-accent-600); margin: 0 0 4px;}
+  .annot__t { font-family: var(--font-display); font-weight: 500; font-size: 28px; letter-spacing: -0.01em; color: var(--color-ink-900); margin: 0 0 var(--space-3);}
+  .annot ul { padding-left: 18px; color: var(--color-ink-700); font-size: 14px; line-height: 1.6;}
+  .annot li { margin-bottom: 8px;}
+  .annot li b { color: var(--color-ink-900);}
+  .pill { display:inline-block; font-family: var(--font-mono); font-size: 11px; background: var(--color-ink-100); color: var(--color-ink-800); padding: 2px 6px; border-radius: 3px; letter-spacing: .3px;}
+  .kbd { display:inline-block; font-family: var(--font-mono); font-size: 11px; background: var(--color-primary-50); color: var(--color-primary-800); padding: 2px 7px; border-radius: 3px; border: 1px solid var(--color-primary-200);}
+  .danger-pill { background: var(--color-danger-50); color: var(--color-danger-700); font-family: var(--font-mono); font-size: 11px; padding: 2px 6px; border-radius: 3px;}
+
+  /* Phone */
+  .phone { width: 390px; height: 780px; border-radius: 48px; padding: 14px; background: #1A1F1A; box-shadow: 0 28px 70px rgba(8, 32, 14, 0.38), inset 0 0 0 1px rgba(255,255,255,0.05); position: relative; margin: 0 auto;}
+  .phone__screen { width: 100%; height: 100%; border-radius: 36px; background: var(--color-bg-app); overflow: hidden; position: relative; display: flex; flex-direction: column;}
+  .phone__bar { display: flex; justify-content: space-between; padding: 14px 28px 6px; font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--color-ink-900);}
+
+  .hd { padding: 14px 20px 12px; background: #fff; border-bottom: 1px solid var(--color-ink-200); display:grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center;}
+  .hd .back { width: 36px; height: 36px; border-radius: 50%; background: var(--color-ink-100); color: var(--color-ink-700); display:grid; place-items: center; font-size: 18px;}
+  .hd .t { font-family: var(--font-display); font-weight: 500; font-size: 19px; color: var(--color-ink-900); line-height: 1.1;}
+  .hd .s { font-size: 11px; color: var(--color-ink-500); font-family: var(--font-mono); margin-top: 2px;}
+  .hd .more { width: 36px; height: 36px; display:grid; place-items: center; color: var(--color-ink-600); font-size: 20px;}
+
+  .body { flex:1; overflow-y: auto; padding: 14px 16px;}
+
+  .cta { padding: 12px 14px 20px; background: #fff; border-top: 1px solid var(--color-ink-200);}
+  .cta .btn { display: inline-flex; width: 100%; padding: 15px 20px; border-radius: var(--radius-md); border: none; font-family: var(--font-sans); font-weight: 700; font-size: 15px; cursor: pointer; justify-content: center; align-items: center; gap: 8px; line-height: 1;}
+  .cta .btn--primary { background: var(--color-primary-600); color: #fff; box-shadow: var(--shadow-primary);}
+  .cta .btn--gold { background: var(--color-accent-500); color: var(--color-primary-900); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.12);}
+  .cta .btn--danger { background: #fff; border: 1px solid var(--color-danger-300, #F0B7A8); color: var(--color-danger-700);}
+
+  /* Delta explainer banner — the core of B1 fix */
+  .delta-box { background: var(--color-primary-50); border: 1px solid var(--color-primary-200); border-radius: var(--radius-md); padding: 12px; margin-bottom: 12px;}
+  .delta-box__h { display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;}
+  .delta-box__h b { font-family: var(--font-display); font-weight: 500; font-size: 15px; color: var(--color-primary-800);}
+  .delta-box__h small { font-family: var(--font-mono); font-size: 10px; color: var(--color-primary-700); letter-spacing: 1.5px; text-transform: uppercase;}
+  .delta-box__row { display: grid; grid-template-columns: 1fr auto; align-items: baseline; padding: 4px 0; font-size: 13px;}
+  .delta-box__row b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 15px; color: var(--color-ink-900);}
+  .delta-box__op { text-align: center; font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--color-accent-600); margin: 2px 0 -2px;}
+  .delta-box__final { border-top: 1px solid var(--color-primary-200); padding-top: 8px; margin-top: 4px;}
+  .delta-box__final b { color: var(--color-primary-800); font-size: 20px; font-weight: 700;}
+
+  /* Sticky keypad style entry */
+  .field-h { font-size: 12px; font-weight: 700; color: var(--color-ink-800); margin: 14px 2px 6px; letter-spacing: .2px;}
+  .scan-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 10px;}
+  .scan-row input { padding: 14px 16px; border-radius: var(--radius-md); border: 1px solid var(--color-ink-300); font-family: var(--font-mono); font-size: 14px; background: #fff;}
+  .scan-row button { padding: 0 16px; border-radius: var(--radius-md); border: none; background: var(--color-ink-900); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; display:flex; align-items: center; gap: 6px;}
+
+  .item-card { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 12px 14px; display:grid; grid-template-columns: 36px 1fr; gap: 12px; margin-bottom: 10px;}
+  .item-card__ic { width: 32px; height: 32px; border-radius: 6px; background: var(--color-primary-50); color: var(--color-primary-700); display:grid; place-items: center; font-family: var(--font-display); font-weight: 600;}
+  .item-card__n { font-size: 14px; font-weight: 700; color: var(--color-ink-900); line-height: 1.25;}
+  .item-card__sku { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .3px; margin-top: 3px;}
+  .item-card.meat { grid-template-columns: 36px 1fr;}
+  .item-card.meat .item-card__ic { background: #FADFD7; color: #8F1A0B;}
+  .item-card.veg .item-card__ic { background: #DCEADE; color: #134A22;}
+  .item-card.dry .item-card__ic { background: var(--color-ink-100); color: var(--color-ink-700);}
+
+  /* Qty input (large) */
+  .qty-entry { background: var(--color-primary-900); color: #fff; border-radius: var(--radius-md); padding: 14px; text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; margin-bottom: 10px;}
+  .qty-entry__label { font-size: 10px; color: #A5C3AB; letter-spacing: 2px; text-transform: uppercase; text-align: left; margin-bottom: 4px;}
+  .qty-entry__n { font-size: 42px; font-weight: 500; line-height: 1; letter-spacing: -0.02em;}
+  .qty-entry__u { font-size: 15px; color: var(--color-accent-300); margin-left: 4px;}
+  .qty-entry__hint { text-align: left; font-size: 10px; color: #75A07D; margin-top: 6px; letter-spacing: 1px; text-transform: uppercase;}
+
+  .keypad { display:grid; grid-template-columns: repeat(3, 1fr); gap: 4px;}
+  .keypad button { padding: 12px 0; border-radius: 6px; background: #fff; color: var(--color-ink-900); border: 1px solid var(--color-ink-200); font-family: var(--font-mono); font-size: 18px; font-weight: 500; cursor: pointer;}
+  .keypad button.act { background: var(--color-primary-600); color: #fff; border-color: transparent;}
+
+  /* Bag list (meat-raw branch) */
+  .bag-list { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 4px 0;}
+  .bag-row { display:grid; grid-template-columns: 48px 1fr auto auto; gap: 8px; padding: 10px 14px; border-bottom: 1px dashed var(--color-ink-100); font-size: 13px; align-items: center;}
+  .bag-row:last-child { border-bottom: none;}
+  .bag-row b { font-family: var(--font-mono); color: var(--color-ink-900); font-size: 12px; letter-spacing: .2px;}
+  .bag-row .w { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; color: var(--color-ink-900);}
+  .bag-row .wh { font-size: 10px; color: var(--color-primary-700); background: var(--color-primary-50); padding: 2px 6px; border-radius: 3px; font-family: var(--font-mono); font-weight: 600;}
+  .bag-row--add { color: var(--color-primary-700); font-weight: 600; cursor: pointer;}
+
+  .bag-total { margin-top: 10px; background: var(--color-primary-700); color: #fff; padding: 10px 14px; border-radius: var(--radius-md); display:flex; justify-content: space-between; align-items: baseline;}
+  .bag-total b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 18px;}
+  .bag-total small { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; color: #A5C3AB;}
+
+  /* Success screen */
+  .success-hero { background: linear-gradient(180deg, #DCEADE 0%, #B7D2BC 100%); border-radius: var(--radius-lg); padding: 18px; text-align: center; margin-bottom: 12px;}
+  .success-hero__ic { width: 56px; height: 56px; background: var(--color-success-500); border-radius: 50%; color: #fff; font-size: 26px; margin: 0 auto 10px; display:grid; place-items: center;}
+  .success-hero__t { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--color-primary-900); margin: 0 0 4px;}
+  .success-hero__n { font-family: var(--font-mono); font-size: 28px; font-weight: 700; color: var(--color-primary-900); font-variant-numeric: tabular-nums; line-height: 1;}
+  .success-hero__d { font-size: 12px; color: var(--color-primary-800); margin-top: 4px;}
+
+  .receipt-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; padding: 10px 2px; font-size: 13px; border-bottom: 1px dashed var(--color-ink-200); align-items: center;}
+  .receipt-row:last-child { border-bottom: none;}
+  .receipt-row .k { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-ink-500); min-width: 80px;}
+  .receipt-row .v { color: var(--color-ink-900); font-weight: 600;}
+  .receipt-row .n { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--color-ink-900); font-weight: 600; justify-self: end;}
+
+  /* ────────── B1 deep-dive ────────── */
+  .dive { background: var(--color-bg-surface); border: 1px solid var(--color-ink-200); border-radius: var(--radius-lg); padding: var(--space-5); margin-top: var(--space-7);}
+  .dive h2 { font-family: var(--font-display); font-weight: 500; font-size: 32px; letter-spacing: -0.01em; color: var(--color-ink-900); margin: 0 0 var(--space-3);}
+  .dive-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); margin-top: var(--space-4);}
+  @media (max-width: 900px){ .dive-grid { grid-template-columns: 1fr;}}
+  .dive-col h3 { font-size: 13px; font-weight: 700; color: var(--color-ink-900); margin: 0 0 10px; display:flex; align-items: center; gap: 6px;}
+  .dive-col h3 .tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; font-weight: 600;}
+  .dive-col .before h3 { color: var(--color-danger-700);}
+  .dive-col code { font-family: var(--font-mono); font-size: 12px; background: var(--color-ink-100); padding: 1px 5px; border-radius: 3px; color: var(--color-ink-900);}
+
+  .trace { background: #0D1117; color: #C9D1D9; font-family: var(--font-mono); font-size: 12px; line-height: 1.55; border-radius: var(--radius-md); padding: 14px 16px; overflow-x: auto;}
+  .trace .c1 { color: #7D8590;} /* comment */
+  .trace .ok { color: #3FB950;}
+  .trace .bad { color: #F85149;}
+  .trace .k  { color: #79C0FF;}
+  .trace .n  { color: #FFA657;}
+  .trace .s  { color: #A5D6FF;}
+
+  /* Rule */
+  .rule { text-align: center; color: var(--color-accent-600); margin: var(--space-8) 0 var(--space-6); letter-spacing: 14px;}
+
+  /* Frame caption */
+  .frame-cap { margin: 10px auto 0; text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-500); letter-spacing: 1.3px; text-transform: uppercase; max-width: 390px;}
+  .frame-cap b { color: var(--color-primary-700); font-weight: 600; letter-spacing: .5px;}
+
+  .route-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--radius-pill); font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;}
+  .route-pill--meat { background: #FADFD7; color: #8F1A0B;}
+  .route-pill--sc { background: #DCEADE; color: #134A22;}
+
+  /* Next-phase strip */
+  .next-strip { margin-top: var(--space-7); background: var(--color-primary-50); border: 1px solid var(--color-primary-200); border-radius: var(--radius-lg); padding: var(--space-5); display:grid; grid-template-columns: 1fr auto; gap: var(--space-4); align-items: center;}
+  .next-strip h2 { font-family: var(--font-display); font-weight: 500; font-size: 26px; margin: 0 0 4px; color: var(--color-ink-900);}
+  .next-strip p { font-size: 14px; color: var(--color-ink-700); margin: 0;}
+  .next-strip a { padding: 12px 20px; border-radius: var(--radius-md); background: var(--color-primary-600); color: #fff; text-decoration: none; font-weight: 700; font-size: 14px;}
+
+  @keyframes gpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(201, 150, 44, 0.55);} 50% { box-shadow: 0 0 0 8px rgba(201, 150, 44, 0);}}
+  .glow { animation: gpulse 1.6s ease-in-out infinite;}
+
+  /* Chip buttons */
+  .chips { display:flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;}
+  .chip { background: #fff; border: 1px solid var(--color-ink-200); padding: 6px 10px; border-radius: var(--radius-pill); font-size: 12px; color: var(--color-ink-700); cursor: pointer;}
+  .chip.on { background: var(--color-primary-600); color: #fff; border-color: transparent;}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="top">
+    <span class="dot"></span>
+    <span>NNTN · Design Spike</span>
+    <span class="crumbs">PHASE 2A · po-receive · <a class="back-link" href="index.html">← hub</a></span>
+  </div>
+
+  <h1 class="page-h">po-receive ที่<br/><span class="hi">บอกก่อนกด · ว่าสต๊อกจะขึ้นเท่าไหร่</span></h1>
+  <p class="page-lede">
+    B1 (P1 critical) — <span class="danger-pill">rpc_receive_universal</span> ส่ง <code>NEW.qty</code> เป็น running total เข้า <span class="danger-pill">sm</span> trigger กลับคิดเป็น delta → stock พอง เมื่อมีของเก่าค้าง · <b>ป้องกันด้วย UI</b> ให้น้องเห็น "before + delta = after" ก่อนยืนยัน และ <b>ตรวจจับ</b> ถ้า delta ดู anomaly
+    · รวมถึง decision 22/04 · <b>allow PKG ผ่าน po-receive</b> (f0147c8) ได้ด้วย
+  </p>
+
+  <!-- Bug/feature strip -->
+  <div class="bug-strip">
+    <div class="bug bug--b1">
+      <div class="bug__ic">B1</div>
+      <div>
+        <div class="bug__id">P1 🔴 · receive_delta inflation</div>
+        <h3 class="bug__t">Stock พองเมื่อรับซ้ำ</h3>
+        <p class="bug__d">Trigger <code>emit_sm_from_stock_counts</code> receive branch อ่าน <code>NEW.qty</code> เป็น delta ทั้งที่ qty คือ running total → ถ้ามีของเก่า 5 kg แล้วรับเพิ่ม 3 kg sm เขียน +8 แทน +3</p>
+        <div class="bug__fix">UI แสดง before + delta + after ก่อน submit · detect anomaly</div>
+      </div>
+    </div>
+    <div class="bug bug--meat">
+      <div class="bug__ic">🥩</div>
+      <div>
+        <div class="bug__id">Route split · meat-raw vs others</div>
+        <h3 class="bug__t">2 paths · 1 หน้าเดียว</h3>
+        <p class="bug__d">ถ้า <code>items.type = meat/raw</code> → ต่อ <code>p_bags jsonb</code> [{bag_no, weight_g, warehouse}] · อื่นๆ → scalar qty · RPC route อัตโนมัติจาก item.type</p>
+        <div class="bug__fix">UI switch layout ตาม item.type · น้องเห็นรูปเดียวกัน</div>
+      </div>
+    </div>
+    <div class="bug bug--feat">
+      <div class="bug__ic">◆</div>
+      <div>
+        <div class="bug__id">f0147c8 · 22/04</div>
+        <h3 class="bug__t">PKG เข้าได้จาก supplier</h3>
+        <p class="bug__d">Decision 22/04 — PKG item (เครื่องปรุง, น้ำจิ้ม) รับเข้าผ่าน po-receive ได้แล้ว · UI ไม่ block PKG ในรายการ dropdown อีกต่อไป</p>
+        <div class="bug__fix">Chip "PKG" ในตัวกรอง · icon ◆ ชัดเจน</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════ Screen 1 — Scan / pick item ═════════ -->
+  <div class="rule">◆ ◆ ◆</div>
+
+  <section class="showcase">
+    <div>
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__bar"><span>08:15</span><span>◆ 100%</span></div>
+          <div class="hd">
+            <div class="back">←</div>
+            <div>
+              <div class="t">รับของเข้า</div>
+              <div class="s">PO-2026-0422-01 · supplier CPF</div>
+            </div>
+            <div class="more">⋯</div>
+          </div>
+          <div class="body">
+
+            <div class="field-h">สแกน / ค้นหาสินค้า</div>
+            <div class="scan-row">
+              <input placeholder="สแกน barcode หรือพิมพ์ SKU" value="NNTN-BEEF-RAW-N" />
+              <button>📷 scan</button>
+            </div>
+
+            <div class="field-h">ตัวกรองเร็ว</div>
+            <div class="chips">
+              <span class="chip on">ทั้งหมด</span>
+              <span class="chip">เนื้อสด</span>
+              <span class="chip">ผัก</span>
+              <span class="chip">ของแห้ง</span>
+              <span class="chip">◆ PKG</span>
+              <span class="chip">จาก PO นี้</span>
+            </div>
+
+            <div class="item-card meat">
+              <div class="item-card__ic">น</div>
+              <div>
+                <div class="item-card__n">เนื้อน่องลาย (raw) <span class="route-pill route-pill--meat">meat-raw</span></div>
+                <div class="item-card__sku">NNTN-BEEF-RAW-N · ชั่งต่อถุง · คลัง A</div>
+              </div>
+            </div>
+
+            <div class="item-card veg">
+              <div class="item-card__ic">ผ</div>
+              <div>
+                <div class="item-card__n">ผักบุ้งจีน <span class="route-pill route-pill--sc">sc-receive</span></div>
+                <div class="item-card__sku">SP-128 · บุ้ง · <span style="color: var(--color-danger-600);">ของค้าง 12 kg ⚠</span></div>
+              </div>
+            </div>
+
+            <div class="item-card dry">
+              <div class="item-card__ic">◆</div>
+              <div>
+                <div class="item-card__n">ชุดเครื่องปรุง <span class="route-pill route-pill--sc">sc-receive</span></div>
+                <div class="item-card__sku">PKG-009 · 1 ชุด = 3 PKG (B3 cascade pending)</div>
+              </div>
+            </div>
+
+          </div>
+          <div class="cta">
+            <button class="btn btn--primary">→ เลือก เนื้อน่องลาย</button>
+          </div>
+        </div>
+      </div>
+      <div class="frame-cap">screen 01 · <b>เลือกสินค้า</b> · route-pill บอก path</div>
+    </div>
+
+    <div class="annot">
+      <div class="annot__h">SCREEN 01 · item picker</div>
+      <h2 class="annot__t">บอกตั้งแต่ต้น — จะไปทาง meat หรือ sc</h2>
+      <ul>
+        <li><b>Route pill ติดทุก item</b> — <span class="pill">meat-raw</span> หรือ <span class="pill">sc-receive</span> · <code>rpc_receive_universal</code> route by <code>items.type</code> · UI preview route ชัดเจน น้องรู้ว่าหน้าถัดไปจะเป็นแบบไหน</li>
+        <li><b>"ของค้าง ⚠" ในการ์ด SP-128</b> — ก่อนรับเพิ่ม แสดง <code>v_stock_unified</code> ปัจจุบัน · ทำให้น้องรู้ว่าถ้ามีค้างอยู่จะเกิด B1 inflation risk (หน้าถัดไปจะ protect)</li>
+        <li><b>PKG chip ◆</b> — decision 22/04 (f0147c8) allow PKG from supplier · กรอง PKG-xxx ได้ทันที · ขณะที่ B3 cascade ยังรออยู่ ไม่บังคับให้ user เลือก</li>
+        <li><b>"จาก PO นี้" chip</b> — ลด cognitive load · ถ้า PO มี 12 รายการ ไม่ต้อง scroll ทั้ง catalog · เหมาะกับงานจริงที่น้องเปิด PO แล้วไล่ทีละรายการ</li>
+        <li><b>Scan barcode ใหญ่</b> — supplier สติกเกอร์อาจเลอะ · button scan 48px + text input fallback รองรับทั้งสอง</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ═════════ Screen 2 — Sc-receive path (B1 protection) ═════════ -->
+  <div class="rule">◆ ◆ ◆</div>
+
+  <section class="showcase showcase--reverse">
+    <div class="annot">
+      <div class="annot__h">SCREEN 02 · sc-receive · B1 protection</div>
+      <h2 class="annot__t">เห็น before + delta + after · ก่อนกด</h2>
+      <ul>
+        <li><b>Delta box เป็นหัวใจของ fix</b> — UI query <code>v_stock_unified</code> current qty · บวก qty ที่น้องพิมพ์ · โชว์ "5 + 3 = 8 kg" ชัดๆ · น้องเห็นว่ากำลัง<b>จะ</b>เกิดอะไรก่อน commit</li>
+        <li><b>Anomaly flag</b> — ถ้า delta > 3× current qty หรือ > 50 kg สำหรับ item ที่ไม่เคยรับเยอะ → แสดง warning ขอให้ confirm ด้วย text input "พิมพ์ 'ยืนยัน' เพื่อส่ง" · ดัก user error ก่อน trigger ยิง sm</li>
+        <li><b>ผักบุ้ง SP-128 ของค้าง 12 kg</b> — ตัวอย่างจริงจาก blueprint (22/04 workaround · zero-out) · ถ้าของจริงมีค้าง delta preview เตือน + เสนอ action "zero-out แล้วรับใหม่" เป็น option · ไม่ต้องวิ่งหา admin ยิง SQL</li>
+        <li><b>Keypad ในหน้าเดียว</b> — ไม่ต้องเปิด system keyboard · ทั้งหน้าใช้มือถือเปียก · ปุ่ม 56px+ มือเอื้อมถึง</li>
+        <li><b>RPC contract ไม่เปลี่ยน</b> — ส่ง <code>p_qty = 3</code> (amount received) ให้ RPC · ปัญหาจริงอยู่ที่ trigger · UI ไม่แก้ root cause แต่ <b>ลดผลกระทบเหลือ 0 กรณี</b> เพราะน้องเห็นความไม่ถูกต้อง before commit</li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__bar"><span>08:16</span><span>◆ 100%</span></div>
+          <div class="hd">
+            <div class="back">←</div>
+            <div>
+              <div class="t">รับ · ผักบุ้งจีน</div>
+              <div class="s">SP-128 · sc-receive</div>
+            </div>
+            <div class="more">⋯</div>
+          </div>
+          <div class="body">
+
+            <!-- Item header with current stock -->
+            <div class="item-card veg" style="margin-bottom: 12px;">
+              <div class="item-card__ic">ผ</div>
+              <div>
+                <div class="item-card__n">ผักบุ้งจีน</div>
+                <div class="item-card__sku">SP-128 · คลัง B · unit: kg</div>
+              </div>
+            </div>
+
+            <!-- Qty entry -->
+            <div class="field-h">น้ำหนักที่รับเข้าจริง · ครั้งนี้</div>
+            <div class="qty-entry">
+              <div class="qty-entry__label">delta (amount received)</div>
+              <div class="qty-entry__n">3.000<span class="qty-entry__u">kg</span></div>
+              <div class="qty-entry__hint">ไม่ใช่ยอดรวม · เฉพาะที่รับวันนี้</div>
+            </div>
+
+            <div class="keypad" style="margin-bottom: 12px;">
+              <button>7</button><button>8</button><button>9</button>
+              <button>4</button><button>5</button><button>6</button>
+              <button>1</button><button>2</button><button>3</button>
+              <button>.</button><button>0</button><button class="act">⌫</button>
+            </div>
+
+            <!-- Delta box — the core of B1 fix -->
+            <div class="delta-box">
+              <div class="delta-box__h">
+                <b>จะเกิดอะไรหลังกด</b>
+                <small>B1 GUARD</small>
+              </div>
+              <div class="delta-box__row">
+                <span>ของค้าง (v_stock_unified)</span>
+                <b>12.000 kg ⚠</b>
+              </div>
+              <div class="delta-box__op">+</div>
+              <div class="delta-box__row">
+                <span>รับเข้าครั้งนี้ (delta)</span>
+                <b style="color: var(--color-success-700);">3.000 kg</b>
+              </div>
+              <div class="delta-box__op">=</div>
+              <div class="delta-box__row delta-box__final">
+                <span>ยอดใหม่ที่จะ commit</span>
+                <b>15.000 kg</b>
+              </div>
+            </div>
+
+            <div style="background: var(--color-danger-50); border: 1px solid var(--color-danger-100); border-radius: var(--radius-md); padding: 10px 12px; display: grid; grid-template-columns: 24px 1fr; gap: 10px; font-size: 12px; line-height: 1.45; color: var(--color-danger-700); margin-top: 6px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background: var(--color-danger-500); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 11px; margin-top: 2px;">!</div>
+              <div><b>พบ anomaly</b> · ของค้าง 12 kg สูงกว่าปกติ — มีโอกาสเจอ B1 inflation · เสนอ <b>zero-out ก่อน</b> แล้ว receive 3 kg ใหม่</div>
+            </div>
+          </div>
+
+          <div class="cta">
+            <button class="btn btn--gold glow">⚠ ยืนยัน · zero-out + receive 3 kg</button>
+          </div>
+        </div>
+      </div>
+      <div class="frame-cap">screen 02 · <b>sc-receive</b> · delta preview + anomaly catch</div>
+    </div>
+  </section>
+
+  <!-- ═════════ Screen 3 — Meat-raw path (per-bag) ═════════ -->
+  <div class="rule">◆ ◆ ◆</div>
+
+  <section class="showcase">
+    <div>
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__bar"><span>08:22</span><span>◆ 100%</span></div>
+          <div class="hd">
+            <div class="back">←</div>
+            <div>
+              <div class="t">รับ · เนื้อน่องลาย</div>
+              <div class="s">NNTN-BEEF-RAW-N · meat-raw</div>
+            </div>
+            <div class="more">⋯</div>
+          </div>
+          <div class="body">
+
+            <div class="item-card meat" style="margin-bottom: 12px;">
+              <div class="item-card__ic">น</div>
+              <div>
+                <div class="item-card__n">เนื้อน่องลาย (raw)</div>
+                <div class="item-card__sku">ชั่งต่อถุง · catch_weight · คลัง A</div>
+              </div>
+            </div>
+
+            <div class="field-h">ถุงที่รับเข้า · <span style="color: var(--color-ink-500); font-weight: 400;">ชั่งแยกทีละถุง</span></div>
+
+            <div class="bag-list">
+              <div class="bag-row">
+                <b>#3306</b>
+                <span style="color: var(--color-ink-600); font-size: 11px;">4.200 kg</span>
+                <span class="wh">A</span>
+                <span style="color: var(--color-ink-400); font-size: 14px;">⋯</span>
+              </div>
+              <div class="bag-row">
+                <b>#3307</b>
+                <span style="color: var(--color-ink-600); font-size: 11px;">3.850 kg</span>
+                <span class="wh">A</span>
+                <span style="color: var(--color-ink-400); font-size: 14px;">⋯</span>
+              </div>
+              <div class="bag-row">
+                <b>#3308</b>
+                <span style="color: var(--color-ink-600); font-size: 11px;">4.100 kg</span>
+                <span class="wh">A</span>
+                <span style="color: var(--color-ink-400); font-size: 14px;">⋯</span>
+              </div>
+              <div class="bag-row">
+                <b>#3309</b>
+                <span class="w">___</span>
+                <span class="wh">A</span>
+                <span style="color: var(--color-primary-700); font-size: 14px;">⧖</span>
+              </div>
+              <div class="bag-row bag-row--add">
+                <div style="grid-column: 1 / -1; text-align: center;">+ เพิ่มถุง (กำลังชั่ง #3309)</div>
+              </div>
+            </div>
+
+            <div class="bag-total">
+              <span>รวม 3 ถุง (#3306-3308)</span>
+              <b>12.150 kg</b>
+            </div>
+            <div style="font-size: 11px; color: var(--color-ink-600); margin-top: 8px; text-align: center; font-family: var(--font-mono); letter-spacing: .3px;">
+              meat-raw route → ส่ง <code>p_bags jsonb</code> · ไม่ผ่าน B1 branch
+            </div>
+
+          </div>
+          <div class="cta">
+            <button class="btn btn--primary">→ บันทึก 3 ถุง · 12.150 kg</button>
+          </div>
+        </div>
+      </div>
+      <div class="frame-cap">screen 03 · <b>meat-raw</b> · per-bag catch_weight</div>
+    </div>
+
+    <div class="annot">
+      <div class="annot__h">SCREEN 03 · meat-raw · catch_weight</div>
+      <h2 class="annot__t">Meat path ไม่ผ่าน B1 — แต่ยังต้องถูก</h2>
+      <ul>
+        <li><b>RPC routes ตาม items.type</b> → meat/raw ไปทาง per-bag ที่ <code>p_bags: [{bag_no, weight_g, warehouse}]</code> · ไม่ผ่าน <code>stock_counts</code> branch → ไม่มี B1 inflation ตรงนี้</li>
+        <li><b>ถุง #ต่อเนื่อง auto-increment</b> — จาก catch_weight table max+1 · น้องพูดแค่ "3306" ครั้งแรก ที่เหลือ UI ทำเอง · ลดพิมพ์พลาด</li>
+        <li><b>Warehouse chip A/B/C</b> ติดทุกถุง · default = A (receive เข้าคลัง A ตาม blueprint §3) · tap เปลี่ยนได้ถ้าจริงๆ เข้าคลังอื่น</li>
+        <li><b>Running weight total</b> ด้านล่าง — ชั่งถุงใหม่เสร็จ +auto-add เข้า total · ไม่ต้องจดในกระดาษ</li>
+        <li><b>มี placeholder row #3309 ⧖</b> — เป็น UI affordance ให้น้องรู้ว่าถุงถัดไปกำลังชั่ง · ไม่ต้องกด "เพิ่มถุง" ก่อน</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ═════════ Screen 4 — Success + sm preview ═════════ -->
+  <div class="rule">◆ ◆ ◆</div>
+
+  <section class="showcase showcase--reverse">
+    <div class="annot">
+      <div class="annot__h">SCREEN 04 · confirmation</div>
+      <h2 class="annot__t">Confirm ทุกอย่างที่เขียน — ถ้าพอง จะเห็นทันที</h2>
+      <ul>
+        <li><b>Hero: "+ 3.000 kg"</b> · delta เด่นสุด · ไม่ใช่ running total · ลดการ misread "8 kg" ว่าเป็นของเพิ่ม</li>
+        <li><b>Before/After mini-diff</b> · 12 → 15 · ย้ำข้อมูลจากหน้าก่อน · ถ้า after ≠ expected น้องเห็นก่อนเปิดทริปใหม่</li>
+        <li><b>sm trace</b> · dev mode เห็น event ที่ trigger เขียน · น้องปิดได้ แต่สำหรับไทน์ตอน debug B1 ยังอยู่</li>
+        <li><b>"บันทึกเข้า count-log"</b> — link ไป <code>count-log.html</code> (decision 185d3e4) · ถ้าน้อง doubt ตัวเลข กดไปดู trail ทันที</li>
+        <li><b>Auto-next PO item</b> — ถ้า PO เหลือรายการ → ปุ่ม "ถัดไปใน PO → ผักบุ้ง · 3 รายการเหลือ" ทำให้ flow ไม่ขาด</li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__bar"><span>08:17</span><span>◆ 100%</span></div>
+          <div class="hd">
+            <div class="back">✓</div>
+            <div>
+              <div class="t">รับสำเร็จ</div>
+              <div class="s">SP-128 · 08:16:42</div>
+            </div>
+            <div class="more">⋯</div>
+          </div>
+          <div class="body">
+
+            <div class="success-hero">
+              <div class="success-hero__ic">✓</div>
+              <div class="success-hero__t">ผักบุ้งจีน</div>
+              <div class="success-hero__n">+ 3.000 kg</div>
+              <div class="success-hero__d">delta · zero-out + receive combo · ไม่มี B1 inflation</div>
+            </div>
+
+            <div class="receipt-row">
+              <span class="k">ก่อน</span>
+              <span class="v">SP-128 · ผักบุ้ง</span>
+              <span class="n">12.000 kg</span>
+            </div>
+            <div class="receipt-row">
+              <span class="k">zero-out</span>
+              <span class="v">adjust qty=0</span>
+              <span class="n" style="color: var(--color-danger-600);">− 12.000</span>
+            </div>
+            <div class="receipt-row">
+              <span class="k">รับ</span>
+              <span class="v">delta this time</span>
+              <span class="n" style="color: var(--color-success-700);">+ 3.000</span>
+            </div>
+            <div class="receipt-row" style="background: var(--color-primary-50); margin: 4px -8px; padding: 10px 10px; border-radius: 6px; border: none;">
+              <span class="k" style="color: var(--color-primary-800);">ใหม่</span>
+              <span class="v" style="color: var(--color-primary-900);">v_stock_unified</span>
+              <span class="n" style="color: var(--color-primary-900); font-size: 16px;">3.000 kg</span>
+            </div>
+
+            <div style="margin-top: 14px;">
+              <div class="field-h" style="margin-top: 4px;">sm trace (ไทน์ mode)</div>
+              <div class="trace" style="font-size: 10px;">
+<span class="c1"># stock_movements เขียน 2 events</span>
+{
+  <span class="k">event</span>: <span class="s">"count_adjust_down"</span>,
+  <span class="k">qty_delta</span>: <span class="n">-12.000</span>,
+  <span class="k">reason</span>: <span class="s">"pre-receive zero-out (B1)"</span>
+}
+{
+  <span class="k">event</span>: <span class="s">"receive"</span>,
+  <span class="k">qty_delta</span>: <span class="n">+3.000</span>,  <span class="ok">// correct delta</span>
+  <span class="k">actor</span>: <span class="s">"PO-receive"</span>
+}
+              </div>
+            </div>
+
+          </div>
+          <div class="cta">
+            <button class="btn btn--primary">ถัดไปใน PO → ผักกาดขาว</button>
+          </div>
+        </div>
+      </div>
+      <div class="frame-cap">screen 04 · <b>รับสำเร็จ</b> · sm trace + auto-next</div>
+    </div>
+  </section>
+
+  <!-- ═════════ B1 deep dive: before vs after ═════════ -->
+  <div class="dive">
+    <h2>B1 · ทำไมต้องมี UI Guard</h2>
+    <p style="font-size: 14px; color: var(--color-ink-700); line-height: 1.6; margin: 0 0 var(--space-4); max-width: 880px;">
+      ปัญหาจริงอยู่ใน trigger · ไม่ใช่ UI · แต่ขณะที่ <span class="pill">rpc_receive_universal</span> ยังส่ง <code>NEW.qty</code> เป็น running total เข้า trigger, <b>UI Guard</b> ช่วยให้น้องไม่ commit transaction ที่จะพอง — เหมือน defensive driver ไม่ใช่ defensive road
+    </p>
+
+    <div class="dive-grid">
+      <div class="dive-col before">
+        <h3><span class="tag" style="background: var(--color-danger-50); color: var(--color-danger-700);">ก่อน</span> po-receive.html ปัจจุบัน</h3>
+        <div class="trace">
+<span class="c1">// น้องกดรับผักบุ้ง 3 kg · ของค้าง 12</span>
+client.<span class="k">rpc</span>(<span class="s">"receive_universal"</span>, {
+  p_item: <span class="s">"SP-128"</span>,
+  p_qty: <span class="n">3</span>       <span class="c1">// amount received</span>
+})
+
+<span class="c1"># ใน trigger:</span>
+<span class="k">emit_sm_from_stock_counts</span>:
+  event = <span class="s">"receive"</span>
+  qty_delta = NEW.qty  <span class="bad">// = 3 (ถูก)</span>
+
+<span class="c1"># v_stock_unified หลัง insert:</span>
+<span class="ok">✓</span> SP-128 = <span class="n">15</span> kg  <span class="c1">(12 + 3)</span>
+
+<span class="c1"># แต่ถ้า client เผลอส่ง p_qty = running total 15:</span>
+<span class="k">emit_sm_from_stock_counts</span>:
+  qty_delta = <span class="n">15</span>  <span class="bad">// inflates!</span>
+<span class="bad">✗ SP-128 = 27 kg (12 + 15)</span>
+        </div>
+      </div>
+
+      <div class="dive-col after">
+        <h3 style="color: var(--color-success-700);"><span class="tag" style="background: var(--color-success-50); color: var(--color-success-700);">หลัง</span> prototype นี้ + UI guard</h3>
+        <div class="trace">
+<span class="c1">// หน้าถามซ้ำ: "คุณพิมพ์ 3 kg — นี่คือ delta ใช่?"</span>
+<span class="ok">✓</span> ใช้ <span class="k">input__label</span> ="amount received (delta)"
+<span class="ok">✓</span> โชว์ "12 + 3 = 15 ก่อน commit"
+<span class="ok">✓</span> anomaly: ถ้า delta &gt; 3× current
+   → ขอ confirm พิมพ์ "ยืนยัน"
+
+<span class="c1">// combo fix เมื่อมีของค้างมาก:</span>
+<span class="ok">✓</span> "zero-out + receive" = 2 event atomic
+  - count_adjust_down <span class="n">-12</span>
+  - receive           <span class="n">+3</span>
+  = final <span class="ok">3 kg (ไม่พอง)</span>
+
+<span class="c1">// + sm trace โชว์ในหน้า success:</span>
+<span class="ok">✓</span> น้องเห็น event 2 อัน ถูกต้อง
+<span class="ok">✓</span> ไทน์ verify + plan trigger fix แยก
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Next strip -->
+  <div class="next-strip">
+    <div>
+      <h2>ถัดไป · Phase 2B — meat-stock#produce</h2>
+      <p>catch_weight multi-step · production + repack flow · + revert 13-bag MT-019 pattern จาก decision 22/04</p>
+    </div>
+    <a href="index.html">→ กลับ hub</a>
+  </div>
+
+</div>
+
+</body>
+</html>

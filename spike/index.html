@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · Redesign Spike</title>
+<link rel="stylesheet" href="tokens.css?v=20260422b" />
+<script>
+  // Heritage green is the default (no data-theme attr). Clear any stale theme
+  // preference left over from the v1 orange spike so returning visitors see
+  // the corrected brand.
+  try {
+    var saved = localStorage.getItem('nntn_theme');
+    if (saved === 'warm' || saved === null) {
+      localStorage.removeItem('nntn_theme');
+      document.documentElement.removeAttribute('data-theme');
+    }
+  } catch(e){}
+</script>
+<style>
+  body { background: var(--color-bg-app); }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 56px 32px 96px; }
+  .top {
+    display:flex; gap:14px; align-items:center;
+    font-family: var(--font-mono); font-size:12px; letter-spacing:2px;
+    text-transform:uppercase; color:var(--color-ink-600);
+    margin-bottom: var(--space-7);
+  }
+  .top .dot { width:10px; height:10px; border-radius:50%; background: var(--color-primary-600); box-shadow: 0 0 0 4px var(--color-primary-100); }
+  h1 {
+    font-family: var(--font-serif); font-weight:400;
+    font-size: 68px; line-height:1.04; letter-spacing:-0.02em;
+    color: var(--color-ink-900); margin: 0 0 var(--space-4);
+  }
+  h1 em { font-style: normal; color: var(--color-primary-700); }
+  .diamond-rule { display:flex; align-items:center; gap: 12px; color: var(--color-accent-600); font-size: 10px; margin: 0 0 var(--space-4);}
+  .diamond-rule::before, .diamond-rule::after { content:""; flex: 1; height:1px; background: var(--color-accent-300); }
+  .lede { font-size: 18px; line-height: 1.6; color: var(--color-ink-700); max-width: 720px; margin: 0 0 var(--space-8); }
+  .lede b { color: var(--color-primary-700); font-weight: 700; }
+
+  .phases { display:grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: var(--space-6);}
+  @media (max-width: 900px){ .phases { grid-template-columns: 1fr 1fr; } }
+  .phases--p2 { margin-bottom: var(--space-8); grid-template-columns: repeat(3, 1fr);}
+  @media (max-width: 900px){ .phases--p2 { grid-template-columns: 1fr; } }
+  .phase-heading { font-family:var(--font-mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--color-ink-500); margin: var(--space-6) 0 var(--space-3); display:flex; align-items:center; gap: 10px;}
+  .phase-heading::after { content:""; flex:1; height:1px; background: var(--color-ink-200);}
+  .phase-heading b { color: var(--color-primary-700); letter-spacing: 1px;}
+  .ph {
+    display:flex; flex-direction:column; gap:8px;
+    padding: var(--space-5); border-radius: var(--radius-lg);
+    background: var(--color-bg-surface); border: var(--border-subtle);
+    text-decoration: none; color: inherit;
+    transition: transform .15s, border-color .15s, box-shadow .15s;
+    position: relative;
+  }
+  .ph:hover { transform: translateY(-2px); border-color: var(--color-primary-300); box-shadow: var(--shadow-md); }
+  .ph--done { background: var(--color-primary-50); border-color: var(--color-primary-400); }
+  .ph--done::after {
+    content: "✓"; position:absolute; top: 14px; right: 14px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--color-primary-600); color: #fff;
+    display:grid; place-items:center; font-size: 12px; font-weight: 700;
+  }
+  .ph--pending { opacity: .55; cursor: default; }
+  .ph--pending:hover { transform:none; box-shadow:none; border-color: var(--color-ink-200); }
+  .ph__n { font-family:var(--font-mono); font-size:11px; letter-spacing:1.5px; color:var(--color-ink-500); }
+  .ph--done .ph__n { color: var(--color-primary-700); }
+  .ph__t { font-size: 17px; font-weight: 700; color: var(--color-ink-900); }
+  .ph__d { font-size: 13px; line-height:1.5; color: var(--color-ink-600); }
+
+  .meta {
+    display:grid; grid-template-columns: repeat(3,1fr); gap: var(--space-4);
+    padding: var(--space-5) var(--space-6);
+    background: var(--color-bg-surface);
+    border: var(--border-subtle); border-radius: var(--radius-lg);
+  }
+  @media (max-width: 700px){ .meta { grid-template-columns: 1fr; } }
+  .meta__k { font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--color-ink-500); text-transform: uppercase;}
+  .meta__v { font-size: 15px; color: var(--color-ink-800); margin-top: 4px; font-weight: 500;}
+  .meta__v b { color: var(--color-primary-700); font-weight: 700; }
+
+  .legacy {
+    margin-top: var(--space-8); padding-top: var(--space-5);
+    border-top: 1px dashed var(--color-ink-300);
+    font-family:var(--font-mono); font-size:12px; color:var(--color-ink-500);
+    display:flex; justify-content: space-between; flex-wrap: wrap; gap:8px;
+  }
+  .legacy a { color: var(--color-ink-600); text-decoration: underline dotted; }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <div class="top">
+    <span class="dot"></span>
+    <span>NNTN · Web Redesign Spike</span>
+    <span style="margin-left:auto">v0.2 · 22 APR 2026</span>
+  </div>
+
+  <div class="diamond-rule">◆ ◆ ◆</div>
+  <h1>สืบทอดรสชาติ ๔๐ ปี<br/><em>ระบบใหม่ให้ตรงกับครัวจริง</em></h1>
+  <p class="lede">
+    Blueprint เผย 47 หน้าในปัจจุบันเกิดจากการต่อ feature ทีละชิ้น — <b>prep มี 5 หน้า · นับมี 3 · stock status มี 3</b> · meat-stock เป็น monolith 2900 LoC
+    <br/><br/>
+    Spike นี้ redesign ให้เหลือ <b>25 หน้า</b> ยึด hybrid IA (task → lifecycle → domain), mobile-first สำหรับน้องครัว, แก้ bugs B2/B5/B6 ในระดับ UI, คง brand <b>heritage green + gold diamond</b>
+  </p>
+
+  <div class="phases">
+    <a class="ph ph--done" href="system-map.html">
+      <div class="ph__n">PHASE 1A · DONE</div>
+      <div class="ph__t">System map</div>
+      <div class="ph__d">47 → 25 surfaces · hybrid IA · bug scope · lifecycle diagram</div>
+    </a>
+    <a class="ph ph--done" href="type-pairings.html">
+      <div class="ph__n">PHASE 1B · DONE</div>
+      <div class="ph__t">Type pairings</div>
+      <div class="ph__d">3 Thai pairings เสนอแล้ว · A heritage · B operational · C hybrid (แนะนำ)</div>
+    </a>
+    <a class="ph ph--done" href="components.html">
+      <div class="ph__n">PHASE 1C · DONE</div>
+      <div class="ph__t">Core components</div>
+      <div class="ph__d">Buttons · forms · item rows · tables · alerts · mobile shell · action sheet</div>
+    </a>
+    <a class="ph ph--done" href="hub-delivery-proto.html">
+      <div class="ph__n">PHASE 1D · DONE</div>
+      <div class="ph__t">hub-delivery hero</div>
+      <div class="ph__d">3-screen mobile prototype · fixes B2 stale draft + B6 4-bill scatter</div>
+    </a>
+  </div>
+
+  <div class="phase-heading"><b>Phase 2</b> · pain-point prototypes (bug fixes in UI)</div>
+
+  <div class="phases phases--p2">
+    <a class="ph ph--done" href="po-receive-proto.html">
+      <div class="ph__n">PHASE 2A · DONE</div>
+      <div class="ph__t">po-receive</div>
+      <div class="ph__d">B1 guard · before+delta+after preview · zero-out combo · meat-raw per-bag split</div>
+    </a>
+    <a class="ph ph--done" href="meat-produce-proto.html">
+      <div class="ph__n">PHASE 2B · DONE</div>
+      <div class="ph__t">meat-stock · produce</div>
+      <div class="ph__d">4-step wizard · FIFO bag picker · yield recon · self-serve revert (22/04 incident)</div>
+    </a>
+    <a class="ph ph--done" href="count-sheet-weekly-proto.html">
+      <div class="ph__n">PHASE 2C · DONE</div>
+      <div class="ph__t">count-sheet-weekly</div>
+      <div class="ph__d">A4 print artifact · 12-SKU whitelist · paper→rpc_count_adjust loop · count-log pair</div>
+    </a>
+  </div>
+
+  <div class="phase-heading"><b>Phase 3</b> · companion surfaces + platform health</div>
+
+  <div class="phases phases--p2">
+    <a class="ph ph--done" href="count-entry-proto.html">
+      <div class="ph__n">PHASE 3A · DONE</div>
+      <div class="ph__t">count-entry</div>
+      <div class="ph__d">Mobile companion to paper sheet · per-row delta preview · atomic batch commit</div>
+    </a>
+    <a class="ph ph--done" href="meat-stock-kanban-proto.html">
+      <div class="ph__n">PHASE 3B · DONE</div>
+      <div class="ph__t">meat-stock · kanban</div>
+      <div class="ph__d">3-warehouse view (A/B/C) · drag-to-transfer · aging + low-stock columns · bag detail</div>
+    </a>
+    <a class="ph ph--done" href="platform-health-proto.html">
+      <div class="ph__n">PHASE 3C · DONE</div>
+      <div class="ph__t">platform-health</div>
+      <div class="ph__d">SLO dashboard · RPC p99 · trigger fires · regression watch for B1/B2/B6</div>
+    </a>
+  </div>
+
+  <div class="meta">
+    <div>
+      <div class="meta__k">Phase status</div>
+      <div class="meta__v">Phase 1 ✓ · Phase 2 ✓ · Phase 3 ✓ · <b>10 artifacts</b> delivered</div>
+    </div>
+    <div>
+      <div class="meta__k">Target users</div>
+      <div class="meta__v">ไทน์ (desktop) · น้อง <b>2–3 คน</b> (mobile 90%)</div>
+    </div>
+    <div>
+      <div class="meta__k">Constraint</div>
+      <div class="meta__v">vanilla HTML/JS · Supabase REST · no framework</div>
+    </div>
+  </div>
+
+  <div class="legacy">
+    <span>Legacy v1 mockups (wrong brand + scope) → <a href="_legacy/index-v1.html">_legacy/index-v1.html</a></span>
+    <span>tokens.css · heritage green default</span>
+  </div>
+
+</main>
+</body>
+</html>

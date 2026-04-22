@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · Type Pairings (Phase 1B)</title>
+<link rel="stylesheet" href="tokens.css?v=20260422b" />
+<script>
+  try {
+    var saved = localStorage.getItem('nntn_theme');
+    if (saved === 'warm' || saved === null) {
+      localStorage.removeItem('nntn_theme');
+      document.documentElement.removeAttribute('data-theme');
+    }
+  } catch(e){}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai+Looped:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@400;500;600;700&family=Prata&family=Chonburi&family=Trirong:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { background: var(--color-bg-app); color: var(--color-ink-800); }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 40px 28px 80px; }
+
+  .top {
+    display:flex; gap:14px; align-items:center;
+    font-family: var(--font-mono); font-size:12px; letter-spacing:2px;
+    text-transform:uppercase; color:var(--color-ink-600);
+    margin-bottom: var(--space-5);
+  }
+  .top .dot { width:10px; height:10px; border-radius:50%;
+    background: var(--color-primary-600); box-shadow: 0 0 0 4px var(--color-primary-100);}
+  .top .crumbs { margin-left:auto; color:var(--color-ink-500); }
+  .back-link { color: var(--color-primary-700); text-decoration: none; border-bottom: 1px dotted currentColor;}
+
+  h1 {
+    font-family: var(--font-serif); font-weight:400;
+    font-size: 56px; line-height:1.05; letter-spacing:-0.015em;
+    color: var(--color-ink-900); margin: 0 0 var(--space-3);
+    max-width: 860px;
+  }
+  .lede {
+    font-size: 18px; line-height:1.6; color: var(--color-ink-700);
+    max-width: 780px; margin: 0 0 var(--space-7);
+  }
+  .lede b { color: var(--color-primary-700); font-weight:700; }
+
+  .diamond-rule { display:flex; align-items:center; gap: 12px; color: var(--color-accent-600); font-size: 10px; margin: var(--space-8) 0 var(--space-5);}
+  .diamond-rule::before, .diamond-rule::after { content:""; flex: 1; height:1px; background: var(--color-accent-300); }
+
+  /* ─────────── Pairing card ─────────── */
+  .pairing {
+    background: var(--color-bg-surface);
+    border: var(--border-subtle);
+    border-radius: var(--radius-xl);
+    padding: 0;
+    margin-bottom: var(--space-6);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .pairing__head {
+    display:grid; grid-template-columns: 1fr auto; gap: var(--space-4);
+    padding: 28px 32px 20px;
+    border-bottom: var(--border-subtle);
+    background: var(--color-ink-50);
+    align-items: end;
+  }
+  .pairing__no {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--color-ink-500);
+    margin-bottom: 8px;
+  }
+  .pairing__title {
+    font-family: var(--font-serif); font-weight:400;
+    font-size: 40px; line-height: 1.1; letter-spacing: -0.01em;
+    color: var(--color-ink-900); margin: 0 0 var(--space-2);
+  }
+  .pairing__tagline {
+    font-size: 15px; color: var(--color-ink-700); margin: 0;
+    max-width: 640px; line-height: 1.55;
+  }
+  .pairing__stack {
+    text-align: right; font-family: var(--font-mono); font-size: 12px;
+    line-height: 1.65; color: var(--color-ink-600);
+  }
+  .pairing__stack b { color: var(--color-ink-900); font-weight:600; }
+  .pairing__stack .stack-row { display:flex; gap:8px; justify-content: flex-end; align-items: baseline; }
+  .pairing__stack .role {
+    display:inline-block; width: 46px; text-align:right;
+    font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--color-accent-600);
+  }
+
+  /* Two-col body: sample copy + spec table */
+  .pairing__body {
+    display:grid; grid-template-columns: 1fr 340px;
+    gap: 0; min-height: 520px;
+  }
+  @media (max-width: 1000px){ .pairing__body { grid-template-columns: 1fr; } }
+  .sample { padding: 36px 40px 40px; }
+  .spec { background: var(--color-ink-50); padding: 28px 28px 28px; border-left: var(--border-subtle); font-size: 13px;}
+  @media (max-width: 1000px){ .spec { border-left: none; border-top: var(--border-subtle); } }
+
+  .sample__eyebrow {
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--color-primary-700); font-weight:600; margin: 0 0 10px;
+  }
+  .sample__hero {
+    font-size: 42px; line-height: 1.08; margin: 0 0 var(--space-2);
+    color: var(--color-ink-900); letter-spacing: -0.01em;
+  }
+  .sample__heritage {
+    font-size: 56px; line-height: 1.05;
+    margin: 0 0 var(--space-3); letter-spacing: -0.015em;
+    color: var(--color-ink-900);
+  }
+  .sample__heritage em { font-style: normal; color: var(--color-primary-700);}
+  .sample__lede {
+    font-size: 17px; line-height: 1.6; color: var(--color-ink-700);
+    margin: 0 0 var(--space-5); max-width: 560px;
+  }
+  .sample__h2 { font-size: 22px; margin: var(--space-4) 0 10px; color: var(--color-ink-900);}
+  .sample__body { font-size: 15px; line-height: 1.6; color: var(--color-ink-700); margin: 0 0 var(--space-4);}
+  .sample__caption { font-size: 12px; color: var(--color-ink-500); font-family: var(--font-mono); margin-top: 4px; }
+
+  /* Mini-UI demo inside sample */
+  .demo-row {
+    display:flex; gap:14px; flex-wrap:wrap; align-items: center;
+    padding: var(--space-4); border: var(--border-subtle);
+    border-radius: var(--radius-md); background: var(--color-ink-50);
+    margin-top: var(--space-4);
+  }
+  .demo-pill {
+    padding: 4px 10px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 600;
+    background: var(--color-primary-100); color: var(--color-primary-800);
+  }
+  .demo-pill--gold { background: var(--color-accent-100); color: var(--color-accent-700);}
+  .demo-pill--red  { background: var(--color-danger-50); color: var(--color-danger-700);}
+  .demo-btn {
+    display:inline-flex; align-items:center; gap:8px;
+    padding: 10px 18px; border-radius: var(--radius-md);
+    background: var(--color-primary-600); color: #fff; border: none;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .demo-num { font-family: var(--font-mono); font-size: 22px; font-weight: 600; color: var(--color-primary-700);}
+  .demo-label { font-size: 12px; color: var(--color-ink-600); letter-spacing: .5px;}
+
+  .spec__row {
+    display:grid; grid-template-columns: 76px 1fr;
+    gap: 12px; padding: 10px 0;
+    border-bottom: 1px dashed var(--color-ink-200);
+  }
+  .spec__row:last-child { border-bottom: none; }
+  .spec__k {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--color-ink-500); padding-top: 2px;
+  }
+  .spec__v { font-size: 13px; color: var(--color-ink-800); line-height: 1.55;}
+  .spec__v b { color: var(--color-ink-900); font-weight: 600;}
+
+  .spec__pros { margin: var(--space-4) 0 var(--space-3); font-size: 13px; line-height: 1.55; color: var(--color-primary-700); }
+  .spec__cons { font-size: 13px; line-height: 1.55; color: var(--color-danger-700); }
+  .spec__mark {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--color-ink-500);
+    margin-bottom: 4px; display:block;
+  }
+
+  /* per-pairing fonts */
+  /* A — Heritage Serif (Noto Serif Thai + IBM Plex Sans Thai Looped) */
+  .p-a .sample__heritage { font-family: "Noto Serif Thai", "Prata", serif; font-weight: 500;}
+  .p-a .sample__hero    { font-family: "Noto Serif Thai", serif; font-weight: 700;}
+  .p-a .sample__eyebrow { font-family: "IBM Plex Mono", monospace; }
+  .p-a .sample__lede    { font-family: "IBM Plex Sans Thai Looped", "IBM Plex Sans Thai", sans-serif; font-weight: 400;}
+  .p-a .sample__h2      { font-family: "Noto Serif Thai", serif; font-weight: 700;}
+  .p-a .sample__body    { font-family: "IBM Plex Sans Thai Looped", "IBM Plex Sans Thai", sans-serif;}
+  .p-a .demo-num        { font-family: "IBM Plex Mono", monospace; }
+
+  /* B — Operational Modern (Prompt 600 + Sarabun + IBM Plex Mono) */
+  .p-b .sample__heritage { font-family: "Prompt", sans-serif; font-weight: 600; letter-spacing: -0.02em;}
+  .p-b .sample__hero    { font-family: "Prompt", sans-serif; font-weight: 600; letter-spacing: -0.015em;}
+  .p-b .sample__eyebrow { font-family: "IBM Plex Mono", monospace;}
+  .p-b .sample__lede    { font-family: "Sarabun", sans-serif; font-weight: 400;}
+  .p-b .sample__h2      { font-family: "Prompt", sans-serif; font-weight: 600; letter-spacing: -0.01em;}
+  .p-b .sample__body    { font-family: "Sarabun", sans-serif; font-weight: 400;}
+  .p-b .demo-num        { font-family: "IBM Plex Mono", monospace; font-weight: 500;}
+
+  /* C — Heritage Display (Trirong + Noto Sans Thai + IBM Plex Mono) */
+  .p-c .sample__heritage { font-family: "Trirong", serif; font-weight: 500; letter-spacing: -0.01em;}
+  .p-c .sample__hero    { font-family: "Trirong", serif; font-weight: 600;}
+  .p-c .sample__eyebrow { font-family: "IBM Plex Mono", monospace;}
+  .p-c .sample__lede    { font-family: "Noto Sans Thai", sans-serif; font-weight: 400;}
+  .p-c .sample__h2      { font-family: "Trirong", serif; font-weight: 600;}
+  .p-c .sample__body    { font-family: "Noto Sans Thai", sans-serif; font-weight: 400;}
+  .p-c .demo-num        { font-family: "IBM Plex Mono", monospace;}
+
+  /* ─────────── Choose strip ─────────── */
+  .choose {
+    margin-top: var(--space-8); padding: var(--space-6);
+    background: var(--color-primary-50); border: 1px solid var(--color-primary-200);
+    border-radius: var(--radius-lg);
+  }
+  .choose__h {
+    font-family: var(--font-serif); font-weight:400; font-size: 28px;
+    color: var(--color-ink-900); margin: 0 0 8px; letter-spacing: -0.01em;
+  }
+  .choose__p { font-size: 15px; line-height: 1.55; color: var(--color-ink-700); margin: 0 0 var(--space-4); max-width: 720px;}
+  .choose__buttons { display:flex; flex-wrap: wrap; gap: 12px; }
+  .choose__btn {
+    display: inline-flex; flex-direction: column; gap: 4px;
+    padding: 14px 22px; border-radius: var(--radius-md);
+    background: var(--color-bg-surface); border: var(--border-default);
+    text-decoration: none; color: inherit;
+    min-width: 200px;
+  }
+  .choose__btn strong { font-size: 15px; color: var(--color-ink-900); }
+  .choose__btn span { font-size: 12px; color: var(--color-ink-600); font-family: var(--font-mono); letter-spacing: 0.5px;}
+  .choose__btn:hover { border-color: var(--color-primary-500); background: #fff; }
+
+  /* thai glyph rendering aid */
+  .p-a, .p-b, .p-c { font-feature-settings: "locl" 1; }
+
+  /* diamond accent for pairing A */
+  .p-a .pairing__head::after,
+  .p-c .pairing__head::after {
+    content: "◆"; color: var(--color-accent-500); font-size: 14px;
+    margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+
+<main class="wrap">
+
+  <div class="top">
+    <span class="dot"></span>
+    <span>NNTN · Design Spike</span>
+    <span class="crumbs">PHASE 1B · TYPE PAIRINGS · <a class="back-link" href="index.html">← hub</a></span>
+  </div>
+
+  <h1>ตัวอักษร ๓ แนวทาง<br/>ให้ไทน์เลือก</h1>
+  <p class="lede">
+    Heritage green + gold ตัดสินใจไปแล้วจาก Phase 1B · ขั้นต่อมาคือ<b>หาคู่ตัวอักษรไทย</b>ที่พอดีกับทั้ง surface แบรนด์ (hero, wordmark) และ surface ทำงาน (form, table, ตัวเลข)
+    — เสนอ 3 pairing คนละ feel แต่ทุกชุด fallback ไปที่ stack เดียวกันได้ใน vanilla CSS
+  </p>
+
+  <!-- ═════ A · Heritage Serif ═════ -->
+  <article class="pairing p-a">
+    <header class="pairing__head">
+      <div>
+        <div class="pairing__no">PAIRING A · ทางการ ภูมิฐาน</div>
+        <h2 class="pairing__title">Heritage Serif</h2>
+        <p class="pairing__tagline">สืบทอดรสชาติ ๔๐ ปี — หัวเรื่อง <b>Noto Serif Thai</b> มีหัวตัวอักษรชัด ให้ความรู้สึกร้านเก่าแก่ คู่กับ body แบบ loop <b>IBM Plex Sans Thai Looped</b> อ่านง่ายบนมือถือ</p>
+      </div>
+      <div class="pairing__stack">
+        <div class="stack-row"><span class="role">Heading</span><b>Noto Serif Thai</b></div>
+        <div class="stack-row"><span class="role">Body</span><b>IBM Plex Sans Thai Looped</b></div>
+        <div class="stack-row"><span class="role">Mono</span><b>IBM Plex Mono</b></div>
+      </div>
+    </header>
+    <div class="pairing__body">
+      <div class="sample">
+        <div class="sample__eyebrow">NNTN · 40 YEARS OF TRADITION BEEF STEW</div>
+        <h3 class="sample__heritage">สืบทอดรสชาติ <em>๔๐ ปี</em></h3>
+        <p class="sample__lede">ระบบสต๊อกครัวเนื้อในตำนาน — รับ · แปรรูป · ส่งออก · ตรวจนับ ครบใน 5 หน้าหลัก รองรับทั้งเนื้อตุ๋นและวัตถุดิบของแห้งในใบงานเดียวกัน</p>
+
+        <h4 class="sample__h2">ใบนำส่ง FS20260422-1</h4>
+        <p class="sample__body">ส่งออก FoodStory สาขาวิชรธรรม 53 — เนื้อตุ๋น 8 ถุง + ของแห้ง 4 รายการ ยอดรวมน้ำหนักที่ลงบิล <b>12.450 kg</b> ทุกถุงผ่านการตรวจจากคลัง C ก่อนส่ง</p>
+
+        <div class="demo-row">
+          <span class="demo-pill">✓ พร้อมส่ง 8</span>
+          <span class="demo-pill demo-pill--gold">◆ รอจัด 2</span>
+          <span class="demo-pill demo-pill--red">!อย่านับซ้ำ 1</span>
+          <span style="margin-left:auto" class="demo-num">12.450 kg</span>
+        </div>
+        <div class="sample__caption">→ heading + number ใช้ serif, badge + label ใช้ sans — feel ทางการ</div>
+      </div>
+      <aside class="spec">
+        <span class="spec__mark">Google Fonts · loaded</span>
+        <div class="spec__row"><span class="spec__k">Heading</span><span class="spec__v"><b>Noto Serif Thai</b> · 400 / 500 / 700 · มีหัวตัวอักษร</span></div>
+        <div class="spec__row"><span class="spec__k">Body</span><span class="spec__v"><b>IBM Plex Sans Thai Looped</b> · 300 / 400 / 600 · ตัวอ้วนเล็กน้อย</span></div>
+        <div class="spec__row"><span class="spec__k">Mono</span><span class="spec__v"><b>IBM Plex Mono</b> · สำหรับ SKU, bill_no, timestamp</span></div>
+        <div class="spec__row"><span class="spec__k">Numeric</span><span class="spec__v">tabular-nums ผ่าน IBM Plex — ตัวเลขตารางเรียงตรง</span></div>
+        <div class="spec__row"><span class="spec__k">Weight</span><span class="spec__v">~180 KB · 3 families · เฉลี่ย 60 KB/ฟอนต์</span></div>
+
+        <div class="spec__pros"><b>👍 เหมาะเมื่อ</b> · ต้องการ feel ภูมิฐาน "40 ปี" แท้ · hero surface ได้เปรียบ · คู่กับ gold diamond ornament ดูเต็มตา</div>
+        <div class="spec__cons"><b>👎 ระวัง</b> · Thai serif บนมือถือขนาดเล็กอาจเมื่อยตา — ต้องใช้ serif เฉพาะ heading, ห้ามใช้ใน form / table row</div>
+      </aside>
+    </div>
+  </article>
+
+  <!-- ═════ B · Operational Modern ═════ -->
+  <article class="pairing p-b">
+    <header class="pairing__head">
+      <div>
+        <div class="pairing__no">PAIRING B · ใช้งานไว เข้มแข็ง</div>
+        <h2 class="pairing__title">Operational Modern</h2>
+        <p class="pairing__tagline">ไม่มี serif เลย — heading <b>Prompt 600</b> (geometric, ไทยร่วมสมัย) · body <b>Sarabun</b> ที่ใช้อยู่แล้ว · mono <b>IBM Plex</b> — เหมาะกับน้องใช้มือถือในครัว</p>
+      </div>
+      <div class="pairing__stack">
+        <div class="stack-row"><span class="role">Heading</span><b>Prompt 600</b></div>
+        <div class="stack-row"><span class="role">Body</span><b>Sarabun 400/600</b></div>
+        <div class="stack-row"><span class="role">Mono</span><b>IBM Plex Mono</b></div>
+      </div>
+    </header>
+    <div class="pairing__body">
+      <div class="sample">
+        <div class="sample__eyebrow">NNTN · 40 YEARS OF TRADITION BEEF STEW</div>
+        <h3 class="sample__heritage">สืบทอดรสชาติ <em>๔๐ ปี</em></h3>
+        <p class="sample__lede">ระบบสต๊อกครัวเนื้อในตำนาน — รับ · แปรรูป · ส่งออก · ตรวจนับ ครบใน 5 หน้าหลัก รองรับทั้งเนื้อตุ๋นและวัตถุดิบของแห้งในใบงานเดียวกัน</p>
+
+        <h4 class="sample__h2">ใบนำส่ง FS20260422-1</h4>
+        <p class="sample__body">ส่งออก FoodStory สาขาวิชรธรรม 53 — เนื้อตุ๋น 8 ถุง + ของแห้ง 4 รายการ ยอดรวมน้ำหนักที่ลงบิล <b>12.450 kg</b> ทุกถุงผ่านการตรวจจากคลัง C ก่อนส่ง</p>
+
+        <div class="demo-row">
+          <span class="demo-pill">✓ พร้อมส่ง 8</span>
+          <span class="demo-pill demo-pill--gold">◆ รอจัด 2</span>
+          <span class="demo-pill demo-pill--red">!อย่านับซ้ำ 1</span>
+          <span style="margin-left:auto" class="demo-num">12.450 kg</span>
+        </div>
+        <div class="sample__caption">→ ทุก heading geometric — เร็ว, clear, ไม่มี serif ที่ขัดจังหวะตา</div>
+      </div>
+      <aside class="spec">
+        <span class="spec__mark">Google Fonts · loaded</span>
+        <div class="spec__row"><span class="spec__k">Heading</span><span class="spec__v"><b>Prompt</b> · 400 / 500 / 600 / 700 · ไม่มีหัว geometric</span></div>
+        <div class="spec__row"><span class="spec__k">Body</span><span class="spec__v"><b>Sarabun</b> · 300 / 400 / 500 / 600 · มาตรฐานราชการไทย</span></div>
+        <div class="spec__row"><span class="spec__k">Mono</span><span class="spec__v"><b>IBM Plex Mono</b> · สำหรับ SKU / bag no</span></div>
+        <div class="spec__row"><span class="spec__k">Numeric</span><span class="spec__v">tabular · ready · ฟอนต์ Prompt + Plex Mono รองรับ</span></div>
+        <div class="spec__row"><span class="spec__k">Weight</span><span class="spec__v">~160 KB · Sarabun ใช้อยู่แล้วใน tokens.css · cost เพิ่มน้อย</span></div>
+
+        <div class="spec__pros"><b>👍 เหมาะเมื่อ</b> · น้องใช้ mobile หนัก · เน้น readability ใน form, table, action sheet · migration ต่อยอด tokens.css ปัจจุบันได้ทันที</div>
+        <div class="spec__cons"><b>👎 ระวัง</b> · feel "modern app" ไม่ใช่ "heritage" — ต้องชด diamond ornament + gold ให้เด่นไม่งั้นหลุดแบรนด์</div>
+      </aside>
+    </div>
+  </article>
+
+  <!-- ═════ C · Heritage Display (hybrid) ═════ -->
+  <article class="pairing p-c">
+    <header class="pairing__head">
+      <div>
+        <div class="pairing__no">PAIRING C · ผสม · แนะนำ</div>
+        <h2 class="pairing__title">Heritage Display</h2>
+        <p class="pairing__tagline"><b>Trirong</b> (slab serif ไทยจาก Cadson Demak) ใช้เฉพาะ hero/brand surface · body <b>Noto Sans Thai</b> สะอาดตา · เป็น hybrid ระหว่าง A กับ B — ใช้ heritage เฉพาะตรงที่ควร</p>
+      </div>
+      <div class="pairing__stack">
+        <div class="stack-row"><span class="role">Display</span><b>Trirong 500/600</b></div>
+        <div class="stack-row"><span class="role">Body</span><b>Noto Sans Thai</b></div>
+        <div class="stack-row"><span class="role">Mono</span><b>IBM Plex Mono</b></div>
+      </div>
+    </header>
+    <div class="pairing__body">
+      <div class="sample">
+        <div class="sample__eyebrow">NNTN · 40 YEARS OF TRADITION BEEF STEW</div>
+        <h3 class="sample__heritage">สืบทอดรสชาติ <em>๔๐ ปี</em></h3>
+        <p class="sample__lede">ระบบสต๊อกครัวเนื้อในตำนาน — รับ · แปรรูป · ส่งออก · ตรวจนับ ครบใน 5 หน้าหลัก รองรับทั้งเนื้อตุ๋นและวัตถุดิบของแห้งในใบงานเดียวกัน</p>
+
+        <h4 class="sample__h2">ใบนำส่ง FS20260422-1</h4>
+        <p class="sample__body">ส่งออก FoodStory สาขาวิชรธรรม 53 — เนื้อตุ๋น 8 ถุง + ของแห้ง 4 รายการ ยอดรวมน้ำหนักที่ลงบิล <b>12.450 kg</b> ทุกถุงผ่านการตรวจจากคลัง C ก่อนส่ง</p>
+
+        <div class="demo-row">
+          <span class="demo-pill">✓ พร้อมส่ง 8</span>
+          <span class="demo-pill demo-pill--gold">◆ รอจัด 2</span>
+          <span class="demo-pill demo-pill--red">!อย่านับซ้ำ 1</span>
+          <span style="margin-left:auto" class="demo-num">12.450 kg</span>
+        </div>
+        <div class="sample__caption">→ Trirong slab ใน hero + h2 · sans ใน body — ได้ heritage แต่ใช้งานสบาย</div>
+      </div>
+      <aside class="spec">
+        <span class="spec__mark">Google Fonts · loaded</span>
+        <div class="spec__row"><span class="spec__k">Display</span><span class="spec__v"><b>Trirong</b> · 400 / 500 / 600 / 700 · slab serif จาก Cadson Demak</span></div>
+        <div class="spec__row"><span class="spec__k">Body</span><span class="spec__v"><b>Noto Sans Thai</b> · 300 / 400 / 500 / 600 · ตัวเปลือยคล่องตา</span></div>
+        <div class="spec__row"><span class="spec__k">Mono</span><span class="spec__v"><b>IBM Plex Mono</b> · สำหรับ SKU / code</span></div>
+        <div class="spec__row"><span class="spec__k">Numeric</span><span class="spec__v">tabular ผ่าน Plex Mono · Noto Sans รองรับ <code>font-variant-numeric</code></span></div>
+        <div class="spec__row"><span class="spec__k">Weight</span><span class="spec__v">~150 KB · ใกล้เคียง B · Trirong โหลดเฉพาะ 2-3 น้ำหนัก</span></div>
+
+        <div class="spec__pros"><b>👍 เหมาะเมื่อ</b> · อยากได้ heritage feel แต่ไม่เสีย usability · scope ใช้ serif แคบลง (เฉพาะ brand surface) · balance สุดใน 3 ชุด</div>
+        <div class="spec__cons"><b>👎 ระวัง</b> · ต้อง discipline ไม่ใช้ Trirong ใน form / table / button — ไม่งั้น feel ขัด</div>
+      </aside>
+    </div>
+  </article>
+
+  <div class="diamond-rule">◆ ◆ ◆</div>
+
+  <!-- Choose -->
+  <section class="choose">
+    <h2 class="choose__h">ไทน์เลือกตัวไหน?</h2>
+    <p class="choose__p">
+      ถ้ายังไม่แน่ใจ — ผมแนะนำ <b>C (Heritage Display)</b> เพราะได้ heritage feel ครบในหน้า hero/brand แต่ไม่เหนื่อยเวลา implement 20 หน้างานจริง · A เหมาะถ้าอยากจัดเต็ม heritage · B เหมาะถ้าต้องการ migration ที่เร็วที่สุดจาก tokens ปัจจุบัน
+    </p>
+    <div class="choose__buttons">
+      <div class="choose__btn"><strong>→ A · Heritage Serif</strong><span>formal, classic, bold heritage</span></div>
+      <div class="choose__btn"><strong>→ B · Operational Modern</strong><span>fast to ship, mobile-first feel</span></div>
+      <div class="choose__btn" style="background: var(--color-primary-100); border-color: var(--color-primary-500);"><strong>→ C · Heritage Display ◆</strong><span>RECOMMENDED · balanced hybrid</span></div>
+    </div>
+    <p style="margin-top: var(--space-4); font-size: 13px; color: var(--color-ink-600);">บอกมาว่าเลือกข้อไหน ผมจะ apply เข้า tokens v2 แล้วไปต่อ Phase 1C (components) ทันที</p>
+  </section>
+
+</main>
+
+</body>
+</html>

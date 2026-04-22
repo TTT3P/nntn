@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · Design System Components</title>
+<link rel="stylesheet" href="tokens.css?v=1776874424070" />
+<link rel="stylesheet" href="app.css?v=1776874424070" />
+<style>
+  /* Page-specific: component showcase layout */
+  .showcase__section { scroll-margin-top: 100px; }
+  .showcase__section-title {
+    margin: 0 0 var(--space-2);
+    font-size: var(--fs-h2);
+    color: var(--color-ink-900);
+  }
+  .showcase__section-desc {
+    margin: 0 0 var(--space-5);
+    color: var(--color-ink-500);
+    font-size: var(--fs-body);
+  }
+  .demo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-4);
+    padding: var(--space-5);
+    background: var(--color-bg-surface);
+    border: var(--border-subtle);
+    border-radius: var(--radius-lg);
+  }
+  .demo-row {
+    display: flex; flex-wrap: wrap; gap: var(--space-3);
+    padding: var(--space-5);
+    background: var(--color-bg-surface);
+    border: var(--border-subtle);
+    border-radius: var(--radius-lg);
+    align-items: center;
+  }
+  .swatch {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .swatch__chip {
+    height: 60px; border-radius: var(--radius-md);
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+  .swatch__name { font-size: var(--fs-caption); font-weight: 600; }
+  .swatch__hex  { font-size: var(--fs-micro); color: var(--color-ink-500); font-family: var(--font-mono); }
+
+  .type-sample { padding: var(--space-3) 0; border-bottom: var(--border-subtle); }
+  .type-sample:last-child { border-bottom: none; }
+  .type-sample__label { font-size: var(--fs-caption); color: var(--color-ink-500); margin-bottom: 4px; font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">ข้ามไปยังเนื้อหาหลัก</a>
+
+<div class="app">
+  <!-- ============================================================
+       SIDEBAR  (5 pillars: Stock / CookingBook / Sales / HR / Finance)
+       ============================================================ -->
+  <aside class="sidebar" aria-label="เมนูหลัก">
+    <div class="sidebar__brand">
+      <div class="sidebar__brand-logo" aria-hidden="true">🍜</div>
+      <div class="sidebar__brand-text">
+        <div class="sidebar__brand-name">ร้านก๋วยเตี๋ยว</div>
+        <div class="sidebar__brand-sub">ระบบจัดการร้าน NNTN</div>
+      </div>
+    </div>
+
+    <button class="sidebar__cta" type="button">
+      <span aria-hidden="true">📥</span>
+      <span>รับของเข้า</span>
+    </button>
+
+    <nav class="sidebar__section" aria-label="เมนูการใช้งาน">
+      <div class="sidebar__section-label">เมนูหลัก</div>
+
+      <a href="dashboard.html" class="nav-item is-active" aria-current="page">
+        <span class="nav-item__icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+            <rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+            <rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+            <rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+          </svg>
+        </span>
+        <span class="nav-item__label">ภาพรวม</span>
+      </a>
+
+      <a href="components.html" class="nav-item">
+        <span class="nav-item__icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M3 6l7-3 7 3-7 3-7-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M3 10l7 3 7-3M3 14l7 3 7-3" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="nav-item__label">สต๊อกวัตถุดิบ</span>
+        <span class="nav-item__count">26</span>
+      </a>
+
+      <button class="nav-item" type="button">
+        <span class="nav-item__icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M4 10h12M4 10l3-3M4 10l3 3M16 10l-3-3M16 10l-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="nav-item__label">CookingBook · แปรรูป</span>
+      </button>
+
+      <button class="nav-item" type="button">
+        <span class="nav-item__icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M3 15l4-5 3 3 7-8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M13 5h4v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="nav-item__label">Sales Ops</span>
+      </button>
+
+      <button class="nav-item" type="button" aria-disabled="true">
+        <span class="nav-item__icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M3 17c1.5-3 4-4 7-4s5.5 1 7 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="nav-item__label">HR · บุคลากร</span>
+        <span class="nav-item__badge">soon</span>
+      </button>
+
+      <button class="nav-item" type="button" aria-disabled="true">
+        <span class="nav-item__icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 2v16M6 6c0-1.5 1.5-2.5 4-2.5s4 1 4 2.5-1.5 2-4 2.5-4 1-4 2.5 1.5 2.5 4 2.5 4-1 4-2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="nav-item__label">Financial</span>
+        <span class="nav-item__badge">soon</span>
+      </button>
+    </nav>
+  </aside>
+
+  <!-- ============================================================
+       MAIN
+       ============================================================ -->
+  <div class="main" id="main">
+    <div class="topbar">
+      <div class="topbar__title">
+        <h1>Design System</h1>
+        <p>ชุดคอมโพเนนต์สำหรับระบบ NNTN · Sarabun · Orange-Red</p>
+      </div>
+      <div class="topbar__actions">
+        <a class="btn btn--secondary" href="dashboard.html">
+          ดูหน้าตัวอย่าง
+        </a>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ============ Color ============ -->
+      <section class="showcase__section" id="color">
+        <h2 class="showcase__section-title">Color</h2>
+        <p class="showcase__section-desc">Orange-red primary for CTAs, warm neutrals for chrome, semantic hues for state.</p>
+        <div class="demo-grid">
+          <div class="swatch"><div class="swatch__chip" style="background:var(--color-primary-50)"></div><div class="swatch__name">primary-50</div><div class="swatch__hex">#FFF3ED</div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:var(--color-primary-100)"></div><div class="swatch__name">primary-100</div><div class="swatch__hex">#FFE2D1</div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:var(--color-primary-300)"></div><div class="swatch__name">primary-300</div><div class="swatch__hex">#FF9F6D</div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:var(--color-primary-500)"></div><div class="swatch__name">primary-500</div><div class="swatch__hex">#F05A1A</div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:var(--color-primary-600)"></div><div class="swatch__name">primary-600 · CTA</div><div class="swatch__hex">#E8441A</div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:var(--color-primary-700)"></div><div class="swatch__name">primary-700</div><div class="swatch__hex">#C5360D</div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:var(--color-ink-900)"></div><div class="swatch__name">ink-900</div><div class="swatch__hex">#1A1410</div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:var(--color-ink-700)"></div><div class="swatch__name">ink-700</div><div class="swatch__hex">#433A33</div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:var(--color-ink-500)"></div><div class="swatch__name">ink-500</div><div class="swatch__hex">#8F857C</div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:var(--color-ink-200)"></div><div class="swatch__name">ink-200</div><div class="swatch__hex">#E8E2DC</div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:var(--color-success-500)"></div><div class="swatch__name">success-500</div><div class="swatch__hex">#1FA463</div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:var(--color-warning-500)"></div><div class="swatch__name">warning-500</div><div class="swatch__hex">#E8A519</div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:var(--color-danger-500)"></div><div class="swatch__name">danger-500</div><div class="swatch__hex">#D6331D</div></div>
+        </div>
+      </section>
+
+      <!-- ============ Type ============ -->
+      <section class="showcase__section" id="type">
+        <h2 class="showcase__section-title">Typography</h2>
+        <p class="showcase__section-desc">Sarabun — ออกแบบสำหรับภาษาไทยและละตินคู่กัน · Weights 300–800</p>
+        <div class="card"><div class="card__body">
+          <div class="type-sample">
+            <div class="type-sample__label">Display · 44 / 52 · 800</div>
+            <div style="font-size:var(--fs-display);line-height:var(--lh-display);font-weight:var(--fw-display)">ระบบจัดการสต๊อกร้านก๋วยเตี๋ยว</div>
+          </div>
+          <div class="type-sample">
+            <div class="type-sample__label">H1 · 32 / 40 · 700</div>
+            <div style="font-size:var(--fs-h1);line-height:var(--lh-h1);font-weight:var(--fw-h1)">ภาพรวมร้าน — Overview</div>
+          </div>
+          <div class="type-sample">
+            <div class="type-sample__label">H2 · 24 / 32 · 700</div>
+            <div style="font-size:var(--fs-h2);line-height:var(--lh-h2);font-weight:var(--fw-h2)">สต๊อกวัตถุดิบทั้งหมด</div>
+          </div>
+          <div class="type-sample">
+            <div class="type-sample__label">H3 · 20 / 27 · 600</div>
+            <div style="font-size:var(--fs-h3);line-height:var(--lh-h3);font-weight:var(--fw-h3)">ยอดขายรายเดือน</div>
+          </div>
+          <div class="type-sample">
+            <div class="type-sample__label">Body · 15 / 23 · 400</div>
+            <div style="font-size:var(--fs-body);line-height:var(--lh-body)">เพิ่มรายการสินค้าใหม่เข้าระบบ ระบบจะช่วยคุณตรวจสอบสต๊อกและแจ้งเตือนเมื่อของใกล้หมด</div>
+          </div>
+          <div class="type-sample">
+            <div class="type-sample__label">Caption · 13 / 19 · 400</div>
+            <div style="font-size:var(--fs-caption);line-height:var(--lh-caption);color:var(--color-ink-500)">อัปเดตล่าสุด · 10 นาทีที่แล้ว</div>
+          </div>
+          <div class="type-sample">
+            <div class="type-sample__label">Stat · 40 / 42 · 800 tabular</div>
+            <div style="font-size:var(--fs-stat);line-height:var(--lh-stat);font-weight:var(--fw-stat);font-feature-settings:'tnum' 1">฿26,359.4</div>
+          </div>
+        </div></div>
+      </section>
+
+      <!-- ============ Buttons ============ -->
+      <section class="showcase__section" id="buttons">
+        <h2 class="showcase__section-title">Buttons</h2>
+        <p class="showcase__section-desc">Primary · Secondary · Ghost · Danger · sizes sm / md / lg</p>
+        <div class="demo-row">
+          <button class="btn btn--primary">บันทึกสินค้า</button>
+          <button class="btn btn--secondary">ยกเลิก</button>
+          <button class="btn btn--ghost">ล้างฟอร์ม</button>
+          <button class="btn btn--danger">ลบรายการ</button>
+          <button class="btn btn--primary" disabled>ปิดใช้งาน</button>
+        </div>
+        <div class="demo-row" style="margin-top:var(--space-3)">
+          <button class="btn btn--primary btn--sm">+ รับของเข้า</button>
+          <button class="btn btn--primary">+ รับของเข้า</button>
+          <button class="btn btn--primary btn--lg">+ รับของเข้า</button>
+          <button class="btn btn--secondary btn--icon" aria-label="ตัวกรอง">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M3 5h14l-5 6v5l-4 2v-7L3 5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- ============ Stat cards ============ -->
+      <section class="showcase__section" id="stats">
+        <h2 class="showcase__section-title">Stat cards</h2>
+        <p class="showcase__section-desc">ใช้บน dashboard · gradient fill · trend pill ขวาบน</p>
+        <div class="grid-4">
+          <div class="stat stat--orange">
+            <div class="stat__top">
+              <div class="stat__icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 6l7-3 7 3v8l-7 3-7-3V6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+              </div>
+              <span class="trend trend--up"><span class="trend__arrow">↗</span>12%</span>
+            </div>
+            <div>
+              <div class="stat__label">วัตถุดิบทั้งหมด</div>
+              <div class="stat__value">1,690.8</div>
+              <div class="stat__meta">จาก 26 รายการ</div>
+            </div>
+          </div>
+          <div class="stat stat--green">
+            <div class="stat__top">
+              <div class="stat__icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 14V8M8 14V5M12 14v-4M16 14V3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              </div>
+              <span class="trend trend--up"><span class="trend__arrow">↗</span>18%</span>
+            </div>
+            <div>
+              <div class="stat__label">มูลค่าสต๊อก</div>
+              <div class="stat__value">฿26,359.4</div>
+              <div class="stat__meta">เพิ่มขึ้นจากเดือนที่แล้ว</div>
+            </div>
+          </div>
+          <div class="stat stat--red">
+            <div class="stat__top">
+              <div class="stat__icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 8c3-4 11-4 14 0-3 4-11 4-14 0z" stroke="currentColor" stroke-width="1.6"/><circle cx="10" cy="8" r="2" fill="currentColor"/></svg>
+              </div>
+              <span class="trend trend--up"><span class="trend__arrow">↗</span>15%</span>
+            </div>
+            <div>
+              <div class="stat__label">ยอดขายเดือนนี้</div>
+              <div class="stat__value">฿105K</div>
+              <div class="stat__meta">3,500 ชาม</div>
+            </div>
+          </div>
+          <div class="stat stat--amber">
+            <div class="stat__top">
+              <div class="stat__icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 3v8M10 14v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.6"/></svg>
+              </div>
+              <span class="trend trend--down"><span class="trend__arrow">!</span></span>
+            </div>
+            <div>
+              <div class="stat__label">วัตถุดิบใกล้หมด</div>
+              <div class="stat__value">11</div>
+              <div class="stat__meta">ต้องสั่งซื้อเพิ่ม</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Badges / Trend / Chips ============ -->
+      <section class="showcase__section" id="badges">
+        <h2 class="showcase__section-title">Badges · Trend · Category chips</h2>
+        <div class="demo-row">
+          <span class="badge badge--neutral"><span class="badge__dot"></span>neutral</span>
+          <span class="badge badge--primary"><span class="badge__dot"></span>primary</span>
+          <span class="badge badge--success"><span class="badge__dot"></span>success</span>
+          <span class="badge badge--warning"><span class="badge__dot"></span>warning</span>
+          <span class="badge badge--danger"><span class="badge__dot"></span>danger</span>
+          <span class="badge badge--info"><span class="badge__dot"></span>info</span>
+        </div>
+        <div class="demo-row" style="margin-top:var(--space-3)">
+          <span class="trend trend--up"><span class="trend__arrow">↗</span>เพิ่มขึ้น</span>
+          <span class="trend trend--flat"><span class="trend__arrow">—</span>คงที่</span>
+          <span class="trend trend--down"><span class="trend__arrow">↘</span>ลดลง</span>
+        </div>
+        <div class="demo-row" style="margin-top:var(--space-3)">
+          <span class="chip chip--noodle"><span class="chip__dot"></span>เส้น</span>
+          <span class="chip chip--meat"><span class="chip__dot"></span>เนื้อสัตว์</span>
+          <span class="chip chip--veg"><span class="chip__dot"></span>ผัก</span>
+          <span class="chip chip--sauce"><span class="chip__dot"></span>เครื่องปรุง</span>
+          <span class="chip chip--other"><span class="chip__dot"></span>อื่นๆ</span>
+        </div>
+      </section>
+
+      <!-- ============ Form rows ============ -->
+      <section class="showcase__section" id="forms">
+        <h2 class="showcase__section-title">Form rows</h2>
+        <p class="showcase__section-desc">ใช้กับหน้าลงทะเบียนสินค้าใหม่ · ฟิลด์บังคับมี *</p>
+        <div class="card">
+          <div class="card__body">
+            <div class="form-grid">
+              <div class="field">
+                <label class="field__label field__label--required" for="pname">ชื่อสินค้า</label>
+                <input id="pname" class="input" placeholder="เช่น เส้นเล็ก" />
+              </div>
+              <div class="field">
+                <label class="field__label field__label--required" for="sku">SKU</label>
+                <input id="sku" class="input" placeholder="เช่น NDL-001" />
+              </div>
+              <div class="field">
+                <label class="field__label field__label--required" for="cat">หมวดหมู่หลัก</label>
+                <select id="cat" class="select">
+                  <option>— เลือกหมวดหลัก —</option>
+                  <option>เส้น</option>
+                  <option>เนื้อสัตว์</option>
+                  <option>ผัก</option>
+                  <option>เครื่องปรุง</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field__label" for="qty">จำนวนเริ่มต้น</label>
+                <input id="qty" class="input" type="number" value="0" />
+                <div class="field__help">กรอกจำนวนตามหน่วยที่เลือก</div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="price">ราคา / หน่วย (บาท)</label>
+                <input id="price" class="input" type="number" value="0" aria-invalid="true" />
+                <div class="field__error">กรุณากรอกราคามากกว่า 0</div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="search">ค้นหา (leading icon)</label>
+                <div class="input-group">
+                  <span class="input-group__icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.8"/><path d="M14 14l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                  </span>
+                  <input id="search" class="input" placeholder="ค้นหาวัตถุดิบ, SKU หรือซัพพลายเออร์…" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card__footer">
+            <button class="btn btn--ghost">ล้างฟอร์ม</button>
+            <button class="btn btn--primary">บันทึกสินค้า</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Data table (sortable) ============ -->
+      <section class="showcase__section" id="table">
+        <h2 class="showcase__section-title">Data table · sortable</h2>
+        <p class="showcase__section-desc">คลิก header เพื่อ sort · hover row เน้นได้ · cell qty เปลี่ยนสีตามระดับสต๊อก</p>
+        <div class="table-wrap">
+          <table class="table" id="stock-table">
+            <thead>
+              <tr>
+                <th class="th-sort" aria-sort="none" data-sort="sku">
+                  <span class="th-sort__inner">SKU <svg class="th-sort__arrow" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+                </th>
+                <th class="th-sort" aria-sort="none" data-sort="name">
+                  <span class="th-sort__inner">ชื่อวัตถุดิบ <svg class="th-sort__arrow" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+                </th>
+                <th>หมวด</th>
+                <th class="th-sort" aria-sort="none" data-sort="supplier">
+                  <span class="th-sort__inner">ซัพพลายเออร์ <svg class="th-sort__arrow" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+                </th>
+                <th>เทรนด์</th>
+                <th class="th-sort" aria-sort="ascending" data-sort="qty" style="text-align:right">
+                  <span class="th-sort__inner">จำนวน <svg class="th-sort__arrow" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+                </th>
+                <th class="th-sort" aria-sort="none" data-sort="price" style="text-align:right">
+                  <span class="th-sort__inner">ราคา/หน่วย <svg class="th-sort__arrow" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="sku">NDL-001</span></td>
+                <td><div style="font-weight:600">เส้นเล็ก</div><div class="muted" style="font-size:var(--fs-micro)">เส้นเล็ก</div></td>
+                <td><span class="chip chip--noodle"><span class="chip__dot"></span>เส้น</span></td>
+                <td>โรงงานเส้นสมชาย</td>
+                <td><span class="trend trend--down">↘ ลดลง</span></td>
+                <td style="text-align:right">
+                  <div class="qty-cell qty-cell--low">
+                    <span class="qty-cell__big">15 กก.</span>
+                    <span class="qty-cell__min">⚠ ต่ำกว่า 20</span>
+                  </div>
+                </td>
+                <td style="text-align:right" class="tnum">฿35</td>
+              </tr>
+              <tr>
+                <td><span class="sku">NDL-002</span></td>
+                <td><div style="font-weight:600">เส้นใหญ่</div><div class="muted" style="font-size:var(--fs-micro)">เส้นใหญ่</div></td>
+                <td><span class="chip chip--noodle"><span class="chip__dot"></span>เส้น</span></td>
+                <td>โรงงานเส้นสมชาย</td>
+                <td><span class="trend trend--flat">— คงที่</span></td>
+                <td style="text-align:right">
+                  <div class="qty-cell"><span class="qty-cell__big">25 กก.</span></div>
+                </td>
+                <td style="text-align:right" class="tnum">฿35</td>
+              </tr>
+              <tr>
+                <td><span class="sku">NDL-004</span></td>
+                <td><div style="font-weight:600">บะหมี่เหลือง</div><div class="muted" style="font-size:var(--fs-micro)">บะหมี่</div></td>
+                <td><span class="chip chip--noodle"><span class="chip__dot"></span>เส้น</span></td>
+                <td>โรงงานเส้นสมชาย</td>
+                <td><span class="trend trend--up">↗ เพิ่มขึ้น</span></td>
+                <td style="text-align:right">
+                  <div class="qty-cell qty-cell--ok"><span class="qty-cell__big">22 กก.</span></div>
+                </td>
+                <td style="text-align:right" class="tnum">฿45</td>
+              </tr>
+              <tr>
+                <td><span class="sku">MEAT-001</span></td>
+                <td><div style="font-weight:600">หมูสับ</div><div class="muted" style="font-size:var(--fs-micro)">หมู</div></td>
+                <td><span class="chip chip--meat"><span class="chip__dot"></span>เนื้อสัตว์</span></td>
+                <td>ตลาดสดเข้า</td>
+                <td><span class="trend trend--down">↘ ลดลง</span></td>
+                <td style="text-align:right">
+                  <div class="qty-cell qty-cell--low">
+                    <span class="qty-cell__big">12 กก.</span>
+                    <span class="qty-cell__min">⚠ ต่ำกว่า 15</span>
+                  </div>
+                </td>
+                <td style="text-align:right" class="tnum">฿180</td>
+              </tr>
+              <tr>
+                <td><span class="sku">VEG-002</span></td>
+                <td><div style="font-weight:600">ผักบุ้ง</div><div class="muted" style="font-size:var(--fs-micro)">ผัก</div></td>
+                <td><span class="chip chip--veg"><span class="chip__dot"></span>ผัก</span></td>
+                <td>ตลาดสี่มุมเมือง</td>
+                <td><span class="trend trend--up">↗ เพิ่มขึ้น</span></td>
+                <td style="text-align:right">
+                  <div class="qty-cell qty-cell--ok"><span class="qty-cell__big">8 กก.</span></div>
+                </td>
+                <td style="text-align:right" class="tnum">฿25</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ Modal trigger ============ -->
+      <section class="showcase__section" id="modal">
+        <h2 class="showcase__section-title">Modal / Dialog</h2>
+        <p class="showcase__section-desc">Esc ปิด · focus trap · backdrop คลิกปิด</p>
+        <div class="demo-row">
+          <button class="btn btn--primary" data-modal-open="demo-modal">เปิด Modal ตัวอย่าง</button>
+          <button class="btn btn--danger" data-modal-open="delete-modal">ลบรายการ…</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal: confirm -->
+<div class="modal-backdrop" id="demo-modal" role="dialog" aria-modal="true" aria-labelledby="demo-modal-title" hidden>
+  <div class="modal">
+    <header class="modal__header">
+      <h2 class="modal__title" id="demo-modal-title">ยืนยันการรับของเข้า</h2>
+      <button class="modal__close" data-modal-close aria-label="ปิด">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <p style="margin:0 0 var(--space-3)">กำลังเพิ่มสต๊อก <strong>เส้นเล็ก (NDL-001)</strong> จำนวน <strong>30 กก.</strong> เข้าระบบ</p>
+      <p style="margin:0;color:var(--color-ink-500);font-size:var(--fs-body-sm)">รายการนี้จะอัปเดตสต๊อกทันทีและบันทึกใน activity log</p>
+    </div>
+    <footer class="modal__footer">
+      <button class="btn btn--ghost" data-modal-close>ยกเลิก</button>
+      <button class="btn btn--primary">ยืนยัน</button>
+    </footer>
+  </div>
+</div>
+
+<!-- Modal: destructive -->
+<div class="modal-backdrop" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="del-modal-title" hidden>
+  <div class="modal">
+    <header class="modal__header">
+      <h2 class="modal__title" id="del-modal-title">ลบรายการสินค้า?</h2>
+      <button class="modal__close" data-modal-close aria-label="ปิด">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <p style="margin:0">รายการที่ลบจะไม่สามารถกู้คืนได้ คุณแน่ใจหรือไม่?</p>
+    </div>
+    <footer class="modal__footer">
+      <button class="btn btn--ghost" data-modal-close>ยกเลิก</button>
+      <button class="btn btn--danger">ลบรายการ</button>
+    </footer>
+  </div>
+</div>
+
+<script>
+  // --- Minimal vanilla JS: modal open/close, table sort ------------------
+  // Portable to the target Supabase + vanilla stack. No framework.
+
+  // Modal ------------------------------------------------------------------
+  const modals = document.querySelectorAll('.modal-backdrop');
+  let lastTrigger = null;
+  document.addEventListener('click', (e) => {
+    const openBtn = e.target.closest('[data-modal-open]');
+    if (openBtn) {
+      const id = openBtn.getAttribute('data-modal-open');
+      const m = document.getElementById(id);
+      if (m) {
+        lastTrigger = openBtn;
+        m.hidden = false;
+        const focusable = m.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        focusable && focusable.focus();
+      }
+    }
+    if (e.target.matches('.modal-backdrop') || e.target.closest('[data-modal-close]')) {
+      const m = e.target.closest('.modal-backdrop');
+      if (m) { m.hidden = true; lastTrigger && lastTrigger.focus(); }
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      modals.forEach(m => { if (!m.hidden) { m.hidden = true; lastTrigger && lastTrigger.focus(); } });
+    }
+  });
+
+  // Table sort -------------------------------------------------------------
+  const table = document.getElementById('stock-table');
+  if (table) {
+    const tbody = table.querySelector('tbody');
+    const headers = table.querySelectorAll('.th-sort');
+    headers.forEach(h => {
+      h.addEventListener('click', () => {
+        const key = h.dataset.sort;
+        const cur = h.getAttribute('aria-sort');
+        const dir = cur === 'ascending' ? 'descending' : 'ascending';
+        headers.forEach(x => x.setAttribute('aria-sort', 'none'));
+        h.setAttribute('aria-sort', dir);
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const idx = Array.from(h.parentNode.children).indexOf(h);
+        rows.sort((a, b) => {
+          const av = a.children[idx].innerText.trim();
+          const bv = b.children[idx].innerText.trim();
+          const an = parseFloat(av.replace(/[^0-9.\-]/g, ''));
+          const bn = parseFloat(bv.replace(/[^0-9.\-]/g, ''));
+          const cmp = !isNaN(an) && !isNaN(bn)
+            ? an - bn
+            : av.localeCompare(bv, 'th');
+          return dir === 'ascending' ? cmp : -cmp;
+        });
+        rows.forEach(r => tbody.appendChild(r));
+      });
+    });
+  }
+</script>
+
+</body>
+</html>

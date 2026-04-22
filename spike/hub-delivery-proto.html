@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · hub-delivery prototype (Phase 1D)</title>
+<link rel="stylesheet" href="tokens.css?v=20260422b" />
+<script>
+  try {
+    var saved = localStorage.getItem('nntn_theme');
+    if (saved === 'warm' || saved === null) {
+      localStorage.removeItem('nntn_theme');
+      document.documentElement.removeAttribute('data-theme');
+    }
+  } catch(e){}
+</script>
+<style>
+  body { background: var(--color-bg-app); color: var(--color-ink-800); font-family: var(--font-sans); }
+  .page { max-width: 1440px; margin: 0 auto; padding: 32px 24px 100px; }
+
+  .top { display:flex; gap:14px; align-items:center; font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-ink-600); margin-bottom: var(--space-5);}
+  .top .dot { width:10px; height:10px; border-radius:50%; background: var(--color-primary-600); box-shadow: 0 0 0 4px var(--color-primary-100);}
+  .top .crumbs { margin-left:auto; color: var(--color-ink-500);}
+  .back-link { color: var(--color-primary-700); text-decoration: none; border-bottom: 1px dotted currentColor;}
+
+  h1.page-h { font-family: var(--font-display); font-weight: 500; font-size: 48px; line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 var(--space-3); color: var(--color-ink-900); max-width: 900px;}
+  h1 .hi { color: var(--color-primary-700);}
+  .page-lede { font-size: 17px; line-height: 1.6; color: var(--color-ink-700); max-width: 820px; margin: 0 0 var(--space-4);}
+  .page-lede b { color: var(--color-primary-700);}
+
+  .bug-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: var(--space-7);}
+  @media (max-width: 900px){ .bug-strip { grid-template-columns: 1fr;}}
+  .bug { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-lg); padding: 18px 20px; display:grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start;}
+  .bug__ic { width: 46px; height: 46px; border-radius: var(--radius-md); background: var(--color-danger-50); color: var(--color-danger-700); display:grid; place-items: center; font-family: var(--font-display); font-weight: 600; font-size: 20px; flex-shrink: 0;}
+  .bug__id { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-danger-700); margin-bottom: 4px;}
+  .bug__t  { font-family: var(--font-display); font-weight: 600; font-size: 18px; margin: 0 0 4px; color: var(--color-ink-900);}
+  .bug__d  { font-size: 13px; line-height: 1.55; color: var(--color-ink-700);}
+  .bug__fix { display:inline-flex; align-items: center; gap:6px; margin-top: 8px; font-size: 12px; color: var(--color-primary-700); font-weight: 600; font-family: var(--font-mono); letter-spacing: .3px;}
+  .bug__fix::before { content: "→ FIX"; background: var(--color-primary-100); color: var(--color-primary-800); padding: 2px 6px; border-radius: 3px; font-size: 9px;}
+
+  /* ────────── 2-col showcase: phone + annotation ────────── */
+  .showcase { display: grid; grid-template-columns: 390px 1fr; gap: 48px; margin-bottom: var(--space-8); align-items: start;}
+  @media (max-width: 1020px){ .showcase { grid-template-columns: 1fr; justify-items: start;}}
+  .annot { font-size: 14px; line-height: 1.6;}
+  .annot__h { font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-accent-600); margin: 0 0 4px;}
+  .annot__t { font-family: var(--font-display); font-weight: 500; font-size: 28px; letter-spacing: -0.01em; color: var(--color-ink-900); margin: 0 0 var(--space-3);}
+  .annot ul { padding-left: 18px; color: var(--color-ink-700);}
+  .annot li { margin-bottom: 8px;}
+  .annot li b { color: var(--color-ink-900);}
+  .annot .pill { display:inline-block; font-family: var(--font-mono); font-size: 11px; background: var(--color-ink-100); color: var(--color-ink-800); padding: 2px 6px; border-radius: 3px; letter-spacing: .3px;}
+  .annot .kbd { display:inline-block; font-family: var(--font-mono); font-size: 11px; background: var(--color-primary-50); color: var(--color-primary-800); padding: 2px 7px; border-radius: 3px; border: 1px solid var(--color-primary-200);}
+
+  /* ────────── Phone frame ────────── */
+  .phone { width: 390px; height: 780px; border-radius: 48px; padding: 14px; background: #1A1F1A; box-shadow: 0 28px 70px rgba(8, 32, 14, 0.38), inset 0 0 0 1px rgba(255,255,255,0.05); position: relative; margin: 0 auto;}
+  .phone__screen { width: 100%; height: 100%; border-radius: 36px; background: var(--color-bg-app); overflow: hidden; position: relative; display: flex; flex-direction: column;}
+  .phone__bar { display: flex; justify-content: space-between; padding: 14px 28px 6px; font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--color-ink-900);}
+
+  .hd { padding: 14px 20px 12px; background: #fff; border-bottom: 1px solid var(--color-ink-200); display:grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center;}
+  .hd .back { width: 36px; height: 36px; border-radius: 50%; background: var(--color-ink-100); color: var(--color-ink-700); display:grid; place-items: center; font-size: 18px;}
+  .hd .t { font-family: var(--font-display); font-weight: 500; font-size: 19px; color: var(--color-ink-900); line-height: 1.1;}
+  .hd .s { font-size: 11px; color: var(--color-ink-500); font-family: var(--font-mono); margin-top: 2px;}
+  .hd .more { width: 36px; height: 36px; display:grid; place-items: center; color: var(--color-ink-600); font-size: 20px;}
+
+  .body { flex:1; overflow-y: auto; padding: 14px 16px 14px;}
+  .body--dark { background: var(--color-bg-sunken);}
+
+  /* Bottom CTA */
+  .cta { padding: 12px 14px 20px; background: #fff; border-top: 1px solid var(--color-ink-200);}
+  .cta .btn { display: inline-flex; width: 100%; padding: 15px 20px; border-radius: var(--radius-md); border: none; font-family: var(--font-sans); font-weight: 700; font-size: 15px; cursor: pointer; justify-content: center; align-items: center; gap: 8px; line-height: 1;}
+  .cta .btn--primary { background: var(--color-primary-600); color: #fff; box-shadow: var(--shadow-primary);}
+  .cta .btn--gold { background: var(--color-accent-500); color: var(--color-primary-900); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.12);}
+
+  /* ────────── Draft banner (B2 fix) ────────── */
+  .draft-banner {
+    background: linear-gradient(180deg, #FBF3DC 0%, #F5E0A4 100%);
+    border: 1px solid var(--color-accent-300);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    display: grid; grid-template-columns: 32px 1fr; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .draft-banner__ic { width: 28px; height: 28px; background: var(--color-accent-500); border-radius: 50%; color: var(--color-primary-900); display:grid; place-items: center; font-weight: 800;}
+  .draft-banner__t { font-weight: 700; color: var(--color-primary-900); font-size: 13px; line-height: 1.3;}
+  .draft-banner__d { font-size: 12px; color: var(--color-primary-800); margin-top: 3px; line-height: 1.45;}
+  .draft-banner__row { display:flex; gap: 8px; margin-top: 8px;}
+  .draft-banner__row button { flex: 1; padding: 8px 10px; border-radius: var(--radius-sm); border: none; font-size: 12px; font-weight: 700; cursor: pointer; font-family: var(--font-sans);}
+  .draft-banner__row .resume { background: var(--color-primary-700); color: #fff;}
+  .draft-banner__row .clear  { background: #fff; color: var(--color-primary-800); border: 1px solid var(--color-primary-300);}
+
+  /* Auto-clear success toast (after submit) */
+  .autoclear {
+    background: var(--color-success-50);
+    border: 1px solid var(--color-success-100);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    display: grid; grid-template-columns: 24px 1fr; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .autoclear__ic { width: 20px; height: 20px; background: var(--color-success-500); border-radius: 50%; color: #fff; display:grid; place-items: center; font-size: 11px; margin-top: 2px;}
+  .autoclear__t { font-weight: 700; color: var(--color-success-700); font-size: 13px;}
+  .autoclear__d { font-size: 12px; color: var(--color-success-700); margin-top: 2px; line-height: 1.45;}
+
+  /* ────────── Branch chooser chips ────────── */
+  .chooser-h { font-size: 12px; font-weight: 700; color: var(--color-ink-800); margin: 2px 2px 8px; letter-spacing: .2px;}
+  .chooser { display: grid; grid-template-columns: 1fr 1fr; gap: 8px;}
+  .chooser__chip { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 10px 12px; cursor: pointer; text-align: left;}
+  .chooser__chip b { display: block; font-size: 13px; color: var(--color-ink-900); font-weight: 700;}
+  .chooser__chip small { display: block; color: var(--color-ink-500); font-size: 11px; font-family: var(--font-mono); margin-top: 2px;}
+  .chooser__chip.on { border-color: var(--color-primary-500); background: var(--color-primary-50); box-shadow: 0 0 0 3px rgba(47, 97, 56, 0.12);}
+
+  /* ────────── Section blocks ────────── */
+  .block { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); margin-top: 12px; overflow: hidden;}
+  .block__h { padding: 10px 14px; border-bottom: 1px solid var(--color-ink-100); display:flex; align-items: center; gap: 8px;}
+  .block__h b { font-size: 13px; font-weight: 700; color: var(--color-ink-900);}
+  .block__h .count { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-500); margin-left: auto;}
+  .block__h .toggle { margin-left: 8px; color: var(--color-ink-400); font-size: 16px;}
+  .block__inner { padding: 6px;}
+
+  /* line item compact */
+  .lin { display: grid; grid-template-columns: 32px 1fr auto; gap: 10px; padding: 10px 8px; border-bottom: 1px dashed var(--color-ink-100); align-items: center;}
+  .lin:last-child { border-bottom: none;}
+  .lin__ic { width: 28px; height: 28px; border-radius: 6px; display:grid; place-items: center; font-family: var(--font-display); font-weight: 600; font-size: 13px;}
+  .lin__n { font-size: 13px; font-weight: 600; color: var(--color-ink-900); line-height: 1.2;}
+  .lin__sku { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); margin-top: 2px; letter-spacing: .3px;}
+  .lin__q { font-family: var(--font-mono); font-weight: 600; text-align: right; color: var(--color-ink-900); font-size: 14px; font-variant-numeric: tabular-nums;}
+  .lin__q small { display:block; font-size: 10px; color: var(--color-ink-500); font-family: var(--font-mono); font-weight: 400;}
+  .lin.meat  .lin__ic { background: #FADFD7; color: #8F1A0B;}
+  .lin.veg   .lin__ic { background: #DCEADE; color: #134A22;}
+  .lin.sauce .lin__ic { background: #E9DEF0; color: #5A2F7C;}
+  .lin.noodle .lin__ic { background: #FBF3DC; color: #7E5A11;}
+  .lin.dry   .lin__ic { background: var(--color-ink-100); color: var(--color-ink-700);}
+
+  /* Stock badge on draft rows (decision d44c66d) */
+  .stk { font-family: var(--font-mono); font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 600; margin-left: 6px;}
+  .stk--ok   { background: #DCEADE; color: #134A22;}
+  .stk--warn { background: #FBF3DC; color: #7E5A11;}
+  .stk--bad  { background: #FADFD7; color: #6E1307;}
+
+  /* ────────── Merged bill summary (B6 fix) ────────── */
+  .summary { background: var(--color-primary-50); border: 1px solid var(--color-primary-200); border-radius: var(--radius-md); padding: 12px; margin-top: 12px;}
+  .summary__h { display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;}
+  .summary__h b { font-size: 13px; color: var(--color-primary-800); font-weight: 700;}
+  .summary__h small { font-family: var(--font-mono); font-size: 11px; color: var(--color-primary-700);}
+  .summary__grid { display:grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin-top: 6px;}
+  .summary__cell { background: #fff; padding: 8px 6px; text-align: center;}
+  .summary__cell:first-child { border-top-left-radius: 6px; border-bottom-left-radius: 6px;}
+  .summary__cell:last-child  { border-top-right-radius: 6px; border-bottom-right-radius: 6px;}
+  .summary__cell b { display:block; font-family: var(--font-mono); font-size: 15px; color: var(--color-ink-900); font-variant-numeric: tabular-nums;}
+  .summary__cell small { display:block; font-size: 10px; color: var(--color-ink-500); margin-top: 2px; text-transform: uppercase; letter-spacing: 1px;}
+  .summary__grouphint { font-size: 11px; color: var(--color-primary-700); margin-top: 8px; display:flex; gap: 6px; align-items: center;}
+  .summary__grouphint::before { content: "◆"; color: var(--color-accent-600);}
+
+  /* ────────── History group card (B6 fix) ────────── */
+  .hist-card { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 12px; margin-bottom: 10px;}
+  .hist-card__h { display:grid; grid-template-columns: 1fr auto; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--color-ink-100);}
+  .hist-card__branch { font-family: var(--font-display); font-weight: 500; font-size: 15px; color: var(--color-ink-900);}
+  .hist-card__date { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-500);}
+  .hist-card__total { text-align: right; font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--color-primary-800); line-height: 1; font-variant-numeric: tabular-nums;}
+  .hist-card__total small { display:block; font-size: 10px; color: var(--color-ink-500); font-weight: 400; letter-spacing: .8px; text-transform: uppercase; margin-top: 2px;}
+  .hist-card__bills { margin-top: 8px; display: flex; flex-direction: column; gap: 4px;}
+  .hist-card__bill { display: grid; grid-template-columns: 100px 1fr auto; gap: 8px; align-items: center; font-size: 12px; padding: 5px 8px; border-radius: 4px; background: var(--color-ink-50);}
+  .hist-card__bill:hover { background: var(--color-primary-50);}
+  .hist-card__bill code { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-700);}
+  .hist-card__bill .tag { padding: 1px 6px; font-size: 10px; border-radius: 3px; font-family: var(--font-mono); font-weight: 600; letter-spacing: .3px;}
+  .hist-card__bill .tag--m  { background: #FADFD7; color: #6E1307;}
+  .hist-card__bill .tag--nm { background: #DCEADE; color: #134A22;}
+  .hist-card__bill .qty { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; color: var(--color-ink-900);}
+  .hist-card__expand { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--color-ink-100); text-align: center; font-size: 12px; color: var(--color-primary-700); font-weight: 600; cursor: pointer;}
+
+  /* ────────── Action row ────────── */
+  .act-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;}
+  .act-row button { padding: 10px 12px; border-radius: var(--radius-sm); font-family: var(--font-sans); font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--color-ink-200); background: #fff; color: var(--color-ink-800);}
+  .act-row .act-row__primary { background: var(--color-primary-50); border-color: var(--color-primary-300); color: var(--color-primary-800);}
+
+  /* Big CTA variations */
+  .summary-cta { font-size: 15px; display: flex; justify-content: space-between; align-items: baseline;}
+  .summary-cta b { font-family: var(--font-display); font-size: 20px; font-weight: 600;}
+
+  /* Frame caption */
+  .frame-cap { margin: 10px auto 0; text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-500); letter-spacing: 1.3px; text-transform: uppercase; max-width: 390px;}
+  .frame-cap b { color: var(--color-primary-700); font-weight: 600; letter-spacing: .5px;}
+
+  /* Rule divider */
+  .rule { text-align: center; color: var(--color-accent-600); margin: var(--space-8) 0 var(--space-6); letter-spacing: 14px;}
+
+  /* Summary block section (end of page) */
+  .cap-box { background: var(--color-bg-surface); border: 1px solid var(--color-ink-200); border-radius: var(--radius-lg); padding: var(--space-5); margin-top: var(--space-8);}
+  .cap-box h2 { font-family: var(--font-display); font-weight: 500; font-size: 28px; margin: 0 0 10px; color: var(--color-ink-900); letter-spacing: -0.01em;}
+  .cap-grid { display:grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); margin-top: var(--space-4);}
+  @media (max-width: 820px){ .cap-grid { grid-template-columns: 1fr;}}
+  .cap-grid h3 { font-size: 14px; color: var(--color-primary-800); margin: 0 0 6px; font-weight: 700;}
+  .cap-grid p { font-size: 13px; color: var(--color-ink-700); margin: 0 0 10px; line-height: 1.5;}
+  .cap-grid code { font-family: var(--font-mono); background: var(--color-ink-100); padding: 1px 6px; border-radius: 3px; font-size: 12px;}
+
+  /* Show bills "as-db" vs "grouped" */
+  .db-scatter { background: #fff; border: 1px dashed var(--color-danger-300, #F0B7A8); border-radius: var(--radius-md); padding: 10px; margin-top: 8px;}
+  .db-scatter__h { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-danger-700); margin-bottom: 8px;}
+  .db-scatter__row { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-700); padding: 4px 6px; border-radius: 3px; background: var(--color-danger-50); margin-bottom: 3px;}
+  .db-scatter__row b { color: var(--color-ink-900); margin-right: 8px; font-weight: 700;}
+
+  /* Cookie-empty states */
+  .empty { text-align: center; padding: 18px; color: var(--color-ink-500); font-size: 13px;}
+
+  /* Diff viz — before/after */
+  .diff { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; background: var(--color-ink-50); border-radius: var(--radius-lg); padding: var(--space-5); margin-top: var(--space-5);}
+  .diff h3 { margin: 0 0 10px; font-size: 14px; font-weight: 700;}
+  .diff h3 small { display: inline-block; font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; margin-left: 6px; padding: 2px 6px; border-radius: 3px; text-transform: uppercase;}
+  .diff .before h3 small { background: var(--color-danger-50); color: var(--color-danger-700);}
+  .diff .after  h3 small { background: var(--color-success-50); color: var(--color-success-700);}
+  .diff img, .diff .mock { display: block; max-width: 100%; border-radius: var(--radius-sm);}
+
+  /* Flow arrows */
+  .flow { display: grid; grid-template-columns: repeat(4, 1fr) auto repeat(1, 1fr); gap: 8px; align-items: center; margin-top: var(--space-3);}
+  .flow-step { background: var(--color-bg-surface); border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 10px; font-size: 12px; text-align: center; line-height: 1.35;}
+  .flow-step b { font-family: var(--font-display); font-size: 15px; font-weight: 600; display:block; color: var(--color-ink-900); margin-bottom: 2px;}
+  .flow-step small { display:block; font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .5px; text-transform: uppercase;}
+  .flow-arrow { color: var(--color-accent-500); font-weight: 700;}
+  .flow-step.active { border-color: var(--color-primary-500); background: var(--color-primary-50);}
+
+  @keyframes gpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(201, 150, 44, 0.55);} 50% { box-shadow: 0 0 0 8px rgba(201, 150, 44, 0);} }
+  .glow { animation: gpulse 1.6s ease-in-out infinite;}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="top">
+    <span class="dot"></span>
+    <span>NNTN · Design Spike</span>
+    <span class="crumbs">PHASE 1D · hub-delivery · <a class="back-link" href="index.html">← hub</a></span>
+  </div>
+
+  <h1 class="page-h">hub‑delivery ที่<br/><span class="hi">ไม่ทิ้ง draft ค้าง</span> และ<br/><span class="hi">รวมบิลให้เหลือใบเดียว</span></h1>
+  <p class="page-lede">
+    Blueprint §5 บันทึกบั๊กไว้ 2 ตัว — <b>B2</b> draft ไม่ถูกลบหลัง submit บล็อคการส่งซ้ำ, และ <b>B6</b> การส่งเนื้อ+ของแห้งรวมทริปเดียวแตกเป็น 4 บิล (M/NM/M2/NM2)
+    · prototype นี้แก้ทั้งคู่ด้วย UI pattern · <b>ไม่ต้องแก้ schema</b>
+  </p>
+
+  <!-- Bug strip -->
+  <div class="bug-strip">
+    <div class="bug">
+      <div class="bug__ic">B2</div>
+      <div>
+        <div class="bug__id">P1 · hub-delivery stale draft</div>
+        <h3 class="bug__t">Draft ไม่ถูกลบหลัง submit</h3>
+        <p class="bug__d">submit_delivery สำเร็จ → row ใน delivery_drafts ยังอยู่ → กด "ส่งออก" ครั้งหน้าเจอ draft bill_no เดิม UI คิดว่ายังไม่ได้ส่ง → block การ re-submit · Workaround ปัจจุบัน: manual DELETE SQL</p>
+        <div class="bug__fix">submit ล้าง draft อัตโนมัติ + inline warning ถ้าเจอ orphan</div>
+      </div>
+    </div>
+    <div class="bug">
+      <div class="bug__ic">B6</div>
+      <div>
+        <div class="bug__id">P3 · 4-bill scatter</div>
+        <h3 class="bug__t">ทริปเดียวแตก 4 บิล</h3>
+        <p class="bug__d">เวลาส่ง FoodStory เนื้อ+ของแห้งพร้อมกัน DB เก็บแยก 4 rows: <code>FS20260422-1 · -NM · -M2 · -NM2</code> เพราะ <code>bill_no UNIQUE</code> → ลูกค้าได้ 4 ใบ user งง · Schema ห้ามแตะ</p>
+        <div class="bug__fix">UI รวมทุก bill_no ที่ date+branch เดียวกันเป็น "ใบส่งของ 1 trip"</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════ Showcase 1 — Compose (B6 fix preview) ═════════ -->
+  <div class="rule">◆ ◆ ◆</div>
+
+  <section class="showcase">
+    <div>
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__bar"><span>09:42</span><span>◆ 100%</span></div>
+          <div class="hd">
+            <div class="back">←</div>
+            <div>
+              <div class="t">ส่งออก FoodStory</div>
+              <div class="s">22/04/2026 · trip 1</div>
+            </div>
+            <div class="more">⋯</div>
+          </div>
+
+          <div class="body">
+
+            <!-- Draft resume banner (B2 preview) -->
+            <div class="draft-banner">
+              <div class="draft-banner__ic">!</div>
+              <div>
+                <div class="draft-banner__t">มี draft ค้างจากเมื่อวาน</div>
+                <div class="draft-banner__d">FS20260421-3 · วิชรธรรม 53 · 6 รายการ — ยังไม่ได้ส่ง</div>
+                <div class="draft-banner__row">
+                  <button class="resume">ทำต่อ</button>
+                  <button class="clear">เริ่มใหม่</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="chooser-h">สาขาปลายทาง</div>
+            <div class="chooser">
+              <button class="chooser__chip on">
+                <b>วิชรธรรม 53</b>
+                <small>FS-WJR-53</small>
+              </button>
+              <button class="chooser__chip">
+                <b>พระราม 9</b>
+                <small>FS-RM9</small>
+              </button>
+            </div>
+
+            <!-- Meat bag block -->
+            <div class="block">
+              <div class="block__h">
+                <b>เนื้อตุ๋น (คลัง C)</b>
+                <span class="count">8 ถุง · 6.4 kg</span>
+                <span class="toggle">▾</span>
+              </div>
+              <div class="block__inner">
+                <div class="lin meat">
+                  <div class="lin__ic">น</div>
+                  <div>
+                    <div class="lin__n">เนื้อตุ๋นน่องลาย <span class="stk stk--ok">คลัง C ✓</span></div>
+                    <div class="lin__sku">NNTN-BEEF-STEW-001 · #3298-3305</div>
+                  </div>
+                  <div class="lin__q">6.400<small>kg · 8 ถุง</small></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- NM block -->
+            <div class="block">
+              <div class="block__h">
+                <b>ของแห้ง / น้ำซุป</b>
+                <span class="count">3 รายการ</span>
+                <span class="toggle">▾</span>
+              </div>
+              <div class="block__inner">
+                <div class="lin sauce">
+                  <div class="lin__ic">ซ</div>
+                  <div>
+                    <div class="lin__n">น้ำซุปต้นรอบเช้า <span class="stk stk--ok">22.4 L ✓</span></div>
+                    <div class="lin__sku">NNTN-BROTH-A-R1</div>
+                  </div>
+                  <div class="lin__q">3.600<small>kg · 2 ถุง</small></div>
+                </div>
+                <div class="lin noodle">
+                  <div class="lin__ic">ส</div>
+                  <div>
+                    <div class="lin__n">เส้นเล็ก <span class="stk stk--warn">เหลือ 4.2 kg ⚠</span></div>
+                    <div class="lin__sku">NNTN-NOODLE-S-02</div>
+                  </div>
+                  <div class="lin__q">2.000<small>kg · 4 ถุง</small></div>
+                </div>
+                <div class="lin dry">
+                  <div class="lin__ic">ป</div>
+                  <div>
+                    <div class="lin__n">ชุดเครื่องปรุง <span class="stk stk--bad">PKG ยังไม่ cascade ❌</span></div>
+                    <div class="lin__sku">PKG-009 · B3 pending</div>
+                  </div>
+                  <div class="lin__q">1<small>ชุด</small></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Merged bill summary (B6 fix) -->
+            <div class="summary">
+              <div class="summary__h">
+                <b>สรุปใบส่ง · 1 trip</b>
+                <small>รวม 4 รายการ</small>
+              </div>
+              <div class="summary__grid">
+                <div class="summary__cell"><b>8</b><small>ถุงเนื้อ</small></div>
+                <div class="summary__cell"><b>6</b><small>ของแห้ง</small></div>
+                <div class="summary__cell"><b>13.0</b><small>kg รวม</small></div>
+                <div class="summary__cell"><b>1</b><small>ใบ</small></div>
+              </div>
+              <div class="summary__grouphint">UI รวมเป็นใบเดียว · DB เก็บ 4 bill_no (M/NM/M2/NM2)</div>
+            </div>
+
+          </div>
+
+          <div class="cta">
+            <button class="btn btn--primary glow">◆ ยืนยันส่งออก 13.0 kg</button>
+          </div>
+
+        </div>
+      </div>
+      <div class="frame-cap">screen 01 · <b>ประกอบบิล</b> · bags + nm ในใบเดียว</div>
+    </div>
+
+    <div class="annot">
+      <div class="annot__h">SCREEN 01 · compose</div>
+      <h2 class="annot__t">หน้าเดียวจบ — ไม่แยก meat / nm</h2>
+      <ul>
+        <li><b>Draft banner ด้านบน</b> คือ Fix B2 — ถ้าเจอ draft ค้างที่ <span class="pill">bill_no</span> ยัง submit ไม่สำเร็จ โชว์ทันที user เลือก <span class="kbd">ทำต่อ</span> หรือ <span class="kbd">เริ่มใหม่</span> (ล้าง draft) ไม่ต้องวิ่งหา admin ยิง DELETE SQL</li>
+        <li><b>Stock badge inline</b> (decision d44c66d) · เนื้อ/nm ทุก row โชว์สถานะคลัง C ≥ qty ไหม — draft rows เจอ stock mismatch <i>ก่อน</i> submit day ไม่ใช่เจอตอนกด submit</li>
+        <li><b>หนึ่งบล็อคต่อประเภท</b> — เนื้อตุ๋น (catch_weight ถุง) + ของแห้ง/น้ำซุป (stock_counts) · user เห็น 2 ช่องใน 1 หน้า ไม่ต้องกระโดดไปอีกแท็บ</li>
+        <li><b>Summary card ล่างสุด</b> = B6 fix preview — 8 ถุง + 6 nm = <b>1 ใบ</b> · UI บอกชัด "DB เก็บ 4 rows" เพื่อ transparency ไม่หลอกน้อง</li>
+        <li><b>CTA เดียว gold glow</b> — "◆ ยืนยันส่งออก 13.0 kg" · submit RPC <span class="pill">stock.submit_delivery</span> จะ wrap transaction แตก 4 rows ใน DB แต่ user เห็นใบเดียว</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ═════════ Showcase 2 — Submit success (B2 fix) ═════════ -->
+  <div class="rule">◆ ◆ ◆</div>
+
+  <section class="showcase">
+    <div class="annot">
+      <div class="annot__h">SCREEN 02 · after submit</div>
+      <h2 class="annot__t">Draft ถูกเคลียร์ทันที — ไม่มีวิธีลืม</h2>
+      <ul>
+        <li><b>Auto-clear toast เขียว</b> · Fix B2 ตัวจริง — หลัง <span class="pill">submit_delivery</span> return success, client ยิง <span class="pill">DELETE delivery_drafts WHERE bill_no IN (...)</span> ทันที · UI confirm "ล้าง draft แล้ว 4 rows"</li>
+        <li><b>Bill group card</b> โชว์ <b>ใบเดียว</b> พร้อมสรุปทริป แต่ใต้หัวคาร์ด expand ได้เห็น 4 bill_no จริง — transparency + user สามารถ copy ไปแจ้งลูกค้าได้</li>
+        <li><b>Print / LINE share</b> — ปุ่ม share กล่องเดียว ไม่ต้อง print 4 ใบ · QR/PDF รวม 4 bill_no หลังบ้าน</li>
+        <li><b>ปุ่ม "ส่งใหม่ทริปนี้"</b> — ถ้าวันเดียวกันมีทริป 2 (trip 2, trip 3) ระบบ auto-append <span class="pill">-TRIP2</span> suffix ไม่ชน bill_no เดิม · B6 root cause (UNIQUE constraint) ไม่โผล่เป็นบั๊กต่อไป</li>
+        <li><b>History ย้อนหลัง</b> ในหน้าถัดไปจะ group เหมือนกัน — ถ้าเผลอสแกนเวิร์กโฟลว์เก่า 4 ใบ → เห็น 1 การ์ดเสมอ</li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__bar"><span>09:45</span><span>◆ 100%</span></div>
+          <div class="hd">
+            <div class="back">←</div>
+            <div>
+              <div class="t">ส่งออกสำเร็จ</div>
+              <div class="s">22/04 · วิชรธรรม 53</div>
+            </div>
+            <div class="more">⋯</div>
+          </div>
+
+          <div class="body">
+
+            <!-- Success + auto-clear -->
+            <div class="autoclear">
+              <div class="autoclear__ic">✓</div>
+              <div>
+                <div class="autoclear__t">ส่งออกสำเร็จ · ตัดสต๊อกแล้ว</div>
+                <div class="autoclear__d">stock_counts −22.4 L · catch_weight 8 ถุง Delivered · <b>ล้าง draft แล้ว 4 rows</b></div>
+              </div>
+            </div>
+
+            <!-- Merged bill group card (as-user-sees-it) -->
+            <div class="hist-card" style="border-color: var(--color-primary-300); background: var(--color-primary-50);">
+              <div class="hist-card__h">
+                <div>
+                  <div class="hist-card__branch">FoodStory วิชรธรรม 53</div>
+                  <div class="hist-card__date">22/04/2026 · 09:44 · ไทน์</div>
+                </div>
+                <div class="hist-card__total">13.000<small>kg · 4 ใบ</small></div>
+              </div>
+              <div class="hist-card__bills">
+                <div class="hist-card__bill">
+                  <code>FS20260422-1</code>
+                  <span class="tag tag--m">M · เนื้อ</span>
+                  <span class="qty">6.4 kg</span>
+                </div>
+                <div class="hist-card__bill">
+                  <code>FS20260422-NM</code>
+                  <span class="tag tag--nm">NM · น้ำซุป+เส้น</span>
+                  <span class="qty">5.6 kg</span>
+                </div>
+                <div class="hist-card__bill">
+                  <code>FS20260422-M2</code>
+                  <span class="tag tag--m">M · เนื้อ</span>
+                  <span class="qty">—</span>
+                </div>
+                <div class="hist-card__bill">
+                  <code>FS20260422-NM2</code>
+                  <span class="tag tag--nm">NM · PKG</span>
+                  <span class="qty">1.0 kg</span>
+                </div>
+              </div>
+              <div class="hist-card__expand">ดูรายละเอียดตามรายการ ▾</div>
+            </div>
+
+            <div class="act-row">
+              <button>🖨 พิมพ์ 1 ใบ</button>
+              <button class="act-row__primary">⧉ แชร์ LINE</button>
+            </div>
+
+          </div>
+
+          <div class="cta">
+            <button class="btn btn--gold">เริ่มทริปถัดไป</button>
+          </div>
+
+        </div>
+      </div>
+      <div class="frame-cap">screen 02 · <b>ส่งสำเร็จ</b> · auto-clear draft + group 4 bills</div>
+    </div>
+  </section>
+
+  <!-- ═════════ Showcase 3 — History (B6 fix full) ═════════ -->
+  <div class="rule">◆ ◆ ◆</div>
+
+  <section class="showcase">
+    <div>
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__bar"><span>09:46</span><span>◆ 100%</span></div>
+          <div class="hd">
+            <div class="back">←</div>
+            <div>
+              <div class="t">ประวัติการส่งออก</div>
+              <div class="s">7 วันล่าสุด · 16 ทริป</div>
+            </div>
+            <div class="more">⋯</div>
+          </div>
+
+          <div class="body body--dark">
+
+            <!-- Today: the trip we just closed -->
+            <div style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-ink-500); margin: 4px 4px 8px;">วันนี้ · 22/04</div>
+
+            <div class="hist-card">
+              <div class="hist-card__h">
+                <div>
+                  <div class="hist-card__branch">FoodStory วิชรธรรม 53</div>
+                  <div class="hist-card__date">09:44 · ไทน์</div>
+                </div>
+                <div class="hist-card__total">13.000<small>kg · 4 ใบ</small></div>
+              </div>
+              <div class="hist-card__bills">
+                <div class="hist-card__bill">
+                  <code>FS20260422-1</code>
+                  <span class="tag tag--m">M</span>
+                  <span class="qty">6.4 kg</span>
+                </div>
+                <div class="hist-card__bill">
+                  <code>FS20260422-NM</code>
+                  <span class="tag tag--nm">NM</span>
+                  <span class="qty">5.6 kg</span>
+                </div>
+                <div class="hist-card__bill">
+                  <code>FS20260422-M2 / NM2</code>
+                  <span class="tag tag--nm">+2</span>
+                  <span class="qty">1.0 kg</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="hist-card">
+              <div class="hist-card__h">
+                <div>
+                  <div class="hist-card__branch">หน้าร้าน · สาขาเก่า</div>
+                  <div class="hist-card__date">08:20 · น้องเบส</div>
+                </div>
+                <div class="hist-card__total">4.200<small>kg · 1 ใบ</small></div>
+              </div>
+              <div class="hist-card__bills">
+                <div class="hist-card__bill">
+                  <code>NT20260422-3</code>
+                  <span class="tag tag--nm">NM</span>
+                  <span class="qty">4.2 kg</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Yesterday -->
+            <div style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-ink-500); margin: 14px 4px 8px;">เมื่อวาน · 21/04</div>
+
+            <div class="hist-card">
+              <div class="hist-card__h">
+                <div>
+                  <div class="hist-card__branch">FoodStory พระราม 9</div>
+                  <div class="hist-card__date">19:02 · ไทน์</div>
+                </div>
+                <div class="hist-card__total">18.800<small>kg · 2 ใบ</small></div>
+              </div>
+              <div class="hist-card__bills">
+                <div class="hist-card__bill">
+                  <code>FS20260421-4</code>
+                  <span class="tag tag--m">M</span>
+                  <span class="qty">14.0 kg</span>
+                </div>
+                <div class="hist-card__bill">
+                  <code>FS20260421-4NM</code>
+                  <span class="tag tag--nm">NM</span>
+                  <span class="qty">4.8 kg</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- DB-truth peek (collapsed example) -->
+            <div class="db-scatter">
+              <div class="db-scatter__h">🔍 DB raw — ก่อน group</div>
+              <div class="db-scatter__row"><b>FS20260422-1</b>meat · 6.4 kg</div>
+              <div class="db-scatter__row"><b>FS20260422-NM</b>nm · 5.6 kg</div>
+              <div class="db-scatter__row"><b>FS20260422-M2</b>meat · 0 kg (เสริม)</div>
+              <div class="db-scatter__row"><b>FS20260422-NM2</b>nm · 1.0 kg</div>
+              <div style="font-size: 10px; color: var(--color-ink-600); margin-top: 6px;">→ UI group by <code>date + branch</code> · 4 → 1</div>
+            </div>
+
+          </div>
+
+          <div class="cta">
+            <button class="btn btn--primary">+ ทริปใหม่</button>
+          </div>
+
+        </div>
+      </div>
+      <div class="frame-cap">screen 03 · <b>ประวัติ</b> · 4→1 bill group</div>
+    </div>
+
+    <div class="annot">
+      <div class="annot__h">SCREEN 03 · history</div>
+      <h2 class="annot__t">มองย้อน — 1 การ์ด = 1 trip ไม่ใช่ 4 rows</h2>
+      <ul>
+        <li><b>Group by date + branch + actor</b> — query view ใหม่ <span class="pill">v_delivery_trips</span> รวม bill_no ใน window เดียวกัน (±30 นาที, สาขาเดียว, คนส่งคนเดียว) → UI เห็น 1 trip</li>
+        <li><b>แสดง bill_no จริงใน sub-list</b> — ไม่ซ่อนหลัง UI เพราะ ops ต้อง reconcile กับใบส่งของลูกค้าตัวจริง (FoodStory portal เห็น 4 PO) · สามารถ tap ทุก row เปิด detail ของเดิม</li>
+        <li><b>"DB raw" expander</b> · ไว้ให้ ไทน์ / dev debug · โชว์ 4 rows จริงจาก <span class="pill">stock_counts + deliveries</span> · เป็น transparency tool ไม่ใช่ user flow หลัก</li>
+        <li><b>หน้า 47→25</b> count: ตัด page แยก "ประวัติเนื้อ" กับ "ประวัติ nm" รวมเป็น 1 — เพราะ trip เดียวไม่ควรดู 2 ที่</li>
+        <li><b>Impact</b>: ลูกค้าเจอบิลกระจาย 4 ใบเหมือนเดิม (constraint DB ยังอยู่) แต่น้อง NNTN operate ผ่าน 1 entity = feel "one trip" = ไม่ลืมเช็ค bill_no ใดไปในอีก tab</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ═════════ Flow diagram ═════════ -->
+  <div class="cap-box">
+    <h2>Flow หลังแก้ — ตัว submit เขียนอะไรบ้าง</h2>
+    <p style="font-size: 14px; color: var(--color-ink-700); margin: 0 0 12px;">submit RPC ของเดิมไม่เปลี่ยน (DB transaction เหมือนเดิม) · Client-side เพิ่ม <b>DELETE draft</b> หลัง success + refresh <code>v_delivery_trips</code></p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <b>◆ กด submit</b>
+        <small>client</small>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <b>RPC submit_delivery</b>
+        <small>stock schema · atomic</small>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step active">
+        <b>✓ Success</b>
+        <small>4 rows written</small>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step active">
+        <b>DELETE draft</b>
+        <small>B2 fix · new</small>
+      </div>
+    </div>
+
+    <div class="cap-grid">
+      <div>
+        <h3>B2 fix — 1 บรรทัดของ client code</h3>
+        <p>ใน <code>submitDelivery()</code> หลัง <code>await rpcSubmitDelivery()</code> ถ้า success → <code>await supabase.from('delivery_drafts').delete().eq('bill_no', draftBillNo)</code> · ถ้า re-open หน้า hub-delivery แล้ว query <code>delivery_drafts WHERE bill_no NOT IN (SELECT bill_no FROM deliveries)</code> → ได้ orphan drafts โชว์ banner "draft ค้างจากเมื่อวาน" · ให้ตัวเลือกทำต่อหรือล้าง</p>
+      </div>
+      <div>
+        <h3>B6 fix — 1 view ใหม่</h3>
+        <p><code>v_delivery_trips</code> = <code>SELECT branch, date(created_at), actor, SUM(qty), ARRAY_AGG(bill_no) FROM deliveries GROUP BY 1,2,3</code> · UI consume view นี้สำหรับ history list · รายละเอียด bill_no เดิมยังใช้ได้จาก <code>deliveries</code> ตรงๆ · <b>ไม่แตะ bill_no UNIQUE constraint</b></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap-box" style="background: var(--color-primary-50); border-color: var(--color-primary-200);">
+    <h2>Next · Phase 2</h2>
+    <p style="font-size: 14px; color: var(--color-ink-700); margin: 0;">
+      Phase 1 (IA + tokens + components + hub-delivery hero) เสร็จครบ 1A-1D — prototype นี้พร้อมให้ <b>ไทน์</b> review ก่อน Phase 2 คือเอา pattern เดียวกันไปทำ <b>po-receive</b>, <b>meat-stock#produce</b>, <b>count-sheet-weekly</b> · ถ้า OK แจ้งมา จะลุยไฟล์ต่อ
+    </p>
+  </div>
+
+</div>
+
+</body>
+</html>

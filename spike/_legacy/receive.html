@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>NNTN · รับของเข้าสต๊อก</title>
+<link rel="stylesheet" href="tokens.css?v=1776874424070"/>
+<link rel="stylesheet" href="app.css?v=1776874424070"/>
+<style>
+  .receive-grid { display: grid; grid-template-columns: 1fr 360px; gap: var(--space-5); }
+  @media (max-width: 1100px){ .receive-grid { grid-template-columns: 1fr; } }
+  .line-item { display: grid; grid-template-columns: 1fr 120px 120px 100px 40px; gap: var(--space-3); align-items: end; padding: var(--space-3) 0; border-bottom: var(--border-subtle); }
+  .line-item:last-child { border-bottom: none; }
+  .remove-btn { background: transparent; border: none; color: var(--color-ink-500); cursor: pointer; width: 32px; height: 32px; border-radius: var(--radius-sm); }
+  .remove-btn:hover { background: var(--color-danger-50); color: var(--color-danger-700); }
+  .summary { position: sticky; top: var(--space-4); }
+  .summary__row { display: flex; justify-content: space-between; padding: 8px 0; font-size: var(--fs-body-sm); }
+  .summary__row b { font-weight: 700; color: var(--color-ink-900); font-feature-settings: "tnum" 1; }
+  .summary__total { border-top: var(--border-default); margin-top: var(--space-3); padding-top: var(--space-3); font-size: var(--fs-h3); font-weight: 700; }
+  .notice { background: var(--color-warning-50); border: 1px solid var(--color-warning-100); color: var(--color-warning-700); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--fs-body-sm); display: flex; gap: var(--space-3); align-items: flex-start; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">ข้ามไปยังเนื้อหาหลัก</a>
+
+<div class="app">
+  <aside class="sidebar" data-sidebar data-active="stock"></aside>
+
+  <div class="main" id="main">
+    <div class="topbar">
+      <div class="topbar__title">
+        <h1>รับของเข้าสต๊อก</h1>
+        <p>บันทึกการรับวัตถุดิบเข้า · ทุกรายการจะถูกบันทึกใน activity log</p>
+      </div>
+      <div class="topbar__actions">
+        <button class="btn btn--ghost">ยกเลิก</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="receive-grid">
+        <!-- Lines -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <h2 class="card__title">รายการที่รับเข้า</h2>
+              <p class="card__subtitle">เพิ่มรายการวัตถุดิบและจำนวน · catch-weight รองรับน้ำหนักจริง</p>
+            </div>
+            <button class="btn btn--secondary" id="add-line">+ เพิ่มรายการ</button>
+          </div>
+          <div class="card__body">
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr">
+              <div class="field">
+                <label class="field__label field__label--required">ซัพพลายเออร์</label>
+                <select class="select"><option>ตลาดสดเข้า</option><option>โรงงานเส้นสมชาย</option><option>ตลาดสี่มุมเมือง</option></select>
+              </div>
+              <div class="field">
+                <label class="field__label">วันที่รับของ</label>
+                <input class="input" type="date" value="2026-04-22"/>
+              </div>
+            </div>
+
+            <div id="lines" style="margin-top: var(--space-5)">
+              <div class="line-item">
+                <div class="field">
+                  <label class="field__label">วัตถุดิบ</label>
+                  <select class="select"><option>หมูสับ · MEAT-001</option><option>เส้นเล็ก · NDL-001</option><option>ผักบุ้ง · VEG-002</option></select>
+                </div>
+                <div class="field">
+                  <label class="field__label">จำนวน</label>
+                  <input class="input" type="number" value="15"/>
+                </div>
+                <div class="field">
+                  <label class="field__label">น้ำหนักจริง (กก.)</label>
+                  <input class="input" type="number" step="0.1" value="14.8"/>
+                </div>
+                <div class="field">
+                  <label class="field__label">ราคา/หน่วย</label>
+                  <input class="input" type="number" value="180"/>
+                </div>
+                <button class="remove-btn" aria-label="ลบรายการ">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+
+              <div class="line-item">
+                <div class="field">
+                  <label class="field__label">วัตถุดิบ</label>
+                  <select class="select"><option>เส้นเล็ก · NDL-001</option><option>หมูสับ · MEAT-001</option></select>
+                </div>
+                <div class="field">
+                  <label class="field__label">จำนวน</label>
+                  <input class="input" type="number" value="30"/>
+                </div>
+                <div class="field">
+                  <label class="field__label">น้ำหนักจริง (กก.)</label>
+                  <input class="input" type="number" placeholder="ไม่บังคับ (non-meat)" disabled/>
+                </div>
+                <div class="field">
+                  <label class="field__label">ราคา/หน่วย</label>
+                  <input class="input" type="number" value="35"/>
+                </div>
+                <button class="remove-btn" aria-label="ลบรายการ">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="notice" style="margin-top: var(--space-5)">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;margin-top:2px"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M10 6v5M10 13v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <div>
+                <b>Catch-weight:</b> สำหรับเนื้อสัตว์ กรอกน้ำหนักจริงจากตาชั่ง · สำหรับสินค้า non-meat ใช้จำนวนที่ประกาศ
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="card summary">
+          <div class="card__header">
+            <h2 class="card__title">สรุปการรับเข้า</h2>
+          </div>
+          <div class="card__body">
+            <div class="summary__row"><span>จำนวนรายการ</span><b>2</b></div>
+            <div class="summary__row"><span>หมูสับ</span><b>14.8 กก. · ฿2,664</b></div>
+            <div class="summary__row"><span>เส้นเล็ก</span><b>30 กก. · ฿1,050</b></div>
+            <div class="summary__row summary__total"><span>รวม</span><b>฿3,714</b></div>
+          </div>
+          <div class="card__footer" style="flex-direction: column; align-items: stretch">
+            <button class="btn btn--primary btn--lg" id="confirm">ยืนยันรับเข้า</button>
+            <button class="btn btn--ghost">บันทึกเป็นร่าง</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success toast -->
+<div id="toast" style="position:fixed;bottom:24px;right:24px;background:var(--color-ink-900);color:#fff;padding:14px 20px;border-radius:var(--radius-md);box-shadow:var(--shadow-lg);display:none;gap:10px;align-items:center">
+  <span style="width:20px;height:20px;border-radius:50%;background:var(--color-success-500);display:grid;place-items:center">✓</span>
+  <span>บันทึกการรับเข้าเรียบร้อย · อัปเดต activity log</span>
+</div>
+
+<script src="sidebar.js?v=1776874424070"></script>
+<script>
+  document.getElementById('confirm')?.addEventListener('click', () => {
+    const t = document.getElementById('toast');
+    t.style.display = 'flex';
+    setTimeout(()=>{ t.style.display = 'none'; }, 2500);
+  });
+</script>
+</body>
+</html>

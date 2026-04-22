@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · Components (Phase 1C)</title>
+<link rel="stylesheet" href="tokens.css?v=20260422b" />
+<script>
+  try {
+    var saved = localStorage.getItem('nntn_theme');
+    if (saved === 'warm' || saved === null) {
+      localStorage.removeItem('nntn_theme');
+      document.documentElement.removeAttribute('data-theme');
+    }
+  } catch(e){}
+</script>
+<style>
+  /* ─────────────── Page shell ─────────────── */
+  body { background: var(--color-bg-app); color: var(--color-ink-800); font-family: var(--font-sans); }
+  .wrap { max-width: 1440px; margin: 0 auto; padding: 40px 28px 120px; }
+
+  .top {
+    display:flex; gap:14px; align-items:center;
+    font-family: var(--font-mono); font-size:12px; letter-spacing:2px;
+    text-transform:uppercase; color:var(--color-ink-600);
+    margin-bottom: var(--space-5);
+  }
+  .top .dot { width:10px; height:10px; border-radius:50%; background: var(--color-primary-600); box-shadow: 0 0 0 4px var(--color-primary-100);}
+  .top .crumbs { margin-left:auto; color:var(--color-ink-500); }
+  .back-link { color: var(--color-primary-700); text-decoration: none; border-bottom: 1px dotted currentColor;}
+
+  h1.page-h {
+    font-family: var(--font-display); font-weight: 500;
+    font-size: 56px; line-height: 1.05; letter-spacing: -0.015em;
+    margin: 0 0 var(--space-3); color: var(--color-ink-900);
+    max-width: 900px;
+  }
+  .page-lede { font-size: 17px; line-height: 1.6; color: var(--color-ink-700); max-width: 820px; margin: 0 0 var(--space-3);}
+  .page-lede b { color: var(--color-primary-700); }
+  .page-meta { display:flex; gap: 20px; flex-wrap:wrap; font-family: var(--font-mono); font-size: 12px; color: var(--color-ink-600); margin-bottom: var(--space-7);}
+  .page-meta b { color: var(--color-ink-900); font-weight: 600;}
+
+  /* Section */
+  section.s { margin-bottom: var(--space-8); }
+  .s__head { display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-4); align-items: end; padding-bottom: 14px; border-bottom: 1px solid var(--color-ink-200); margin-bottom: var(--space-5);}
+  .s__no { font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-accent-600); padding-top: 4px;}
+  .s__title { font-family: var(--font-display); font-weight: 500; font-size: 32px; line-height: 1.1; letter-spacing: -0.01em; color: var(--color-ink-900); margin: 0;}
+  .s__note { font-size: 13px; color: var(--color-ink-600); text-align: right; max-width: 380px; line-height: 1.5;}
+
+  /* Subsection header */
+  h3.sub { font-size: 16px; margin: 0 0 var(--space-3); color: var(--color-ink-900); font-weight: 600;}
+  .label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-ink-500); margin-bottom: 6px;}
+
+  /* Demo surface */
+  .surface { background: var(--color-bg-surface); border: 1px solid var(--color-ink-200); border-radius: var(--radius-lg); padding: var(--space-5); box-shadow: var(--shadow-sm);}
+  .row { display:flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .row + .row { margin-top: var(--space-3); }
+  .stack { display: grid; gap: var(--space-3); }
+
+  /* Grid helpers */
+  .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
+  .grid-3 { display:grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4);}
+  @media (max-width: 900px){ .grid-2, .grid-3 { grid-template-columns: 1fr; }}
+
+  /* =============== BUTTONS =============== */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 20px; border-radius: var(--radius-md);
+    font-family: var(--font-sans); font-size: 15px; font-weight: 600;
+    border: 1px solid transparent; cursor: pointer;
+    transition: transform var(--dur-fast), box-shadow var(--dur-fast), background var(--dur-fast);
+    line-height: 1;
+  }
+  .btn--primary { background: var(--color-primary-600); color: #fff; box-shadow: var(--shadow-primary);}
+  .btn--primary:hover { background: var(--color-primary-700); transform: translateY(-1px);}
+  .btn--secondary { background: var(--color-bg-surface); color: var(--color-primary-700); border-color: var(--color-primary-300);}
+  .btn--secondary:hover { background: var(--color-primary-50); border-color: var(--color-primary-500);}
+  .btn--ghost { background: transparent; color: var(--color-ink-700); }
+  .btn--ghost:hover { background: var(--color-ink-100); }
+  .btn--danger { background: var(--color-bg-surface); color: var(--color-danger-700); border-color: var(--color-danger-100);}
+  .btn--danger:hover { background: var(--color-danger-50); }
+  .btn--gold { background: var(--color-accent-500); color: var(--color-primary-900); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.12);}
+  .btn--gold:hover { background: var(--color-accent-300); }
+  .btn--sm { padding: 8px 14px; font-size: 13px; border-radius: var(--radius-sm);}
+  .btn--lg { padding: 16px 28px; font-size: 17px; border-radius: var(--radius-md);}
+  .btn--block { width: 100%; justify-content: center;}
+  .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+  /* =============== BADGES / PILLS =============== */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: var(--radius-pill);
+    font-size: 12px; font-weight: 600; line-height: 1.4;
+    font-family: var(--font-sans);
+  }
+  .badge--primary { background: var(--color-primary-100); color: var(--color-primary-800);}
+  .badge--gold    { background: var(--color-accent-100); color: var(--color-accent-700);}
+  .badge--success { background: var(--color-success-100); color: var(--color-success-700);}
+  .badge--danger  { background: var(--color-danger-50);  color: var(--color-danger-700);}
+  .badge--warning { background: var(--color-warning-100); color: var(--color-warning-700);}
+  .badge--neutral { background: var(--color-ink-100);    color: var(--color-ink-800);}
+  .badge--outline { background: transparent; border: 1px dashed var(--color-ink-300); color: var(--color-ink-600); }
+  .badge--dot::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.85; }
+
+  /* Category-accent pills (from blueprint categories) */
+  .cat {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px;
+    border-radius: var(--radius-pill); font-size: 12px; font-weight: 600;
+    border: 1px solid var(--color-ink-200); background: #fff; color: var(--color-ink-800);
+  }
+  .cat::before { content:""; width: 8px; height: 8px; border-radius: 50%; background: var(--cat-color, var(--color-ink-400)); }
+  .cat--meat    { --cat-color: #B03224; }
+  .cat--veg     { --cat-color: #2F7A3F; }
+  .cat--sauce   { --cat-color: #7C4A9E; }
+  .cat--noodle  { --cat-color: #C9962C; }
+  .cat--dry     { --cat-color: #5F6860; }
+
+  /* =============== INPUTS =============== */
+  .field { display: grid; gap: 6px; margin-bottom: 16px;}
+  .field__label { font-size: 13px; font-weight: 600; color: var(--color-ink-800);}
+  .field__hint  { font-size: 12px; color: var(--color-ink-500); font-family: var(--font-mono);}
+  .field__err   { font-size: 12px; color: var(--color-danger-700);}
+  .input {
+    width: 100%; box-sizing: border-box;
+    padding: 12px 14px; border-radius: var(--radius-md);
+    border: 1px solid var(--color-ink-300); background: #fff;
+    font-family: var(--font-sans); font-size: 15px; color: var(--color-ink-900);
+    transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+  }
+  .input:focus { outline: none; border-color: var(--color-primary-500); box-shadow: var(--shadow-focus); }
+  .input[aria-invalid="true"] { border-color: var(--color-danger-500);}
+  .input--num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: 17px; font-weight: 600;}
+  .input__group { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: stretch;}
+  .input__suffix { display:flex; align-items:center; padding: 0 14px; border: 1px solid var(--color-ink-300); border-left: none; border-radius: 0 var(--radius-md) var(--radius-md) 0; background: var(--color-ink-50); color: var(--color-ink-600); font-family: var(--font-mono); font-size: 13px;}
+  .input__group .input { border-radius: var(--radius-md) 0 0 var(--radius-md);}
+
+  .stepper { display: grid; grid-template-columns: 52px 1fr 52px; align-items: stretch; border: 1px solid var(--color-ink-300); border-radius: var(--radius-md); overflow: hidden; background: #fff;}
+  .stepper button { border: none; background: var(--color-ink-50); font-size: 20px; color: var(--color-primary-700); cursor: pointer; font-family: var(--font-sans); font-weight: 600;}
+  .stepper button:hover { background: var(--color-primary-100);}
+  .stepper input { border: none; text-align: center; font-size: 20px; font-weight: 700; font-family: var(--font-mono); color: var(--color-ink-900); padding: 14px 8px;}
+  .stepper input:focus { outline: none; background: var(--color-primary-50);}
+
+  /* Large numeric entry for weighing surface */
+  .weighing {
+    background: var(--color-primary-900); color: #fff;
+    border-radius: var(--radius-lg); padding: var(--space-4); text-align: right;
+    font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  }
+  .weighing__n { font-size: 64px; font-weight: 500; line-height: 1; letter-spacing: -0.02em;}
+  .weighing__u { font-size: 18px; color: var(--color-accent-300); margin-left: 6px;}
+  .weighing__label { font-size: 11px; color: #A5C3AB; letter-spacing: 2px; text-transform: uppercase; text-align: left; margin-bottom: 6px;}
+  .keypad { display:grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 14px;}
+  .keypad button { padding: 14px; border-radius: var(--radius-sm); background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.12); font-family: var(--font-mono); font-size: 20px; font-weight: 500; cursor: pointer;}
+  .keypad button:hover { background: rgba(255,255,255,0.16);}
+  .keypad button.act { background: var(--color-accent-500); color: var(--color-primary-900); border-color: transparent;}
+
+  /* Segmented */
+  .segmented { display: inline-flex; background: var(--color-ink-100); border-radius: var(--radius-md); padding: 3px; gap: 2px;}
+  .segmented button {
+    padding: 8px 16px; border-radius: calc(var(--radius-md) - 2px);
+    border: none; background: transparent;
+    font-family: var(--font-sans); font-size: 13px; font-weight: 600; color: var(--color-ink-600); cursor: pointer;
+  }
+  .segmented button[aria-pressed="true"] { background: #fff; color: var(--color-primary-800); box-shadow: var(--shadow-xs);}
+
+  /* Toggle switch */
+  .switch { position: relative; display: inline-block; width: 44px; height: 24px;}
+  .switch input { opacity: 0; width: 0; height: 0;}
+  .switch__track { position: absolute; inset: 0; background: var(--color-ink-300); border-radius: var(--radius-pill); cursor: pointer; transition: background var(--dur-fast);}
+  .switch__track::before { content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform var(--dur-fast); box-shadow: var(--shadow-sm);}
+  .switch input:checked + .switch__track { background: var(--color-primary-600);}
+  .switch input:checked + .switch__track::before { transform: translateX(20px);}
+
+  /* =============== CARD · Item row =============== */
+  .item {
+    display: grid; grid-template-columns: 56px 1fr auto auto; gap: var(--space-4); align-items: center;
+    background: #fff; border: 1px solid var(--color-ink-200); border-left: 4px solid var(--color-primary-500);
+    border-radius: var(--radius-md); padding: 14px 18px;
+  }
+  .item__ic { width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--color-primary-50); display: grid; place-items: center; font-family: var(--font-display); font-weight: 500; color: var(--color-primary-700); font-size: 20px;}
+  .item__name { font-weight: 600; font-size: 15px; color: var(--color-ink-900);}
+  .item__sku  { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-500); letter-spacing: 0.5px; margin-top: 2px;}
+  .item__qty  { font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-weight: 600; font-size: 20px; color: var(--color-ink-900); text-align: right;}
+  .item__qty small { font-size: 11px; color: var(--color-ink-500); font-weight: 400; display:block;}
+  .item--meat   { border-left-color: #B03224; }
+  .item--meat   .item__ic { background: #FADFD7; color: #8F1A0B;}
+  .item--veg    { border-left-color: #2F7A3F; }
+  .item--veg    .item__ic { background: #DCEADE; color: #134A22;}
+  .item--sauce  { border-left-color: #7C4A9E; }
+  .item--sauce  .item__ic { background: #E9DEF0; color: #5A2F7C;}
+
+  /* =============== Stat cards (dashboard tiles) =============== */
+  .stat { background: var(--color-bg-surface); border: 1px solid var(--color-ink-200); border-radius: var(--radius-lg); padding: var(--space-4); position: relative; overflow: hidden;}
+  .stat__label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-ink-600); margin-bottom: 10px;}
+  .stat__n { font-family: var(--font-display); font-weight: 500; font-size: 48px; line-height: 1; letter-spacing: -0.02em; color: var(--color-ink-900); font-variant-numeric: tabular-nums;}
+  .stat__n small { font-size: 18px; color: var(--color-ink-500); margin-left: 4px; font-family: var(--font-mono); font-weight: 400;}
+  .stat__d { margin-top: 8px; font-size: 12px; color: var(--color-ink-600);}
+  .stat__d .up { color: var(--color-success-700); font-weight: 600; }
+  .stat__d .down { color: var(--color-danger-700); font-weight: 600; }
+  .stat--hero { background: var(--grad-stat-green); border-color: transparent; }
+
+  /* =============== Table =============== */
+  .table { width: 100%; border-collapse: collapse; font-size: 14px;}
+  .table th { text-align: left; font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-ink-500); font-weight: 500; padding: 10px 14px; border-bottom: 1px solid var(--color-ink-200);}
+  .table td { padding: 14px; border-bottom: 1px solid var(--color-ink-100); color: var(--color-ink-800);}
+  .table tr:hover td { background: var(--color-ink-50);}
+  .table td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; font-weight: 600; color: var(--color-ink-900);}
+  .table td.mono { font-family: var(--font-mono); font-size: 12px; color: var(--color-ink-600);}
+
+  /* =============== Alert / Callout =============== */
+  .alert { display: grid; grid-template-columns: auto 1fr; gap: 14px; padding: 14px 16px; border-radius: var(--radius-md); border: 1px solid; font-size: 14px; line-height: 1.5;}
+  .alert__ic { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 16px;}
+  .alert__b { font-weight: 700; margin-bottom: 2px;}
+  .alert--info    { background: var(--color-primary-50); border-color: var(--color-primary-200); color: var(--color-primary-800);}
+  .alert--info    .alert__ic { background: var(--color-primary-200); color: var(--color-primary-800);}
+  .alert--success { background: var(--color-success-50); border-color: var(--color-success-100); color: var(--color-success-700);}
+  .alert--success .alert__ic { background: var(--color-success-100);}
+  .alert--warning { background: var(--color-warning-50); border-color: var(--color-warning-100); color: var(--color-warning-700);}
+  .alert--warning .alert__ic { background: var(--color-warning-100);}
+  .alert--danger  { background: var(--color-danger-50); border-color: var(--color-danger-100); color: var(--color-danger-700);}
+  .alert--danger  .alert__ic { background: var(--color-danger-100);}
+
+  /* =============== Action sheet (mobile) =============== */
+  .phone {
+    width: 360px; height: 740px; border-radius: 48px; padding: 14px;
+    background: #1A1F1A; box-shadow: 0 20px 60px rgba(8, 32, 14, 0.35), inset 0 0 0 1px rgba(255,255,255,0.05);
+    position: relative; flex-shrink: 0;
+  }
+  .phone__screen { width: 100%; height: 100%; border-radius: 36px; background: var(--color-bg-app); overflow: hidden; position: relative; display:flex; flex-direction: column;}
+  .phone__bar { display:flex; justify-content: space-between; padding: 12px 22px 6px; font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--color-ink-900);}
+  .phone__head { padding: 8px 16px 12px; display:flex; gap: 10px; align-items: center; border-bottom: 1px solid var(--color-ink-200); background: #fff;}
+  .phone__back { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--color-ink-100); color: var(--color-ink-700);}
+  .phone__title { font-family: var(--font-display); font-weight: 500; font-size: 18px; color: var(--color-ink-900);}
+  .phone__sub { font-size: 11px; color: var(--color-ink-500); font-family: var(--font-mono);}
+  .phone__body { flex: 1; padding: 16px; overflow-y: auto;}
+
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: #fff; border-top-left-radius: 28px; border-top-right-radius: 28px;
+    padding: 14px 18px 24px; box-shadow: 0 -12px 40px rgba(8, 32, 14, 0.18);
+  }
+  .sheet__grab { width: 42px; height: 4px; background: var(--color-ink-300); border-radius: 2px; margin: 0 auto 14px;}
+  .sheet__title { font-family: var(--font-display); font-weight: 500; font-size: 20px; margin-bottom: var(--space-3); color: var(--color-ink-900);}
+  .sheet__item {
+    display: flex; align-items: center; gap: 12px; padding: 14px 8px;
+    border-bottom: 1px solid var(--color-ink-100); font-size: 15px; cursor: pointer;
+  }
+  .sheet__item:last-child { border-bottom: none; }
+  .sheet__item:hover { background: var(--color-ink-50);}
+  .sheet__item__ic { width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--color-primary-50); color: var(--color-primary-700); display: grid; place-items: center; font-weight: 600; flex-shrink: 0;}
+  .sheet__item__t { flex: 1;}
+  .sheet__item__t b { display:block; color: var(--color-ink-900); font-weight: 600;}
+  .sheet__item__t small { color: var(--color-ink-500); font-size: 12px;}
+  .sheet__item__arrow { color: var(--color-ink-400);}
+
+  /* =============== Toast =============== */
+  .toast { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: var(--radius-md); background: var(--color-ink-900); color: #fff; box-shadow: var(--shadow-lg); max-width: 420px; }
+  .toast__ic { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--color-success-500); color: #fff; flex-shrink: 0;}
+  .toast__b { font-weight: 600; }
+  .toast__d { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 2px;}
+  .toast__x { margin-left: auto; color: rgba(255,255,255,0.5); font-size: 18px; cursor: pointer;}
+  .toast--danger .toast__ic { background: var(--color-danger-500);}
+  .toast--warning .toast__ic { background: var(--color-warning-500);}
+
+  /* =============== Progress =============== */
+  .progress { display: grid; gap: 6px;}
+  .progress__track { height: 8px; background: var(--color-ink-100); border-radius: var(--radius-pill); overflow: hidden;}
+  .progress__fill { height: 100%; background: var(--color-primary-600); border-radius: inherit; transition: width var(--dur-slow);}
+  .progress__row { display: flex; justify-content: space-between; font-size: 12px;}
+  .progress__row b { font-family: var(--font-mono); color: var(--color-ink-900); font-weight: 600;}
+
+  /* =============== Step indicator (for wizards — รับของ, ส่งออก) =============== */
+  .steps { display: flex; align-items: center; gap: 4px;}
+  .step { display: flex; align-items: center; gap: 10px; flex: 1;}
+  .step__n { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-mono); font-weight: 600; font-size: 14px; background: var(--color-ink-100); color: var(--color-ink-500); flex-shrink: 0;}
+  .step__t { font-size: 13px; color: var(--color-ink-600); font-weight: 500; line-height: 1.2;}
+  .step__t small { display: block; font-size: 11px; color: var(--color-ink-500); font-weight: 400; font-family: var(--font-mono);}
+  .step--active .step__n { background: var(--color-primary-600); color: #fff; box-shadow: var(--shadow-primary);}
+  .step--active .step__t { color: var(--color-ink-900); font-weight: 700;}
+  .step--done .step__n { background: var(--color-success-500); color: #fff;}
+  .step__line { flex: 0 0 24px; height: 2px; background: var(--color-ink-200);}
+  .step--done ~ .step__line,
+  .step__line--done { background: var(--color-success-500);}
+
+  /* =============== Footer nav =============== */
+  .footer-cap { margin-top: var(--space-8); padding: var(--space-5); background: var(--color-primary-50); border: 1px solid var(--color-primary-200); border-radius: var(--radius-lg); display: grid; grid-template-columns: 1fr auto; gap: var(--space-4); align-items: center;}
+  .footer-cap h2 { font-family: var(--font-display); font-weight: 500; font-size: 26px; margin: 0 0 4px; color: var(--color-ink-900);}
+  .footer-cap p { font-size: 14px; color: var(--color-ink-700); margin: 0;}
+  .footer-cap .btn { white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<main class="wrap">
+
+  <div class="top">
+    <span class="dot"></span>
+    <span>NNTN · Design Spike</span>
+    <span class="crumbs">PHASE 1C · COMPONENTS · <a class="back-link" href="index.html">← hub</a></span>
+  </div>
+
+  <h1 class="page-h">ชุดชิ้นส่วน<br/>สำหรับสร้าง 25 หน้า</h1>
+  <p class="page-lede">
+    ทุกหน้าของ NNTN ใหม่จะประกอบจากชิ้นส่วนชุดนี้ — <b>เน้นโมบายล์เป็นหลัก</b> เพราะน้องครัวกลางทำงานจากมือถือ 90% ของเวลา
+    · Heritage feel มาจาก <b>Trirong slab serif</b> ในหัวข้อ + <b>gold diamond</b> ornament · ตัวเลขทั้งหมดใช้ <b>IBM Plex Mono tabular</b> — column เรียงตรง
+  </p>
+  <div class="page-meta">
+    <span><b>Tokens</b> tokens.css?v=20260422b</span>
+    <span><b>Type</b> Trirong / Noto Sans Thai / IBM Plex Mono</span>
+    <span><b>Status</b> draft · pending review</span>
+  </div>
+
+  <!-- ═════ 1. Buttons ═════ -->
+  <section class="s">
+    <header class="s__head">
+      <span class="s__no">01</span>
+      <h2 class="s__title">Buttons</h2>
+      <span class="s__note">Primary = heritage green · Gold reserved สำหรับ CTA "ส่งออก" ที่สำคัญที่สุดเท่านั้น</span>
+    </header>
+
+    <div class="grid-2">
+      <div class="surface">
+        <div class="label">Variants</div>
+        <div class="row">
+          <button class="btn btn--primary">ยืนยันส่งออก</button>
+          <button class="btn btn--secondary">บันทึกร่าง</button>
+          <button class="btn btn--ghost">ยกเลิก</button>
+          <button class="btn btn--danger">ลบบิล</button>
+          <button class="btn btn--gold">◆ ปิดงานวันนี้</button>
+        </div>
+        <div class="label" style="margin-top: 20px;">Sizes</div>
+        <div class="row">
+          <button class="btn btn--primary btn--sm">บันทึก</button>
+          <button class="btn btn--primary">บันทึก</button>
+          <button class="btn btn--primary btn--lg">บันทึก</button>
+        </div>
+        <div class="label" style="margin-top: 20px;">States</div>
+        <div class="row">
+          <button class="btn btn--primary">ปกติ</button>
+          <button class="btn btn--primary" style="background: var(--color-primary-700); transform: translateY(-1px);">hover</button>
+          <button class="btn btn--primary" disabled>disabled</button>
+          <button class="btn btn--primary"><span class="spin" style="display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius:50%; animation: spin 0.7s linear infinite;"></span>กำลังบันทึก</button>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="label">Mobile — block + sticky CTA</div>
+        <div style="background: var(--color-ink-50); padding: 20px; border-radius: var(--radius-md); border: 1px dashed var(--color-ink-300);">
+          <div style="font-size: 13px; color: var(--color-ink-700); margin-bottom: 10px;">หน้ารับของ — ปุ่ม sticky ล่างจอ มือเอื้อมถึง</div>
+          <button class="btn btn--primary btn--block btn--lg">บันทึกรายการ → คลัง A</button>
+        </div>
+        <div style="margin-top: 16px;">
+          <div class="label">Dual action</div>
+          <div style="display:grid; grid-template-columns: 1fr 2fr; gap: 10px;">
+            <button class="btn btn--ghost btn--block">ย้อนกลับ</button>
+            <button class="btn btn--primary btn--block">ยืนยัน 8 รายการ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ 2. Badges + Category accents ═════ -->
+  <section class="s">
+    <header class="s__head">
+      <span class="s__no">02</span>
+      <h2 class="s__title">Badges &amp; category accents</h2>
+      <span class="s__note">สีตาม category ของวัตถุดิบ · เนื้อ · ผัก · น้ำซุป · เส้น · ของแห้ง</span>
+    </header>
+
+    <div class="surface">
+      <div class="label">Status badges</div>
+      <div class="row">
+        <span class="badge badge--success badge--dot">ส่งออกแล้ว</span>
+        <span class="badge badge--primary badge--dot">พร้อมส่ง</span>
+        <span class="badge badge--warning badge--dot">รอแพ็ค</span>
+        <span class="badge badge--danger badge--dot">เกินอายุ</span>
+        <span class="badge badge--gold">◆ บิลตำนาน</span>
+        <span class="badge badge--neutral">แบบร่าง</span>
+        <span class="badge badge--outline">ยังไม่นับ</span>
+      </div>
+
+      <div class="label" style="margin-top: 24px;">Category chips — ใช้ใน list view</div>
+      <div class="row">
+        <span class="cat cat--meat">เนื้อตุ๋น</span>
+        <span class="cat cat--meat">เนื้อดิบ</span>
+        <span class="cat cat--veg">ผักสด</span>
+        <span class="cat cat--sauce">น้ำซุป</span>
+        <span class="cat cat--noodle">เส้น</span>
+        <span class="cat cat--dry">ของแห้ง</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ 3. Forms ═════ -->
+  <section class="s">
+    <header class="s__head">
+      <span class="s__no">03</span>
+      <h2 class="s__title">Form inputs</h2>
+      <span class="s__note">Touch targets ≥ 44px · ตัวเลขใช้ mono tabular · hint เป็น mono เล็กใต้ label</span>
+    </header>
+
+    <div class="grid-2">
+      <div class="surface">
+        <div class="label">Text / number / select</div>
+        <div class="field">
+          <label class="field__label">ชื่อวัตถุดิบ</label>
+          <input class="input" value="เนื้อตุ๋นน่องลาย" />
+          <span class="field__hint">เลือกจากรายการหรือเพิ่มใหม่</span>
+        </div>
+        <div class="field">
+          <label class="field__label">รหัส SKU</label>
+          <input class="input" value="NNTN-BEEF-STEW-001" aria-invalid="true"/>
+          <span class="field__err">⚠ SKU ซ้ำกับรายการเดิม</span>
+        </div>
+        <div class="field">
+          <label class="field__label">น้ำหนัก (กิโลกรัม)</label>
+          <div class="input__group">
+            <input class="input input--num" value="12.450"/>
+            <span class="input__suffix">kg</span>
+          </div>
+          <span class="field__hint">ทศนิยม 3 ตำแหน่ง · hit target 52px</span>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="label">Stepper — สำหรับนับถุง/ชิ้น</div>
+        <div class="field">
+          <label class="field__label">จำนวนถุงเนื้อตุ๋น</label>
+          <div class="stepper">
+            <button aria-label="ลด">−</button>
+            <input value="8" inputmode="numeric" />
+            <button aria-label="เพิ่ม">+</button>
+          </div>
+          <span class="field__hint">กดค้างเพื่อเพิ่มทีละ 10</span>
+        </div>
+
+        <div class="label" style="margin-top: 20px;">Segmented — เลือกคลัง</div>
+        <div class="segmented" role="tablist">
+          <button aria-pressed="true">คลัง A</button>
+          <button>คลัง B</button>
+          <button>คลัง C</button>
+        </div>
+
+        <div class="label" style="margin-top: 20px;">Toggle</div>
+        <div style="display:flex; align-items:center; gap: 12px;">
+          <label class="switch"><input type="checkbox" checked/><span class="switch__track"></span></label>
+          <span style="font-size: 14px;">บันทึกเข้า Archive DD/MM อัตโนมัติ</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="surface" style="margin-top: var(--space-5);">
+      <div class="label">Heavy numeric surface — หน้าชั่งน้ำหนัก</div>
+      <div class="weighing">
+        <div class="weighing__label">น้ำหนักรวม · สแกน barcode NNTN-BEEF-001</div>
+        <div class="weighing__n">12.<span style="color: var(--color-accent-300)">450</span><span class="weighing__u">kg</span></div>
+        <div class="keypad">
+          <button>7</button><button>8</button><button>9</button>
+          <button>4</button><button>5</button><button>6</button>
+          <button>1</button><button>2</button><button>3</button>
+          <button>.</button><button>0</button><button class="act">✓</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ 4. Item rows + stat cards ═════ -->
+  <section class="s">
+    <header class="s__head">
+      <span class="s__no">04</span>
+      <h2 class="s__title">Item rows &amp; stat cards</h2>
+      <span class="s__note">Category accent border-left 4px · ไอคอนใน Trirong slab</span>
+    </header>
+
+    <div class="surface">
+      <div class="label">List item — คลัง C view</div>
+      <div class="stack" style="gap: 10px;">
+        <div class="item item--meat">
+          <div class="item__ic">น</div>
+          <div>
+            <div class="item__name">เนื้อตุ๋นน่องลาย</div>
+            <div class="item__sku">NNTN-BEEF-STEW-001 · วันผลิต 20/04/2026</div>
+          </div>
+          <span class="badge badge--success badge--dot">พร้อมส่ง</span>
+          <div class="item__qty">8<small>ถุง</small></div>
+        </div>
+        <div class="item item--veg">
+          <div class="item__ic">ผ</div>
+          <div>
+            <div class="item__name">ผักชี · คึ่นฉ่าย · ต้นหอม</div>
+            <div class="item__sku">NNTN-VEG-HERB-012 · แช่เย็น</div>
+          </div>
+          <span class="badge badge--warning badge--dot">รอแพ็ค</span>
+          <div class="item__qty">2.4<small>kg</small></div>
+        </div>
+        <div class="item item--sauce">
+          <div class="item__ic">ซ</div>
+          <div>
+            <div class="item__name">น้ำซุปต้น · รอบเช้า</div>
+            <div class="item__sku">NNTN-BROTH-A-R1 · ผลิต 05:30</div>
+          </div>
+          <span class="badge badge--danger badge--dot">เกินอายุ 2 ชม</span>
+          <div class="item__qty">18<small>L</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-3" style="margin-top: var(--space-5);">
+      <div class="stat stat--hero">
+        <div class="stat__label">ส่งออกวันนี้</div>
+        <div class="stat__n">12<small>บิล</small></div>
+        <div class="stat__d"><span class="up">↑ +3</span> จากเมื่อวาน · FS 8 · NT 4</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">รอแพ็คส่ง</div>
+        <div class="stat__n">27<small>รายการ</small></div>
+        <div class="stat__d">เนื้อ 12 · ผัก 9 · อื่น 6</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">คลัง C ยอดคงเหลือ</div>
+        <div class="stat__n">184.3<small>kg</small></div>
+        <div class="stat__d"><span class="down">↓ −12.4 kg</span> หลังตัด FS20260422-1</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ 5. Table ═════ -->
+  <section class="s">
+    <header class="s__head">
+      <span class="s__no">05</span>
+      <h2 class="s__title">Table — สำหรับ Archive &amp; report</h2>
+      <span class="s__note">mono + tabular-nums · header uppercase label small · hover row wash</span>
+    </header>
+
+    <div class="surface" style="padding: 0; overflow: hidden;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 140px">BILL_NO</th>
+            <th>ปลายทาง</th>
+            <th>หมวด</th>
+            <th style="text-align:right">น้ำหนัก</th>
+            <th style="text-align:right">ถุง</th>
+            <th>สถานะ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">FS20260422-1</td>
+            <td>FoodStory · วิชรธรรม 53</td>
+            <td><span class="cat cat--meat">เนื้อตุ๋น</span></td>
+            <td class="num">12.450</td>
+            <td class="num">8</td>
+            <td><span class="badge badge--success badge--dot">ส่งออก</span></td>
+          </tr>
+          <tr>
+            <td class="mono">NT20260422-3</td>
+            <td>หน้าร้าน · สาขาเก่า</td>
+            <td><span class="cat cat--veg">ผักสด</span></td>
+            <td class="num">2.400</td>
+            <td class="num">4</td>
+            <td><span class="badge badge--primary badge--dot">พร้อมส่ง</span></td>
+          </tr>
+          <tr>
+            <td class="mono">FS20260422-2</td>
+            <td>FoodStory · พระราม 9</td>
+            <td><span class="cat cat--sauce">น้ำซุป</span></td>
+            <td class="num">24.000</td>
+            <td class="num">2</td>
+            <td><span class="badge badge--warning badge--dot">รอแพ็ค</span></td>
+          </tr>
+          <tr>
+            <td class="mono">NT20260421-9</td>
+            <td>หน้าร้าน · สาขาเก่า</td>
+            <td><span class="cat cat--noodle">เส้น</span></td>
+            <td class="num">6.000</td>
+            <td class="num">12</td>
+            <td><span class="badge badge--neutral">Archive</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═════ 6. Alerts ═════ -->
+  <section class="s">
+    <header class="s__head">
+      <span class="s__no">06</span>
+      <h2 class="s__title">Alerts &amp; callouts</h2>
+      <span class="s__note">ใช้ใน B2/B6 bug messages · "อย่านับซ้ำ CW = SoT"</span>
+    </header>
+    <div class="stack">
+      <div class="alert alert--info">
+        <div class="alert__ic">i</div>
+        <div><div class="alert__b">คลัง C คือ Source of Truth</div>ตัวเลขในหน้านี้ sync มาจากคลัง C แล้ว — ห้ามนับซ้ำกับคลัง A/B</div>
+      </div>
+      <div class="alert alert--success">
+        <div class="alert__ic">✓</div>
+        <div><div class="alert__b">บันทึกเข้า Archive DD/MM สำเร็จ</div>บิล FS20260422-1 ย้ายเข้า Archive 22/04 แล้ว · พร้อมตรวจนับสิ้นวัน</div>
+      </div>
+      <div class="alert alert--warning">
+        <div class="alert__ic">!</div>
+        <div><div class="alert__b">พบของเหลือหลัง PACK</div>น้ำซุปต้นรอบเช้า 18L — ตัดสินใจ: ส่งคลัง C · หรือทิ้ง</div>
+      </div>
+      <div class="alert alert--danger">
+        <div class="alert__ic">✕</div>
+        <div><div class="alert__b">สแกน barcode ไม่พบ</div>NNTN-BEEF-XYZ — อาจเป็นรหัสเก่าก่อน 2024 · กรุณาพิมพ์สติกเกอร์ใหม่</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ 7. Progress + Steps ═════ -->
+  <section class="s">
+    <header class="s__head">
+      <span class="s__no">07</span>
+      <h2 class="s__title">Progress &amp; step indicators</h2>
+      <span class="s__note">ใช้ใน wizard รับของ (4 steps) · ส่งออก (5 steps)</span>
+    </header>
+
+    <div class="grid-2">
+      <div class="surface">
+        <div class="label">Wizard — "ส่งออก FoodStory" 5 ขั้น</div>
+        <div class="steps">
+          <div class="step step--done">
+            <div class="step__n">✓</div>
+            <div class="step__t">เลือกสาขา<small>วิชรธรรม 53</small></div>
+          </div>
+          <div class="step__line step__line--done"></div>
+          <div class="step step--done">
+            <div class="step__n">✓</div>
+            <div class="step__t">เลือกรายการ<small>8 รายการ</small></div>
+          </div>
+          <div class="step__line step__line--done"></div>
+          <div class="step step--active">
+            <div class="step__n">3</div>
+            <div class="step__t">ชั่งน้ำหนัก<small>กำลังทำ</small></div>
+          </div>
+          <div class="step__line"></div>
+          <div class="step">
+            <div class="step__n">4</div>
+            <div class="step__t">พิมพ์บิล</div>
+          </div>
+          <div class="step__line"></div>
+          <div class="step">
+            <div class="step__n">5</div>
+            <div class="step__t">ตัดสต๊อก</div>
+          </div>
+        </div>
+
+        <div class="label" style="margin-top: 24px;">Progress bar</div>
+        <div class="progress">
+          <div class="progress__row"><span>แพ็ครอบเย็น</span><b>18 / 27 รายการ</b></div>
+          <div class="progress__track"><div class="progress__fill" style="width: 67%"></div></div>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="label">Toasts</div>
+        <div class="stack">
+          <div class="toast">
+            <div class="toast__ic">✓</div>
+            <div><div class="toast__b">ส่งออก FS20260422-1 สำเร็จ</div><div class="toast__d">ตัดสต๊อกคลัง C − 12.450 kg</div></div>
+            <span class="toast__x">×</span>
+          </div>
+          <div class="toast toast--warning">
+            <div class="toast__ic">!</div>
+            <div><div class="toast__b">คลัง A ยังมีเนื้อตุ๋น 3 ถุง</div><div class="toast__d">รอแพ็คส่งคลัง C</div></div>
+            <span class="toast__x">×</span>
+          </div>
+          <div class="toast toast--danger">
+            <div class="toast__ic">✕</div>
+            <div><div class="toast__b">ตัดสต๊อกไม่สำเร็จ</div><div class="toast__d">เครือข่ายขัดข้อง · บันทึกเป็น draft</div></div>
+            <span class="toast__x">×</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ 8. Mobile action sheet ═════ -->
+  <section class="s">
+    <header class="s__head">
+      <span class="s__no">08</span>
+      <h2 class="s__title">Mobile shell — หน้าจอจริงในครัว</h2>
+      <span class="s__note">iPhone SE width (360 × 740) · action sheet ขึ้นจากล่าง · hit target 44px</span>
+    </header>
+
+    <div style="display:flex; gap: var(--space-5); flex-wrap: wrap;">
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__bar"><span>09:42</span><span>◆ 100%</span></div>
+          <div class="phone__head">
+            <div class="phone__back">←</div>
+            <div style="flex:1">
+              <div class="phone__title">ส่งออก FoodStory</div>
+              <div class="phone__sub">FS20260422-1 · 8 รายการ</div>
+            </div>
+            <span class="badge badge--gold">◆ บิลตำนาน</span>
+          </div>
+          <div class="phone__body">
+            <div class="stack" style="gap: 10px;">
+              <div class="item item--meat" style="grid-template-columns: 44px 1fr auto; gap: 12px; padding: 10px 12px;">
+                <div class="item__ic" style="width: 32px; height: 32px; font-size: 15px;">น</div>
+                <div>
+                  <div class="item__name" style="font-size: 14px;">เนื้อตุ๋นน่องลาย</div>
+                  <div class="item__sku">STEW-001 · 8 ถุง</div>
+                </div>
+                <div class="item__qty" style="font-size: 16px;">6.4<small>kg</small></div>
+              </div>
+              <div class="item item--veg" style="grid-template-columns: 44px 1fr auto; gap: 12px; padding: 10px 12px;">
+                <div class="item__ic" style="width: 32px; height: 32px; font-size: 15px;">ผ</div>
+                <div>
+                  <div class="item__name" style="font-size: 14px;">ผักชี · ต้นหอม</div>
+                  <div class="item__sku">VEG-012 · 4 ถุง</div>
+                </div>
+                <div class="item__qty" style="font-size: 16px;">2.4<small>kg</small></div>
+              </div>
+              <div class="item item--sauce" style="grid-template-columns: 44px 1fr auto; gap: 12px; padding: 10px 12px;">
+                <div class="item__ic" style="width: 32px; height: 32px; font-size: 15px;">ซ</div>
+                <div>
+                  <div class="item__name" style="font-size: 14px;">น้ำซุปต้นรอบเช้า</div>
+                  <div class="item__sku">BROTH-A-R1 · 2 ถุง</div>
+                </div>
+                <div class="item__qty" style="font-size: 16px;">3.6<small>kg</small></div>
+              </div>
+            </div>
+            <div class="alert alert--info" style="margin-top: 12px; font-size: 13px; padding: 10px 12px;">
+              <div class="alert__ic" style="width: 24px; height: 24px; font-size: 12px;">i</div>
+              <div>ตัดจาก <b>คลัง C</b> เท่านั้น · ห้ามนับจาก A/B</div>
+            </div>
+          </div>
+          <div style="padding: 12px; background: #fff; border-top: 1px solid var(--color-ink-200);">
+            <button class="btn btn--primary btn--block btn--lg">◆ ยืนยันส่งออก 12.450 kg</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__bar"><span>09:43</span><span>◆ 100%</span></div>
+          <div class="phone__head">
+            <div class="phone__back">←</div>
+            <div style="flex:1">
+              <div class="phone__title">เลือกการกระทำ</div>
+              <div class="phone__sub">เนื้อตุ๋นน่องลาย · 8 ถุง</div>
+            </div>
+          </div>
+          <div class="phone__body" style="background: rgba(20, 26, 19, 0.4);">
+            <!-- dimmed -->
+          </div>
+          <div class="sheet">
+            <div class="sheet__grab"></div>
+            <div class="sheet__title">จะทำอะไรกับรายการนี้?</div>
+            <div class="sheet__item">
+              <div class="sheet__item__ic">✓</div>
+              <div class="sheet__item__t"><b>ยืนยันใส่บิล FS20260422-1</b><small>ตัดจากคลัง C − 6.4 kg</small></div>
+              <div class="sheet__item__arrow">›</div>
+            </div>
+            <div class="sheet__item">
+              <div class="sheet__item__ic" style="background: var(--color-warning-100); color: var(--color-warning-700);">⤴</div>
+              <div class="sheet__item__t"><b>เปลี่ยนจำนวน</b><small>ตอนนี้ 8 ถุง · 6.4 kg</small></div>
+              <div class="sheet__item__arrow">›</div>
+            </div>
+            <div class="sheet__item">
+              <div class="sheet__item__ic" style="background: var(--color-accent-100); color: var(--color-accent-700);">◆</div>
+              <div class="sheet__item__t"><b>แยกไปบิลอื่น</b><small>เช่น NT · ส่งหน้าร้าน</small></div>
+              <div class="sheet__item__arrow">›</div>
+            </div>
+            <div class="sheet__item">
+              <div class="sheet__item__ic" style="background: var(--color-danger-50); color: var(--color-danger-700);">×</div>
+              <div class="sheet__item__t"><b>ลบออกจากบิล</b><small>คืนเข้าคลัง C</small></div>
+              <div class="sheet__item__arrow">›</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: 1; min-width: 280px;">
+        <h3 class="sub">ทำไมเน้น mobile ก่อน</h3>
+        <ul style="line-height: 1.7; color: var(--color-ink-700); font-size: 14px; padding-left: 18px;">
+          <li>น้องแพ็ค/แปรรูปใช้มือถือขณะชั่งเนื้อ มือเปียก — ปุ่มต้อง <b>≥ 44px</b> touch</li>
+          <li>ของเหลือกับผลชั่งกรอกที่เกิดขึ้น<b>ระหว่างแพ็ค</b> ไม่ใช่หลังจบงาน</li>
+          <li>Desktop ใช้เฉพาะใน Admin / Archive / ตรวจนับสิ้นเดือน</li>
+          <li>หน้า hub-delivery (Phase 1D) จะเป็น <b>mobile-first + progressive disclosure</b> ให้ B2/B6 bug หายไปเอง</li>
+        </ul>
+
+        <h3 class="sub" style="margin-top: 24px;">Coverage ที่มีแล้ว</h3>
+        <div class="stack" style="gap: 6px; font-size: 13px; color: var(--color-ink-700);">
+          <div>✓ Buttons · 5 variants × 3 sizes × 4 states</div>
+          <div>✓ Badges + category chips (5 หมวด)</div>
+          <div>✓ Forms: text/number/stepper/segmented/switch/keypad</div>
+          <div>✓ Item rows (cat-accent) + stat cards (3 styles)</div>
+          <div>✓ Table · Alerts (4) · Toasts (3)</div>
+          <div>✓ Step indicator + progress bar</div>
+          <div>✓ Mobile shell + action sheet</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ Footer ═════ -->
+  <div class="footer-cap">
+    <div>
+      <h2>พร้อมไป Phase 1D</h2>
+      <p>เอาชิ้นส่วนเหล่านี้ไปสร้าง hub-delivery prototype ที่ใช้ progressive disclosure แก้ B2/B6 bug</p>
+    </div>
+    <a href="index.html" class="btn btn--primary btn--lg">→ กลับ hub</a>
+  </div>
+
+</main>
+
+<style>
+  @keyframes spin { to { transform: rotate(360deg); }}
+</style>
+
+</body>
+</html>

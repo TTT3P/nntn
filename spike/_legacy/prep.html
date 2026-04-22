@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>NNTN · แปรรูปเนื้อสัตว์</title>
+<link rel="stylesheet" href="tokens.css?v=1776874424070"/>
+<link rel="stylesheet" href="app.css?v=1776874424070"/>
+<style>
+  .prep-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
+  @media (max-width:1000px){ .prep-grid { grid-template-columns: 1fr; } }
+  .arrow-col { display: flex; align-items: center; justify-content: center; padding: 0 var(--space-4); color: var(--color-primary-600); }
+  .partial-bar { height: 10px; background: var(--color-ink-100); border-radius: var(--radius-pill); overflow: hidden; margin-top: 6px; }
+  .partial-bar__fill { height: 100%; background: linear-gradient(90deg, var(--color-primary-500), var(--color-primary-600)); border-radius: var(--radius-pill); }
+  .partial-label { display: flex; justify-content: space-between; font-size: var(--fs-caption); color: var(--color-ink-600); margin-top: 4px; }
+  .partial-label b { color: var(--color-ink-900); font-feature-settings: "tnum" 1; }
+  .convert-row { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-5); background: linear-gradient(135deg, #FFF3ED, #FFE2D1); border-radius: var(--radius-lg); margin-bottom: var(--space-5); }
+  .convert-row__big { font-size: 28px; font-weight: 800; color: var(--color-primary-800); font-feature-settings: "tnum" 1; }
+  .hist { display: flex; flex-direction: column; }
+  .hist__row { display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-3); padding: var(--space-3) var(--space-5); border-bottom: var(--border-subtle); align-items: center; }
+  .hist__row:last-child { border-bottom: none; }
+  .hist__time { font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--color-ink-500); }
+  .hist__actor { font-size: var(--fs-caption); color: var(--color-ink-500); }
+  .hist__delta { font-weight: 700; font-family: var(--font-mono); color: var(--color-danger-700); }
+  .hist__delta--plus { color: var(--color-success-700); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">ข้ามไปยังเนื้อหาหลัก</a>
+
+<div class="app">
+  <aside class="sidebar" data-sidebar data-active="prep"></aside>
+
+  <div class="main" id="main">
+    <div class="topbar">
+      <div class="topbar__title">
+        <h1>แปรรูปเนื้อสัตว์</h1>
+        <p>แปลงวัตถุดิบต้นทางเป็นสินค้าปลายทาง · รองรับ partial dispense (เปิดถุงใช้บางส่วน)</p>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="convert-row">
+        <div>
+          <div class="muted" style="font-size:var(--fs-caption)">วัตถุดิบต้นทาง</div>
+          <div style="font-size:18px;font-weight:700">หมูทั้งชิ้น · MEAT-003</div>
+        </div>
+        <div class="convert-row__big">12.0 กก.</div>
+        <div class="arrow-col">
+          <svg width="28" height="28" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <div class="muted" style="font-size:var(--fs-caption)">ผลิตภัณฑ์ปลายทาง</div>
+          <div style="font-size:18px;font-weight:700">หมูสับ · MEAT-001</div>
+        </div>
+        <div class="convert-row__big">10.8 กก.</div>
+        <div class="muted" style="font-size:var(--fs-caption);margin-left:auto">yield 90%</div>
+      </div>
+
+      <div class="prep-grid">
+        <!-- Source: partial dispense -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <h2 class="card__title">ดึงออกจากต้นทาง</h2>
+              <p class="card__subtitle">เลือกวัตถุดิบและจำนวนที่ต้องการใช้ · ไม่บังคับชั่งใหม่</p>
+            </div>
+          </div>
+          <div class="card__body">
+            <div class="field" style="margin-bottom: var(--space-4)">
+              <label class="field__label">วัตถุดิบต้นทาง</label>
+              <select class="select"><option>หมูทั้งชิ้น · MEAT-003 · คงเหลือ 12.0 กก.</option><option>ไก่สด · MEAT-005 · คงเหลือ 6.0 กก.</option></select>
+            </div>
+            <div class="field">
+              <label class="field__label">จำนวนที่ดึงออก (กก.)</label>
+              <input class="input" type="number" step="0.1" value="3.0"/>
+              <div class="partial-bar" aria-hidden="true">
+                <div class="partial-bar__fill" style="width: 25%"></div>
+              </div>
+              <div class="partial-label">
+                <span>ใช้ไปแล้ว <b>3.0 กก.</b></span>
+                <span>คงเหลือ <b>9.0 / 12.0 กก.</b></span>
+              </div>
+            </div>
+            <div class="notice" style="margin-top: var(--space-4); background: var(--color-info-50); border-color: rgba(31,106,184,0.2); color: var(--color-info-500)">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M10 10V7M10 13v0.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <div>เปิดถุง 12 กก. ใช้เพียง 3 กก. — ไม่ต้องชั่งเศษที่เหลือ ระบบจะคงยอด 9 กก. ไว้เป็น partial</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Destination -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <h2 class="card__title">สร้างปลายทาง</h2>
+              <p class="card__subtitle">ผลผลิตที่ได้และอัตราการสูญเสีย (yield)</p>
+            </div>
+          </div>
+          <div class="card__body">
+            <div class="field" style="margin-bottom: var(--space-4)">
+              <label class="field__label">ผลิตภัณฑ์ปลายทาง</label>
+              <select class="select"><option>หมูสับ · MEAT-001</option><option>หมูสไลด์ · MEAT-002</option></select>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label class="field__label">น้ำหนักที่ได้ (กก.)</label>
+                <input class="input" type="number" step="0.1" value="2.7"/>
+              </div>
+              <div class="field">
+                <label class="field__label">Yield</label>
+                <input class="input" value="90%" disabled/>
+              </div>
+            </div>
+            <div class="form-grid" style="margin-top: var(--space-4)">
+              <div class="field">
+                <label class="field__label">ต้นทุนต่อหน่วย (คำนวณ)</label>
+                <input class="input" value="฿200" disabled/>
+                <div class="field__help">180 × 3 ÷ 2.7 = 200 บาท/กก.</div>
+              </div>
+              <div class="field">
+                <label class="field__label">ผู้ทำรายการ</label>
+                <input class="input" value="พี่เอ"/>
+              </div>
+            </div>
+          </div>
+          <div class="card__footer">
+            <button class="btn btn--ghost">ยกเลิก</button>
+            <button class="btn btn--primary">ยืนยันแปรรูป</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__header">
+          <h2 class="card__title">ประวัติการแปรรูป · วันนี้</h2>
+          <span class="badge badge--neutral">5 รายการ</span>
+        </div>
+        <div class="hist">
+          <div class="hist__row"><span class="hist__time">14:22</span><div><b>หมูทั้งชิ้น → หมูสับ</b><div class="hist__actor">พี่เอ · yield 92%</div></div><div><span class="hist__delta">−3.0 กก.</span> &nbsp;<span class="hist__delta hist__delta--plus">+2.76 กก.</span></div></div>
+          <div class="hist__row"><span class="hist__time">11:10</span><div><b>ไก่สด → ไก่สไลด์</b><div class="hist__actor">พี่เอ · yield 88%</div></div><div><span class="hist__delta">−2.0 กก.</span> &nbsp;<span class="hist__delta hist__delta--plus">+1.76 กก.</span></div></div>
+          <div class="hist__row"><span class="hist__time">09:45</span><div><b>หมูทั้งชิ้น → หมูสไลด์</b><div class="hist__actor">พี่เอ · yield 85%</div></div><div><span class="hist__delta">−4.0 กก.</span> &nbsp;<span class="hist__delta hist__delta--plus">+3.4 กก.</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="sidebar.js?v=1776874424070"></script>
+</body>
+</html>

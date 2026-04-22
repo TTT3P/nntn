@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · ภาพรวมร้าน</title>
+<link rel="stylesheet" href="tokens.css?v=1776874424070" />
+<link rel="stylesheet" href="app.css?v=1776874424070" />
+<style>
+  /* Dashboard-specific layout bits (chart canvases etc.) */
+  .chart-card { padding: var(--space-5) var(--space-6); }
+  .chart-svg  { width: 100%; height: 280px; display: block; }
+  .legend     { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-4); }
+  .legend__row {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: var(--fs-body-sm);
+  }
+  .legend__left { display: flex; align-items: center; gap: var(--space-2); }
+  .legend__dot  { width: 10px; height: 10px; border-radius: 50%; }
+  .legend__value { font-weight: 700; color: var(--color-ink-900); font-feature-settings: "tnum" 1; }
+
+  .segmented {
+    display: inline-flex;
+    background: var(--color-ink-100);
+    border-radius: var(--radius-pill);
+    padding: 3px;
+  }
+  .segmented button {
+    border: none; background: transparent; cursor: pointer;
+    padding: 6px 14px; font-size: var(--fs-caption); font-weight: 600;
+    color: var(--color-ink-600); border-radius: var(--radius-pill);
+    transition: all var(--dur-fast) var(--ease-out);
+  }
+  .segmented button[aria-pressed="true"] {
+    background: var(--color-bg-surface); color: var(--color-ink-900);
+    box-shadow: var(--shadow-xs);
+  }
+
+  .pill-date {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    padding: 10px 16px;
+    background: var(--color-bg-surface);
+    border: var(--border-subtle);
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-body-sm);
+    font-weight: 600;
+  }
+
+  .help-btn {
+    position: fixed; right: 24px; bottom: 24px;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--color-ink-100); color: var(--color-ink-700);
+    border: none; cursor: pointer;
+    display: grid; place-items: center;
+    box-shadow: var(--shadow-md);
+  }
+
+  .grid-lower { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 1100px) { .grid-lower { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">ข้ามไปยังเนื้อหาหลัก</a>
+
+<div class="app">
+  <aside class="sidebar" aria-label="เมนูหลัก" data-sidebar data-active="overview"></aside>
+
+  <!-- Main -->
+  <div class="main" id="main">
+    <div class="topbar">
+      <div class="topbar__title">
+        <h1>ภาพรวมร้าน</h1>
+        <p>สถิติและข้อมูลสต๊อกวัตถุดิบ</p>
+      </div>
+      <div class="topbar__actions">
+        <span class="pill-date" aria-label="ช่วงเวลา">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="3" y="4" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M3 8h14M7 2v4M13 2v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          เมษายน 2026
+        </span>
+        <button class="btn btn--secondary">
+          <svg class="btn__icon" width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 3v11M10 14l-4-4M10 14l4-4M3 17h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          ส่งออกรายงาน
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Stat strip -->
+      <div class="grid-4">
+        <div class="stat stat--orange">
+          <div class="stat__top">
+            <div class="stat__icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 6l7-3 7 3v8l-7 3-7-3V6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 6l7 3 7-3M10 9v8" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            </div>
+            <span class="trend trend--up"><span class="trend__arrow">↗</span>12%</span>
+          </div>
+          <div>
+            <div class="stat__label">วัตถุดิบทั้งหมด</div>
+            <div class="stat__value">1,690.8</div>
+            <div class="stat__meta">จาก 26 รายการ</div>
+          </div>
+        </div>
+
+        <div class="stat stat--green">
+          <div class="stat__top">
+            <div class="stat__icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 14V8M8 14V5M12 14v-4M16 14V3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3 17h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </div>
+            <span class="trend trend--up"><span class="trend__arrow">↗</span>18%</span>
+          </div>
+          <div>
+            <div class="stat__label">มูลค่าสต๊อก</div>
+            <div class="stat__value">฿26,359.4</div>
+            <div class="stat__meta">เพิ่มขึ้นจากเดือนที่แล้ว</div>
+          </div>
+        </div>
+
+        <div class="stat stat--red">
+          <div class="stat__top">
+            <div class="stat__icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 10c3-5 11-5 14 0-3 5-11 5-14 0z" stroke="currentColor" stroke-width="1.6"/><circle cx="10" cy="10" r="2.5" fill="currentColor"/></svg>
+            </div>
+            <span class="trend trend--up"><span class="trend__arrow">↗</span>15%</span>
+          </div>
+          <div>
+            <div class="stat__label">ยอดขายเดือนนี้</div>
+            <div class="stat__value">฿105K</div>
+            <div class="stat__meta">3,500 ชาม</div>
+          </div>
+        </div>
+
+        <div class="stat stat--amber">
+          <div class="stat__top">
+            <div class="stat__icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M10 6v5M10 13v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </div>
+            <span class="badge badge--danger" style="padding:2px 8px">!</span>
+          </div>
+          <div>
+            <div class="stat__label">วัตถุดิบใกล้หมด</div>
+            <div class="stat__value">11</div>
+            <div class="stat__meta">ต้องสั่งซื้อเพิ่ม</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sales chart + donut -->
+      <div class="grid-dash">
+        <!-- Line chart -->
+        <div class="card chart-card">
+          <div class="row row--between" style="margin-bottom: var(--space-4)">
+            <div>
+              <h2 class="card__title">ยอดขายรายเดือน</h2>
+              <p class="card__subtitle">สถิติยอดขาย 6 เดือนล่าสุด</p>
+            </div>
+            <div class="segmented" role="tablist" aria-label="ช่วงเวลา">
+              <button aria-pressed="true">6 เดือน</button>
+              <button aria-pressed="false">12 เดือน</button>
+            </div>
+          </div>
+
+          <svg class="chart-svg" viewBox="0 0 640 280" preserveAspectRatio="none" aria-label="ยอดขายรายเดือน">
+            <defs>
+              <linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#F05A1A" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#F05A1A" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <!-- y-axis gridlines -->
+            <g stroke="#E8E2DC" stroke-width="1">
+              <line x1="56" x2="620" y1="40"  y2="40"/>
+              <line x1="56" x2="620" y1="100" y2="100"/>
+              <line x1="56" x2="620" y1="160" y2="160"/>
+              <line x1="56" x2="620" y1="220" y2="220"/>
+            </g>
+            <!-- y labels -->
+            <g fill="#8F857C" font-size="11" font-family="Sarabun, sans-serif">
+              <text x="44" y="44"  text-anchor="end">120K</text>
+              <text x="44" y="104" text-anchor="end">90K</text>
+              <text x="44" y="164" text-anchor="end">60K</text>
+              <text x="44" y="224" text-anchor="end">30K</text>
+            </g>
+            <!-- x labels -->
+            <g fill="#8F857C" font-size="12" font-family="Sarabun, sans-serif" text-anchor="middle">
+              <text x="100" y="260">ม.ค.</text>
+              <text x="195" y="260">ก.พ.</text>
+              <text x="290" y="260">มี.ค.</text>
+              <text x="385" y="260">เม.ย.</text>
+              <text x="480" y="260">พ.ค.</text>
+              <text x="575" y="260">มิ.ย.</text>
+            </g>
+            <!-- area -->
+            <path d="M100,170 C150,155 170,150 195,145 C240,135 265,130 290,125 C330,120 360,115 385,100 C420,88 450,80 480,70 C515,58 545,48 575,42 L575,240 L100,240 Z"
+                  fill="url(#salesFill)"/>
+            <!-- line -->
+            <path d="M100,170 C150,155 170,150 195,145 C240,135 265,130 290,125 C330,120 360,115 385,100 C420,88 450,80 480,70 C515,58 545,48 575,42"
+                  fill="none" stroke="#E8441A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- points -->
+            <g fill="#FFFFFF" stroke="#E8441A" stroke-width="2.5">
+              <circle cx="100" cy="170" r="5"/>
+              <circle cx="195" cy="145" r="5"/>
+              <circle cx="290" cy="125" r="5"/>
+              <circle cx="385" cy="100" r="5"/>
+              <circle cx="480" cy="70"  r="5"/>
+              <circle cx="575" cy="42"  r="5"/>
+            </g>
+          </svg>
+        </div>
+
+        <!-- Donut chart -->
+        <div class="card chart-card">
+          <div style="margin-bottom: var(--space-4)">
+            <h2 class="card__title">มูลค่าตามหมวด</h2>
+            <p class="card__subtitle">มูลค่าวัตถุดิบแต่ละประเภท</p>
+          </div>
+
+          <svg viewBox="0 0 200 200" style="width:100%;max-width:260px;margin:0 auto;display:block" aria-label="มูลค่าตามหมวด">
+            <g transform="translate(100 100)">
+              <!-- donut ring: stroke arcs. circumference = 2*pi*60 ≈ 377 -->
+              <!-- meat 60% (red), noodle 22% (orange), veg 10% (green), sauce 8% (purple) -->
+              <circle r="60" fill="transparent" stroke="#F5EBE3" stroke-width="26"/>
+              <circle r="60" fill="transparent" stroke="#D6331D" stroke-width="26"
+                      stroke-dasharray="226 377" transform="rotate(-90)"/>
+              <circle r="60" fill="transparent" stroke="#F5A623" stroke-width="26"
+                      stroke-dasharray="83 377" stroke-dashoffset="-226" transform="rotate(-90)"/>
+              <circle r="60" fill="transparent" stroke="#1FA463" stroke-width="26"
+                      stroke-dasharray="38 377" stroke-dashoffset="-309" transform="rotate(-90)"/>
+              <circle r="60" fill="transparent" stroke="#7E4FD1" stroke-width="26"
+                      stroke-dasharray="30 377" stroke-dashoffset="-347" transform="rotate(-90)"/>
+              <!-- center label -->
+              <text y="-4" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="12" fill="#8F857C">รวม</text>
+              <text y="18" text-anchor="middle" font-family="Sarabun, sans-serif" font-weight="800" font-size="20" fill="#1A1410">฿54K</text>
+            </g>
+          </svg>
+
+          <div class="legend">
+            <div class="legend__row"><div class="legend__left"><span class="legend__dot" style="background:#F5A623"></span>เส้น</div><div class="legend__value">฿13K</div></div>
+            <div class="legend__row"><div class="legend__left"><span class="legend__dot" style="background:#D6331D"></span>เนื้อสัตว์</div><div class="legend__value">฿36K</div></div>
+            <div class="legend__row"><div class="legend__left"><span class="legend__dot" style="background:#1FA463"></span>ผัก</div><div class="legend__value">฿5K</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Low stock + Activity -->
+      <div class="grid-dash grid-lower">
+        <!-- Low stock -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <h2 class="card__title">วัตถุดิบใกล้หมด</h2>
+            </div>
+            <span class="badge badge--danger">11 รายการ</span>
+          </div>
+          <div class="card__body" style="padding-top:0">
+            <div class="low-item">
+              <div>
+                <div class="low-item__name">เส้นเล็ก</div>
+                <div class="low-item__sku">NDL-001</div>
+              </div>
+              <div style="text-align:right">
+                <div class="low-item__qty">15 กก.</div>
+                <div class="low-item__min">ต่ำกว่า 20</div>
+              </div>
+            </div>
+            <div class="low-item">
+              <div>
+                <div class="low-item__name">วุ้นเส้น</div>
+                <div class="low-item__sku">NDL-005</div>
+              </div>
+              <div style="text-align:right">
+                <div class="low-item__qty">8 กก.</div>
+                <div class="low-item__min">ต่ำกว่า 10</div>
+              </div>
+            </div>
+            <div class="low-item">
+              <div>
+                <div class="low-item__name">หมูสับ</div>
+                <div class="low-item__sku">MEAT-001</div>
+              </div>
+              <div style="text-align:right">
+                <div class="low-item__qty">12 กก.</div>
+                <div class="low-item__min">ต่ำกว่า 15</div>
+              </div>
+            </div>
+            <div class="low-item">
+              <div>
+                <div class="low-item__name">ปลาชิ้น</div>
+                <div class="low-item__sku">MEAT-006</div>
+              </div>
+              <div style="text-align:right">
+                <div class="low-item__qty">8 กก.</div>
+                <div class="low-item__min">ต่ำกว่า 10</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <h2 class="card__title">กิจกรรมวันนี้</h2>
+            </div>
+            <span class="badge badge--neutral">
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              วันนี้
+            </span>
+          </div>
+          <div class="activity">
+            <div class="activity__item">
+              <div class="activity__icon activity__icon--out" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 4v10M10 14l-4-4M10 14l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div>
+                <div class="activity__main-title">เบิกวัตถุดิบ · เส้นเล็ก</div>
+                <div class="activity__meta">ครัว · 10 นาทีที่แล้ว</div>
+              </div>
+              <div class="activity__delta activity__delta--neg">−5</div>
+            </div>
+            <div class="activity__item">
+              <div class="activity__icon activity__icon--in" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 16V6M10 6l-4 4M10 6l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div>
+                <div class="activity__main-title">รับของเข้า · หมูสับ</div>
+                <div class="activity__meta">พี่เอ · 25 นาทีที่แล้ว</div>
+              </div>
+              <div class="activity__delta activity__delta--pos">+15</div>
+            </div>
+            <div class="activity__item">
+              <div class="activity__icon activity__icon--out" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 4v10M10 14l-4-4M10 14l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div>
+                <div class="activity__main-title">เบิกวัตถุดิบ · ผักบุ้ง</div>
+                <div class="activity__meta">ครัว · 45 นาทีที่แล้ว</div>
+              </div>
+              <div class="activity__delta activity__delta--neg">−3</div>
+            </div>
+            <div class="activity__item">
+              <div class="activity__icon activity__icon--in" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 16V6M10 6l-4 4M10 6l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div>
+                <div class="activity__main-title">รับของเข้า · บะหมี่เหลือง</div>
+                <div class="activity__meta">พี่เอ · 1 ชั่วโมงที่แล้ว</div>
+              </div>
+              <div class="activity__delta activity__delta--pos">+22</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<button class="help-btn" aria-label="ช่วยเหลือ">
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M7.5 7.5c0-1.5 1-2.5 2.5-2.5s2.5 1 2.5 2.5-2.5 2-2.5 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="15" r="0.9" fill="currentColor"/></svg>
+</button>
+
+<script src="sidebar.js?v=1776874424070"></script>
+</body>
+</html>

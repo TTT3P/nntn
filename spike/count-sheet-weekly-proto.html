@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · count-sheet-weekly prototype (Phase 2C)</title>
+<link rel="stylesheet" href="tokens.css?v=20260422b" />
+<script>
+  try {
+    var saved = localStorage.getItem('nntn_theme');
+    if (saved === 'warm' || saved === null) {
+      localStorage.removeItem('nntn_theme');
+      document.documentElement.removeAttribute('data-theme');
+    }
+  } catch(e){}
+</script>
+<style>
+  body { background: var(--color-bg-app); color: var(--color-ink-800); font-family: var(--font-sans); }
+  .page { max-width: 1440px; margin: 0 auto; padding: 32px 24px 100px; }
+
+  .top { display:flex; gap:14px; align-items:center; font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-ink-600); margin-bottom: var(--space-5);}
+  .top .dot { width:10px; height:10px; border-radius:50%; background: var(--color-primary-600); box-shadow: 0 0 0 4px var(--color-primary-100);}
+  .top .crumbs { margin-left:auto; color: var(--color-ink-500);}
+  .back-link { color: var(--color-primary-700); text-decoration: none; border-bottom: 1px dotted currentColor;}
+
+  h1.page-h { font-family: var(--font-display); font-weight: 500; font-size: 48px; line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 var(--space-3); color: var(--color-ink-900); max-width: 920px;}
+  h1 .hi { color: var(--color-primary-700);}
+  .page-lede { font-size: 17px; line-height: 1.6; color: var(--color-ink-700); max-width: 840px; margin: 0 0 var(--space-4);}
+  .page-lede b { color: var(--color-primary-700);}
+
+  .meta-strip { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: var(--space-7);}
+  @media (max-width: 960px){ .meta-strip { grid-template-columns: 1fr;}}
+  .meta { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-lg); padding: 18px 20px;}
+  .meta__id { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-accent-600); margin-bottom: 6px; font-weight: 700;}
+  .meta__t { font-family: var(--font-display); font-weight: 600; font-size: 18px; margin: 0 0 4px; color: var(--color-ink-900);}
+  .meta__d { font-size: 13px; line-height: 1.55; color: var(--color-ink-700);}
+
+  /* Showcase layout */
+  .showcase { display: grid; grid-template-columns: 300px 1fr; gap: 40px; margin-bottom: var(--space-8); align-items: start;}
+  @media (max-width: 1020px){ .showcase { grid-template-columns: 1fr;}}
+
+  .annot__h { font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-accent-600); margin: 0 0 4px;}
+  .annot__t { font-family: var(--font-display); font-weight: 500; font-size: 26px; letter-spacing: -0.01em; color: var(--color-ink-900); margin: 0 0 var(--space-3);}
+  .annot ul { padding-left: 18px; color: var(--color-ink-700); font-size: 14px; line-height: 1.6;}
+  .annot li { margin-bottom: 8px;}
+  .annot li b { color: var(--color-ink-900);}
+
+  /* Screen controls panel (for digital view) */
+  .ctrl { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: var(--space-5); display: grid; grid-template-columns: auto auto auto 1fr auto; gap: 16px; align-items: center;}
+  .ctrl__lbl { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-ink-500); display:block; margin-bottom: 2px;}
+  .ctrl__v { font-family: var(--font-mono); font-weight: 700; color: var(--color-ink-900); font-size: 14px;}
+  .ctrl__btn { padding: 10px 16px; border-radius: var(--radius-md); background: var(--color-primary-700); color: #fff; font-weight: 700; font-size: 14px; border: none; cursor: pointer; display: inline-flex; gap: 8px; align-items: center;}
+  .ctrl__btn.ghost { background: var(--color-ink-100); color: var(--color-ink-900);}
+
+  /* A4 Print sheet */
+  .a4-wrap { background: #E7EBE8; padding: 30px 20px; border-radius: var(--radius-lg); display: flex; justify-content: center;}
+  .a4 {
+    width: 794px; /* A4 @ 96dpi ~ 794x1123 */
+    min-height: 1123px;
+    background: #fff;
+    box-shadow: 0 8px 28px rgba(8, 32, 14, 0.12);
+    padding: 44px 40px 40px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--color-ink-900);
+    position: relative;
+  }
+
+  /* Print header */
+  .ph { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: start; padding-bottom: 14px; border-bottom: 2px solid var(--color-primary-700); margin-bottom: 16px;}
+  .ph__brand { display: flex; align-items: center; gap: 10px;}
+  .ph__logo { width: 44px; height: 44px; border-radius: 50%; background: var(--color-primary-700); color: var(--color-accent-500); display:grid; place-items: center; font-family: var(--font-display); font-size: 18px; font-weight: 600;}
+  .ph__t { font-family: var(--font-display); font-size: 24px; font-weight: 500; color: var(--color-ink-900); letter-spacing: -0.01em; margin: 0;}
+  .ph__s { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-ink-600); margin-top: 2px;}
+  .ph__meta { text-align: right; font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-700); line-height: 1.5;}
+  .ph__meta b { color: var(--color-primary-800); font-size: 13px; font-weight: 700; display: block;}
+  .ph__meta .qr { width: 56px; height: 56px; background: repeating-linear-gradient(45deg, var(--color-ink-900) 0 3px, transparent 3px 6px), repeating-linear-gradient(-45deg, var(--color-ink-900) 0 3px, transparent 3px 6px); border: 1px solid var(--color-ink-900); margin-left: auto; margin-top: 4px; background-color: #fff;}
+
+  /* Instructions strip */
+  .inst { background: var(--color-bg-surface); border: 1px solid var(--color-ink-200); border-radius: 4px; padding: 10px 14px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; font-size: 10px; line-height: 1.45;}
+  .inst__col { padding-right: 10px; border-right: 1px dashed var(--color-ink-200);}
+  .inst__col:last-child { border-right: none;}
+  .inst__h { font-family: var(--font-mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-primary-700); font-weight: 700; margin-bottom: 3px;}
+  .inst__b { color: var(--color-ink-800);}
+
+  /* Count table */
+  table.ct { width: 100%; border-collapse: collapse; font-size: 10.5px;}
+  table.ct th { font-family: var(--font-mono); font-size: 9px; letter-spacing: .6px; text-transform: uppercase; color: var(--color-ink-700); padding: 8px 6px; background: var(--color-bg-surface); border: 1px solid var(--color-ink-300); font-weight: 700; text-align: center; vertical-align: middle;}
+  table.ct td { padding: 7px 6px; border: 1px solid var(--color-ink-200); vertical-align: middle;}
+  table.ct thead th.day-head { background: var(--color-primary-700); color: #fff;}
+  table.ct thead th.day-head .dow { display: block; font-size: 10px; color: var(--color-accent-300); margin-top: 2px;}
+  table.ct tbody tr:nth-child(even) td { background: rgba(240, 236, 224, 0.28);}
+
+  .ct__sku { text-align: left; font-family: var(--font-mono); font-size: 9px; color: var(--color-primary-700); font-weight: 700; width: 52px;}
+  .ct__name { text-align: left; width: 150px; line-height: 1.3;}
+  .ct__name b { font-family: var(--font-sans); font-weight: 700; color: var(--color-ink-900); font-size: 11px; display: block;}
+  .ct__name small { font-size: 9px; color: var(--color-ink-500); font-family: var(--font-mono); letter-spacing: .2px;}
+  .ct__expected { text-align: right; width: 56px; font-family: var(--font-mono); color: var(--color-ink-600); font-size: 10px;}
+  .ct__expected b { display: block; color: var(--color-ink-900); font-weight: 700; font-size: 12px;}
+  .ct__unit { text-align: center; width: 36px; font-family: var(--font-mono); font-size: 9px; color: var(--color-ink-600); text-transform: uppercase; letter-spacing: .3px;}
+  .ct__box { height: 26px; text-align: center; background: #fff; position: relative;}
+  .ct__box.today { background: rgba(201, 150, 44, 0.08); box-shadow: inset 0 0 0 1px var(--color-accent-500);}
+  .ct__box.not-today { background: repeating-linear-gradient(45deg, #fff 0 3px, #F2F2EE 3px 6px);}
+  .ct__box .ghost { font-family: var(--font-mono); font-size: 12px; color: #D9D9D9;}
+  .ct__note { width: 64px; font-size: 9px; color: var(--color-ink-500); font-family: var(--font-mono); text-align: center;}
+
+  /* Filled example */
+  .ct__box.filled { background: #fff;}
+  .ct__box.filled .n { font-family: var(--font-mono); font-weight: 700; color: var(--color-ink-900); font-size: 12px;}
+  .ct__box.filled .n.warn { color: #8F1A0B;}
+
+  /* Category row */
+  table.ct tr.cat td { background: var(--color-primary-50); font-family: var(--font-mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-primary-800); font-weight: 700; padding: 6px 8px; text-align: left;}
+
+  /* Totals row */
+  table.ct tr.totals td { background: var(--color-ink-900); color: #fff; font-family: var(--font-mono); font-size: 10px; letter-spacing: .3px; padding: 10px 6px;}
+  table.ct tr.totals td.lbl { text-align: right; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;}
+  table.ct tr.totals td.box { text-align: center;}
+  table.ct tr.totals td.box .ghost { color: #75A07D;}
+
+  /* Footer */
+  .pf { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding-top: 14px; border-top: 1px dashed var(--color-ink-300);}
+  .pf__sig { font-size: 10px; color: var(--color-ink-700);}
+  .pf__sig .line { height: 32px; border-bottom: 1px solid var(--color-ink-400); margin-bottom: 4px;}
+  .pf__sig__lbl { font-family: var(--font-mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-ink-500);}
+  .pf__legal { font-size: 9px; color: var(--color-ink-500); line-height: 1.5; font-family: var(--font-mono);}
+  .pf__legal b { color: var(--color-primary-800); font-family: var(--font-sans); font-weight: 700; font-size: 10px;}
+
+  /* Watermark */
+  .wm { position: absolute; top: 440px; left: 50%; transform: translateX(-50%) rotate(-14deg); font-family: var(--font-display); font-size: 120px; color: rgba(30, 110, 51, 0.04); pointer-events: none; letter-spacing: 16px; font-weight: 600;}
+
+  /* Whitelist explanation */
+  .wl-section { background: var(--color-bg-surface); border: 1px solid var(--color-ink-200); border-radius: var(--radius-lg); padding: var(--space-5); margin-top: var(--space-7);}
+  .wl-section h2 { font-family: var(--font-display); font-weight: 500; font-size: 32px; letter-spacing: -0.01em; color: var(--color-ink-900); margin: 0 0 var(--space-3);}
+  .wl-section .lede { font-size: 14px; color: var(--color-ink-700); line-height: 1.6; margin: 0 0 var(--space-4); max-width: 860px;}
+
+  .sku-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;}
+  @media (max-width: 960px){ .sku-grid { grid-template-columns: repeat(2, 1fr);}}
+  .sku-card { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 12px 14px; display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start;}
+  .sku-card__ic { width: 32px; height: 32px; border-radius: 6px; display:grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 14px; color: #fff;}
+  .sku-card.meat .sku-card__ic { background: #8F1A0B;}
+  .sku-card.prep .sku-card__ic { background: var(--color-accent-600);}
+  .sku-card.dry  .sku-card__ic { background: var(--color-primary-700);}
+  .sku-card__n { font-size: 12px; font-weight: 700; color: var(--color-ink-900); line-height: 1.3;}
+  .sku-card__sku { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); margin-top: 2px; letter-spacing: .2px;}
+  .sku-card__unit { font-family: var(--font-mono); font-size: 10px; color: var(--color-accent-600); font-weight: 700; margin-top: 4px; display: inline-block; background: var(--color-accent-100); padding: 1px 5px; border-radius: 3px;}
+
+  /* Entry-back flow */
+  .entry-flow { margin-top: var(--space-7);}
+  .entry-flow__h { font-family: var(--font-display); font-weight: 500; font-size: 32px; letter-spacing: -0.01em; color: var(--color-ink-900); margin: 0 0 var(--space-3);}
+  .entry-flow__lede { font-size: 14px; color: var(--color-ink-700); line-height: 1.6; margin: 0 0 var(--space-4); max-width: 860px;}
+
+  .entry-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px;}
+  @media (max-width: 960px){ .entry-row { grid-template-columns: 1fr;}}
+  .entry-step { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-lg); padding: 20px;}
+  .entry-step__n { font-family: var(--font-display); font-size: 40px; color: var(--color-accent-500); font-weight: 600; line-height: 1; margin-bottom: 8px;}
+  .entry-step__t { font-family: var(--font-display); font-size: 18px; font-weight: 600; color: var(--color-ink-900); margin: 0 0 6px;}
+  .entry-step__d { font-size: 13px; line-height: 1.55; color: var(--color-ink-700);}
+  .entry-step__d code { background: var(--color-ink-100); padding: 1px 5px; border-radius: 3px; font-size: 11px;}
+
+  /* Print styles */
+  @media print {
+    body { background: #fff;}
+    .page > *:not(.a4-wrap-print) { display: none;}
+    .a4-wrap-print { padding: 0; background: #fff; border-radius: 0;}
+    .a4 { box-shadow: none; width: 100%; min-height: 100vh; padding: 20mm 18mm;}
+  }
+
+  /* Next-phase strip */
+  .next-strip { margin-top: var(--space-7); background: var(--color-primary-50); border: 1px solid var(--color-primary-200); border-radius: var(--radius-lg); padding: var(--space-5); display:grid; grid-template-columns: 1fr auto; gap: var(--space-4); align-items: center;}
+  .next-strip h2 { font-family: var(--font-display); font-weight: 500; font-size: 26px; margin: 0 0 4px; color: var(--color-ink-900);}
+  .next-strip p { font-size: 14px; color: var(--color-ink-700); margin: 0;}
+  .next-strip a { padding: 12px 20px; border-radius: var(--radius-md); background: var(--color-primary-600); color: #fff; text-decoration: none; font-weight: 700; font-size: 14px;}
+
+  /* Rule */
+  .rule { text-align: center; color: var(--color-accent-600); margin: var(--space-8) 0 var(--space-6); letter-spacing: 14px;}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="top">
+    <span class="dot"></span>
+    <span>NNTN · Design Spike</span>
+    <span class="crumbs">PHASE 2C · count-sheet-weekly · <a class="back-link" href="index.html">← hub</a></span>
+  </div>
+
+  <h1 class="page-h">ใบนับ 7 วัน · <span class="hi">พิมพ์ได้เลย · กรอกในครัว</span></h1>
+  <p class="page-lede">
+    Print artifact เป็น <b>A4 grid</b> · 12-SKU whitelist (pre-packaged items ที่นับเป็น "ชิ้น" หรือ "แพ็ค" ได้) · เซ็นที่หน้าสต๊อก · แล้ว<b>ย้อน-พิมพ์ค่าเข้าระบบ</b>ผ่าน rpc_count_adjust · จับคู่กับ count-log.html (185d3e4) ให้เห็น audit trail · decision 22/04 pair
+  </p>
+
+  <!-- Meta strip -->
+  <div class="meta-strip">
+    <div class="meta">
+      <div class="meta__id">CONTRACT · READ</div>
+      <h3 class="meta__t">items + catch_weight</h3>
+      <p class="meta__d">Query <code>items.is_count_sheet_eligible = true</code> (เพิ่ม column) · join <code>v_stock_unified</code> สำหรับ expected qty · รายการ ≤ 12 เพื่อให้ใส่ใน 1 หน้า A4 ไม่ต้องพลิก</p>
+    </div>
+    <div class="meta">
+      <div class="meta__id">CONTRACT · WRITE</div>
+      <h3 class="meta__t">rpc_count_adjust (each cell)</h3>
+      <p class="meta__d">หลังนับเสร็จ · พนักงานเปิด entry screen แล้วพิมพ์ค่าตามใบ · UI เรียก <code>rpc_count_adjust(actor, item, counted_qty, note)</code> ต่อ 1 cell · trigger คำนวณ delta อัตโนมัติ</p>
+    </div>
+    <div class="meta">
+      <div class="meta__id">PAIRS WITH</div>
+      <h3 class="meta__t">count-log.html · 185d3e4</h3>
+      <p class="meta__d">ทุกการ adjust จากใบนี้โผล่ใน <code>v_count_adjust_log</code> พร้อม actor + note = "count-sheet วันที่ 22/04" · ไทน์ตรวจได้โดยไม่ต้อง RLS lock-down</p>
+    </div>
+  </div>
+
+  <!-- Digital controls -->
+  <div class="ctrl">
+    <div>
+      <span class="ctrl__lbl">Week of</span>
+      <span class="ctrl__v">22 Apr – 28 Apr 2026</span>
+    </div>
+    <div>
+      <span class="ctrl__lbl">Branch</span>
+      <span class="ctrl__v">NT</span>
+    </div>
+    <div>
+      <span class="ctrl__lbl">SKUs</span>
+      <span class="ctrl__v">12 / 12 whitelisted</span>
+    </div>
+    <div></div>
+    <div>
+      <button class="ctrl__btn ghost">← manage whitelist</button>
+      <button class="ctrl__btn">🖨 print</button>
+    </div>
+  </div>
+
+  <!-- The A4 sheet -->
+  <div class="a4-wrap a4-wrap-print">
+    <div class="a4">
+
+      <span class="wm">COUNT · 22/04</span>
+
+      <!-- Print header -->
+      <div class="ph">
+        <div class="ph__brand">
+          <div class="ph__logo">น</div>
+          <div>
+            <h2 class="ph__t">ใบนับสต๊อก · 7 วัน</h2>
+            <div class="ph__s">NNTN Stock Count · Weekly Sheet · 12 SKU</div>
+          </div>
+        </div>
+        <div class="ph__meta">
+          <b>Week 17 · 22 Apr – 28 Apr 2026</b>
+          สาขา: NT (Non-Theppatak)<br/>
+          พนักงาน: ___________<br/>
+          พิมพ์: 22 Apr 2026 · 07:02
+          <div class="qr"></div>
+        </div>
+      </div>
+
+      <!-- Instructions -->
+      <div class="inst">
+        <div class="inst__col">
+          <div class="inst__h">1 · อ่าน expected</div>
+          <div class="inst__b">ช่อง "ค่าคาด" จาก <code>v_stock_unified</code> ตอนพิมพ์ · ถ้าห่างมากแนะนำนับซ้ำ</div>
+        </div>
+        <div class="inst__col">
+          <div class="inst__h">2 · นับ + กรอก</div>
+          <div class="inst__b">นับของจริง · เขียนตัวเลขในช่องวัน · ถ้าไม่ต้องนับ (ไม่ใช่วันของ SKU นั้น) เห็น ░░░</div>
+        </div>
+        <div class="inst__col">
+          <div class="inst__h">3 · พิมพ์เข้าระบบ</div>
+          <div class="inst__b">เปิด <code>count-entry</code> · พิมพ์ตามใบ · เก็บใบไว้ 30 วัน · audit</div>
+        </div>
+      </div>
+
+      <!-- Count table -->
+      <table class="ct">
+        <thead>
+          <tr>
+            <th rowspan="2" class="ct__sku">SKU</th>
+            <th rowspan="2" class="ct__name">รายการ</th>
+            <th rowspan="2" class="ct__expected">ค่าคาด</th>
+            <th rowspan="2" class="ct__unit">หน่วย</th>
+            <th colspan="7">นับจริงต่อวัน</th>
+            <th rowspan="2" class="ct__note">หมายเหตุ</th>
+          </tr>
+          <tr>
+            <th class="day-head">อา<span class="dow">22/04</span></th>
+            <th class="day-head">จ<span class="dow">23</span></th>
+            <th class="day-head">อ<span class="dow">24</span></th>
+            <th class="day-head">พ<span class="dow">25</span></th>
+            <th class="day-head">พฤ<span class="dow">26</span></th>
+            <th class="day-head">ศ<span class="dow">27</span></th>
+            <th class="day-head">ส<span class="dow">28</span></th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <!-- Category: Meat pre-packaged -->
+          <tr class="cat"><td colspan="12">◆ เนื้อพร้อมส่ง · Meat (pre-packaged)</td></tr>
+
+          <tr>
+            <td class="ct__sku">MT-019</td>
+            <td class="ct__name"><b>เนื้อสดหมักนุ่ม</b><small>520g/ถุง</small></td>
+            <td class="ct__expected">13 <b>13</b></td>
+            <td class="ct__unit">ถุง</td>
+            <td class="ct__box today filled"><span class="n">12</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__note">-1 dispose</td>
+          </tr>
+          <tr>
+            <td class="ct__sku">MT-031</td>
+            <td class="ct__name"><b>ลูกชิ้นเนื้อตุ๋น</b><small>400g/ถุง</small></td>
+            <td class="ct__expected">8 <b>8</b></td>
+            <td class="ct__unit">ถุง</td>
+            <td class="ct__box today filled"><span class="n">8</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__note"></td>
+          </tr>
+          <tr>
+            <td class="ct__sku">MT-022</td>
+            <td class="ct__name"><b>เนื้อตุ๋นชิ้นใหญ่</b><small>1 kg/ถุง</small></td>
+            <td class="ct__expected"><b>5</b></td>
+            <td class="ct__unit">ถุง</td>
+            <td class="ct__box today"></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__note"></td>
+          </tr>
+          <tr>
+            <td class="ct__sku">MT-040</td>
+            <td class="ct__name"><b>เนื้อสับ (บ)</b><small>250g/แพ็ค</small></td>
+            <td class="ct__expected"><b>24</b></td>
+            <td class="ct__unit">แพ็ค</td>
+            <td class="ct__box today filled"><span class="n warn">22</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__note">ห่าง 2 ✗</td>
+          </tr>
+
+          <!-- Category: Semi-recipe -->
+          <tr class="cat"><td colspan="12">◆ ซอส / น้ำจิ้ม / เครื่องเคียง · Semi-recipe</td></tr>
+
+          <tr>
+            <td class="ct__sku">SRCP-004</td>
+            <td class="ct__name"><b>พริกน้ำส้ม</b><small>150g/ขวด</small></td>
+            <td class="ct__expected"><b>32</b></td>
+            <td class="ct__unit">ขวด</td>
+            <td class="ct__box today filled"><span class="n">32</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__note">OK</td>
+          </tr>
+          <tr>
+            <td class="ct__sku">SRCP-002</td>
+            <td class="ct__name"><b>น้ำจิ้มแจ่ว</b><small>100g/ถ้วย</small></td>
+            <td class="ct__expected"><b>18</b></td>
+            <td class="ct__unit">ถ้วย</td>
+            <td class="ct__box today"></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__note"></td>
+          </tr>
+          <tr>
+            <td class="ct__sku">SRCP-009</td>
+            <td class="ct__name"><b>ซอสมะขาม</b><small>200g/ขวด</small></td>
+            <td class="ct__expected"><b>14</b></td>
+            <td class="ct__unit">ขวด</td>
+            <td class="ct__box today"></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__note"></td>
+          </tr>
+
+          <!-- Category: Dry / shelf-stable -->
+          <tr class="cat"><td colspan="12">◆ ของแห้ง · Dry / shelf-stable (นับทุกวันจันทร์)</td></tr>
+
+          <tr>
+            <td class="ct__sku">SP-201</td>
+            <td class="ct__name"><b>ข้าวหอมมะลิ</b><small>5 kg/ถุง</small></td>
+            <td class="ct__expected"><b>12</b></td>
+            <td class="ct__unit">ถุง</td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box"></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__note"></td>
+          </tr>
+          <tr>
+            <td class="ct__sku">SP-214</td>
+            <td class="ct__name"><b>น้ำมันถั่วเหลือง</b><small>1 ลิตร</small></td>
+            <td class="ct__expected"><b>9</b></td>
+            <td class="ct__unit">ขวด</td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box"></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__note"></td>
+          </tr>
+          <tr>
+            <td class="ct__sku">SP-236</td>
+            <td class="ct__name"><b>กระเทียมดอง</b><small>500g/ขวด</small></td>
+            <td class="ct__expected"><b>7</b></td>
+            <td class="ct__unit">ขวด</td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box"></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__box not-today"></td>
+            <td class="ct__note"></td>
+          </tr>
+
+          <!-- Category: Packaging -->
+          <tr class="cat"><td colspan="12">◆ PKG · บรรจุภัณฑ์ (f0147c8 · 22/04)</td></tr>
+
+          <tr>
+            <td class="ct__sku">PKG-009</td>
+            <td class="ct__name"><b>ชุดเครื่องปรุง (รวม)</b><small>1 ชุด = 3 pkg</small></td>
+            <td class="ct__expected"><b>120</b></td>
+            <td class="ct__unit">ชิ้น</td>
+            <td class="ct__box today"></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__note">B3 pending</td>
+          </tr>
+          <tr>
+            <td class="ct__sku">PKG-012</td>
+            <td class="ct__name"><b>ถุงใส่ (M)</b><small>แพ็ค 50</small></td>
+            <td class="ct__expected"><b>6</b></td>
+            <td class="ct__unit">แพ็ค</td>
+            <td class="ct__box today"></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__box"><span class="ghost">░</span></td>
+            <td class="ct__note"></td>
+          </tr>
+
+          <!-- Totals -->
+          <tr class="totals">
+            <td colspan="4" class="lbl">รวมทั้งหมด</td>
+            <td class="box"><span class="ghost">░</span></td>
+            <td class="box"><span class="ghost">░</span></td>
+            <td class="box"><span class="ghost">░</span></td>
+            <td class="box"><span class="ghost">░</span></td>
+            <td class="box"><span class="ghost">░</span></td>
+            <td class="box"><span class="ghost">░</span></td>
+            <td class="box"><span class="ghost">░</span></td>
+            <td></td>
+          </tr>
+
+        </tbody>
+      </table>
+
+      <!-- Footer -->
+      <div class="pf">
+        <div class="pf__sig">
+          <div class="line"></div>
+          <span class="pf__sig__lbl">ผู้นับ · signature</span>
+        </div>
+        <div class="pf__legal">
+          <b>เอกสาร Count Sheet · Week 17 · 2026</b>
+          เก็บต้นฉบับ 30 วัน · scan เข้า Drive ถ้าต้องการ audit<br/>
+          ผลกรอกเข้าระบบผ่าน count-entry.html → <code>rpc_count_adjust</code><br/>
+          ย้อนดูได้ที่ <code>count-log.html</code> (v_count_adjust_log · 185d3e4)
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="rule">◆ ◆ ◆</div>
+
+  <!-- Whitelist section -->
+  <div class="wl-section">
+    <h2>12-SKU Whitelist · ของที่นับได้จากใบนี้เท่านั้น</h2>
+    <p class="lede">
+      ไม่ใช่ทุก item นับด้วยมือได้ · เนื้อ raw ต้องชั่งเป็น kg ผ่าน catch_weight · ผักสดเน่าเร็วไม่นับทั้งสัปดาห์ · <b>whitelist = ของที่มีบรรจุภัณฑ์ลงตัว + shelf life ≥ 7 วัน</b> · เพิ่ม column <code>items.is_count_sheet_eligible boolean</code> · Admin UI จัดการ whitelist แยก (ไม่ใช่ดุล data)
+    </p>
+
+    <div class="sku-grid">
+      <div class="sku-card meat"><div class="sku-card__ic">น</div><div><div class="sku-card__n">เนื้อสดหมักนุ่ม</div><div class="sku-card__sku">MT-019</div><span class="sku-card__unit">ถุง</span></div></div>
+      <div class="sku-card meat"><div class="sku-card__ic">ล</div><div><div class="sku-card__n">ลูกชิ้นเนื้อตุ๋น</div><div class="sku-card__sku">MT-031</div><span class="sku-card__unit">ถุง</span></div></div>
+      <div class="sku-card meat"><div class="sku-card__ic">ต</div><div><div class="sku-card__n">เนื้อตุ๋นชิ้นใหญ่</div><div class="sku-card__sku">MT-022</div><span class="sku-card__unit">ถุง</span></div></div>
+      <div class="sku-card meat"><div class="sku-card__ic">ส</div><div><div class="sku-card__n">เนื้อสับ (บ)</div><div class="sku-card__sku">MT-040</div><span class="sku-card__unit">แพ็ค</span></div></div>
+
+      <div class="sku-card prep"><div class="sku-card__ic">พ</div><div><div class="sku-card__n">พริกน้ำส้ม</div><div class="sku-card__sku">SRCP-004</div><span class="sku-card__unit">ขวด</span></div></div>
+      <div class="sku-card prep"><div class="sku-card__ic">จ</div><div><div class="sku-card__n">น้ำจิ้มแจ่ว</div><div class="sku-card__sku">SRCP-002</div><span class="sku-card__unit">ถ้วย</span></div></div>
+      <div class="sku-card prep"><div class="sku-card__ic">ม</div><div><div class="sku-card__n">ซอสมะขาม</div><div class="sku-card__sku">SRCP-009</div><span class="sku-card__unit">ขวด</span></div></div>
+
+      <div class="sku-card dry"><div class="sku-card__ic">ข</div><div><div class="sku-card__n">ข้าวหอมมะลิ</div><div class="sku-card__sku">SP-201</div><span class="sku-card__unit">ถุง</span></div></div>
+      <div class="sku-card dry"><div class="sku-card__ic">ม</div><div><div class="sku-card__n">น้ำมันถั่วเหลือง</div><div class="sku-card__sku">SP-214</div><span class="sku-card__unit">ขวด</span></div></div>
+      <div class="sku-card dry"><div class="sku-card__ic">ก</div><div><div class="sku-card__n">กระเทียมดอง</div><div class="sku-card__sku">SP-236</div><span class="sku-card__unit">ขวด</span></div></div>
+
+      <div class="sku-card dry"><div class="sku-card__ic">P</div><div><div class="sku-card__n">ชุดเครื่องปรุง</div><div class="sku-card__sku">PKG-009</div><span class="sku-card__unit">ชิ้น</span></div></div>
+      <div class="sku-card dry"><div class="sku-card__ic">ถ</div><div><div class="sku-card__n">ถุงใส่ (M)</div><div class="sku-card__sku">PKG-012</div><span class="sku-card__unit">แพ็ค</span></div></div>
+    </div>
+  </div>
+
+  <!-- Entry-back flow -->
+  <div class="entry-flow">
+    <h3 class="entry-flow__h">Paper → ระบบ · 3 ขั้น</h3>
+    <p class="entry-flow__lede">
+      ใบพิมพ์ไม่ใช่จุดจบ — มันคือ <b>intermediate artifact</b> · น้องกรอกในครัวตอนสายเย็น · แล้ว<b>เปิด count-entry.html (new · Phase 3)</b> พิมพ์ตามใบ · rpc_count_adjust จัดการที่เหลือ
+    </p>
+
+    <div class="entry-row">
+      <div class="entry-step">
+        <div class="entry-step__n">1</div>
+        <h4 class="entry-step__t">พิมพ์ใบ · เช้า</h4>
+        <p class="entry-step__d">เปิดหน้านี้ · กด <code>🖨 print</code> · ได้ A4 1 หน้า · expected qty snapshot ณ วันที่พิมพ์ · ใบมี QR code ไปหน้าเดียวกัน (ถ้าอยากกรอก digital)</p>
+      </div>
+      <div class="entry-step">
+        <div class="entry-step__n">2</div>
+        <h4 class="entry-step__t">นับ + เขียน · ในครัว</h4>
+        <p class="entry-step__d">พนักงานพก ipad / กระดาษเข้าคลัง · นับ 12 SKU · เขียนตัวเลขในช่อง · ถ้าห่าง expected &gt; 20% ลอง recount · หมายเหตุสั้นๆ (disposal, ของแตก)</p>
+      </div>
+      <div class="entry-step">
+        <div class="entry-step__n">3</div>
+        <h4 class="entry-step__t">พิมพ์เข้าระบบ · ค่ำ</h4>
+        <p class="entry-step__d">เปิด count-entry.html · พิมพ์ตามใบทีละ SKU · <code>rpc_count_adjust(actor, item, qty, note="count-sheet 22/04")</code> · trail ปรากฏใน count-log.html ทันที</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Design rationale -->
+  <div class="showcase" style="margin-top: var(--space-8);">
+    <div class="annot">
+      <div class="annot__h">DESIGN NOTES · why A4 / why 12</div>
+      <h3 class="annot__t">ทำไม<br/>เป็นแบบนี้</h3>
+    </div>
+    <ul style="padding-left: 18px; color: var(--color-ink-700); font-size: 14px; line-height: 1.6; columns: 2; column-gap: 36px;">
+      <li style="margin-bottom: 10px; break-inside: avoid;"><b>12 SKU max</b> — 1 หน้า A4 ไม่พลิก · ถ้าเกิน 12 แตก sheet ใหม่ · ในครัวพลิกกระดาษเปียกลำบาก</li>
+      <li style="margin-bottom: 10px; break-inside: avoid;"><b>Grid 7 วัน ≠ บังคับนับทุกวัน</b> — สังเกต "░░░" = ไม่ใช่วันของ SKU · Dry items (SP-201/214/236) นับวันจันทร์ · Meat pre-pack นับเสาร์+อังคาร · ลดภาระรายวัน</li>
+      <li style="margin-bottom: 10px; break-inside: avoid;"><b>"ค่าคาด" ช่อง narrow</b> — ไม่ใช่เพื่อเทียบ แต่เพื่อ<b>ดัก error</b> · ห่าง &gt; 20% คือ recount · เห็น 22/24 ของ MT-040 มีหมายเหตุ "✗"</li>
+      <li style="margin-bottom: 10px; break-inside: avoid;"><b>Category stripes</b> — เนื้อ / semi-recipe / dry / PKG · ช่วยน้องเดินคลังเป็นกลุ่ม · ไม่ต้อง jump ระหว่างชั้นเย็น ⇄ ชั้นแห้ง · workflow-optimised ไม่ใช่ SKU-sorted</li>
+      <li style="margin-bottom: 10px; break-inside: avoid;"><b>QR code</b> — พกใบกระดาษ + QR เข้า count-entry หน้าเดียวกัน · ใครสะดวก paper/digital ก็ได้</li>
+      <li style="margin-bottom: 10px; break-inside: avoid;"><b>PKG-009 "B3 pending"</b> — cascade bug ยังเปิด · นับชิ้น (120) ไม่ใช่ชุด · ถ้ามี fix แล้ว whitelist update · รองรับ evolution</li>
+      <li style="margin-bottom: 10px; break-inside: avoid;"><b>ไม่มี Total column</b> — sum-across-week ไม่มีความหมาย · แต่มี Total row (ยอดรวมแต่ละวัน) ช่วยน้องดู consistency · ถ้าวันเสาร์ดูน้อยผิดปกติอาจลืมนับ</li>
+      <li style="margin-bottom: 10px; break-inside: avoid;"><b>Watermark เบา</b> — คำว่า "COUNT · 22/04" โปร่งแสง 4% · กันใบปลอม/ใบเก่า · พิมพ์แล้วยังเห็นวันที่ถ้าถ่ายเอกสารมา</li>
+    </ul>
+  </div>
+
+  <!-- Next strip -->
+  <div class="next-strip">
+    <div>
+      <h2>Phase 2 — 3 หน้าเสร็จแล้ว · อัปเดต hub</h2>
+      <p>Phase 2A · po-receive · B1 guard 🔴 → 🟢 · Phase 2B · meat-produce · revert 22/04 → self-serve · Phase 2C · count-sheet · paper-to-digital loop · count-log pair</p>
+    </div>
+    <a href="index.html">→ hub overview</a>
+  </div>
+
+</div>
+
+</body>
+</html>
