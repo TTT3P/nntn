@@ -1781,10 +1781,15 @@ async function revertClosePot(sessionId) {
 async function reloadCwAndKanban() {
   try {
     const cw = await get('catch_weight', {
-      'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name)',
+      'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name,sku,category)',
       'status':'eq.✅ In Stock', 'limit':1000
     })
-    cwStock = Array.isArray(cw) ? cw.map(r => ({...r, item_name: r.items?.name || ''})) : []
+    cwStock = Array.isArray(cw) ? cw.map(r => ({
+      ...r,
+      item_name: r.items?.name || '',
+      item_sku: r.items?.sku || '',
+      item_category: r.items?.category || ''
+    })) : []
     const d = new Date()
     const ds = `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`
     const hdr = document.getElementById('header-cw')
@@ -2008,13 +2013,14 @@ function addProcInput() {
     (mainOpts ? `<optgroup label="หลัก">${mainOpts}</optgroup>` : '') +
     (scrapOpts ? `<optgroup label="เศษเนื้อ">${scrapOpts}</optgroup>` : '')
   const isEmpty = mainInStock.length + scrapInStock.length === 0
-  if (isEmpty && cwStock.length === 0) {
-    // cwStock not loaded yet — retry after loadStock
+  if (isEmpty) {
+    // Options empty — always try reload (cwStock may be stale / not loaded / partial)
     setTimeout(() => {
       if (typeof loadStock === 'function') {
         loadStock().then(() => {
           const sel = document.getElementById(`proc-item-sel-${n}`)
           if (sel && sel.options.length <= 1) {
+            // After reload still empty → re-render this row with fresh cwStock
             document.getElementById(`proc-in-card-${n}`)?.remove()
             procInputCount--
             addProcInput()
@@ -2458,13 +2464,18 @@ async function loadStock() {
   loadYieldAnalytics()
   try {
     const [cw, ys] = await Promise.all([
-      get('catch_weight', { 'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name)', 'status':'eq.✅ In Stock', 'limit':1000 }),
+      get('catch_weight', { 'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name,sku,category)', 'status':'eq.✅ In Stock', 'limit':1000 }),
       get('yield_summary', { select:'item_name,yield_pct,yield_expected_min,yield_expected_max,yield_status', order:'yield_pct.desc' })
     ])
 
     const rows=Array.isArray(cw)?cw:[]
     // อัปเดต cwStock global ด้วย — ใช้โดย produce/process lot chips
-    cwStock = rows.map(r => ({...r, item_name: r.items?.name || ''}))
+    cwStock = rows.map(r => ({
+      ...r,
+      item_name: r.items?.name || '',
+      item_sku: r.items?.sku || '',
+      item_category: r.items?.category || ''
+    }))
     const totalKg=rows.reduce((s,r)=>s+(parseFloat(r.weight_g)||0),0)/1000
     const byWh={A:0,B:0,C:0}
     rows.forEach(r=>{ const k=r.warehouse||''; if(byWh[k]!==undefined) byWh[k]++ })
