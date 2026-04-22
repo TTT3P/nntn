@@ -415,6 +415,18 @@ flowchart LR
 - On 401 response: retry once with fresh token (since `ea25058` 21/04)
 - Not-logged-in: redirect to `login.html`
 
+### Brand palette (for redesign reference)
+Source: `~/Documents/Claude-Work/ไฟล์/AI-Strategy/brand identity/Logo - Brand Asset/LOGO final_18062025/`
+
+| Token | Hex (approx) | Usage |
+|---|---|---|
+| `brand-green` | `#0F5132` | Primary type, main brand surface |
+| `brand-gold` | `#C9A27A` | Accent, diamond ornament, CTA |
+| `brand-cream` | `#E8C9A8` | Warm background variant |
+| `ink-black` / `paper-white` | `#000` / `#FFF` | Mono print + dark mode |
+
+Logo theme = heritage modern (serif Thai + diamond ornament) — **not** minimalist flat. 5 variants available (green-on-white / green-on-cream / gold-on-green / black-on-white / white-on-black) in both Horizontal + Vertical.
+
 ---
 
 ## §11 What this blueprint does NOT cover (future work)
