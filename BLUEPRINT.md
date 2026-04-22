@@ -427,4 +427,217 @@ flowchart LR
 
 ---
 
+---
+
+## §12 SLO / Quality attributes
+
+**Live dashboard:** `platform-health.html` reads these from `platform_slos()` RPC.
+
+| Metric | Target | Measure | Breach action |
+|---|---|---|---|
+| **Stock drift** (sm vs stock_counts) | 0 items drifting > 1h | auto-reconcile cron every 5min fixes most · `v_drift` | If drift persists > 1 item > 2h → Discord #platform alert |
+| **Delivery RPC success rate** | ≥ 99% | submit_delivery attempts vs 4xx/5xx | 3 fails in 10min → freeze POs until investigated |
+| **Webhook DLQ age** | 0 items stuck > 15min | `net.http_request_queue` | Retry cron fires every 3-5min · manual replay if > 1hr stuck |
+| **Negative stock count** | 0 SKUs with qty < 0 | `v_stock_unified` | Any < 0 → immediate investigation (sm emission bug) |
+| **Page load** | < 2s p95 | GitHub Pages + CDN | 1-2 min deploy — if CDN slow, force cache bust `?v=timestamp` |
+| **Auth token valid** | ≥ 95% sessions w/o re-login | `localStorage.nntn_sb_token` lifetime | Auto-refresh on 401 (since `ea25058`) |
+| **Playwright regression** | 17/17 pass every push | CI workflow | Any red → revert or hotfix before next commit |
+| **Backup freshness** | < 24h since last backup | `scripts/backup.py` local output | If missed nightly → run manually |
+
+**Not-SLO but watched:**
+- Catch-weight bag count per warehouse (A/B/C balance · too many in A = receive not flowing)
+- Items with `on_hand = 0` (expected for perishables; alert only if > 20% of active catalog)
+- Cron job last-run timestamp (any job silent > 2× interval = broken)
+
+---
+
+## §13 Context diagram (C4 Level 1 — who touches the system)
+
+```mermaid
+flowchart TB
+  ไทน์[👤 ไทน์ owner<br>browser desktop] -->|login + all ops| SYS
+  น้อง1[👥 น้องครัว 3-5 คน<br>mobile + desktop] -->|count, dispense, prep| SYS
+  หน้าร้าน[🏪 FS / NT shop staff<br>receive deliveries] -->|view delivery bills| SYS
+
+  SYS[🍜 NNTN Web<br>github.io/nntn/*] --> SB[(🗄️ Supabase<br>emjqulzikpxorvpaaiww)]
+
+  SB -->|pg_net webhook| DC[📢 Discord AIM bot<br>#aim #coo #platform]
+  SB -->|pg_cron keepalive| SB
+
+  GRAB[📱 Grab food platform] -.->|order CSV / scrape| PIPE[data-pipeline.html]
+  FS[📱 FoodStory POS] -.-> PIPE
+  WN[📱 Wongnai] -.-> PIPE
+  PIPE --> SB
+
+  SUP[🏭 Suppliers] -.->|physical delivery| หน้าร้าน
+  หน้าร้าน -->|po-receive form| SB
+
+  GH[📦 GitHub Actions<br>backup · keepalive · QA · security] -->|scheduled| SYS
+  GH -->|backup.py| FS2[💾 ~/Documents/NNTN-Backup/]
+
+  classDef ext fill:#fef3c7,stroke:#ca8a04
+  classDef our fill:#dbeafe,stroke:#1e40af
+  class GRAB,FS,WN,SUP,DC ext
+  class SYS,SB,GH our
+```
+
+**Users:**
+- **ไทน์** — owner, sees everything · approves cross-room · desktop primary
+- **น้องครัว** — 3-5 staff · kitchen mobile flows (receive, dispense, count) + desktop for complex
+- **หน้าร้าน FS/NT** — receives delivery bills, doesn't enter data
+
+**External systems:**
+- **Discord** — AIM bot outbound notifications (read-only from system POV)
+- **Grab / FoodStory / Wongnai** — sales data ingestion (one-way into NNTN)
+- **Suppliers** — physical flow · connected via PO form
+
+**Infra:**
+- **Supabase** — Postgres + Auth + Storage (not used yet) · single region
+- **GitHub** — Pages host · Actions run scheduled + CI · source of truth for code
+- **Local macOS (ไทน์'s MacBook)** — backups land here · dev environment
+
+---
+
+## §14 Disaster Recovery playbook
+
+### Scenario matrix
+| Scenario | Severity | RTO target | First action |
+|---|---|---|---|
+| Supabase project suspended (free-tier) | 🔴 critical | 30 min | Restore via dashboard + keepalive check |
+| Supabase data corrupted (wrong UPDATE/DELETE) | 🔴 critical | 1–4 hr | Restore from `scripts/backup.py` JSON + replay sm |
+| GitHub Pages deploy broke site | 🟠 high | 5 min | `git revert HEAD && git push` · Pages rebuilds |
+| Playwright CI red (regression) | 🟠 high | Before next push | Debug + rollback commit · don't push over red |
+| Webhook DLQ stuck > 1hr | 🟡 medium | Next session | Check pg_net queue, manually POST failed rows |
+| `rpc_receive_universal` delta bug strikes | 🟡 medium | Same day | Zero-out SKU (workaround B1) · plan real fix |
+| Token/password leaked accidentally | 🔴 critical | Immediately | Rotate via `~/.zshrc` + `gh secret set` + Supabase dashboard |
+
+### Backup strategy
+- **Nightly:** `scripts/backup.py` → `~/Documents/NNTN-Backup/YYYY-MM-DD/*.json`
+  - Tables dumped: items, catch_weight, stock_counts, stock_movements, deliveries, delivery_lines, bom_items, recipes, purchase_orders, suppliers
+  - Retention: **manual** (no auto-prune yet — TODO)
+- **Git = code backup** (push to github.com/TTT3P/nntn)
+- **No Supabase PITR** (not on paid plan) — backup.py JSON is only DB safety net
+
+### Restore drill (quarterly recommended)
+1. Spin test Supabase project
+2. Load latest JSON backup via `psql COPY FROM`
+3. Verify `v_stock_unified` count matches production
+4. Rebuild frontend, point to test URL
+5. Confirm login + 1 delivery flow
+6. Document gaps, update playbook
+
+### Emergency contacts / links
+- Supabase dashboard: `supabase.com/dashboard/project/emjqulzikpxorvpaaiww`
+- GitHub repo: `github.com/TTT3P/nntn/settings`
+- Discord: `discord.gg/kwrTnKp6` (NNTN server)
+- ไทน์: on-call owner · all critical decisions
+
+---
+
+## §15 RPC API contracts
+
+> Freeze point: changing any signature below = breaking change → bump frontend + bump version.
+
+### `public.rpc_receive_universal` — unified receive
+```ts
+rpc_receive_universal(
+  p_actor:     text,     // required · "PO-receive" · "meat-stock-kanban" · etc
+  p_item_id:   uuid,     // required · items.id
+  p_qty:       numeric,  // required · > 0 · amount RECEIVED (not running total)
+  p_unit_note: text?,    // optional · appended to stock_counts.note
+  p_bags:      jsonb?    // only for meat-raw · [{bag_no, weight_g, warehouse}]
+): jsonb                 // { ok, route: 'meat-raw-per-bag'|'sc-receive', item, ... }
+```
+**Routes by `items.type`:** `meat/raw` → per-bag catch_weight · else → stock_counts receive event
+
+### `stock.submit_delivery` — atomic delivery
+```ts
+stock.submit_delivery(
+  p_bill:     text,       // unique bill_no (schema UNIQUE)
+  p_branch:   text,       // 'NT' | 'FS' (CHECK constraint)
+  p_date:     date,
+  p_channel:  text,       // 'NT' | 'FS' | 'hub-delivery' (CHECK)
+  p_bag_ids:  bigint[],   // catch_weight IDs · empty array ok
+  p_nm_lines: jsonb       // [{item_id, qty, note?, is_misc, avail?}]
+): uuid                   // new delivery_id
+```
+**Raises:** `P0001: bag(s) not In Stock` · `P0001: bill/branch/date required` · `P0001: no bags and no nm lines`
+
+### `public.rpc_delivery_reverse` — undo a delivery
+```ts
+rpc_delivery_reverse(p_actor, p_cw_id: bigint, p_reason: text): jsonb
+```
+Sets bag back to `✅ In Stock` + emits compensating sm event
+
+### `public.rpc_count_adjust` — explicit count (manager adjustment)
+```ts
+rpc_count_adjust(p_actor, p_item_id: uuid, p_counted_qty: numeric, p_note?: text): jsonb
+```
+Writes stock_counts event='count' · trigger computes delta = counted_qty - current_sm_sum
+
+### `public.rpc_production_execute` — cook session
+```ts
+rpc_production_execute(
+  p_actor, p_recipe_id: uuid,
+  p_source_cw_ids: bigint[],   // raw/portion bags going in
+  p_produced: jsonb,           // [{item_id, bags: [{weight_g, warehouse}]}]
+  p_cook_note?: text
+): jsonb
+```
+
+### `public.rpc_repack_execute` — repack bag into smaller bags
+```ts
+rpc_repack_execute(
+  p_actor, p_source_cw_id: bigint,
+  p_produced: jsonb,   // [{bag_no, weight_g, warehouse}]
+  p_mode: text = 'meat'
+): jsonb
+```
+
+### `public.rpc_disposal` — dispose/loss
+```ts
+rpc_disposal(
+  p_actor, p_reason: text,
+  p_cw_ids?: bigint[],      // for meat bags
+  p_item_id?: uuid,         // for non-meat (with p_qty)
+  p_qty?: numeric,
+  p_note?: text
+): jsonb
+```
+
+### `public.rpc_warehouse_transfer` — move bags คลัง
+```ts
+rpc_warehouse_transfer(p_actor, p_cw_ids: bigint[], p_to_wh: char(1), p_reason?: text): jsonb
+```
+
+### `public.rpc_stock_by_sku` — simple lookup
+```ts
+rpc_stock_by_sku(p_sku: text): TABLE(sku, name, qty, unit)
+```
+
+### `public.rpc_stock_snapshot` / `rpc_stock_snapshot_rich` — report snapshots
+```ts
+rpc_stock_snapshot(p_warehouse?, p_type?, p_tier?, p_limit=50, p_offset=0): jsonb
+rpc_stock_snapshot_rich(p_type='meat', p_warehouse?): jsonb
+```
+
+### `public.rpc_tag_production` — tag CW with recipe ref
+```ts
+rpc_tag_production(p_actor, p_recipes: jsonb): jsonb
+```
+
+### `public.rpc_delivery_out` (legacy — prefer submit_delivery)
+### `public.rpc_po_receive` (legacy — prefer rpc_receive_universal)
+
+---
+
+**Compatibility rule (important):**
+- ✅ Safe: add optional param at end · add field to return JSON
+- ⚠️ Risky: rename param · change type · make optional → required
+- 🔴 Breaking: remove param · remove return field · change route logic
+
+ทุกครั้งที่แก้ RPC: bump line in §6 decision log + update §15 signature.
+
+---
+
 **Maintenance:** update §6 decision log per commit (1-line) · refresh §2 page catalog monthly or when adding/removing pages · bump "Last updated" at top.
