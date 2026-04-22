@@ -21,7 +21,19 @@
 | Repo | `github.com/TTT3P/nntn` |
 | Credentials | `~/.zshrc` NNTN_USR/NNTN_PWD · GitHub Secret (same) · `platformci@staffnntn.co` |
 
-**Cron / scheduled jobs:** keepalive (prevent Supabase pause) · auto-reconcile sm↔sc drift (5-min) · SLO log cron (broken — pending fix)
+**PostgreSQL extensions:** `pg_cron` · `pg_net` · `pgcrypto` · `uuid-ossp` · `pg_graphql` · `supabase_vault` · `pg_stat_statements`
+
+**Cron jobs (6 in `cron.job`):**
+| Job | Schedule | Purpose |
+|---|---|---|
+| `nntn-keep-alive` | `0 8 */5 * *` (every 5 days 08:00) | Prevent Supabase free-tier pause |
+| `nntn-platform-auto-reconcile` | `*/5 * * * *` (every 5 min) | Sync sm↔stock_counts drift (creates count event) |
+| `nntn-confirm-aim-deliveries` | `*/2 * * * *` | Confirm Discord AIM webhook delivery succeeded |
+| `nntn-retry-aim-failures` | `*/3 * * * *` | Retry failed AIM webhooks |
+| `nntn-confirm-oos-deliveries` | `*/2 * * * *` | Confirm OOS alert webhooks |
+| `nntn-retry-oos-failures` | `*/5 * * * *` | Retry failed OOS alerts |
+
+**Data scale:** 251 active items · 406 catch_weight bags In Stock (A=17, B=72, C=317) · 56 tables with RLS · 73 policies
 
 ---
 
@@ -49,7 +61,7 @@ Legend: ✅ stable · ⚠️ has known issue · 🚫 deprecated redirect · 🎨
 | `portion-form.html` | 401 | แบ่ง SRCP→PKG portions | items, v_stock_unified | portion_log | ✅ |
 | `po-receive.html` | 1064 | PO + รับของ | items, suppliers, PO | rpc_receive_universal | ⚠️ *receive_delta bug* |
 | `goal-dashboard.html` | 611 | KPI goals | projects, commitments | — | ✅ |
-| `data-pipeline.html` | 1501 | Sales ingest pipeline | — | — | ⚠️ unclear purpose |
+| `data-pipeline.html` | 1501 | ระบบเก็บข้อมูลยอดขาย Grab/FS/Wongnai ingest | — | external sales tables | ✅ (doc light) |
 | `production-log-form.html` | 946 | บันทึก prep (no stock effect) | bom_items, recipes | production_log, ingredient_dispense | ✅ |
 | `production-log-view.html` | 272 | ประวัติ prep | production_log | — | ✅ |
 | `production-history.html` | 322 | ประวัติผลิต (catch-weight-based) | v_production_history, catch_weight | — | ✅ |
@@ -268,6 +280,150 @@ flowchart LR
 
 ### "How do I add a new module to hub?"
 → Edit `hub.html` grid section (8 cards currently) + create HTML file
+
+---
+
+---
+
+## §8 CI / Ops / Backup
+
+### GitHub Actions (`.github/workflows/`)
+| Workflow | Trigger | Purpose |
+|---|---|---|
+| `qa-playwright.yml` | PR + push main | 17-test regression suite (needs NNTN_USR/PWD secrets) |
+| `backup.yml` | Nightly cron | Calls `scripts/backup.py` — dumps key tables to JSON |
+| `keepalive.yml` | Periodic | Cron-poke Supabase endpoints (duplicate of DB cron safety) |
+| `security-probe.yml` | `0 2 * * 1` (Mon 09:00 BKK) | Probe anon access — all critical endpoints must return 401 |
+
+### Scripts (`scripts/`)
+| File | Purpose |
+|---|---|
+| `backup.py` | Export items · catch_weight · stock_movements · etc → `~/Documents/NNTN-Backup/YYYY-MM-DD/*.json` |
+| `gen_arch.py` | Scan HTML → generate `NNTN-Vault/System/architecture/module-catalog.md` (⚠️ TCC-blocked on macOS currently) |
+
+### Testing (Playwright)
+Config: `playwright.config.ts` · suites in `tests/`:
+- `auth.setup.js` — login once, store state
+- `public-pages.spec.js` — login + hub render
+- `hub-delivery.spec.js` — form loads + history
+- `hub-delivery-draft.spec.js` — draft roundtrip
+- `meat-stock.spec.js` — FIFO + repack + dropdowns
+- `qa-goal-dashboard.spec.js` — structure integrity
+- `end-to-end-smoke.spec.js` — smoke top flows
+
+**Run:** `npm test` · `npm run test:ui` · `npm run test:headed` (dev: inherit env from `~/.zshrc`)
+
+### GitHub Secrets (repo `TTT3P/nntn`)
+- `NNTN_USR` · `NNTN_PWD` — Playwright login
+- `SUPABASE_ANON_KEY` — security-probe workflow
+- (Backup script uses local config, not repo secret)
+
+### RLS Policy summary
+- 56 tables RLS-enabled · 73 policies total
+- Pattern: `authenticated_all = true` on most tables (transparent-team model)
+- Sensitive: `stock_movements` = append-only via `sm_block_mutation` trigger (not RLS)
+- Auth enforced at frontend level via `auth.js` JWT check
+
+---
+
+## §9 Integrations (external)
+
+### Discord AIM (outgoing webhook via pg_net)
+```mermaid
+flowchart LR
+  T[triggers: catch_weight / stock_counts / deliveries] -->|AFTER INS/UPD| AIM[aim_*_trigger fn]
+  AIM -->|pg_net.http_post| Q[(net.http_request_queue)]
+  Q --> D[Discord webhook URL]
+  C[cron: confirm-aim-deliveries every 2min] -->|verify| Q
+  R[cron: retry-aim-failures every 3min] -->|requeue 4xx/5xx| Q
+```
+- Config table: `aim_config`
+- Functions: `aim_notify`, `aim_catch_weight_trigger`, `aim_stock_counts_trigger`, `aim_deliveries_trigger`, `aim_items_trigger`, `aim_process_summary_trigger`
+- Channels: `#aim` (stock events), `#coo`, `#platform`, `#stock`, `#cookingbook`, `#sales-ops`
+
+### Sales data ingestion (`data-pipeline.html`)
+- Sources: **Grab · FoodStory · Wongnai** — manual/scraped dump into SB tables
+- Consumed by: `sales-ops.html` (v_daily_revenue)
+- Scope: Platform holds schema; CookingBook/Sales Ops interpret
+
+### Keepalive (dual layer)
+1. GitHub Action `keepalive.yml`
+2. Supabase `cron.job` `nntn-keep-alive` every 5 days
+(belt + suspenders to prevent free-tier pause)
+
+### Webhook DLQ (pg_net)
+- `net.http_request_queue` holds pending webhooks
+- Failure retries via cron
+- Monitored on `platform-health.html` (DLQ stuck > 15 min alarm)
+
+---
+
+## §10 Conventions / glossary
+
+### SKU prefix
+| Prefix | Meaning | Example | Count |
+|---|---|---|---|
+| `MT-xxx` | Meat — finished portioned pack | `MT-019 เนื้อสดหมักนุ่ม` | ~40 |
+| `SP-xxx` | Supply / supplies (any non-meat single-item) | `SP-128 ผักบุ้งสด` | ~100 |
+| `SRCP-xxx` | Semi-recipe / prep (made in-house, raw→cooked intermediate) | `SRCP-004 พริกน้ำส้ม` | 5 |
+| `PKG-xxx` | Packaged ready-to-sell (bottle/bag) | `PKG-006 น้ำเก็กฮวย 220ml` | 16 |
+| `MISC` | Ad-hoc free-text item (not in catalog) | — | 1 |
+
+### Item category (14 active)
+| Category | Count | Notes |
+|---|---:|---|
+| `seasoning` | 59 | Sauce, condiments |
+| `consumable` | 29 | Packaging supplies (SP- items) |
+| `packaging` | 29 | Wrappers, boxes |
+| `spice` | 26 | Dry spices |
+| `vegetable` | 26 | ผัก — received fresh, dispensed same-day typically |
+| `meat` | 19 | Raw meat cuts |
+| `pkg` | 16 | Pre-packaged SKU |
+| `meat_portioned` | 12 | Portioned meat (75g, 100g, 500g pre-pack) |
+| `noodle` | 11 | เส้น brands |
+| `meat_cooked` | 10 | Cooked meat (ตุ๋น ready) |
+| `srcp` | 5 | In-house prep (sauce, dressing) |
+| `meat_trim` | 5 | เศษเนื้อ |
+| `meat_other` | 3 | Offal / special parts |
+| `misc` | 1 | Catch-all |
+
+### Warehouse (คลัง) convention
+- **คลัง A** (17 bags) = incoming raw staging — ใช้แทน "เพิ่งรับมา ยังไม่ผ่าน process"
+- **คลัง B** (72 bags) = cooking area / repack staging — อยู่ระหว่าง process
+- **คลัง C** (317 bags) = ready-to-deliver — ปกติคลัง C ใหญ่สุด, ส่งจากตรงนี้ไปหน้าร้าน
+
+### catch_weight status transitions
+```
+✅ In Stock ────┬──→ 🔄 Repacked (source consumed in repack)
+                ├──→ 🚚 Delivered (shipped via submit_delivery)
+                ├──→ 🗑️ Disposed (loss/expired)
+                └──→ ❌ Out (cancelled, manual admin)
+```
+- Blocked by `prevent_deliver_if_not_in_stock` trigger (can't Deliver if not In Stock)
+- Blocked by `sm_block_mutation` (can't UPDATE sm row — bags can transition, sm append-only)
+
+### Actor resolution chain
+1. `rpc_receive_universal` / `submit_delivery` → sets `SET app.actor = p_actor` via `set_config`
+2. `stamp_actor_catch_weight` BEFORE INS/UPD trigger → reads GUC → writes `cw.actor_id`
+3. `_resolve_actor()` fallback → returns `current_setting('app.actor', true)` or auth.jwt()->>'email'
+4. UI: `window.nntnCurrentUser` (from auth.js) passed as p_actor param
+
+### Auth refresh cycle (`auth.js`)
+- On load: check localStorage `nntn_sb_token`
+- Expired / near-expiry: auto-refresh via Supabase Auth endpoint
+- On 401 response: retry once with fresh token (since `ea25058` 21/04)
+- Not-logged-in: redirect to `login.html`
+
+---
+
+## §11 What this blueprint does NOT cover (future work)
+
+- ❌ CookingBook BOM detail schema — owned by CookingBook room
+- ❌ Sales data pipeline internals (Grab/FS scraping logic)
+- ❌ Web redesign target state (separate Phase 1 deliverable)
+- ❌ Mobile/responsive behavior (desktop-first only)
+- ❌ Full RLS policy audit per-table (73 policies — sampling only)
+- ❌ DB migration history (list in Supabase dashboard `supabase_migrations.schema_migrations`)
 
 ---
 
