@@ -518,9 +518,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     window._itemsById = {}
     items.forEach(i => { window._itemsById[i.id] = i })
 
-    // Build sku → current_qty map for SP items
+    // Build sku → current_qty map for ALL non-meat items (SP + PKG)
     ;(Array.isArray(stockRows) ? stockRows : []).forEach(r => {
-      if (r.sku && r.sku.startsWith('SP')) {
+      if (r.sku && (r.sku.startsWith('SP') || r.sku.startsWith('PKG'))) {
         spStockBySku[r.sku] = parseFloat(r.qty_on_hand) || 0
       }
     })
@@ -812,9 +812,14 @@ function closeBagModal() {
 function addNmRow() {
   nmRowCount++
   const n = nmRowCount
-  const opts = spItems.map(i =>
-    `<option value="${i.id}" data-sku="${i.sku}" data-unit="${i.unit || ''}" data-name="${i.name}">${i.sku} | ${i.name}</option>`
-  ).join('')
+  const opts = spItems.map(i => {
+    const stk = spStockBySku[i.sku]
+    const isMisc = i.sku.startsWith('MISC')
+    const isOOS = !isMisc && stk !== undefined && stk <= 0
+    const stkTag = isMisc ? '' : (stk !== undefined ? ` · มี ${stk}` : '')
+    const oosTag = isOOS ? ' ❌ หมด' : ''
+    return `<option value="${i.id}" data-sku="${i.sku}" data-unit="${i.unit || ''}" data-name="${i.name}" ${isOOS ? 'disabled' : ''}>${i.sku} | ${i.name}${stkTag}${oosTag}</option>`
+  }).join('')
 
   const wrap = document.createElement('div')
   wrap.className = 'nm-row-wrap'
