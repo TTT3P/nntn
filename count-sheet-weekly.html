@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="/nntn/auth.js"></script>
+<title>ใบบันทึกคลังครัวกลาง (7 วัน) — NNTN</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+@page { size: A4 landscape; margin: 8mm; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Sarabun', sans-serif; background: #f5f5f5; color: #000; font-size: 11px; padding: 10px; }
+.screen-only { max-width: 1400px; margin: 0 auto; }
+.controls { background: #fff; border-radius: 8px; padding: 14px 18px; margin-bottom: 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.controls label { font-weight: 700; }
+.controls input, .controls select { padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; font-size: 13px; }
+.btn { background: #8B0000; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 13px; }
+.btn:hover { background: #6b0000; }
+.btn-alt { background: #2e7d32; }
+.btn-alt:hover { background: #1b5e20; }
+.sheet { background: #fff; padding: 12px 10px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.sheet-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #000; }
+.sheet-header h1 { font-size: 18px; font-weight: 700; }
+.sheet-header .sub { font-size: 10px; color: #555; margin-top: 2px; }
+.sheet-header .meta { text-align: right; font-size: 11px; }
+.sheet-header .meta .week { font-weight: 700; font-size: 14px; }
+.sheet-header .meta .signer { margin-top: 6px; }
+.sheet-header .meta .signer u { font-weight: 400; }
+table { width: 100%; border-collapse: collapse; font-size: 10px; }
+th, td { border: 1px solid #666; padding: 3px 5px; vertical-align: middle; }
+thead th { background: #1a237e; color: #fff; text-align: center; font-weight: 700; font-size: 10px; }
+.col-item { width: 120px; text-align: left; background: #fafafa; font-weight: 600; }
+.col-lot  { width: 110px; text-align: center; background: #fff9c4; font-size: 10px; }
+.col-lot.fifo { background: #ff9800; color: #fff; font-weight: 700; }
+.col-lot.new  { background: #eeeeee; color: #666; font-style: italic; }
+.col-lot.empty { background: #e0e0e0; color: #999; font-style: italic; font-size: 9px; }
+.col-rec { background: #e8f5e9; width: 42px; }
+.col-dsp { background: #ffebee; width: 42px; }
+.date-row { background: #e3f2fd; font-size: 9px; text-align: center; color: #1976d2; font-weight: 600; }
+.day-group { border-left: 2px solid #333; }
+.legend { margin-top: 8px; font-size: 9px; color: #333; line-height: 1.4; }
+.legend b { color: #000; }
+
+@media print {
+  body { background: #fff; padding: 0; font-size: 10px; }
+  .screen-only { max-width: none; }
+  .controls { display: none; }
+  .sheet { box-shadow: none; border-radius: 0; padding: 0; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  thead { display: table-header-group; }
+}
+.loading { text-align: center; padding: 40px; color: #666; }
+</style>
+</head>
+<body>
+
+<div class="screen-only">
+<div class="controls">
+  <a href="./hub.html" style="color:#666;text-decoration:none">← Hub</a>
+  <label>วันเริ่ม:</label>
+  <input type="date" id="week-start" onchange="load()">
+  <label><input type="checkbox" id="only-in-stock" checked onchange="render()"> แสดงเฉพาะที่มีสต๊อก</label>
+  <button class="btn" onclick="window.print()">🖨️ พิมพ์ / Save PDF</button>
+  <button class="btn btn-alt" onclick="shiftWeek(-7)">← สัปดาห์ก่อน</button>
+  <button class="btn btn-alt" onclick="shiftWeek(7)">สัปดาห์หน้า →</button>
+</div>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="loading">⏳ กำลังโหลด...</div>
+</div>
+
+<script>
+const SB = 'https://emjqulzikpxorvpaaiww.supabase.co'
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyMzUwOTcsImV4cCI6MjA3NDgxMTA5N30.4fmaYOQ64DpAYGz5vV7YI-fKyopOP-7jRtRyCadr5hU'
+const DAYS_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์']
+
+let items = []
+let bagsByItem = {}
+
+function fmtDDMM(iso) {
+  if (!iso) return '?'
+  const [y,m,d] = iso.split('T')[0].split('-')
+  return `${d}/${m}`
+}
+function fmtDDMMYY(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const dd = String(d.getDate()).padStart(2,'0')
+  const mm = String(d.getMonth()+1).padStart(2,'0')
+  const yy = d.getFullYear() + 543
+  return `${dd}/${mm}/${yy-1000}`
+}
+function addDays(iso, n) {
+  const d = new Date(iso)
+  d.setDate(d.getDate() + n)
+  return d.toISOString().split('T')[0]
+}
+function thisWeekFriday() {
+  const d = new Date()
+  const diff = (5 - d.getDay() + 7) % 7
+  d.setDate(d.getDate() - (d.getDay() === 5 ? 0 : (d.getDay() > 5 ? d.getDay() - 5 : d.getDay() + 2)))
+  return d.toISOString().split('T')[0]
+}
+
+function shiftWeek(days) {
+  const cur = document.getElementById('week-start').value
+  document.getElementById('week-start').value = addDays(cur, days)
+  load()
+}
+
+async function load() {
+  const tok = localStorage.getItem('nntn_sb_token') || KEY
+  const H = { apikey: KEY, Authorization: 'Bearer ' + tok }
+
+  // Load meat items + bags
+  const [itemsRes, bagsRes] = await Promise.all([
+    fetch(`${SB}/rest/v1/items?select=id,sku,name,category&is_active=eq.true&or=(sku.like.MT-*,category.eq.meat,category.eq.meat_trim)&order=name.asc&limit=500`, { headers: H }),
+    fetch(`${SB}/rest/v1/catch_weight?select=item_id,lot_date,weight_g&status=eq.%E2%9C%85%20In%20Stock&limit=2000`, { headers: H })
+  ])
+  items = itemsRes.ok ? await itemsRes.json() : []
+  const bags = bagsRes.ok ? await bagsRes.json() : []
+
+  bagsByItem = {}
+  bags.forEach(b => {
+    if (!bagsByItem[b.item_id]) bagsByItem[b.item_id] = {}
+    const lot = b.lot_date || 'unknown'
+    bagsByItem[b.item_id][lot] = (bagsByItem[b.item_id][lot] || 0) + 1
+  })
+
+  render()
+}
+
+function render() {
+  const start = document.getElementById('week-start').value
+  if (!start) return
+  const onlyInStock = document.getElementById('only-in-stock').checked
+  const end = addDays(start, 6)
+
+  // Build 7 day headers
+  const dayHeaders = []
+  for (let i = 0; i < 7; i++) {
+    const iso = addDays(start, i)
+    const d = new Date(iso)
+    const [y,m,dd] = iso.split('-')
+    dayHeaders.push({ label: `วัน ${i+1} (${parseInt(dd)}/${parseInt(m)}) ${DAYS_TH[d.getDay()]}` })
+  }
+
+  // Item rows
+  let rows = items.map(item => {
+    const lotsMap = bagsByItem[item.id] || {}
+    const lots = Object.entries(lotsMap)
+      .filter(([lot]) => lot !== 'unknown')
+      .map(([lot, cnt]) => ({ lot, cnt }))
+      .sort((a, b) => a.lot.localeCompare(b.lot))  // oldest first (FIFO)
+    return { item, lots }
+  })
+  if (onlyInStock) rows = rows.filter(r => r.lots.length > 0)
+
+  const dateWeek = `${fmtDDMMYY(start)} – ${fmtDDMMYY(end)}`
+  const todayDD = fmtDDMMYY(new Date().toISOString().split('T')[0])
+
+  let html = `
+  <div class="sheet-header">
+    <div>
+      <h1>□ NNTN — ใบบันทึกคลังครัวกลาง</h1>
+      <div class="sub">รับเข้า / เบิกออก · 1 ใบ = 7 วัน · ส้ม = Lot เก่าสุด (FIFO ต้องหมดก่อน) · น้องกรอกวันที่ + จำนวนเท่านั้น</div>
+    </div>
+    <div class="meta">
+      <div class="week">สัปดาห์: ${dateWeek}</div>
+      <div class="signer">ผู้เตรียม Lot: ________________ ตรวจสอบ: ________________</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th rowspan="2" class="col-item">รายการ</th>
+        <th rowspan="2" class="col-lot">Lot (ตั้งไว้วันนี้ ${todayDD})</th>
+        ${dayHeaders.map(d => `<th colspan="2" class="day-group">${d.label}</th>`).join('')}
+      </tr>
+      <tr>
+        ${dayHeaders.map(() => `<th class="col-rec day-group">รับ</th><th class="col-dsp">เบิก</th>`).join('')}
+      </tr>
+      <tr class="date-row">
+        <td class="col-item">— วันที่ (น้องกรอกเอง)</td>
+        <td>ผู้เตรียม Lot:</td>
+        ${dayHeaders.map(() => `<td colspan="2" class="day-group">/</td>`).join('')}
+      </tr>
+    </thead>
+    <tbody>
+  `
+
+  rows.forEach(({ item, lots }) => {
+    const subRowCount = (lots.length > 0 ? lots.length : 1) + 1  // +1 for ผลิตใหม่
+    const totalCols = 14  // 7 days × 2
+    lots.forEach((l, idx) => {
+      const isFifo = lots.length > 1 && idx === 0
+      const cls = 'col-lot' + (isFifo ? ' fifo' : '')
+      const fifoTag = isFifo ? ' ★ FIFO!' : (idx === 0 ? ' ★' : '')
+      html += `<tr>`
+      if (idx === 0) html += `<td rowspan="${subRowCount}" class="col-item">${item.name}</td>`
+      html += `<td class="${cls}">${fmtDDMM(l.lot)} ${l.cnt} ถุง${fifoTag}</td>`
+      for (let d = 0; d < 7; d++) {
+        html += `<td class="col-rec day-group"></td><td class="col-dsp"></td>`
+      }
+      html += `</tr>`
+    })
+    if (lots.length === 0) {
+      html += `<tr>
+        <td class="col-item">${item.name}</td>
+        <td class="col-lot empty">— ไม่มีสต็อก —</td>
+        ${[...Array(7)].map(() => `<td class="col-rec day-group"></td><td class="col-dsp"></td>`).join('')}
+      </tr>`
+    }
+    // ผลิตใหม่ row
+    html += `<tr>`
+    if (lots.length > 0) {
+      html += `<td class="col-lot new">ผลิตใหม่</td>`
+    } else {
+      html += `<td class="col-lot new">ผลิตใหม่</td>`
+    }
+    for (let d = 0; d < 7; d++) {
+      html += `<td class="col-rec day-group"></td><td class="col-dsp"></td>`
+    }
+    html += `</tr>`
+  })
+
+  html += `</tbody></table>
+  <div class="legend">
+    <b>Legend:</b>
+    <span style="background:#e8f5e9;padding:1px 6px">เขียว = รับเข้า (ถุง)</span> ·
+    <span style="background:#ffebee;padding:1px 6px">ชมพู = เบิกออก (ถุง)</span> ·
+    <span style="background:#fff9c4;padding:1px 6px">เหลือง ★ = Lot ตั้งไว้จากระบบ</span> ·
+    <span style="background:#ff9800;color:#fff;padding:1px 6px">ส้ม FIFO! = ต้องหมดก่อน</span> ·
+    <span style="background:#eeeeee;padding:1px 6px;font-style:italic">"ผลิตใหม่" = เติม Lot ใหม่เมื่อมีการผลิตระหว่างสัปดาห์</span>
+  </div>`
+
+  document.getElementById('sheet').innerHTML = html
+}
+
+// Init — default to next Friday (or today if Friday)
+function init() {
+  const today = new Date()
+  const dow = today.getDay()  // 0=Sun, 5=Fri
+  let diff = 5 - dow
+  if (diff < 0) diff += 7
+  today.setDate(today.getDate() + diff)
+  document.getElementById('week-start').value = today.toISOString().split('T')[0]
+  load()
+}
+init()
+</script>
+
+</body>
+</html>
