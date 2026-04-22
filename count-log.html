@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="/nntn/auth.js"></script>
+<title>Log การนับ/ปรับสต๊อก — NNTN</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="nntn-theme.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Sarabun', sans-serif; background: #1a1a1a; color: #eee; padding: 16px; max-width: 1100px; margin: 0 auto; }
+header { background: #111; border-bottom: 2px solid #8B0000; padding: 16px; margin: -16px -16px 20px; text-align: center; }
+h1 { font-size: 1.3rem; color: #fff; margin-bottom: 4px; }
+.sub { font-size: 0.85rem; color: #aaa; }
+.notice { background: #2d1e1e; border-left: 4px solid #c62828; padding: 12px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 0.9rem; color: #ffcdd2; line-height: 1.5; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.filters input, .filters select { background: #222; color: #eee; border: 1px solid #333; padding: 8px 12px; border-radius: 6px; font-size: 0.9rem; font-family: inherit; }
+.filters input { flex: 1; min-width: 200px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.stat { background: #222; border: 1px solid #333; border-radius: 8px; padding: 10px 14px; }
+.stat-label { font-size: 0.75rem; color: #888; text-transform: uppercase; }
+.stat-val { font-size: 1.4rem; font-weight: 700; color: #fff; margin-top: 2px; }
+table { width: 100%; border-collapse: collapse; background: #222; border-radius: 8px; overflow: hidden; font-size: 0.85rem; }
+th { background: #333; color: #aaa; padding: 10px 8px; text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #444; }
+td { padding: 9px 8px; border-bottom: 1px solid #2a2a2a; }
+tr:hover td { background: #2a2a2a; }
+.up { color: #81c784; font-weight: 700; }
+.down { color: #ef5350; font-weight: 700; }
+.transition { font-family: 'SF Mono', Menlo, monospace; font-size: 0.82rem; }
+.actor-human { color: #ffca28; font-weight: 600; }
+.actor-auto { color: #888; font-style: italic; }
+.note { color: #999; font-size: 0.78rem; }
+.empty { text-align: center; padding: 40px; color: #666; }
+.loading { text-align: center; padding: 30px; color: #888; }
+a.back { color: #888; text-decoration: none; font-size: 0.85rem; }
+a.back:hover { color: #fff; }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;justify-content:space-between;align-items:center;max-width:1100px;margin:0 auto;">
+    <a class="back" href="./hub.html">← Hub</a>
+    <div>
+      <h1>📋 Log การนับ / ปรับสต๊อก</h1>
+      <div class="sub">ทุกการปรับสต๊อกถูกบันทึก — เจ้านายเห็นทุกรายการ</div>
+    </div>
+    <div style="width:60px"></div>
+  </div>
+</header>
+
+<div class="notice">
+  ⚠️ <b>ทุกการ "นับ" หรือ "ปรับ" สต๊อก จะขึ้นในตารางนี้ทันที</b> — พร้อมชื่อผู้ทำ, เวลา, และ qty เดิม→ใหม่. ถ้าพบความผิดปกติ รายงาน manager
+  <br>• <b>นับสต๊อก / ปรับยอด</b> ใช้เฉพาะนับจริงหลังสต๊อกไม่ตรง — ไม่ใช่ช่องเบิก/รับ
+  <br>• <b>เบิกครัว → เมนู stock-dispense</b> · <b>รับ PO → เมนู po-receive</b> · <b>ส่งออกร้าน → hub-delivery</b>
+</div>
+
+<div class="filters">
+  <input id="f-search" type="search" placeholder="ค้นชื่อ SKU / item / ผู้ทำ" oninput="render()">
+  <select id="f-type" onchange="render()">
+    <option value="">ทุกประเภท</option>
+    <option value="count_adjust_up">↑ ปรับขึ้น</option>
+    <option value="count_adjust_down">↓ ปรับลง</option>
+  </select>
+  <select id="f-period" onchange="render()">
+    <option value="1">วันนี้</option>
+    <option value="7" selected>7 วันล่าสุด</option>
+    <option value="30">30 วันล่าสุด</option>
+    <option value="0">ทั้งหมด</option>
+  </select>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<div id="table-wrap">
+  <div class="loading">⏳ กำลังโหลด...</div>
+</div>
+
+<script>
+const SB  = 'https://emjqulzikpxorvpaaiww.supabase.co'
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyMzUwOTcsImV4cCI6MjA3NDgxMTA5N30.4fmaYOQ64DpAYGz5vV7YI-fKyopOP-7jRtRyCadr5hU'
+
+let rows = []
+
+async function load() {
+  const tok = localStorage.getItem('nntn_sb_token') || KEY
+  const H = { apikey: KEY, Authorization: 'Bearer ' + tok }
+  const res = await fetch(`${SB}/rest/v1/v_count_adjust_log?select=*&order=ts_bkk.desc&limit=1000`, { headers: H })
+  rows = res.ok ? await res.json() : []
+  render()
+}
+
+function fmt(n) { return Number(n).toLocaleString('en-US', { maximumFractionDigits: 3 }) }
+function fmtDate(iso) {
+  const d = new Date(iso)
+  return d.toLocaleString('th-TH', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+}
+function isAuto(actor) { return /auto|platform|system|cron/i.test(actor || '') }
+
+function render() {
+  const q = document.getElementById('f-search').value.toLowerCase().trim()
+  const type = document.getElementById('f-type').value
+  const days = parseInt(document.getElementById('f-period').value)
+  const cutoff = days > 0 ? Date.now() - days * 86400000 : 0
+
+  const filtered = rows.filter(r => {
+    if (cutoff > 0 && new Date(r.ts_bkk).getTime() < cutoff) return false
+    if (type && r.movement_type !== type) return false
+    if (q) {
+      const blob = [r.sku, r.item_name, r.actor, r.note].join(' ').toLowerCase()
+      if (!blob.includes(q)) return false
+    }
+    return true
+  })
+
+  // Stats
+  const up   = filtered.filter(r => r.movement_type === 'count_adjust_up')
+  const down = filtered.filter(r => r.movement_type === 'count_adjust_down')
+  const humans = new Set(filtered.filter(r => !isAuto(r.actor)).map(r => r.actor))
+  const totalUp   = up.reduce((s, r) => s + Number(r.qty_delta), 0)
+  const totalDown = down.reduce((s, r) => s + Number(r.qty_delta), 0)
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="stat-label">Events ทั้งหมด</div><div class="stat-val">${filtered.length}</div></div>
+    <div class="stat"><div class="stat-label">↑ ปรับขึ้น</div><div class="stat-val up">${up.length} · +${fmt(totalUp)}</div></div>
+    <div class="stat"><div class="stat-label">↓ ปรับลง</div><div class="stat-val down">${down.length} · ${fmt(totalDown)}</div></div>
+    <div class="stat"><div class="stat-label">ผู้ทำ (คน)</div><div class="stat-val">${humans.size}</div></div>
+  `
+
+  if (filtered.length === 0) {
+    document.getElementById('table-wrap').innerHTML = '<div class="empty">ไม่พบรายการในเงื่อนไขนี้</div>'
+    return
+  }
+
+  const rowsHtml = filtered.slice(0, 500).map(r => {
+    const up = r.movement_type === 'count_adjust_up'
+    const sign = up ? '↑' : '↓'
+    const cls  = up ? 'up' : 'down'
+    const auto = isAuto(r.actor)
+    const actorClass = auto ? 'actor-auto' : 'actor-human'
+    return `<tr>
+      <td style="white-space:nowrap">${fmtDate(r.ts_bkk)}</td>
+      <td><b>${r.sku}</b><br><span style="color:#aaa;font-size:0.78rem">${r.item_name}</span></td>
+      <td class="${actorClass}">${r.actor}</td>
+      <td class="${cls} transition">${fmt(r.qty_before)} → ${fmt(r.qty_after)} ${r.unit || ''}</td>
+      <td class="${cls}"><b>${sign} ${fmt(Math.abs(r.qty_delta))}</b></td>
+      <td class="note">${r.note || ''}</td>
+    </tr>`
+  }).join('')
+
+  document.getElementById('table-wrap').innerHTML = `<table>
+    <thead><tr><th>เวลา</th><th>SKU / รายการ</th><th>ผู้ทำ</th><th>เปลี่ยนจาก → เป็น</th><th>Δ</th><th>Note</th></tr></thead>
+    <tbody>${rowsHtml}</tbody></table>
+    ${filtered.length > 500 ? `<div class="note" style="text-align:center;margin-top:10px">(แสดง 500 รายการแรก จาก ${filtered.length})</div>` : ''}`
+}
+
+load()
+</script>
+
+</body>
+</html>
