@@ -2248,7 +2248,7 @@ async function submitDelivery() {
     }
     const name   = isMisc ? note : (opt?.dataset?.name || sku)
     const unit   = unitEl?.value || opt?.dataset?.unit || 'หน่วย'
-    const avail  = isMisc ? null : (spStockBySku[sku] ?? null)
+    const avail  = isMisc ? null : (spStockBySku[sku] ?? 0)
     if (avail !== null && qty > avail) {
       overLimit.push(`• ${name}: เบิก ${qty} แต่มีอยู่ ${avail} ${unit}`)
     }
@@ -2271,6 +2271,26 @@ async function submitDelivery() {
     ? `\nNon-meat: ${nmWithdrawals.length} รายการ`
     : ''
   if (!confirm(`ยืนยันส่งออก?\n\nบิล: ${bill}\nปลายทาง: ${dest}\nเนื้อ: ${bagCount} ถุง / ${totalKg.toFixed(3)} กก.${nmSummary}`)) return
+
+  // ── NM Stock Guard: re-fetch latest qty_on_hand ก่อน submit (กัน stale cache) ──
+  if (nmWithdrawals.length > 0) {
+    const nmSkus = [...new Set(nmWithdrawals.filter(w => !String(w.sku).startsWith('MISC')).map(w => w.sku))]
+    if (nmSkus.length > 0) {
+      const skuList = nmSkus.map(s => `"${s}"`).join(',')
+      const stkRes = await fetch(`${SB}/rest/v1/v_stock_unified?sku=in.(${skuList})&select=sku,qty_on_hand`, { headers: H })
+      if (stkRes.ok) {
+        const fresh = await stkRes.json()
+        const freshMap = {}
+        fresh.forEach(r => { freshMap[r.sku] = parseFloat(r.qty_on_hand) || 0 })
+        const nowOOS = nmWithdrawals.filter(w => !String(w.sku).startsWith('MISC') && w.qty > (freshMap[w.sku] ?? 0))
+        if (nowOOS.length > 0) {
+          alert(`❌ สต๊อกไม่พอ (เพิ่งถูกอัปเดต)\n\n${nowOOS.map(w => `• ${w.name}: เบิก ${w.qty} แต่มี ${freshMap[w.sku] ?? 0} ${w.unit}`).join('\n')}\n\nหน้าจะรีเฟรช`)
+          location.reload()
+          return
+        }
+      }
+    }
+  }
 
   // ── Stock Guard: ตรวจว่าทุกถุงยังเป็น In Stock อยู่จริง ──
   if (allBagIds.length > 0) {
