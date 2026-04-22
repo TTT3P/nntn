@@ -533,10 +533,11 @@
       selSup.appendChild(opt);
     });
 
-    // Load non-meat items only (public schema)
+    // Load receivable items — exclude meat (received via meat-stock) + srcp (made in-house)
+    // PKG allowed (packaged items can be received from supplier too)
     const { data: itm } = await sb.from('items').select('id,name,unit,category')
       .eq('is_active', true)
-      .not('category', 'in', '("srcp","pkg","meat","raw_meat")')
+      .not('category', 'in', '("srcp","meat","raw_meat")')
       .order('category').order('name');
     items = itm || [];
 
