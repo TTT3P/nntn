@@ -115,19 +115,31 @@ async function load() {
   const H = { apikey: KEY, Authorization: 'Bearer ' + tok }
 
   // Load meat items + bags
-  const [itemsRes, bagsRes] = await Promise.all([
-    fetch(`${SB}/rest/v1/items?select=id,sku,name,category&is_active=eq.true&or=(sku.like.MT-%25,category.eq.meat,category.eq.meat_trim)&order=name.asc&limit=500`, { headers: H }),
-    fetch(`${SB}/rest/v1/catch_weight?select=item_id,lot_date,weight_g&status=eq.%E2%9C%85%20In%20Stock&limit=2000`, { headers: H })
-  ])
-  items = itemsRes.ok ? await itemsRes.json() : []
+  // Single query: catch_weight + join items — filter MT-* SKU client-side
+  const bagsRes = await fetch(
+    `${SB}/rest/v1/catch_weight?select=item_id,lot_date,weight_g,items(id,sku,name,category)&status=eq.%E2%9C%85%20In%20Stock&limit=3000`,
+    { headers: H }
+  )
   const bags = bagsRes.ok ? await bagsRes.json() : []
+  if (!bagsRes.ok) {
+    console.error('catch_weight fetch failed:', bagsRes.status, await bagsRes.text())
+  }
 
+  const itemMap = {}
   bagsByItem = {}
   bags.forEach(b => {
+    const it = b.items
+    if (!it) return
+    const sku = it.sku || ''
+    // Filter: MT-* SKU only (meat products)
+    if (!sku.startsWith('MT-')) return
+    if (!itemMap[it.id]) itemMap[it.id] = { id: it.id, sku: it.sku, name: it.name, category: it.category }
     if (!bagsByItem[b.item_id]) bagsByItem[b.item_id] = {}
     const lot = b.lot_date || 'unknown'
     bagsByItem[b.item_id][lot] = (bagsByItem[b.item_id][lot] || 0) + 1
   })
+  items = Object.values(itemMap).sort((a, b) => a.name.localeCompare(b.name, 'th'))
+  console.log(`Loaded ${items.length} meat items, ${bags.length} total bags`)
 
   render()
 }
