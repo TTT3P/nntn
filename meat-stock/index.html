@@ -1938,6 +1938,7 @@ function updateRepackItemLabel() {
 // Source: NNTN guide 19/04/2026 (ไทน์ confirm)
 const REPACK_MAP = {
   'MT-028': ['MT-040'],                    // สามชั้นตุ๋น → [75G]เนื้อตุ๋น
+  'MT-004': ['MT-004'],                    // ชายโครงตุ๋น → แบ่งถุง (same SKU)
   'MT-019': ['MT-018'],                    // เนื้อสดหมักนุ่ม → [75G]หมักนุ่ม
   'SP-206': ['MT-043','MT-020'],           // พิคานย่าไทย (ดิบ) → 75G/100G
   'SP-101': ['MT-008','MT-014'],           // พิคานย่าออส (ดิบ) → 75G/100G
@@ -1999,7 +2000,7 @@ function addProcInput() {
   procInputCount++
   const n = procInputCount
   // Curated list: SKU หลัก + เศษเนื้อ (category=meat_trim)
-  const MAIN_PROC_SKUS = ['MT-028','MT-019','SP-206','SP-101','SP-036','SP-037','SP-087','SP-020','SP-031','SP-038']
+  const MAIN_PROC_SKUS = ['MT-028','MT-004','MT-019','SP-206','SP-101','SP-036','SP-037','SP-087','SP-020','SP-031','SP-038']
   const mainInStock = [...new Set(
     cwStock.filter(r => MAIN_PROC_SKUS.includes(r.item_sku)).map(r => r.item_name).filter(Boolean)
   )].sort()
