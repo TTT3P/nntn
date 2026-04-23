@@ -61,5 +61,38 @@
     <div class="desc">แก้ส่วนประกอบสูตรผลิต</div>
   </a>
 </div>
+
+<div style="padding:12px 16px 4px;font-size:0.7rem;font-weight:700;color:#666;letter-spacing:1px;text-transform:uppercase;">SOP · ขั้นตอนทำอาหาร</div>
+<div class="grid">
+  <a class="card" href="../admin-sop.html" data-role="staff,admin">
+    <div class="icon">📝</div>
+    <div class="label">กรอก SOP</div>
+    <div class="desc">น้องกรอกวิธีทำต่อเมนู · cover photo + textarea</div>
+  </a>
+  <a class="card" href="../sop-review.html" data-role="admin">
+    <div class="icon">✅</div>
+    <div class="label">Review SOP</div>
+    <div class="desc">ไทน์ QC · approve / revise / reject</div>
+  </a>
+  <a class="card" href="../print-recipe.html" data-role="staff,admin">
+    <div class="icon">🖨️</div>
+    <div class="label">Print Recipe (A4)</div>
+    <div class="desc">พิมพ์ใบสูตร · ใส่ ring binder หน้าเตา</div>
+  </a>
+</div>
+
+<script>
+(function gateByRole() {
+  // Role gating · enable when auth.js exposes window.nntnCurrentUser.role
+  try {
+    var role = (window.nntnCurrentUser && window.nntnCurrentUser.role) || '';
+    if (!role) return; // no role info · show all (current behavior)
+    document.querySelectorAll('[data-role]').forEach(function(el) {
+      var allowed = el.getAttribute('data-role').split(',').map(function(s){return s.trim();});
+      if (allowed.indexOf(role) === -1) el.style.display = 'none';
+    });
+  } catch (e) { /* fail open */ }
+})();
+</script>
 </body>
 </html>
