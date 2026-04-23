@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<!-- WIREFRAME v2 · SOP Self-Service · admin-sop.html · 2026-04-23 -->
+<!-- BLOCKER: cookingbook.sop_steps + sop_photos tables do NOT exist yet — need CB/Platform to create -->
+<!-- BLOCKER: Supabase Storage bucket "sop-covers" not yet created — need Platform to create -->
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="/nntn/auth.js"></script>
+  <title>กรอก SOP — NNTN CookingBook</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green: #005036;
+      --gold: #D29568;
+      --bg: #F5F5F2;
+      --border: #ddd;
+      --muted: #666;
+      --danger: #C62828;
+      --surface: white;
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: #1a1a1a; font-size: 16px; padding-bottom: 80px; }
+
+    /* ── Header ── */
+    header {
+      background: var(--green); color: white;
+      padding: 14px 16px; position: sticky; top: 0; z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 18px; font-weight: 700; }
+    header p { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+    .user-badge {
+      background: rgba(255,255,255,0.15); border-radius: 20px;
+      padding: 4px 10px; font-size: 12px; white-space: nowrap;
+    }
+
+    /* ── Nav ── */
+    nav { display: flex; gap: 8px; padding: 10px 16px; background: white; border-bottom: 1px solid var(--border); overflow-x: auto; }
+    nav a { text-decoration: none; color: var(--green); font-size: 13px; white-space: nowrap; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); }
+    nav a.active { background: var(--green); color: white; border-color: var(--green); }
+
+    /* ── Status banner ── */
+    .status-banner {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; background: white; border-bottom: 3px solid var(--border);
+      font-size: 13px;
+    }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 13px;
+    }
+    .status-badge.draft    { background: #FFF9C4; color: #7B6000; }
+    .status-badge.pending  { background: #E3F2FD; color: #0D47A1; }
+    .status-badge.approved { background: #E8F5E9; color: #1B5E20; }
+    .status-badge.rejected { background: #FFEBEE; color: #B71C1C; }
+    .status-badge.paused   { background: #ECEFF1; color: #37474F; }
+    .status-badge.needs-revision { background: #FFF3E0; color: #E65100; }
+    .status-badge.archived { background: #F3E5F5; color: #4A148C; }
+    .status-badge::before { content: '●'; font-size: 8px; }
+
+    /* ── Section card ── */
+    .section-card {
+      background: white; margin: 12px 16px;
+      border-radius: var(--radius); border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .section-title {
+      padding: 12px 16px; font-weight: 700; font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      background: #FAFAFA; color: var(--green);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .section-body { padding: 16px; }
+
+    /* ── Field ── */
+    .field { margin-bottom: 16px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label {
+      display: block; font-size: 13px; font-weight: 600; color: #444;
+      margin-bottom: 6px;
+    }
+    .field label .required { color: var(--danger); margin-left: 2px; }
+    .field label .hint { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 6px; }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 10px 12px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-family: inherit; font-size: 15px; background: white;
+      transition: border-color 0.15s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none; border-color: var(--green);
+    }
+    .field select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%23666'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+
+    /* ── Autocomplete dropdown ── */
+    .autocomplete-wrap { position: relative; }
+    .autocomplete-list {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 20;
+      background: white; border: 1.5px solid var(--green);
+      border-top: none; border-radius: 0 0 8px 8px;
+      max-height: 200px; overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: none;
+    }
+    .autocomplete-list.open { display: block; }
+    .autocomplete-item {
+      padding: 10px 12px; cursor: pointer;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .autocomplete-item:hover { background: #F0F7F4; }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-code { font-size: 11px; color: var(--muted); font-family: monospace; }
+
+    /* ── BOM preview ── */
+    .bom-preview { background: #F8FBF9; border-radius: 8px; padding: 12px; border: 1px dashed #bcd; }
+    .bom-preview-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 5px 0; border-bottom: 1px solid #e8eef0; font-size: 13px;
+    }
+    .bom-preview-row:last-child { border-bottom: none; }
+    .bom-ingredient { color: #333; }
+    .bom-qty { font-family: monospace; font-size: 12px; color: var(--muted); }
+    .bom-empty { text-align: center; padding: 16px; color: var(--muted); font-size: 13px; }
+
+    /* ── Photo upload ── */
+    .photo-upload-zone {
+      border: 2px dashed var(--border); border-radius: 8px;
+      padding: 24px 16px; text-align: center; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: #FAFAFA;
+    }
+    .photo-upload-zone:hover { border-color: var(--green); background: #F0F7F4; }
+    .photo-upload-zone.has-photo { border-style: solid; border-color: var(--green); padding: 0; }
+    .photo-upload-zone input[type=file] { display: none; }
+    .upload-icon { font-size: 32px; margin-bottom: 8px; }
+    .upload-hint { font-size: 13px; color: var(--muted); }
+    .upload-hint strong { color: var(--green); }
+    .photo-preview-img {
+      width: 100%; max-height: 200px; object-fit: cover;
+      border-radius: 6px; display: none;
+    }
+    .photo-preview-img.visible { display: block; }
+    .photo-change-btn {
+      display: none; margin-top: 8px; font-size: 12px; color: var(--green);
+      background: none; border: none; cursor: pointer; font-family: inherit;
+      text-decoration: underline;
+    }
+    .photo-change-btn.visible { display: block; }
+
+    /* ── Freeform steps ── */
+    .steps-textarea {
+      font-family: 'Sarabun', sans-serif !important;
+      font-size: 14px !important;
+      line-height: 1.7 !important;
+      min-height: 320px;
+      resize: vertical;
+      padding: 12px 14px !important;
+    }
+    .steps-char-count { text-align: right; font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* ── Status select ── */
+    .status-select-wrap { display: flex; align-items: center; gap: 10px; }
+    .status-live-badge { flex-shrink: 0; }
+
+    /* ── Upload progress ── */
+    .upload-progress {
+      display: none; margin-top: 8px;
+      background: #E8F5E9; border-radius: 6px; padding: 8px 12px;
+      font-size: 13px; color: #1B5E20; align-items: center; gap: 8px;
+    }
+    .upload-progress.visible { display: flex; }
+
+    /* ── Action buttons ── */
+    .action-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: white; border-top: 1px solid var(--border);
+      padding: 12px 16px; display: flex; gap: 10px;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+    }
+    .btn { flex: 1; padding: 12px 16px; border: none; border-radius: 8px; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+    .btn:active { opacity: 0.8; }
+    .btn-draft { background: #ECEFF1; color: #37474F; }
+    .btn-submit { background: var(--green); color: white; }
+    .btn-submit:disabled { background: #9E9E9E; cursor: default; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: #1a1a1a; color: white; padding: 10px 20px; border-radius: 20px;
+      font-size: 14px; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s; white-space: nowrap; z-index: 100;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div>
+    <h1>กรอก SOP เมนู</h1>
+    <p>NNTN CookingBook · Self-Service</p>
+  </div>
+  <div class="user-badge" id="userBadge">กำลังโหลด...</div>
+</header>
+
+<!-- ── Nav ── -->
+<nav>
+  <a href="/nntn/cookingbook/">CookingBook</a>
+  <a href="admin-sop.html" class="active">กรอก SOP</a>
+  <a href="sop-review.html">รีวิว SOP</a>
+  <a href="print-recipe.html">พิมพ์ SOP</a>
+</nav>
+
+<!-- ── Status banner ── -->
+<div class="status-banner">
+  <span style="color:var(--muted);font-size:13px;">สถานะปัจจุบัน:</span>
+  <span class="status-badge draft" id="currentStatusBadge">draft</span>
+  <span style="flex:1;"></span>
+  <span style="font-size:12px;color:var(--muted);" id="lastSavedLabel"></span>
+</div>
+
+<!-- ── Section 1: เลือกเมนู ── -->
+<div class="section-card">
+  <div class="section-title">📋 เมนู & BOM</div>
+  <div class="section-body">
+
+    <div class="field">
+      <label>เลือกเมนู <span class="required">*</span> <span class="hint">พิมพ์ชื่อหรือรหัสเพื่อค้นหา</span></label>
+      <div class="autocomplete-wrap">
+        <input type="text" id="recipeSearch" placeholder="เช่น RCP-002 หรือ น้ำซุป" autocomplete="off">
+        <div class="autocomplete-list" id="autocompleteList"></div>
+      </div>
+      <input type="hidden" id="selectedRecipeId">
+    </div>
+
+    <!-- BOM preview (read-only) -->
+    <div class="field">
+      <label>ส่วนผสม (BOM) <span class="hint">อ่านอย่างเดียว — ดึงจาก CookingBook อัตโนมัติ</span></label>
+      <div class="bom-preview" id="bomPreview">
+        <div class="bom-empty">เลือกเมนูก่อนเพื่อดูส่วนผสม</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Section 2: รูปปก ── -->
+<div class="section-card">
+  <div class="section-title">📷 รูปปกเมนู</div>
+  <div class="section-body">
+    <div class="field">
+      <label>อัปโหลดรูปปก <span class="hint">1 รูป · JPG/PNG · ไม่เกิน 5MB</span></label>
+      <!-- PLACEHOLDER: bucket "sop-covers" ต้องให้ Platform สร้างก่อน -->
+      <div class="photo-upload-zone" id="uploadZone" onclick="document.getElementById('coverPhotoInput').click()">
+        <input type="file" id="coverPhotoInput" accept="image/jpeg,image/png,image/webp">
+        <div id="uploadPlaceholder">
+          <div class="upload-icon">🖼️</div>
+          <div class="upload-hint">แตะเพื่อเลือกรูป<br><strong>JPG, PNG, WEBP</strong> · ไม่เกิน 5MB</div>
+        </div>
+        <img class="photo-preview-img" id="coverPhotoPreview" src="" alt="ตัวอย่างรูปปก">
+      </div>
+      <button class="photo-change-btn" id="changePhotoBtn" onclick="document.getElementById('coverPhotoInput').click()">เปลี่ยนรูป</button>
+      <div class="upload-progress" id="uploadProgress">
+        <span>⏳</span> กำลังอัปโหลด...
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Section 3: ขั้นตอน ── -->
+<div class="section-card">
+  <div class="section-title">📝 ขั้นตอนการทำ</div>
+  <div class="section-body">
+    <div class="field">
+      <label>เขียนขั้นตอน <span class="required">*</span></label>
+      <textarea
+        class="field steps-textarea"
+        id="stepsTextarea"
+        rows="20"
+        maxlength="5000"
+        placeholder="เขียนขั้นตอนแบบไหนก็ได้ เช่น&#10;&#10;ขั้นตอน 1: ต้มน้ำให้เดือด&#10;ขั้นตอน 2: ใส่เนื้อ ตุ๋น 3 ชั่วโมง&#10;ขั้นตอน 3: ปรุงรส&#10;&#10;หรือจะเขียนเป็น paragraph ยาวก็ได้ ไม่ต้องกังวล format"
+      ></textarea>
+      <div class="steps-char-count"><span id="charCount">0</span> / 5,000 ตัวอักษร</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Section 4: สถานะ ── -->
+<div class="section-card">
+  <div class="section-title">🔖 สถานะเอกสาร</div>
+  <div class="section-body">
+    <div class="field">
+      <label>เปลี่ยนสถานะ</label>
+      <div class="status-select-wrap">
+        <select id="statusSelect">
+          <option value="draft">📝 draft — ร่าง</option>
+          <option value="pending">⏳ pending — รอรีวิว</option>
+          <option value="needs_revision">🔄 needs_revision — แก้ไขก่อน</option>
+          <option value="paused">⏸ paused — พักไว้ก่อน</option>
+          <option value="approved">✅ approved — อนุมัติแล้ว</option>
+          <option value="rejected">❌ rejected — ไม่ผ่าน</option>
+          <option value="archived">🗄 archived — เก็บเข้าคลัง</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Action bar ── -->
+<div class="action-bar">
+  <button class="btn btn-draft" onclick="saveSOP('draft')">💾 บันทึก draft</button>
+  <button class="btn btn-submit" id="submitBtn" onclick="saveSOP('pending')" disabled>📤 ส่งรีวิว</button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Supabase init ──
+const SB_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM1MjA4NzYsImV4cCI6MjA1OTA5Njg3Nn0.JrPHZNUVGFGnvUJrXAbhKqPdVCBolFpz1FKM5_fFbM8';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+// ── Auth ──
+let currentUser = null;
+document.addEventListener('DOMContentLoaded', async () => {
+  // Use nntnCurrentUser if available (injected by auth.js)
+  currentUser = window.nntnCurrentUser || null;
+  if (!currentUser) {
+    const { data: { user } } = await sb.auth.getUser();
+    currentUser = user;
+  }
+  if (currentUser) {
+    document.getElementById('userBadge').textContent = currentUser.email?.split('@')[0] || 'User';
+  } else {
+    document.getElementById('userBadge').textContent = 'ไม่ได้ล็อกอิน';
+  }
+
+  loadRecipes();
+});
+
+// ── Load recipes for autocomplete ──
+let allRecipes = [];
+async function loadRecipes() {
+  const { data, error } = await sb
+    .schema('cookingbook')
+    .from('recipes')
+    .select('id, rcp_code, name, type')
+    .eq('is_active', true)
+    .order('rcp_code');
+  if (!error) allRecipes = data || [];
+}
+
+// ── Autocomplete ──
+const searchInput = document.getElementById('recipeSearch');
+const autocompleteList = document.getElementById('autocompleteList');
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.toLowerCase().trim();
+  if (!q) { autocompleteList.classList.remove('open'); return; }
+  const matches = allRecipes.filter(r =>
+    r.rcp_code.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)
+  ).slice(0, 8);
+  autocompleteList.innerHTML = matches.map(r => `
+    <div class="autocomplete-item" onclick="selectRecipe(${r.id}, '${r.rcp_code}', '${r.name.replace(/'/g, "\\'")}')">
+      <span>${r.name}</span>
+      <span class="autocomplete-code">${r.rcp_code}</span>
+    </div>
+  `).join('') || '<div style="padding:10px 12px;font-size:13px;color:#999;">ไม่พบเมนู</div>';
+  autocompleteList.classList.add('open');
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.autocomplete-wrap')) autocompleteList.classList.remove('open');
+});
+
+async function selectRecipe(id, code, name) {
+  document.getElementById('selectedRecipeId').value = id;
+  searchInput.value = `${code} — ${name}`;
+  autocompleteList.classList.remove('open');
+  document.getElementById('submitBtn').disabled = false;
+  updateStatusBadge();
+  await loadBOM(id);
+}
+
+// ── Load BOM preview ──
+async function loadBOM(recipeId) {
+  const preview = document.getElementById('bomPreview');
+  preview.innerHTML = '<div class="bom-empty">กำลังโหลด...</div>';
+  const { data, error } = await sb
+    .schema('cookingbook')
+    .from('bom_items')
+    .select('line_no, qty_g, unit, note, ingredient_id')
+    .eq('recipe_id', recipeId)
+    .order('line_no');
+  if (error || !data?.length) {
+    preview.innerHTML = '<div class="bom-empty">ไม่มีส่วนผสม หรือ BOM ยังไม่ได้กรอก</div>';
+    return;
+  }
+  // Fetch ingredient names
+  const ingIds = data.filter(r => r.ingredient_id).map(r => r.ingredient_id);
+  let ingMap = {};
+  if (ingIds.length) {
+    const { data: ings } = await sb.schema('cookingbook').from('ingredients').select('id, name').in('id', ingIds);
+    if (ings) ings.forEach(i => { ingMap[i.id] = i.name; });
+  }
+  preview.innerHTML = data.map(row => `
+    <div class="bom-preview-row">
+      <span class="bom-ingredient">${row.line_no}. ${ingMap[row.ingredient_id] || '(sub-recipe)'}</span>
+      <span class="bom-qty">${row.qty_g ? row.qty_g + ' ' + (row.unit || 'g') : row.unit || ''}</span>
+    </div>
+  `).join('');
+}
+
+// ── Cover photo preview ──
+document.getElementById('coverPhotoInput').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { showToast('❌ รูปใหญ่เกิน 5MB'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('coverPhotoPreview');
+    const placeholder = document.getElementById('uploadPlaceholder');
+    const changeBtn = document.getElementById('changePhotoBtn');
+    img.src = e.target.result;
+    img.classList.add('visible');
+    placeholder.style.display = 'none';
+    changeBtn.classList.add('visible');
+    document.getElementById('uploadZone').classList.add('has-photo');
+  };
+  reader.readAsDataURL(file);
+});
+
+// ── Steps char count ──
+document.getElementById('stepsTextarea').addEventListener('input', function() {
+  document.getElementById('charCount').textContent = this.value.length.toLocaleString();
+});
+
+// ── Status select sync ──
+document.getElementById('statusSelect').addEventListener('change', updateStatusBadge);
+function updateStatusBadge() {
+  const val = document.getElementById('statusSelect').value;
+  const badge = document.getElementById('currentStatusBadge');
+  badge.className = 'status-badge ' + val.replace('_', '-');
+  badge.textContent = val;
+}
+
+// ── Save SOP ── (PLACEHOLDER — sop_steps table not yet created)
+async function saveSOP(forceStatus) {
+  const recipeId = document.getElementById('selectedRecipeId').value;
+  const steps = document.getElementById('stepsTextarea').value.trim();
+  const status = forceStatus || document.getElementById('statusSelect').value;
+
+  if (!recipeId) { showToast('❌ เลือกเมนูก่อน'); return; }
+  if (!steps && status === 'pending') { showToast('❌ กรุณากรอกขั้นตอนก่อนส่งรีวิว'); return; }
+
+  // TODO: Upload photo to storage bucket "sop-covers" (bucket ยังไม่มี — Platform ต้อง create)
+  // const coverUrl = await uploadCoverPhoto();
+
+  // TODO: Save to cookingbook.sop_steps (table ยังไม่มี — Platform/CB ต้อง create)
+  // const { error } = await sb.schema('cookingbook').from('sop_steps').upsert({
+  //   recipe_id: recipeId,
+  //   steps_freeform: steps,
+  //   status,
+  //   cover_photo_url: coverUrl,
+  //   created_by: currentUser?.id,
+  //   updated_at: new Date().toISOString()
+  // }, { onConflict: 'recipe_id' });
+
+  // Simulate save for wireframe
+  await new Promise(r => setTimeout(r, 400));
+  document.getElementById('statusSelect').value = status;
+  updateStatusBadge();
+  document.getElementById('lastSavedLabel').textContent = 'บันทึกเมื่อ ' + new Date().toLocaleTimeString('th-TH');
+  showToast(status === 'pending' ? '📤 ส่งรีวิวแล้ว' : '💾 บันทึก draft แล้ว');
+}
+
+// ── Toast ──
+function showToast(msg, duration = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+</script>
+</body>
+</html>

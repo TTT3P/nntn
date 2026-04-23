@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<!-- Print Recipe A4 · print-recipe.html · live 2026-04-23 · cookingbook.sop_steps -->
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="/nntn/auth.js"></script>
+  <title>พิมพ์ SOP — NNTN CookingBook</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green: #005036;
+      --gold: #D29568;
+      --bg: #F5F5F2;
+      --border: #ddd;
+      --muted: #666;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: #1a1a1a; font-size: 16px; }
+
+    /* ── Screen-only UI ── */
+    @media screen {
+      header {
+        background: var(--green); color: white;
+        padding: 14px 16px; position: sticky; top: 0; z-index: 10;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        display: flex; align-items: center; justify-content: space-between;
+      }
+      header h1 { font-size: 18px; font-weight: 700; }
+      header p { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+      .user-badge { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 10px; font-size: 12px; }
+
+      nav { display: flex; gap: 8px; padding: 10px 16px; background: white; border-bottom: 1px solid var(--border); overflow-x: auto; }
+      nav a { text-decoration: none; color: var(--green); font-size: 13px; white-space: nowrap; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); }
+      nav a.active { background: var(--green); color: white; border-color: var(--green); }
+
+      .print-controls {
+        background: white; padding: 12px 16px; border-bottom: 2px solid var(--border);
+        display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+      }
+      .ctrl-label { font-size: 13px; font-weight: 600; color: #444; white-space: nowrap; }
+      .ctrl-select {
+        padding: 8px 32px 8px 12px; border: 1.5px solid var(--border);
+        border-radius: 8px; font-family: inherit; font-size: 14px;
+        background: white; appearance: none; flex: 1; min-width: 160px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%23666'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 10px center;
+      }
+      .ctrl-select:focus { outline: none; border-color: var(--green); }
+      .btn-print {
+        padding: 10px 20px; background: var(--green); color: white;
+        border: none; border-radius: 8px; font-family: inherit; font-size: 15px;
+        font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      }
+      .btn-print:disabled { background: #9E9E9E; cursor: default; }
+      .btn-print:active { opacity: 0.85; }
+
+      .print-preview-wrap {
+        padding: 24px 16px; display: flex; justify-content: center;
+      }
+
+      .no-recipe-msg {
+        text-align: center; padding: 60px 24px; color: var(--muted);
+        display: none;
+      }
+      .no-recipe-msg.visible { display: block; }
+      .no-recipe-msg .icon { font-size: 48px; margin-bottom: 12px; }
+    }
+
+    /* ── A4 document — visible on screen AND in print ── */
+    .a4-doc {
+      background: white;
+      width: 210mm;
+      min-height: 297mm;
+      padding: 18mm 16mm 16mm;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+      font-family: 'Sarabun', sans-serif;
+      color: #1a1a1a;
+      position: relative;
+    }
+
+    /* ── Document header ── */
+    .doc-header {
+      display: flex; align-items: flex-start; gap: 16px;
+      border-bottom: 3px solid var(--green); padding-bottom: 14px; margin-bottom: 16px;
+    }
+    .doc-cover-img {
+      width: 90px; height: 90px; object-fit: cover; border-radius: 8px;
+      border: 2px solid var(--border); flex-shrink: 0; display: none;
+    }
+    .doc-cover-img.visible { display: block; }
+    .doc-cover-placeholder {
+      width: 90px; height: 90px; border-radius: 8px;
+      border: 2px dashed var(--border); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; background: #f8f8f8; color: #ccc;
+    }
+    .doc-title-block { flex: 1; }
+    .doc-menu-name { font-size: 22px; font-weight: 700; color: var(--green); line-height: 1.2; }
+    .doc-rcp-code {
+      display: inline-block; margin-top: 4px;
+      background: var(--green); color: white;
+      font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 4px;
+      font-family: monospace; letter-spacing: 0.05em;
+    }
+    .doc-meta { margin-top: 6px; font-size: 12px; color: var(--muted); }
+    .doc-status-badge {
+      display: inline-block; margin-top: 6px;
+      padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+    }
+    .doc-status-badge.approved { background: #E8F5E9; color: #1B5E20; }
+    .doc-status-badge.pending  { background: #E3F2FD; color: #0D47A1; }
+    .doc-status-badge.draft    { background: #FFF9C4; color: #7B6000; }
+
+    /* ── Section heading ── */
+    .doc-section-title {
+      font-size: 13px; font-weight: 700; color: var(--green);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      border-bottom: 1.5px solid var(--gold); padding-bottom: 4px;
+      margin: 16px 0 10px;
+    }
+
+    /* ── Ingredient table ── */
+    .ing-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .ing-table th {
+      background: var(--green); color: white; padding: 7px 10px;
+      text-align: left; font-weight: 600; font-size: 12px;
+    }
+    .ing-table th:last-child { text-align: right; }
+    .ing-table td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; }
+    .ing-table td:last-child { text-align: right; font-family: monospace; font-size: 12px; }
+    .ing-table tr:nth-child(even) td { background: #F8FBF9; }
+    .ing-table .ing-note { font-size: 11px; color: var(--muted); }
+
+    /* ── Steps ── */
+    .steps-body {
+      font-size: 14px; line-height: 1.9;
+      white-space: pre-wrap;
+      background: #FAFAFA;
+      border: 1px solid #e8e8e8;
+      border-radius: 6px;
+      padding: 12px 14px;
+      min-height: 60px;
+    }
+
+    /* ── Document footer ── */
+    .doc-footer {
+      margin-top: 20px;
+      border-top: 2px solid var(--green);
+      padding-top: 12px;
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px; font-size: 12px;
+    }
+    .footer-item .footer-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .footer-item .footer-value { font-weight: 600; margin-top: 2px; }
+    .footer-item .footer-sig-line {
+      border-top: 1px solid #333; margin-top: 24px; padding-top: 4px;
+      font-size: 11px; color: var(--muted);
+    }
+
+    .doc-watermark {
+      position: absolute; bottom: 12mm; right: 14mm;
+      font-size: 10px; color: #ccc; font-family: monospace;
+    }
+
+    /* ── Print media ── */
+    @media print {
+      header, nav, .print-controls, .print-preview-wrap { display: none !important; }
+
+      body { background: white; }
+
+      .a4-doc {
+        width: 100%;
+        min-height: auto;
+        padding: 15mm 14mm 14mm;
+        box-shadow: none;
+        page-break-inside: avoid;
+      }
+
+      .steps-body { background: white; border-color: #ccc; }
+      .ing-table tr { page-break-inside: avoid; }
+
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+
+      /* Force print only the .a4-doc */
+      body > * { display: none !important; }
+      .a4-doc { display: block !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Screen UI -->
+<header>
+  <div>
+    <h1>พิมพ์ SOP</h1>
+    <p>NNTN CookingBook · Print Preview</p>
+  </div>
+  <div class="user-badge" id="userBadge">กำลังโหลด...</div>
+</header>
+
+<nav>
+  <a href="/nntn/cookingbook/">CookingBook</a>
+  <a href="admin-sop.html">กรอก SOP</a>
+  <a href="sop-review.html">รีวิว SOP</a>
+  <a href="print-recipe.html" class="active">พิมพ์ SOP</a>
+</nav>
+
+<div class="print-controls">
+  <span class="ctrl-label">เลือกเมนู:</span>
+  <select class="ctrl-select" id="recipeSelector" onchange="loadRecipeDoc()">
+    <option value="">— เลือกเมนู —</option>
+  </select>
+  <button class="btn-print" id="printBtn" onclick="window.print()" disabled>🖨️ พิมพ์ / บันทึก PDF</button>
+</div>
+
+<div class="no-recipe-msg visible" id="noRecipeMsg">
+  <div class="icon">📄</div>
+  <div style="font-size:16px;font-weight:600;color:#444;margin-bottom:6px;">เลือกเมนูเพื่อดู preview</div>
+  <div style="font-size:13px;">เลือกจาก dropdown ด้านบน แล้วกด 🖨️ พิมพ์</div>
+</div>
+
+<!-- A4 document (hidden until recipe selected) -->
+<div class="print-preview-wrap" id="printPreviewWrap" style="display:none;">
+  <div class="a4-doc" id="a4Doc">
+
+    <!-- Header block -->
+    <div class="doc-header">
+      <div class="doc-cover-placeholder" id="docCoverPlaceholder">🍜</div>
+      <img class="doc-cover-img" id="docCoverImg" src="" alt="รูปปก">
+      <div class="doc-title-block">
+        <div class="doc-menu-name" id="docMenuName">ชื่อเมนู</div>
+        <div><span class="doc-rcp-code" id="docRcpCode">RCP-000</span></div>
+        <div class="doc-meta" id="docMeta">ประเภท: prep · batch: — g</div>
+        <span class="doc-status-badge approved" id="docStatusBadge">approved</span>
+      </div>
+    </div>
+
+    <!-- Ingredients -->
+    <div class="doc-section-title">ส่วนผสม (BOM)</div>
+    <table class="ing-table" id="ingTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>วัตถุดิบ</th>
+          <th style="text-align:right;">ปริมาณ</th>
+        </tr>
+      </thead>
+      <tbody id="ingTableBody">
+        <tr><td colspan="3" style="text-align:center;color:#999;padding:16px;">กำลังโหลด...</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Steps -->
+    <div class="doc-section-title">ขั้นตอนการทำ</div>
+    <div class="steps-body" id="docSteps">กำลังโหลดขั้นตอน...</div>
+
+    <!-- Footer -->
+    <div class="doc-footer">
+      <div class="footer-item">
+        <div class="footer-label">อนุมัติโดย</div>
+        <div class="footer-value" id="footerApprovedBy">—</div>
+        <div class="footer-sig-line">ลายเซ็น</div>
+      </div>
+      <div class="footer-item">
+        <div class="footer-label">วันที่อนุมัติ</div>
+        <div class="footer-value" id="footerDate">—</div>
+      </div>
+      <div class="footer-item">
+        <div class="footer-label">เวอร์ชัน</div>
+        <div class="footer-value" id="footerVersion">v1.0</div>
+      </div>
+    </div>
+
+    <div class="doc-watermark" id="docWatermark">NNTN · ครัวเนื้อในตำนาน · printed <span id="printTimestamp"></span></div>
+  </div>
+</div>
+
+<script>
+const SB_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM1MjA4NzYsImV4cCI6MjA1OTA5Njg3Nn0.JrPHZNUVGFGnvUJrXAbhKqPdVCBolFpz1FKM5_fFbM8';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+// Live sop_steps data loaded per recipe on demand (no mock)
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = window.nntnCurrentUser || null;
+  document.getElementById('userBadge').textContent = user?.email?.split('@')[0] || 'User';
+  document.getElementById('printTimestamp').textContent = new Date().toLocaleDateString('th-TH');
+  await loadRecipeList();
+  // Auto-load recipe from ?rcp= URL param
+  const rcpId = new URLSearchParams(window.location.search).get('rcp');
+  if (rcpId) {
+    const sel = document.getElementById('recipeSelector');
+    sel.value = rcpId;
+    if (sel.value) await loadRecipeDoc();
+  }
+});
+
+async function loadRecipeList() {
+  const { data, error } = await sb.schema('cookingbook').from('recipes')
+    .select('id, rcp_code, name, type').eq('is_active', true).order('rcp_code');
+  if (error || !data) return;
+  const sel = document.getElementById('recipeSelector');
+  data.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    opt.textContent = `${r.rcp_code} — ${r.name}`;
+    opt.dataset.code = r.rcp_code;
+    opt.dataset.name = r.name;
+    opt.dataset.type = r.type;
+    sel.appendChild(opt);
+  });
+}
+
+async function loadRecipeDoc() {
+  const sel = document.getElementById('recipeSelector');
+  const recipeId = parseInt(sel.value);
+  if (!recipeId) {
+    document.getElementById('noRecipeMsg').classList.add('visible');
+    document.getElementById('printPreviewWrap').style.display = 'none';
+    document.getElementById('printBtn').disabled = true;
+    return;
+  }
+  const opt = sel.options[sel.selectedIndex];
+
+  // Populate header
+  document.getElementById('docMenuName').textContent = opt.dataset.name;
+  document.getElementById('docRcpCode').textContent  = opt.dataset.code;
+  document.getElementById('docMeta').textContent     = `ประเภท: ${opt.dataset.type}`;
+
+  // Load BOM
+  const tbody = document.getElementById('ingTableBody');
+  tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#999;padding:12px;">กำลังโหลด...</td></tr>';
+  const { data: bomData } = await sb.schema('cookingbook').from('bom_items')
+    .select('line_no, qty_g, unit, note, ingredient_id, sub_recipe_id')
+    .eq('recipe_id', recipeId).order('line_no');
+
+  let ingMap = {};
+  let subMap = {};
+  if (bomData?.length) {
+    const ingIds = bomData.filter(r => r.ingredient_id).map(r => r.ingredient_id);
+    const subIds = bomData.filter(r => r.sub_recipe_id).map(r => r.sub_recipe_id);
+    if (ingIds.length) {
+      const { data: ings } = await sb.schema('cookingbook').from('ingredients').select('id, name').in('id', ingIds);
+      if (ings) ings.forEach(i => { ingMap[i.id] = i.name; });
+    }
+    if (subIds.length) {
+      const { data: subs } = await sb.schema('cookingbook').from('recipes').select('id, name, rcp_code').in('id', subIds);
+      if (subs) subs.forEach(s => { subMap[s.id] = `${s.name} (${s.rcp_code})`; });
+    }
+    tbody.innerHTML = bomData.map(r => `
+      <tr>
+        <td>${r.line_no}</td>
+        <td>
+          ${r.ingredient_id ? ingMap[r.ingredient_id] || '—' : (subMap[r.sub_recipe_id] || '(sub-recipe)')}
+          ${r.note ? `<div class="ing-note">${r.note}</div>` : ''}
+        </td>
+        <td>${r.qty_g ? r.qty_g + ' ' + (r.unit || 'g') : (r.unit || '—')}</td>
+      </tr>`).join('');
+  } else {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#999;padding:12px;">ไม่มีส่วนผสม หรือ BOM ยังไม่ได้กรอก</td></tr>';
+  }
+
+  // Steps — load from cookingbook.sop_steps (live)
+  const { data: sopData } = await sb.schema('cookingbook').from('sop_steps')
+    .select('steps_freeform, cover_photo_url, status, reviewed_by, reviewed_at, version')
+    .eq('recipe_id', recipeId)
+    .order('version', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const stepsText = sopData?.steps_freeform || '(ยังไม่ได้กรอกขั้นตอน — กรอกได้ที่ admin-sop.html)';
+  document.getElementById('docSteps').textContent = stepsText;
+
+  // Cover photo from sop_steps if available
+  if (sopData?.cover_photo_url) {
+    const coverImg = document.getElementById('docCoverImg');
+    const coverPlaceholder = document.getElementById('docCoverPlaceholder');
+    coverImg.src = sopData.cover_photo_url;
+    coverImg.classList.add('visible');
+    coverPlaceholder.style.display = 'none';
+  }
+
+  // Status badge
+  const statusBadge = document.getElementById('docStatusBadge');
+  const st = sopData?.status || 'draft';
+  statusBadge.className = 'doc-status-badge ' + st;
+  statusBadge.textContent = st;
+
+  // Footer
+  document.getElementById('footerApprovedBy').textContent = sopData?.reviewed_by || '—';
+  document.getElementById('footerDate').textContent = sopData?.reviewed_at
+    ? new Date(sopData.reviewed_at).toLocaleDateString('th-TH')
+    : new Date().toLocaleDateString('th-TH');
+  document.getElementById('footerVersion').textContent = 'v' + (sopData?.version || 1) + '.0';
+
+  // Show
+  document.getElementById('noRecipeMsg').classList.remove('visible');
+  document.getElementById('printPreviewWrap').style.display = 'flex';
+  document.getElementById('printBtn').disabled = false;
+}
+</script>
+</body>
+</html>

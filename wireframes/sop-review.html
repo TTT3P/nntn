@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<!-- WIREFRAME v2 · SOP Review Queue · sop-review.html · 2026-04-23 -->
+<!-- BLOCKER: cookingbook.sop_steps table not yet created — mock data used -->
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="/nntn/auth.js"></script>
+  <title>รีวิว SOP — NNTN CookingBook</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green: #005036;
+      --gold: #D29568;
+      --bg: #F5F5F2;
+      --border: #ddd;
+      --muted: #666;
+      --danger: #C62828;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: #1a1a1a; font-size: 16px; }
+
+    header {
+      background: var(--green); color: white;
+      padding: 14px 16px; position: sticky; top: 0; z-index: 20;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 18px; font-weight: 700; }
+    header p { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+    .user-badge { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 10px; font-size: 12px; }
+
+    nav { display: flex; gap: 8px; padding: 10px 16px; background: white; border-bottom: 1px solid var(--border); overflow-x: auto; }
+    nav a { text-decoration: none; color: var(--green); font-size: 13px; white-space: nowrap; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); }
+    nav a.active { background: var(--green); color: white; border-color: var(--green); }
+
+    .stats-bar { display: flex; background: white; border-bottom: 1px solid var(--border); }
+    .stat-item { flex: 1; padding: 10px 8px; text-align: center; border-right: 1px solid var(--border); cursor: pointer; }
+    .stat-item:last-child { border-right: none; }
+    .stat-num { font-size: 20px; font-weight: 700; }
+    .stat-label { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .stat-item.pending .stat-num  { color: #0D47A1; }
+    .stat-item.revision .stat-num { color: #E65100; }
+    .stat-item.approved .stat-num { color: #1B5E20; }
+    .stat-item.all .stat-num      { color: #333; }
+
+    .filter-bar {
+      background: white; padding: 10px 16px; border-bottom: 2px solid var(--border);
+      display: flex; gap: 8px; overflow-x: auto; align-items: center;
+    }
+    .filter-pill {
+      flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+      border: 1px solid var(--border); font-size: 13px; font-family: inherit;
+      background: white; color: #444; cursor: pointer; white-space: nowrap;
+    }
+    .filter-pill.active { background: var(--green); color: white; border-color: var(--green); font-weight: 600; }
+    .filter-divider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+    .filter-select {
+      padding: 6px 28px 6px 10px; border: 1px solid var(--border);
+      border-radius: 8px; font-family: inherit; font-size: 13px;
+      background: white; appearance: none; flex-shrink: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%23666'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center;
+    }
+
+    .queue-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+    .queue-card {
+      background: white; border-radius: 10px; border: 1px solid var(--border);
+      overflow: hidden; cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s;
+    }
+    .queue-card:hover { box-shadow: 0 4px 16px rgba(0,80,54,0.12); border-color: var(--green); }
+    .card-header { padding: 12px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f5f5f5; }
+    .card-cover {
+      width: 48px; height: 48px; border-radius: 6px; flex-shrink: 0;
+      background: #e8f5e9; display: flex; align-items: center; justify-content: center;
+      font-size: 20px; overflow: hidden;
+    }
+    .card-info { flex: 1; min-width: 0; }
+    .card-name { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .status-chip {
+      padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .status-chip.draft            { background: #FFF9C4; color: #7B6000; }
+    .status-chip.pending          { background: #E3F2FD; color: #0D47A1; }
+    .status-chip.approved         { background: #E8F5E9; color: #1B5E20; }
+    .status-chip.rejected         { background: #FFEBEE; color: #B71C1C; }
+    .status-chip.paused           { background: #ECEFF1; color: #37474F; }
+    .status-chip.needs-revision   { background: #FFF3E0; color: #E65100; }
+    .status-chip.archived         { background: #F3E5F5; color: #4A148C; }
+    .card-steps-preview {
+      padding: 10px 14px; font-size: 13px; color: #555;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: #FAFAFA;
+    }
+
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--muted); }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: #444; }
+
+    .drawer-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 30; align-items: flex-end;
+    }
+    .drawer-overlay.open { display: flex; }
+    .drawer {
+      background: white; width: 100%; border-radius: 20px 20px 0 0;
+      max-height: 90vh; overflow-y: auto; padding: 0 0 32px;
+    }
+    .drawer-handle { text-align: center; padding: 10px; cursor: pointer; }
+    .drawer-handle::after { content: ''; display: inline-block; width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
+    .drawer-header {
+      padding: 12px 16px 14px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .drawer-cover {
+      width: 72px; height: 72px; border-radius: 8px; flex-shrink: 0;
+      background: #e8f5e9; display: flex; align-items: center; justify-content: center;
+      font-size: 28px; overflow: hidden;
+    }
+    .drawer-title { font-size: 18px; font-weight: 700; }
+    .drawer-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+    .drawer-section { padding: 14px 16px; border-bottom: 1px solid #f5f5f5; }
+    .drawer-section-title { font-size: 13px; font-weight: 700; color: var(--green); margin-bottom: 10px; }
+    .bom-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+    .bom-row:last-child { border-bottom: none; }
+    .steps-display {
+      font-size: 14px; line-height: 1.8; white-space: pre-wrap;
+      background: #FAFAFA; border-radius: 8px; padding: 12px;
+      border: 1px solid var(--border); max-height: 220px; overflow-y: auto;
+    }
+    .review-note-input {
+      width: 100%; padding: 10px 12px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-family: inherit; font-size: 14px;
+      resize: none; min-height: 80px;
+    }
+    .review-note-input:focus { outline: none; border-color: var(--green); }
+
+    .action-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px 16px;
+    }
+    .action-btn {
+      padding: 12px 10px; border: none; border-radius: 8px;
+      font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .action-btn:active { opacity: 0.8; }
+    .action-btn.approve  { background: #E8F5E9; color: #1B5E20; }
+    .action-btn.reject   { background: #FFEBEE; color: #B71C1C; }
+    .action-btn.revision { background: #FFF3E0; color: #E65100; }
+    .action-btn.pause    { background: #ECEFF1; color: #37474F; }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #1a1a1a; color: white; padding: 10px 20px; border-radius: 20px;
+      font-size: 14px; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s; white-space: nowrap; z-index: 100;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>รีวิว SOP</h1>
+    <p>NNTN CookingBook · Review Queue</p>
+  </div>
+  <div class="user-badge" id="userBadge">กำลังโหลด...</div>
+</header>
+
+<nav>
+  <a href="/nntn/cookingbook/">CookingBook</a>
+  <a href="admin-sop.html">กรอก SOP</a>
+  <a href="sop-review.html" class="active">รีวิว SOP</a>
+  <a href="print-recipe.html">พิมพ์ SOP</a>
+</nav>
+
+<div class="stats-bar">
+  <div class="stat-item pending"  onclick="filterByStatus('pending')">
+    <div class="stat-num" id="countPending">3</div>
+    <div class="stat-label">รอรีวิว</div>
+  </div>
+  <div class="stat-item revision" onclick="filterByStatus('needs_revision')">
+    <div class="stat-num" id="countRevision">1</div>
+    <div class="stat-label">แก้ไข</div>
+  </div>
+  <div class="stat-item approved" onclick="filterByStatus('approved')">
+    <div class="stat-num" id="countApproved">1</div>
+    <div class="stat-label">อนุมัติ</div>
+  </div>
+  <div class="stat-item all"      onclick="filterByStatus('all')">
+    <div class="stat-num" id="countAll">5</div>
+    <div class="stat-label">ทั้งหมด</div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <button class="filter-pill active" data-status="all"            onclick="filterByStatus('all')">ทั้งหมด</button>
+  <button class="filter-pill"        data-status="pending"        onclick="filterByStatus('pending')">⏳ รอรีวิว</button>
+  <button class="filter-pill"        data-status="needs_revision" onclick="filterByStatus('needs_revision')">🔄 แก้ไข</button>
+  <button class="filter-pill"        data-status="approved"       onclick="filterByStatus('approved')">✅ อนุมัติ</button>
+  <button class="filter-pill"        data-status="rejected"       onclick="filterByStatus('rejected')">❌ ไม่ผ่าน</button>
+  <div class="filter-divider"></div>
+  <select class="filter-select" id="recipeTypeFilter" onchange="applyFilters()">
+    <option value="">ทุกประเภท</option>
+    <option value="menu">menu</option>
+    <option value="prep">prep</option>
+    <option value="sub">sub</option>
+  </select>
+</div>
+
+<div class="queue-list" id="queueList"></div>
+
+<!-- Drawer -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer(event)">
+  <div class="drawer" id="drawer">
+    <div class="drawer-handle" onclick="closeDrawerDirect()"></div>
+    <div class="drawer-header">
+      <div class="drawer-cover" id="drawerCover">🍜</div>
+      <div>
+        <div class="drawer-title" id="drawerTitle">ชื่อเมนู</div>
+        <div class="drawer-sub" id="drawerSub">RCP-000 · prep</div>
+        <span class="status-chip pending" id="drawerStatusChip">pending</span>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-section-title">ส่วนผสม (BOM)</div>
+      <div id="drawerBOM"><div style="color:#999;font-size:13px;">กำลังโหลด...</div></div>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-section-title">ขั้นตอนการทำ</div>
+      <div class="steps-display" id="drawerSteps">กำลังโหลด...</div>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-section-title">หมายเหตุการรีวิว</div>
+      <textarea class="review-note-input" id="reviewNote" placeholder="เช่น: ขั้นตอนชัดเจนดี / ขอให้เพิ่มเวลาตุ๋น"></textarea>
+    </div>
+
+    <div class="action-grid">
+      <button class="action-btn revision" onclick="reviewAction('needs_revision')">🔄 ให้แก้ไข</button>
+      <button class="action-btn pause"    onclick="reviewAction('paused')">⏸ พักไว้</button>
+      <button class="action-btn reject"   onclick="reviewAction('rejected')">❌ ไม่ผ่าน</button>
+      <button class="action-btn approve"  onclick="reviewAction('approved')">✅ อนุมัติ</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM1MjA4NzYsImV4cCI6MjA1OTA5Njg3Nn0.JrPHZNUVGFGnvUJrXAbhKqPdVCBolFpz1FKM5_fFbM8';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+let currentFilter = 'all';
+let currentRecipeId = null;
+
+// Mock data — sop_steps table not yet created
+const MOCK_SOPS = [
+  { id: 1, recipe_id: 2,  rcp_code: 'RCP-002',   name: 'น้ำซุป',           type: 'prep', status: 'pending',
+    cover_photo_url: null, created_by: 'น้องแอ', updated_at: '2026-04-23',
+    steps_freeform: 'ขั้นตอน 1: ต้มน้ำ 10 ลิตร\nขั้นตอน 2: ใส่กระดูก ตุ๋น 4 ชั่วโมง\nขั้นตอน 3: กรองน้ำซุป ปรุงรส' },
+  { id: 2, recipe_id: 4,  rcp_code: 'RCP-003',   name: 'เนื้อสดหมักนุ่ม',   type: 'prep', status: 'pending',
+    cover_photo_url: null, created_by: 'น้องบิว', updated_at: '2026-04-22',
+    steps_freeform: 'หมักเนื้อกับซอส 2 ชั่วโมง แล้ว portion ตามขนาด' },
+  { id: 3, recipe_id: 30, rcp_code: 'RCP-017A',  name: 'กะเพราเนื้อบด',     type: 'menu', status: 'pending',
+    cover_photo_url: null, created_by: 'น้องปุ้ย', updated_at: '2026-04-21',
+    steps_freeform: 'ผัดกระเทียมพริก → ใส่เนื้อบด → ปรุงรส → ใส่กะเพรา' },
+  { id: 4, recipe_id: 14, rcp_code: 'RCP-015',   name: 'ซอสอเนกประสงค์',   type: 'prep', status: 'needs_revision',
+    cover_photo_url: null, created_by: 'น้องแอ', updated_at: '2026-04-20',
+    steps_freeform: 'ผสมซอสทั้งหมด ชิมรส' },
+  { id: 5, recipe_id: 8,  rcp_code: 'RCP-007',   name: 'กระปุกเครื่องเทศ', type: 'prep', status: 'approved',
+    cover_photo_url: null, created_by: 'น้องบิว', updated_at: '2026-04-19',
+    steps_freeform: 'ชั่งเครื่องเทศแต่ละชนิดตามสูตร → บดรวม → แบ่งใส่กระปุก 50g' },
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+  const user = window.nntnCurrentUser || null;
+  document.getElementById('userBadge').textContent = user?.email?.split('@')[0] || 'Reviewer';
+  renderQueue(MOCK_SOPS);
+  updateCounts(MOCK_SOPS);
+});
+
+function renderQueue(sops) {
+  const list = document.getElementById('queueList');
+  if (!sops.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">ไม่มี SOP ในคิวนี้</div><div>ลองเปลี่ยน filter ด้านบน</div></div>';
+    return;
+  }
+  list.innerHTML = sops.map(s => `
+    <div class="queue-card" onclick="openDrawer(${s.id})">
+      <div class="card-header">
+        <div class="card-cover">${s.cover_photo_url ? `<img src="${s.cover_photo_url}" style="width:100%;height:100%;object-fit:cover;">` : '🍜'}</div>
+        <div class="card-info">
+          <div class="card-name">${s.name}</div>
+          <div class="card-meta">${s.rcp_code} · ${s.type} · ${s.created_by} · ${s.updated_at}</div>
+        </div>
+        <span class="status-chip ${s.status.replace('_','-')}">${s.status}</span>
+      </div>
+      <div class="card-steps-preview">${s.steps_freeform || '(ยังไม่ได้กรอกขั้นตอน)'}</div>
+    </div>
+  `).join('');
+}
+
+function filterByStatus(status) {
+  currentFilter = status;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.toggle('active', p.dataset.status === status));
+  applyFilters();
+}
+
+function applyFilters() {
+  const typeFilter = document.getElementById('recipeTypeFilter').value;
+  let result = [...MOCK_SOPS];
+  if (currentFilter !== 'all') result = result.filter(s => s.status === currentFilter);
+  if (typeFilter) result = result.filter(s => s.type === typeFilter);
+  renderQueue(result);
+}
+
+function updateCounts(sops) {
+  document.getElementById('countAll').textContent      = sops.length;
+  document.getElementById('countPending').textContent   = sops.filter(s => s.status === 'pending').length;
+  document.getElementById('countRevision').textContent  = sops.filter(s => s.status === 'needs_revision').length;
+  document.getElementById('countApproved').textContent  = sops.filter(s => s.status === 'approved').length;
+}
+
+async function openDrawer(sopId) {
+  const sop = MOCK_SOPS.find(s => s.id === sopId);
+  if (!sop) return;
+  currentRecipeId = sop.recipe_id;
+
+  document.getElementById('drawerTitle').textContent = sop.name;
+  document.getElementById('drawerSub').textContent   = `${sop.rcp_code} · ${sop.type} · โดย ${sop.created_by}`;
+  document.getElementById('drawerSteps').textContent = sop.steps_freeform || '(ไม่มีขั้นตอน)';
+  document.getElementById('reviewNote').value = '';
+  const chip = document.getElementById('drawerStatusChip');
+  chip.className = 'status-chip ' + sop.status.replace('_', '-');
+  chip.textContent = sop.status;
+  document.getElementById('drawerCover').innerHTML = sop.cover_photo_url
+    ? `<img src="${sop.cover_photo_url}" style="width:72px;height:72px;object-fit:cover;">`
+    : '🍜';
+
+  // Load live BOM from Supabase
+  const bomEl = document.getElementById('drawerBOM');
+  bomEl.innerHTML = '<div style="color:#999;font-size:13px;">กำลังโหลด BOM...</div>';
+  const { data: bomData } = await sb.schema('cookingbook').from('bom_items')
+    .select('line_no, qty_g, unit, ingredient_id').eq('recipe_id', currentRecipeId).order('line_no');
+  if (bomData?.length) {
+    const ingIds = bomData.filter(r => r.ingredient_id).map(r => r.ingredient_id);
+    let ingMap = {};
+    if (ingIds.length) {
+      const { data: ings } = await sb.schema('cookingbook').from('ingredients').select('id, name').in('id', ingIds);
+      if (ings) ings.forEach(i => { ingMap[i.id] = i.name; });
+    }
+    bomEl.innerHTML = bomData.map(r => `
+      <div class="bom-row">
+        <span>${r.line_no}. ${ingMap[r.ingredient_id] || '(sub-recipe)'}</span>
+        <span style="font-family:monospace;font-size:12px;color:var(--muted)">${r.qty_g || ''} ${r.unit || ''}</span>
+      </div>`).join('');
+  } else {
+    bomEl.innerHTML = '<div style="color:#999;font-size:13px;">ไม่มีส่วนผสม / BOM ยังไม่ได้กรอก</div>';
+  }
+
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDrawer(e) {
+  if (e.target === document.getElementById('drawerOverlay')) closeDrawerDirect();
+}
+function closeDrawerDirect() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function reviewAction(newStatus) {
+  // TODO: update cookingbook.sop_steps when table exists
+  const labels = { approved: '✅ อนุมัติแล้ว', rejected: '❌ ไม่ผ่าน', needs_revision: '🔄 ส่งกลับแก้ไข', paused: '⏸ พักไว้แล้ว' };
+  closeDrawerDirect();
+  showToast(labels[newStatus] || 'บันทึกแล้ว');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
