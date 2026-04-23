@@ -415,16 +415,35 @@ flowchart LR
 - On 401 response: retry once with fresh token (since `ea25058` 21/04)
 - Not-logged-in: redirect to `login.html`
 
-### Brand palette (for redesign reference)
-Source: `~/Documents/Claude-Work/ไฟล์/AI-Strategy/brand identity/Logo - Brand Asset/LOGO final_18062025/`
+### Brand (official guide — NOT approximate)
+SoT: `~/Documents/Claude-Work/ไฟล์/AI-Strategy/brand identity/Brand Asset-20260413T061700Z-3-001.zip` → `เนื้อในตำนาน brand ci/CI/เนื้อในตำนาน_BRAND GUIDELINE.pdf` (40 pages)
 
-| Token | Hex (approx) | Usage |
-|---|---|---|
-| `brand-green` | `#005135` | Primary type, main brand surface (sampled from logo) |
-| `brand-gold` | `#D59569` | Accent, diamond ornament, warm background (sampled) |
-| `ink-black` / `paper-white` | `#000` / `#FFF` | Mono print + dark mode |
+**Colors (official hex from guide §2.1):**
 
-> 2 brand colors only (green + gold). Variant 02 "cream bg" is the same `brand-gold` used as surface. Do not invent a third.
+| Token | Hex | RGB | CMYK |
+|---|---|---|---|
+| `brand-green` | **`#005036`** | 0, 80, 54 | 91, 41, 85, 42 |
+| `brand-gold` | **`#D29568`** | 210, 149, 104 | 16, 45, 64, 1 |
+| `ink-black` / `paper-white` | `#000` / `#FFF` | — | — |
+
+Only 2 brand colors. Don't invent a third.
+
+**Typography (official guide §3):**
+
+| Font | Lang | Weights used | Role |
+|---|---|---|---|
+| Crimson Text | English | Bold · Semibold · Regular | Headline · Sub · Body |
+| Moh Luang | Thai (display) | Regular | Headline (heritage feel) |
+| SOV_Station | Thai (sans) | Bold · Book | Sub headline · Body |
+
+Font files at `brand ci/FONTS/`. Don't substitute without approval.
+
+**Logo rules (§1.7 — 9 don'ts):**
+No rotate · no recolor · no outline · no disproportionate resize · no visual effects · no frame · no harmonious bg · no combine with other tagline · no modify parts.
+
+**Logo minimum:** 2cm stacked · 3cm horizontal. Clear space = 1 "อ"-height around logo.
+
+**Brand element (§4):** Diamond lattice pattern (4.1) + standalone diamond ornament (4.2) · 4-point radial symmetry · use as texture/divider/frame accent.
 
 Logo theme = heritage modern (serif Thai + diamond ornament) — **not** minimalist flat. 5 variants available (green-on-white / green-on-cream / gold-on-green / black-on-white / white-on-black) in both Horizontal + Vertical.
 
