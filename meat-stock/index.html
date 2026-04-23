@@ -1483,6 +1483,18 @@ function updateClosePotBypBags() {
   calcClosePotYield()
 }
 
+function cpBagKey(e, idx) {
+  if (e.key !== 'Enter') return
+  e.preventDefault()
+  const inputs = document.querySelectorAll('.cp-bw')
+  const next = inputs[idx + 1]
+  if (next) { next.focus(); next.select() }
+  else {
+    const waste = document.getElementById('cp-waste-kg')
+    if (waste) waste.focus()
+  }
+}
+
 function updateClosePotBags() {
   const count = parseInt(document.getElementById('cp-bag-count').value) || 0
   const rows = document.getElementById('cp-bag-rows')
@@ -1495,7 +1507,7 @@ function updateClosePotBags() {
   ` + Array.from({length: count}, (_, i) => `
     <div style="display:grid;grid-template-columns:40px 1fr 80px;gap:6px;margin-bottom:4px">
       <span style="display:flex;align-items:center;font-size:0.82rem">#${i+1}</span>
-      <input type="number" class="cp-bw" data-idx="${i}" placeholder="0" oninput="calcClosePotYield()" style="padding:6px">
+      <input type="number" class="cp-bw" data-idx="${i}" placeholder="0" oninput="calcClosePotYield()" onkeydown="cpBagKey(event,${i})" style="padding:6px">
       <span class="cp-bk" data-idx="${i}" style="display:flex;align-items:center;font-size:0.82rem;color:var(--muted)">0.000</span>
     </div>
   `).join('')
