@@ -548,8 +548,10 @@ flowchart TB
 - **Nightly:** `scripts/backup.py` → `~/Documents/NNTN-Backup/YYYY-MM-DD/*.json`
   - Tables dumped: items, catch_weight, stock_counts, stock_movements, deliveries, delivery_lines, bom_items, recipes, purchase_orders, suppliers
   - Retention: **manual** (no auto-prune yet — TODO)
+- **Pre-op pg_dump (T-018 routine):** for large/irreversible ops → `.backup/pg_dump_*.sql` (gitignored, 30-day retention) — see `docs/pg_dump_routine.md`
+- **Small reversible ops:** schema snapshot pattern (precedent: `backup_20260422_rcp043`) — faster than full dump, equivalent reversibility
 - **Git = code backup** (push to github.com/TTT3P/nntn)
-- **No Supabase PITR** (not on paid plan) — backup.py JSON is only DB safety net
+- **No Supabase PITR** (not on paid plan) — backup.py JSON + pg_dump are the only DB safety net
 
 ### Restore drill (quarterly recommended)
 1. Spin test Supabase project
