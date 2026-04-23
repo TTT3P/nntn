@@ -863,16 +863,26 @@
 
     const receives = [];
     const summary  = [];
+    const skipped  = [];
     inputs.forEach(inp => {
-      const qty = parseFloat(inp.value);
-      if (inp.dataset.itemId && qty > 0) {
-        receives.push({
-          line_id:     inp.dataset.lineId,
-          item_id:     inp.dataset.itemId,
-          qty_received: qty
-        });
-        summary.push(`• ${inp.dataset.itemName || 'item'}: ${qty} ${inp.dataset.unit || 'หน่วย'}`);
+      if (!inp.dataset.itemId) return;
+      let qty = parseFloat(inp.value);
+      // Fallback: empty/NaN → ใช้ qty_ordered (ปุ่ม "รับตามที่เปิด PO")
+      if (!Number.isFinite(qty) || qty <= 0) {
+        const ordered = parseFloat(inp.dataset.qtyOrdered);
+        if (Number.isFinite(ordered) && ordered > 0) {
+          qty = ordered;
+          skipped.push(`• ${inp.dataset.itemName || 'item'}: input ว่าง → ใช้ค่าสั่ง ${ordered}`);
+        } else {
+          return; // no ordered qty either — truly skip
+        }
       }
+      receives.push({
+        line_id:     inp.dataset.lineId,
+        item_id:     inp.dataset.itemId,
+        qty_received: qty
+      });
+      summary.push(`• ${inp.dataset.itemName || 'item'}: ${qty} ${inp.dataset.unit || 'หน่วย'}`);
     });
 
     if (receives.length === 0) {
@@ -884,6 +894,7 @@
       `📦 ยืนยันว่า "ของถึงมือแล้วจริง ๆ " ?\n\n` +
       `PO จะถูกปิดและสต๊อกจะเพิ่มทันที — รายการ:\n\n` +
       summary.join('\n') +
+      (skipped.length ? `\n\n⚠️ ค่า fallback:\n${skipped.join('\n')}` : '') +
       `\n\n⚠️ ถ้าของยัง "ไม่ถึง" กด Cancel — รอของมาก่อนค่อยกด`;
     if (!confirm(confirmMsg)) return;
 
@@ -891,34 +902,38 @@
     const btn = document.querySelector(`button[onclick="confirmReceive('${poId}')"]`);
     if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
 
-    const now = new Date().toISOString();
-
     try {
-      // UPDATE PO status → received FIRST (กัน re-render แสดงปุ่มซ้ำระหว่าง loop)
-      await sb.from('purchase_orders')
-        .update({ status: 'received', received_at: now })
-        .eq('id', poId);
-
+      // Loop FIRST — แต่ละ row ทำ UPDATE + RPC (atomic ต่อ row)
       for (const r of receives) {
-        // UPDATE purchase_order_items qty_received
-        await sb.from('purchase_order_items')
+        const { error: uErr } = await sb.from('purchase_order_items')
           .update({ qty_received: r.qty_received })
           .eq('id', r.line_id);
+        if (uErr) throw new Error(`update line ล้มเหลว (${r.item_id}): ${uErr.message}`);
 
-        // Use unified receive RPC — routes by item.type (meat→CW · non-meat→stock_counts)
         const { data: receiveResult, error: rErr } = await sb.rpc('rpc_receive_universal', {
           p_actor:    (window.nntnCurrentUser || 'PO-receive'),
           p_item_id:  r.item_id,
           p_qty:      r.qty_received,
           p_unit_note: `PO ${poId}`,
-          p_bags:     null   // non-meat path · meat raw handled by รับเนื้อสด form
+          p_bags:     null
         });
         if (rErr) throw new Error(`rpc_receive_universal ล้มเหลว (${r.item_id}): ${rErr.message}`);
         if (!receiveResult?.ok) throw new Error(`receive rejected: ${JSON.stringify(receiveResult)}`);
       }
 
+      // Close PO AFTER all rows succeeded — ถ้า loop fail จะยังรับใหม่ได้
+      const now = new Date().toISOString();
+      const { error: psErr } = await sb.from('purchase_orders')
+        .update({ status: 'received', received_at: now })
+        .eq('id', poId);
+      if (psErr) throw new Error(`ปิด PO ล้มเหลว: ${psErr.message}`);
+
       toast(`✅ รับของแล้ว — stock +${receives.length} รายการ`);
       setTimeout(() => loadPOList(currentFilter), 1200);
+    } catch (e) {
+      console.error('confirmReceive failed:', e);
+      alert(`❌ รับของล้มเหลว: ${e.message}\n\nPO ยัง status "ordered" — ลองใหม่ได้`);
+      if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันรับของแล้ว'; }
     } finally {
       processingPOs.delete(poId);
     }

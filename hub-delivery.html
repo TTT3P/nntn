@@ -2408,15 +2408,21 @@ async function submitDelivery() {
     document.getElementById('preview-card').insertAdjacentHTML('beforebegin', successHtml)
     window.scrollTo({ top: 0, behavior: 'smooth' })
 
-    // Submitted from a Draft → delete draft row + jump to history
-    if (window._pendingDraftId) {
-      const pid = window._pendingDraftId
-      window._pendingDraftId = null
-      try {
-        const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
-        const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
-        await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${pid}`, { method: 'DELETE', headers: DH })
-      } catch(_) {}
+    // B2 fix: always delete any draft row matching this bill_no after success
+    // Covers both paths: (a) opened from draft, (b) draft state lost but submitted w/ same bill
+    try {
+      const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+      const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+      if (window._pendingDraftId) {
+        await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${window._pendingDraftId}`, { method: 'DELETE', headers: DH })
+        window._pendingDraftId = null
+      }
+      // Fallback: also clear any draft row(s) with this bill_no (in case state lost)
+      await fetch(`${SB}/rest/v1/delivery_drafts?bill_no=eq.${encodeURIComponent(bill)}`, { method: 'DELETE', headers: DH })
+    } catch(_) {}
+
+    // Jump to history if this was from a draft
+    if (window._pendingDraftId === null) {
       setTimeout(() => { historyLoaded = false; switchTab('history') }, 900)
     }
 
