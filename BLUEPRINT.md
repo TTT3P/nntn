@@ -225,6 +225,7 @@ flowchart LR
 
 | Date | Decision | Why |
 |---|---|---|
+| 23/04 | CB `866c531` SOP stack live: `cookingbook.sop_steps` + bucket `sop-covers` + 3 pages (admin-sop · sop-review · print-recipe) · RLS authenticated r/w | CookingBook SOP authoring flow |
 | 23/04 | `34ca44b` Enter key jump next bag input (ปิดหม้อ modal) | UX — ไม่ต้องลากเม้าส์ทุกบรรทัด |
 | 23/04 | `885d1f8` MT-004 ชายโครงตุ๋น → แปรรูป input (แบ่งถุง self-map) | ไทน์ request · 6 ถุง CW in_stock |
 | 22/04 | RCP-042→RCP-043 rename + 8 BOM rows + sell_price_delivery=299 (rows 1669-1676 · snapshot `backup_20260422_rcp043`) | CB ship SQL via COO DEC-2026-04-22-002 flow (2× spot + ไทน์ approve) |
