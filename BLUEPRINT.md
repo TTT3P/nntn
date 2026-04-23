@@ -92,17 +92,20 @@ Legend: ✅ stable · ⚠️ has known issue · 🚫 deprecated redirect · 🎨
 ### CookingBook (cross-room — CookingBook owns)
 | URL | LoC | Purpose | Reads |
 |---|---:|---|---|
-| `cookingbook/index.html` | 65 | Entry | — |
+| `cookingbook/index.html` | 98 | Entry · 2 sections (BOM · SOP) · role-gated cards | — |
 | `cookingbook/menu.html` | 511 | เมนู + ต้นทุน | — |
 | `cookingbook/menu-bom.html` | 154 | Menu BOM + FC% | bom_items, ingredients, recipe_costs, recipes |
 | `cookingbook/bom-detail.html` | 185 | BOM detail | bom_items, ingredients, recipe_costs, recipes |
 | `cookingbook/ingredients.html` | 133 | Ingredients list | ingredients |
 | `cookingbook/prep-rcp.html` | 132 | Prep RCP | bom_items, ingredients, recipes |
+| `admin-sop.html` | 521 | SOP authoring · free-form textarea + 1 cover photo + 7-state | recipes · bom_items · cookingbook.sop_steps · storage `sop-covers` |
+| `sop-review.html` | 433 | ไทน์ QC queue · approve/reject/revise/pause | cookingbook.sop_steps |
+| `print-recipe.html` | 409 | A4 print · `?rcp=<id>` · BOM + steps freeform | recipes · bom_items · cookingbook.sop_steps |
 
 ### Sales Ops
 | URL | LoC | Purpose | Reads |
 |---|---:|---|---|
-| `sales-ops.html` | 312 | Daily revenue Phase 1 | v_daily_revenue |
+| `sales-ops.html` | 1286 | Daily revenue · 6-breakpoint responsive · sparklines · donut · stacked bar · data-driven anomaly | v_daily_revenue · v_menu_performance · v_revenue_by_channel |
 
 ### Deprecated / redirect stubs
 | URL | Redirects to |
@@ -225,6 +228,8 @@ flowchart LR
 
 | Date | Decision | Why |
 |---|---|---|
+| 24/04 | `371416b` cookingbook/index SOP nav section · 3 cards · `data-role="staff,admin"` fail-open gating · QA 1/1 | CB brief 1496922698... · SOP pages shipped but invisible without nav |
+| 23/04 | `5fae97c` sales-ops live data rebuild · 1286 LoC · 6-breakpoint responsive · merged existing Supabase wiring + PoC rich design · data-driven anomaly (<50% of 7-day median) · QA 44/44 | ไทน์ flag "ดีกว่าเดิมเยอะ · ต้อง responsive ด้วย" after PoC round |
 | 23/04 | CB `866c531` SOP stack live: `cookingbook.sop_steps` + bucket `sop-covers` + 3 pages (admin-sop · sop-review · print-recipe) · RLS authenticated r/w | CookingBook SOP authoring flow |
 | 23/04 | `34ca44b` Enter key jump next bag input (ปิดหม้อ modal) | UX — ไม่ต้องลากเม้าส์ทุกบรรทัด |
 | 23/04 | `885d1f8` MT-004 ชายโครงตุ๋น → แปรรูป input (แบ่งถุง self-map) | ไทน์ request · 6 ถุง CW in_stock |
