@@ -534,7 +534,8 @@
   var sb      = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   var sbStock = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'stock' } });
 
-  var items        = [];   // public.items (non-meat)
+  var items        = [];   // public.items (non-meat · for picker)
+  var allItemsMap  = {};   // id → {name,sku} for ALL items (log display lookup)
   var locations    = [];   // stock.locations
   var stockMap     = {};   // item_id → current_qty
   var logFilter    = 'all';
@@ -562,6 +563,10 @@
       .not('category', 'in', '("srcp","pkg","meat","raw_meat")')
       .order('category').order('name');
     items = itmResult.data || [];
+
+    // Full name map for log display (includes pkg/meat/etc — picker still filtered above)
+    var allRes = await sb.from('items').select('id,name,sku');
+    (allRes.data || []).forEach(function(i) { allItemsMap[i.id] = { name: i.name, sku: i.sku }; });
 
     // Load locations
     var locsResult = await sbStock.from('locations').select('id,code,name').eq('is_active', true);
@@ -669,6 +674,12 @@
     var exists = dispenseList.some(function(r) { return r.id === id; });
     if (exists) { toast('มี ' + item.name + ' ในรายการแล้วครับ'); return; }
 
+    // Guard: catch_weight items (meat bag-level) must go through hub-delivery
+    var CW_CATS = ['meat_portioned','meat_cooked','meat_raw','meat_trim','meat'];
+    if (CW_CATS.indexOf((item.category||'').toLowerCase()) >= 0) {
+      alert('⚠️ ' + item.name + ' เป็นเนื้อแบบ catch-weight · ต้องเบิกผ่าน hub-delivery (เลือกถุง) · ไม่ใช่หน้านี้\n\nหน้า stock-dispense ใช้สำหรับเบิกวัตถุดิบ non-meat (เช่น ผัก น้ำปลา)');
+      return;
+    }
     dispenseList.push({ id: item.id, name: item.name, unit: item.unit, category: item.category || '', qty: 1 });
     renderDispenseList();
 
@@ -976,11 +987,9 @@
       return;
     }
 
-    var itemNameMap = {};
-    items.forEach(function(i) { itemNameMap[i.id] = i.name; });
-
     container.innerHTML = mvs.map(function(m) {
-      var name = itemNameMap[m.item_id] || m.item_id;
+      var entry = allItemsMap[m.item_id];
+      var name = entry ? (entry.sku ? entry.sku + ' · ' + entry.name : entry.name) : m.item_id;
       var time = new Date(m.counted_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
       // dispense_qty เป็น null ใน record เก่า → parse จาก note "เบิก X unit" หรือ "loss X unit"
       var absQty;
