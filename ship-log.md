@@ -12,6 +12,11 @@
 
 | Time | Commit | What | Channels |
 |---|---|---|---|
+| ~23:05 ICT | migration `fs_menu_sync_20260424_opt1_21ops` | FS menu sync · 21 ops (Option 1 · skip RCP-009) · 4 updates + 1 deactivate + 18 inserts · single transaction · QA 128/128 | #platform · #coo |
+| ~22:50 ICT | `a1e3c16` | BLUEPRINT header + §6 +3 entries + §2 salesops-poc mock | — |
+| ~22:30 ICT | `2b1a70f` | stock-dispense: guard catch_weight + fix log UUID display | — |
+| ~22:10 ICT | `8d699af` | admin-sop: normalize 'กระ'↔'กะ' | — |
+| ~21:55 ICT | `2953e2a` | sop: update stale anon key (3 files) | — |
 | ~00:25 ICT | `0b91514` | BLUEPRINT §2 + §6 update · +3 SOP pages · sales-ops LoC fix · +2 decisions | #platform |
 | ~00:20 ICT | `deb4222` | QA test · cookingbook nav wiring (1/1 pass) | — |
 | ~00:18 ICT | `371416b` | cookingbook/index · wire 3 SOP nav cards · role-gated fail-open | #coo reply |

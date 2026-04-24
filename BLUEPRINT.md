@@ -231,6 +231,7 @@ flowchart LR
 |---|---|---|
 | 24/04 | `371416b` cookingbook/index SOP nav section · 3 cards · `data-role="staff,admin"` fail-open gating · QA 1/1 | CB brief 1496922698... · SOP pages shipped but invisible without nav |
 | 23/04 | `5fae97c` sales-ops live data rebuild · 1286 LoC · 6-breakpoint responsive · merged existing Supabase wiring + PoC rich design · data-driven anomaly (<50% of 7-day median) · QA 44/44 | ไทน์ flag "ดีกว่าเดิมเยอะ · ต้อง responsive ด้วย" after PoC round |
+| 24/04 | FS menu sync · 21 ops (Option 1) · migration `fs_menu_sync_20260424_opt1_21ops` · 4 price UPDATE + RCP-022-M DEACTIVATE + 18 INSERT (RCP-049..066) · RCP-009 skip (sub-recipe ref RCP-021) · QA 128/128 | CB → COO ship via COO `1497269458861953094` · CB ack `1497274670846578812` |
 | 24/04 | `2b1a70f` stock-dispense: guard catch_weight + fix log UUID display | Block wrong-path dispense (sm/CW divergence) + picker excludes pkg ทำ log fallback UUID |
 | 24/04 | `8d699af` admin-sop recipe search: normalize 'กระ'↔'กะ' | User typed 'กระเพรา' ไม่เจอ 'กะเพรา' |
 | 24/04 | `2953e2a` SOP 3 pages: update stale anon key | hardcoded iat 2025 · sync to auth.js iat 2026 |
