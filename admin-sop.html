@@ -359,11 +359,12 @@ async function loadRecipes() {
 const searchInput = document.getElementById('recipeSearch');
 const autocompleteList = document.getElementById('autocompleteList');
 
+const normalizeThai = (s) => (s || '').toLowerCase().replace(/\s+/g, '').replace(/กระ/g, 'กะ');
 searchInput.addEventListener('input', () => {
-  const q = searchInput.value.toLowerCase().trim();
+  const q = normalizeThai(searchInput.value.trim());
   if (!q) { autocompleteList.classList.remove('open'); return; }
   const matches = allRecipes.filter(r =>
-    r.rcp_code.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)
+    normalizeThai(r.rcp_code).includes(q) || normalizeThai(r.name).includes(q)
   ).slice(0, 8);
   autocompleteList.innerHTML = matches.map(r => `
     <div class="autocomplete-item" onclick="selectRecipe(${r.id}, '${r.rcp_code}', '${r.name.replace(/'/g, "\\'")}')">
