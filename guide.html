@@ -105,10 +105,78 @@ header small { font-size: 0.75rem; opacity: 0.55; }
 
 /* divider */
 .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+/* ─── v2 refresh (flow + nav + sticky TOC) ─── */
+header { background: linear-gradient(135deg, #1a1a2e 0%, #3a1c4e 100%); }
+.section { transition: box-shadow .2s; }
+.section:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.section-title { scroll-margin-top: 70px; }
+
+/* Flow diagram — visual summary per section */
+.flow {
+  display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+  background: linear-gradient(90deg, #faf7ff 0%, #f3f8ff 100%);
+  border: 1px dashed #c9b8e0; border-radius: 10px;
+  padding: 10px 12px; margin-bottom: 16px;
+  font-size: 0.82rem; font-weight: 600;
+}
+.flow-step {
+  background: white; color: #3a1c4e;
+  padding: 5px 11px; border-radius: 16px;
+  border: 1px solid #d9c6ec; white-space: nowrap;
+}
+.flow-arrow { color: #8b5cf6; font-weight: 900; flex-shrink: 0; }
+.flow-label {
+  font-size: 0.68rem; font-weight: 700; color: #6b46a3;
+  text-transform: uppercase; letter-spacing: .08em;
+  margin-right: 4px; flex-shrink: 0;
+}
+
+/* Section chain nav */
+.section-nav {
+  display: flex; justify-content: space-between; gap: 8px;
+  margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border);
+}
+.nav-link {
+  flex: 1; text-decoration: none;
+  background: #f5f3fa; color: #3a1c4e;
+  padding: 10px 12px; border-radius: 10px;
+  font-size: 0.82rem; font-weight: 600;
+  border: 1px solid #e5dcf0; transition: background .15s;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.nav-link:hover { background: #ebe4f5; }
+.nav-link.prev { text-align: left; }
+.nav-link.next { text-align: right; background: linear-gradient(135deg, #8b5cf6 0%, #6b46a3 100%); color: white; border-color: transparent; }
+.nav-link.next:hover { background: linear-gradient(135deg, #7c3aed 0%, #5b35a3 100%); }
+.nav-link .nav-label { font-size: 0.68rem; opacity: 0.75; text-transform: uppercase; letter-spacing: .06em; }
+.nav-link .nav-title { font-size: 0.92rem; font-weight: 700; }
+.nav-link.spacer { visibility: hidden; }
+
+/* Sticky back-to-TOC */
+.toc-fab {
+  position: fixed; bottom: 18px; right: 18px;
+  background: #3a1c4e; color: white;
+  width: 46px; height: 46px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; text-decoration: none;
+  box-shadow: 0 4px 12px rgba(58,28,78,.4); z-index: 100;
+  transition: transform .15s;
+}
+.toc-fab:hover { transform: translateY(-2px); }
+
+/* Progress chip at top of section */
+.progress-chip {
+  display: inline-block; font-size: 0.7rem; font-weight: 700;
+  background: #e8f5e9; color: #1B5E20; padding: 3px 9px;
+  border-radius: 10px; letter-spacing: .04em;
+  margin-left: auto;
+}
 </style>
 </head>
 <body>
 
+<a id="top"></a>
 <header>
   <div class="logo">🥬</div>
   <h1>คู่มือการใช้งาน — NNTN Stock System</h1>
@@ -132,7 +200,13 @@ header small { font-size: 0.75rem; opacity: 0.55; }
 
   <!-- 1. Login -->
   <div class="section" id="login">
-    <div class="section-title"><span class="num">1</span> เข้าสู่ระบบ</div>
+    <div class="section-title"><span class="num">1</span> เข้าสู่ระบบ<span class="progress-chip">ขั้นที่ 1 / 8</span></div>
+    <div class="flow">
+      <span class="flow-label">Flow:</span>
+      <span class="flow-step">เปิด URL</span><span class="flow-arrow">→</span>
+      <span class="flow-step">กรอกชื่อ + เบอร์</span><span class="flow-arrow">→</span>
+      <span class="flow-step">เข้าระบบ</span>
+    </div>
 
     <div class="login-box">
       <div class="url">ttt3p.github.io/nntn/login.html</div>
@@ -169,11 +243,23 @@ header small { font-size: 0.75rem; opacity: 0.55; }
     </div>
 
     <div class="box red"><span class="box-icon">⚠️</span><div>ถ้าขึ้น "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" ให้แจ้งไทน์ทันที — ห้าม login ด้วยบัญชีคนอื่น</div></div>
+
+    <div class="section-nav">
+      <span class="nav-link prev spacer"></span>
+      <a class="nav-link next" href="#receive"><span class="nav-label">ขั้นต่อไป →</span><span class="nav-title">2. รับเนื้อสด</span></a>
+    </div>
   </div>
 
   <!-- 2. รับเนื้อสด -->
   <div class="section" id="receive">
-    <div class="section-title"><span class="num">2</span> รับเนื้อสด</div>
+    <div class="section-title"><span class="num">2</span> รับเนื้อสด<span class="progress-chip">ขั้นที่ 2 / 8</span></div>
+    <div class="flow">
+      <span class="flow-label">Flow:</span>
+      <span class="flow-step">เปิด tab 🛒</span><span class="flow-arrow">→</span>
+      <span class="flow-step">กรอก PO + เนื้อ</span><span class="flow-arrow">→</span>
+      <span class="flow-step">ชั่งรายถุง</span><span class="flow-arrow">→</span>
+      <span class="flow-step">✅ บันทึก</span>
+    </div>
 
     <div class="box blue"><span class="box-icon">📍</span><div>ใช้เมื่อ: <strong>รับวัตถุดิบเนื้อเข้าคลัง A</strong> — กรอกทุกครั้งที่มีเนื้อเข้าใหม่</div></div>
 
@@ -223,11 +309,23 @@ header small { font-size: 0.75rem; opacity: 0.55; }
 
     <div class="box green"><span class="box-icon">✅</span><div>บันทึกสำเร็จ = ถุงเนื้อจะขึ้นใน <strong>สต๊อกปัจจุบัน</strong> ทันที สถานะ "✅ In Stock" คลัง A</div></div>
     <div class="box orange"><span class="box-icon">⚠️</span><div>ถ้าขึ้น popup "❌ บันทึกไม่สำเร็จ" ให้ถ่ายรูปหน้าจอแล้วแจ้งไทน์ — ห้ามกดซ้ำ</div></div>
+
+    <div class="section-nav">
+      <a class="nav-link prev" href="#login"><span class="nav-label">← ย้อนกลับ</span><span class="nav-title">1. เข้าสู่ระบบ</span></a>
+      <a class="nav-link next" href="#cook"><span class="nav-label">ขั้นต่อไป →</span><span class="nav-title">3. หม้อตุ๋น</span></a>
+    </div>
   </div>
 
   <!-- 3. หม้อตุ๋น -->
   <div class="section" id="cook">
-    <div class="section-title"><span class="num">3</span> หม้อตุ๋น — เปิด &amp; ปิดหม้อ</div>
+    <div class="section-title"><span class="num">3</span> หม้อตุ๋น — เปิด &amp; ปิดหม้อ<span class="progress-chip">ขั้นที่ 3 / 8</span></div>
+    <div class="flow">
+      <span class="flow-label">Flow:</span>
+      <span class="flow-step">เปิดหม้อ: เลือกถุง</span><span class="flow-arrow">→</span>
+      <span class="flow-step">🔥 ต้ม</span><span class="flow-arrow">→</span>
+      <span class="flow-step">ปิดหม้อ: ชั่งน้ำหนัก</span><span class="flow-arrow">→</span>
+      <span class="flow-step">เข้าคลัง B</span>
+    </div>
 
     <div class="box blue"><span class="box-icon">📍</span><div>ใช้เมื่อ: <strong>เริ่มต้มเนื้อ</strong> (เปิดหม้อ) และ <strong>เสร็จแล้ว</strong> (ปิดหม้อ) — ต้องทำทั้งสองขั้นตอน</div></div>
 
@@ -300,11 +398,22 @@ header small { font-size: 0.75rem; opacity: 0.55; }
     </div>
 
     <div class="box yellow"><span class="box-icon">📌</span><div><strong>วางแผนล่วงหน้า:</strong> ถ้าอยากบันทึกว่าจะต้มล็อตไหน แต่ยังไม่เริ่มทันที ให้กด <span class="btn-mock btn-dark" style="font-size:0.75rem">📝 วางแผนเนื้อ</span> แทน — ถุงจะยัง In Stock จนกว่าจะกดเริ่มจริง</div></div>
+
+    <div class="section-nav">
+      <a class="nav-link prev" href="#receive"><span class="nav-label">← ย้อนกลับ</span><span class="nav-title">2. รับเนื้อสด</span></a>
+      <a class="nav-link next" href="#process"><span class="nav-label">ขั้นต่อไป →</span><span class="nav-title">4. แปรรูป / รีแพ็ค</span></a>
+    </div>
   </div>
 
   <!-- 4. แปรรูป -->
   <div class="section" id="process">
-    <div class="section-title"><span class="num">4</span> แปรรูป / รีแพ็ค</div>
+    <div class="section-title"><span class="num">4</span> แปรรูป / รีแพ็ค<span class="progress-chip">ขั้นที่ 4 / 8</span></div>
+    <div class="flow">
+      <span class="flow-label">Flow:</span>
+      <span class="flow-step">เลือกถุง intermediate</span><span class="flow-arrow">→</span>
+      <span class="flow-step">ชั่งน้ำหนัก final</span><span class="flow-arrow">→</span>
+      <span class="flow-step">เข้าคลัง C</span>
+    </div>
 
     <div class="box blue"><span class="box-icon">📍</span><div>ใช้เมื่อ: <strong>ตัดแบ่งเนื้อตุ๋นเป็นถุงขนาดต่างๆ</strong> หรือรวม lot / เปลี่ยนขนาดถุง</div></div>
 
@@ -359,11 +468,22 @@ header small { font-size: 0.75rem; opacity: 0.55; }
     </div>
 
     <div class="box orange"><span class="box-icon">⚠️</span><div>ถุงที่เลือกเป็น input จะถูกเปลี่ยนสถานะทันทีที่กดบันทึก — ทำซ้ำไม่ได้ ถ้าไม่แน่ใจให้ถามไทน์ก่อน</div></div>
+
+    <div class="section-nav">
+      <a class="nav-link prev" href="#cook"><span class="nav-label">← ย้อนกลับ</span><span class="nav-title">3. หม้อตุ๋น</span></a>
+      <a class="nav-link next" href="#dispense"><span class="nav-label">ขั้นต่อไป →</span><span class="nav-title">5. เบิก Non-meat</span></a>
+    </div>
   </div>
 
   <!-- 5. เบิก Non-meat -->
   <div class="section" id="dispense">
-    <div class="section-title"><span class="num">5</span> เบิก Non-meat</div>
+    <div class="section-title"><span class="num">5</span> เบิก Non-meat<span class="progress-chip">ขั้นที่ 5 / 8</span></div>
+    <div class="flow">
+      <span class="flow-label">Flow:</span>
+      <span class="flow-step">เลือก item</span><span class="flow-arrow">→</span>
+      <span class="flow-step">กรอกจำนวน</span><span class="flow-arrow">→</span>
+      <span class="flow-step">✅ บันทึกเบิก</span>
+    </div>
 
     <div class="box blue"><span class="box-icon">📍</span><div>ใช้เมื่อ: <strong>เบิกวัตถุดิบที่ไม่ใช่เนื้อ</strong> เช่น ซีอิ๊ว น้ำมัน บะหมี่ เครื่องปรุง บรรจุภัณฑ์ — ต้องบันทึกทุกครั้งที่เบิก</div></div>
 
@@ -448,11 +568,23 @@ header small { font-size: 0.75rem; opacity: 0.55; }
         </li>
       </ol>
     </div>
+
+    <div class="section-nav">
+      <a class="nav-link prev" href="#process"><span class="nav-label">← ย้อนกลับ</span><span class="nav-title">4. แปรรูป</span></a>
+      <a class="nav-link next" href="#delivery"><span class="nav-label">ขั้นต่อไป →</span><span class="nav-title">6. ส่งออก</span></a>
+    </div>
   </div>
 
   <!-- 6. ส่งออก -->
   <div class="section" id="delivery">
-    <div class="section-title"><span class="num">6</span> ส่งออก (ใบนำส่ง)</div>
+    <div class="section-title"><span class="num">6</span> ส่งออก (ใบนำส่ง)<span class="progress-chip">ขั้นที่ 6 / 8</span></div>
+    <div class="flow">
+      <span class="flow-label">Flow:</span>
+      <span class="flow-step">เลือกช่องทาง (NT/FS)</span><span class="flow-arrow">→</span>
+      <span class="flow-step">เลือกถุง</span><span class="flow-arrow">→</span>
+      <span class="flow-step">กรอกบิล</span><span class="flow-arrow">→</span>
+      <span class="flow-step">🚚 ส่งออก</span>
+    </div>
 
     <div class="box blue"><span class="box-icon">📍</span><div>ใช้เมื่อ: <strong>ส่งเนื้อ + ของ non-meat ออกจากครัวกลาง</strong> — ระบบออกใบนำส่งให้ทันที พร้อมปริ้น</div></div>
 
@@ -568,11 +700,22 @@ header small { font-size: 0.75rem; opacity: 0.55; }
     </div>
 
     <div class="box green"><span class="box-icon">💡</span><div><strong>Flow มาตรฐาน:</strong> 📝 เตรียมใบ → 💾 Draft → ⏳ รอส่ง (review) → 🚛 ส่งออก → 📋 ประวัติ (auto)</div></div>
+
+    <div class="section-nav">
+      <a class="nav-link prev" href="#dispense"><span class="nav-label">← ย้อนกลับ</span><span class="nav-title">5. เบิก Non-meat</span></a>
+      <a class="nav-link next" href="#aim"><span class="nav-label">ขั้นต่อไป →</span><span class="nav-title">7. AIM Discord</span></a>
+    </div>
   </div>
 
   <!-- 7. AIM -->
   <div class="section" id="aim">
-    <div class="section-title"><span class="num">7</span> AIM — ระบบแจ้งเตือน Discord</div>
+    <div class="section-title"><span class="num">7</span> AIM — ระบบแจ้งเตือน Discord<span class="progress-chip">ขั้นที่ 7 / 8</span></div>
+    <div class="flow">
+      <span class="flow-label">Flow:</span>
+      <span class="flow-step">ระบบจับ event</span><span class="flow-arrow">→</span>
+      <span class="flow-step">ส่ง #aim</span><span class="flow-arrow">→</span>
+      <span class="flow-step">ทีมอ่าน + ตอบ</span>
+    </div>
 
     <div class="box blue"><span class="box-icon">🔔</span><div>ทุกครั้งที่มีการเคลื่อนไหวในระบบ จะแจ้งเตือนอัตโนมัติใน Discord channel <strong>#aim</strong> — ไทน์เห็น real-time ตลอดเวลา</div></div>
 
@@ -592,11 +735,22 @@ header small { font-size: 0.75rem; opacity: 0.55; }
     </table>
 
     <div class="box green" style="margin-top:12px"><span class="box-icon">💬</span><div>ถ้าน้องมี Discord: เพิ่มตัวเองเข้า channel #aim เพื่อรับ notification และสื่อสารกับไทน์ผ่านนั้นได้เลย</div></div>
+
+    <div class="section-nav">
+      <a class="nav-link prev" href="#delivery"><span class="nav-label">← ย้อนกลับ</span><span class="nav-title">6. ส่งออก</span></a>
+      <a class="nav-link next" href="#problem"><span class="nav-label">ขั้นต่อไป →</span><span class="nav-title">8. ถ้าติดปัญหา</span></a>
+    </div>
   </div>
 
   <!-- 8. ปัญหา -->
   <div class="section" id="problem">
-    <div class="section-title"><span class="num">8</span> ถ้าติดปัญหา</div>
+    <div class="section-title"><span class="num">8</span> ถ้าติดปัญหา<span class="progress-chip">ขั้นที่ 8 / 8</span></div>
+    <div class="flow">
+      <span class="flow-label">Flow:</span>
+      <span class="flow-step">📸 screenshot</span><span class="flow-arrow">→</span>
+      <span class="flow-step">แจ้งไทน์</span><span class="flow-arrow">→</span>
+      <span class="flow-step">รอ fix · ห้ามกดซ้ำ</span>
+    </div>
 
     <ol class="steps">
       <li>
@@ -633,6 +787,11 @@ header small { font-size: 0.75rem; opacity: 0.55; }
 
     <div class="box red" style="margin-top:12px"><span class="box-icon">🚫</span><div><strong>ห้ามทำ:</strong> แก้ไขข้อมูลย้อนหลังเอง / ลองกดหลายๆ ครั้งถ้าระบบค้าง / ใช้บัญชีคนอื่น</div></div>
     <div class="box green"><span class="box-icon">✅</span><div><strong>ทำได้เลย:</strong> รีเฟรช / ถ่ายรูป / แจ้งไทน์ — ไม่มีการกรอกผิดครั้งไหนที่แก้ไม่ได้</div></div>
+
+    <div class="section-nav">
+      <a class="nav-link prev" href="#aim"><span class="nav-label">← ย้อนกลับ</span><span class="nav-title">7. AIM Discord</span></a>
+      <a class="nav-link next" href="#top"><span class="nav-label">↑ กลับบนสุด</span><span class="nav-title">สารบัญ</span></a>
+    </div>
   </div>
 
   <div style="text-align:center;color:var(--muted);font-size:0.78rem;margin-top:8px;">
@@ -640,5 +799,7 @@ header small { font-size: 0.75rem; opacity: 0.55; }
   </div>
 
 </div>
+
+<a class="toc-fab" href="#top" title="กลับบนสุด / สารบัญ">↑</a>
 </body>
 </html>
