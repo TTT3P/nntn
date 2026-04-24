@@ -12,8 +12,8 @@
 
 | Time | Commit | What | Channels |
 |---|---|---|---|
-| ~00:40 ICT | (pending) | Cleanup: 5 historical migration SQL (05-06/04 already applied) removed · verified tables/views exist | #platform · #coo |
-| ~00:35 ICT | (pending) | guide.html v2 shipped · sticky FAB + flow diagrams + gradient header | #platform · #coo |
+| ~00:40 ICT | `7ba5947` | Cleanup: 5 historical migration SQL (05-06/04 already applied) removed · verified tables/views exist | #platform · #coo |
+| ~00:35 ICT | `467dcf2` | guide.html v2 shipped · sticky FAB + flow diagrams + gradient header | #platform · #coo |
 
 ## 2026-04-24
 
