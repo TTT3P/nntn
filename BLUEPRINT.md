@@ -3,7 +3,7 @@
 > Living reference for the **existing** website — not future redesign.
 > Open this before touching anything: know what writes where, what triggers fire, what bugs lurk.
 >
-> Last updated: **2026-04-22** · latest commit: `d44c66d` · 47 HTML files
+> Last updated: **2026-04-24** · latest commit: `2b1a70f` · 51 HTML files
 
 ---
 
@@ -114,6 +114,7 @@ Legend: ✅ stable · ⚠️ has known issue · 🚫 deprecated redirect · 🎨
 | `daily-form.html` | `index.html` (3s meta refresh) |
 | `withdrawal-form.html` | linked from hub-delivery (review needed) |
 | `bom-view.html` | replaced by cookingbook/bom-detail |
+| `salesops-daily-dashboard-poc.html` | 🎨 mock (sales-ops PoC design · superseded by `sales-ops.html` live) |
 | `design-mock-production.html` | 🎨 mock |
 | `design-system-preview.html` | 🎨 mock |
 | `theme-preview.html` | 🎨 mock |
@@ -230,6 +231,9 @@ flowchart LR
 |---|---|---|
 | 24/04 | `371416b` cookingbook/index SOP nav section · 3 cards · `data-role="staff,admin"` fail-open gating · QA 1/1 | CB brief 1496922698... · SOP pages shipped but invisible without nav |
 | 23/04 | `5fae97c` sales-ops live data rebuild · 1286 LoC · 6-breakpoint responsive · merged existing Supabase wiring + PoC rich design · data-driven anomaly (<50% of 7-day median) · QA 44/44 | ไทน์ flag "ดีกว่าเดิมเยอะ · ต้อง responsive ด้วย" after PoC round |
+| 24/04 | `2b1a70f` stock-dispense: guard catch_weight + fix log UUID display | Block wrong-path dispense (sm/CW divergence) + picker excludes pkg ทำ log fallback UUID |
+| 24/04 | `8d699af` admin-sop recipe search: normalize 'กระ'↔'กะ' | User typed 'กระเพรา' ไม่เจอ 'กะเพรา' |
+| 24/04 | `2953e2a` SOP 3 pages: update stale anon key | hardcoded iat 2025 · sync to auth.js iat 2026 |
 | 23/04 | CB `866c531` SOP stack live: `cookingbook.sop_steps` + bucket `sop-covers` + 3 pages (admin-sop · sop-review · print-recipe) · RLS authenticated r/w | CookingBook SOP authoring flow |
 | 23/04 | `34ca44b` Enter key jump next bag input (ปิดหม้อ modal) | UX — ไม่ต้องลากเม้าส์ทุกบรรทัด |
 | 23/04 | `885d1f8` MT-004 ชายโครงตุ๋น → แปรรูป input (แบ่งถุง self-map) | ไทน์ request · 6 ถุง CW in_stock |
