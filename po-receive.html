@@ -533,11 +533,11 @@
       selSup.appendChild(opt);
     });
 
-    // Load receivable items — exclude meat (received via meat-stock) + srcp (made in-house)
-    // PKG allowed (packaged items can be received from supplier too)
+    // Load receivable items — exclude all meat (raw via meat-stock #รับเนื้อสด · MT via แปรรูป only)
+    // + srcp (made in-house). PKG allowed (packaged items can be received from supplier too)
     const { data: itm } = await sb.from('items').select('id,name,unit,category')
       .eq('is_active', true)
-      .not('category', 'in', '("srcp","meat","raw_meat")')
+      .not('category', 'in', '("srcp","meat","raw_meat","meat_portioned","meat_cooked","meat_trim")')
       .order('category').order('name');
     items = itm || [];
 
