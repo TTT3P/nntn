@@ -12,6 +12,17 @@
 
 | Time | Commit | What | Channels |
 |---|---|---|---|
+| ~17:40 ICT | (pending) | HR wireframes 3 หน้า (attendance form · dashboard · config) · mock data · spec in vault | #platform · #coo |
+| ~17:30 ICT | `e39a6f5` | Phase B step 3 inline help banners + BLUEPRINT §6 refresh | — |
+| ~17:00 ICT | `092cb0e` | Phase B step 2 confirm dialog + yield sanity warn | — |
+| ~16:45 ICT | `821fbdb` | Phase B step 1 audit identity (USER · channel) | — |
+| ~16:30 ICT | migration `phase_a_audit_views_and_divergence_check` | v_user_actions_daily + v_sm_cw_divergence + cron daily 23:00 | #platform |
+| ~16:00 ICT | migration `aim_cw_status_summary_v3` | statement-level UPDATE trigger · 1 msg/SKU | #platform |
+| ~15:30 ICT | `d9804c6` | MT-044 เนื้อโกเบ + REPACK_MAP MT-004 → [MT-004, MT-044] | #aim |
+| ~15:00 ICT | `2486282` | scrap auto-pick via SCRAP_MAP | — |
+| ~14:30 ICT | `79b55d8` | scrap row → dropdown + INSERT CW (was text-only) | — |
+| ~14:00 ICT | `e9803ff` | po-receive block MT items (in-house repack-only) | — |
+| ~10:30 ICT | migration `phase_c_weekly_digest` | weekly digest cron Sunday 20:00 | #platform |
 | ~00:40 ICT | `7ba5947` | Cleanup: 5 historical migration SQL (05-06/04 already applied) removed · verified tables/views exist | #platform · #coo |
 | ~00:35 ICT | `467dcf2` | guide.html v2 shipped · sticky FAB + flow diagrams + gradient header | #platform · #coo |
 

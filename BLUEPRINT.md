@@ -231,6 +231,8 @@ flowchart LR
 |---|---|---|
 | 24/04 | `371416b` cookingbook/index SOP nav section · 3 cards · `data-role="staff,admin"` fail-open gating · QA 1/1 | CB brief 1496922698... · SOP pages shipped but invisible without nav |
 | 23/04 | `5fae97c` sales-ops live data rebuild · 1286 LoC · 6-breakpoint responsive · merged existing Supabase wiring + PoC rich design · data-driven anomaly (<50% of 7-day median) · QA 44/44 | ไทน์ flag "ดีกว่าเดิมเยอะ · ต้อง responsive ด้วย" after PoC round |
+| 25/04 | HR wireframes 3 หน้า · attendance form + dashboard + employee config (mock data · spec in vault) | COO brief `1497543249483534346` · ไทน์ approve · Phase 1 reference |
+| 25/04 | Phase C migration `phase_c_weekly_digest` · nntn_weekly_digest() + cron Sunday 20:00 ICT | weekly volume + users + drift summary |
 | 25/04 | Phase B inline help banners (meat-stock #รับเนื้อสด + stock-dispense) · "ใช้เมื่อ / ไม่ใช้" guidance | Phase B step 3 · prevent wrong-tab usage |
 | 25/04 | `092cb0e` guards: confirm summary on dispense + yield 30-110% sanity warn on แปรรูป | Phase B step 2 · catch finger-slip + typo |
 | 25/04 | `821fbdb` audit: stock_counts.counted_by = `<USER> · channel` (was channel-only) | Phase B step 1 · per-user traceability |

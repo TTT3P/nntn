@@ -1,0 +1,632 @@
+<!-- WIREFRAME · MOCK DATA · ห้าม apply production · ไทน์ approve ก่อน -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR · บันทึกเวลาทำงาน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #005036;
+    --gold: #D29568;
+    --green-light: #e8f2ed;
+    --gold-light: #fdf3eb;
+    --red: #c0392b;
+    --gray: #6b7280;
+    --gray-light: #f3f4f6;
+    --border: #e5e7eb;
+    --text: #111827;
+    --text-muted: #6b7280;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: #f9fafb;
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    background: var(--green);
+    color: white;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-logo {
+    width: 36px; height: 36px;
+    background: var(--gold);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; color: var(--green);
+  }
+  .header h1 { font-size: 18px; font-weight: 600; }
+  .header-sub { font-size: 13px; opacity: 0.8; }
+
+  /* Main container */
+  .container { max-width: 480px; margin: 0 auto; padding: 16px; }
+
+  /* Date bar */
+  .date-bar {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .date-bar-label { font-size: 13px; color: var(--text-muted); }
+  .date-bar-value { font-size: 16px; font-weight: 600; color: var(--green); }
+  .date-edit-btn {
+    background: var(--green-light);
+    color: var(--green);
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  /* Section */
+  .section {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  /* Employee grid */
+  .emp-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .emp-card {
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .emp-card:hover { border-color: var(--green); background: var(--green-light); }
+  .emp-card.selected {
+    border-color: var(--green);
+    background: var(--green-light);
+  }
+  .emp-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+  }
+  .emp-card.selected .emp-avatar { background: var(--green); }
+  .emp-info { min-width: 0; }
+  .emp-nickname { font-size: 15px; font-weight: 600; }
+  .emp-code { font-size: 11px; color: var(--text-muted); }
+  .emp-tag {
+    font-size: 10px;
+    background: var(--gold-light);
+    color: var(--gold);
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-top: 2px;
+    display: inline-block;
+  }
+
+  /* Time row */
+  .time-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .time-field label {
+    font-size: 13px;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .time-field input[type="time"] {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    text-align: center;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .time-field input[type="time"]:focus { border-color: var(--green); }
+  .time-field input.late { border-color: #f59e0b; }
+  .time-field input.ot { border-color: #10b981; }
+
+  /* Day type */
+  .day-type-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .day-type-btn {
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 8px;
+    cursor: pointer;
+    background: white;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .day-type-btn:hover { border-color: var(--green); }
+  .day-type-btn.selected { border-color: var(--green); background: var(--green-light); color: var(--green); }
+  .day-type-btn.type-absent.selected { border-color: var(--red); background: #fef2f2; color: var(--red); }
+  .day-type-btn.type-holiday.selected { border-color: var(--gray); background: var(--gray-light); color: var(--gray); }
+
+  /* Preview boxes */
+  .preview-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .preview-box {
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+  .preview-box.ot-box { background: #ecfdf5; border: 1.5px solid #a7f3d0; }
+  .preview-box.late-box { background: #fffbeb; border: 1.5px solid #fcd34d; }
+  .preview-box.inactive { background: var(--gray-light); border: 1.5px solid var(--border); }
+  .preview-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .preview-value { font-size: 22px; font-weight: 700; }
+  .preview-value.ot { color: #059669; }
+  .preview-value.late { color: #d97706; }
+  .preview-value.none { color: var(--text-muted); font-size: 14px; font-weight: 400; }
+  .preview-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Note */
+  .note-field {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 14px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.15s;
+    color: var(--text);
+  }
+  .note-field:focus { border-color: var(--green); }
+
+  /* Save button */
+  .btn-save {
+    width: 100%;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    margin-bottom: 8px;
+  }
+  .btn-save:hover { opacity: 0.9; }
+  .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Alert chip */
+  .alert-chip {
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #92400e;
+    margin-top: 8px;
+    display: none;
+  }
+  .alert-chip.show { display: block; }
+
+  /* Bottom nav mock */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: white;
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 8px 0;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 0;
+    cursor: pointer;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+  .nav-item.active { color: var(--green); }
+  .nav-icon { font-size: 20px; }
+
+  .pb-nav { padding-bottom: 70px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">NT</div>
+  <div>
+    <div class="header h1" style="font-size:18px;font-weight:600;">บันทึกเวลาทำงาน</div>
+    <div class="header-sub">ครัวเนื้อในตำนาน</div>
+  </div>
+</div>
+
+<div class="container pb-nav">
+
+  <!-- Date bar -->
+  <div class="date-bar">
+    <div>
+      <div class="date-bar-label">วันที่</div>
+      <div class="date-bar-value" id="displayDate">พฤหัสบดี 25 เม.ย. 2569</div>
+    </div>
+    <button class="date-edit-btn" onclick="toggleDatePicker()">เปลี่ยนวัน</button>
+  </div>
+  <div id="datePickerWrap" style="display:none; margin-bottom:16px;">
+    <div class="section">
+      <label style="font-size:13px;color:var(--text-muted);font-weight:500;">เลือกวันที่</label>
+      <input type="date" id="datePicker" style="width:100%;margin-top:8px;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'Sarabun',sans-serif;font-size:15px;outline:none;" onchange="updateDate()">
+    </div>
+  </div>
+
+  <!-- Employee select -->
+  <div class="section">
+    <div class="section-title">เลือกพนักงาน</div>
+    <div class="emp-grid">
+      <div class="emp-card selected" onclick="selectEmp(this,'EMP001','ใหม่','ฝ่ายพัฒนา/QC','ก')">
+        <div class="emp-avatar">ก</div>
+        <div class="emp-info">
+          <div class="emp-nickname">ใหม่</div>
+          <div class="emp-code">EMP001</div>
+          <div class="emp-tag">QC</div>
+        </div>
+      </div>
+      <div class="emp-card" onclick="selectEmp(this,'EMP002','แก้ว','จัดการทั่วไป','ว')">
+        <div class="emp-avatar" style="background:#6b7280;">ว</div>
+        <div class="emp-info">
+          <div class="emp-nickname">แก้ว</div>
+          <div class="emp-code">EMP002</div>
+          <div class="emp-tag" style="background:#f3f4f6;color:#6b7280;">ยกเว้น OT</div>
+        </div>
+      </div>
+      <div class="emp-card" onclick="selectEmp(this,'EMP003','อิม','Supervisor ครัวกลาง','อ')">
+        <div class="emp-avatar" style="background:#7c3aed;">อ</div>
+        <div class="emp-info">
+          <div class="emp-nickname">อิม</div>
+          <div class="emp-code">EMP003</div>
+          <div class="emp-tag">Supervisor</div>
+        </div>
+      </div>
+      <div class="emp-card" onclick="selectEmp(this,'EMP004','ชาติ','หน้าเตา','ช')">
+        <div class="emp-avatar" style="background:#dc2626;">ช</div>
+        <div class="emp-info">
+          <div class="emp-nickname">ชาติ</div>
+          <div class="emp-code">EMP004</div>
+          <div class="emp-tag" style="background:#fef2f2;color:#dc2626;">OT 75฿/ชม</div>
+        </div>
+      </div>
+      <div class="emp-card" onclick="selectEmp(this,'EMP005','ส้ม','พ.ครัว','ส')">
+        <div class="emp-avatar" style="background:#ea580c;">ส</div>
+        <div class="emp-info">
+          <div class="emp-nickname">ส้ม</div>
+          <div class="emp-code">EMP005</div>
+          <div class="emp-tag">ครัว</div>
+        </div>
+      </div>
+      <div class="emp-card" onclick="selectEmp(this,'EMP006','อุทัย','หน้าเตา','อ')">
+        <div class="emp-avatar" style="background:#b45309;">อ</div>
+        <div class="emp-info">
+          <div class="emp-nickname">อุทัย</div>
+          <div class="emp-code">EMP006</div>
+          <div class="emp-tag" style="background:#fef2f2;color:#dc2626;">OT 75฿/ชม</div>
+        </div>
+      </div>
+      <div class="emp-card" onclick="selectEmp(this,'EMP007','กุ้ง','พ่อครัว','กุ')">
+        <div class="emp-avatar" style="background:#0891b2;">กุ</div>
+        <div class="emp-info">
+          <div class="emp-nickname">กุ้ง</div>
+          <div class="emp-code">EMP007</div>
+          <div class="emp-tag">พ่อครัว</div>
+        </div>
+      </div>
+      <div class="emp-card" onclick="selectEmp(this,'EMP008','พร','แม่ครัว','พ')">
+        <div class="emp-avatar" style="background:#be185d;">พ</div>
+        <div class="emp-info">
+          <div class="emp-nickname">พร</div>
+          <div class="emp-code">EMP008</div>
+          <div class="emp-tag" style="background:#fdf4ff;color:#be185d;">ผ่านโปร</div>
+        </div>
+      </div>
+      <div class="emp-card" onclick="selectEmp(this,'EMP009','โส','ผู้ช่วยครัว','ส')">
+        <div class="emp-avatar" style="background:#065f46;">ส</div>
+        <div class="emp-info">
+          <div class="emp-nickname">โส</div>
+          <div class="emp-code">EMP009</div>
+          <div class="emp-tag" style="background:#ecfdf5;color:#065f46;">รายวัน</div>
+        </div>
+      </div>
+      <div class="emp-card" onclick="selectEmp(this,'EMP010','แอปเปิ้ล','Part Time','แ')">
+        <div class="emp-avatar" style="background:#1d4ed8;">แ</div>
+        <div class="emp-info">
+          <div class="emp-nickname">แอปเปิ้ล</div>
+          <div class="emp-code">EMP010</div>
+          <div class="emp-tag" style="background:#eff6ff;color:#1d4ed8;">Part Time</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day type -->
+  <div class="section">
+    <div class="section-title">ประเภทวัน</div>
+    <div class="day-type-grid">
+      <button class="day-type-btn selected" onclick="selectType(this,'normal')">✅ มาปกติ</button>
+      <button class="day-type-btn type-absent" onclick="selectType(this,'absent')">❌ ขาดงาน</button>
+      <button class="day-type-btn" onclick="selectType(this,'sick_doc')">🏥 ลาป่วย + ใบ</button>
+      <button class="day-type-btn" onclick="selectType(this,'sick_no_doc')">🤒 ลาป่วย ไม่มีใบ</button>
+      <button class="day-type-btn" onclick="selectType(this,'leave_doc')">📋 ลากิจ + ใบ</button>
+      <button class="day-type-btn" onclick="selectType(this,'leave_no_doc')">📋 ลากิจ ไม่มีใบ</button>
+      <button class="day-type-btn type-holiday" onclick="selectType(this,'holiday')">🏖️ หยุดประจำ</button>
+    </div>
+  </div>
+
+  <!-- Time in/out -->
+  <div class="section" id="timeSection">
+    <div class="section-title">เวลาเข้า–ออก</div>
+    <div class="time-row">
+      <div class="time-field">
+        <label>🟢 เข้างาน</label>
+        <input type="time" id="timeIn" value="08:30" oninput="calcPreview()">
+      </div>
+      <div class="time-field">
+        <label>🔴 ออกงาน</label>
+        <input type="time" id="timeOut" value="19:30" oninput="calcPreview()">
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">
+      ⏱ ปกติ 08:30–19:30 · สาย = เข้าหลัง 08:30 · OT = ออกหลัง 19:30
+    </div>
+  </div>
+
+  <!-- Preview: OT + Late -->
+  <div class="section">
+    <div class="section-title">คำนวณสด</div>
+    <div class="preview-row">
+      <div class="preview-box ot-box" id="otBox">
+        <div class="preview-label">OT (นาที)</div>
+        <div class="preview-value ot" id="otMin">0</div>
+        <div class="preview-sub" id="otBaht">= 0 บาท</div>
+      </div>
+      <div class="preview-box late-box" id="lateBox">
+        <div class="preview-label">สาย (นาที)</div>
+        <div class="preview-value late" id="lateMin">0</div>
+        <div class="preview-sub" id="lateBaht">หัก 0 บาท</div>
+      </div>
+    </div>
+    <div id="specialNote" class="alert-chip"></div>
+  </div>
+
+  <!-- Note -->
+  <div class="section">
+    <div class="section-title">หมายเหตุ</div>
+    <textarea class="note-field" rows="2" placeholder="เช่น ทำงานวันหยุด · มาช่วยวันเสาร์ · ลาเพราะงานศพ..."></textarea>
+  </div>
+
+  <!-- Save -->
+  <button class="btn-save" id="saveBtn" onclick="mockSave()">
+    💾 บันทึกเข้าระบบ
+  </button>
+  <div style="font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:20px;">
+    [WIREFRAME] บันทึกจะส่งไปที่ <code>hr.attendance_log</code> · Supabase
+  </div>
+
+</div>
+
+<!-- Bottom nav -->
+<div class="bottom-nav">
+  <div class="nav-item active">
+    <div class="nav-icon">📝</div>
+    <div>บันทึก</div>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">📊</div>
+    <div>ภาพรวม</div>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">👥</div>
+    <div>พนักงาน</div>
+  </div>
+</div>
+
+<script>
+// Mock employee data
+const employees = {
+  EMP001: { salary: 8000,  otType: 'normal',   workDays: 26 },
+  EMP002: { salary: 12000, otType: 'exempt',    workDays: 26 },
+  EMP003: { salary: 16500, otType: 'normal',    workDays: 26 },
+  EMP004: { salary: 13200, otType: 'flat75',    workDays: 26 },
+  EMP005: { salary: 13200, otType: 'normal',    workDays: 26 },
+  EMP006: { salary: 13200, otType: 'flat75',    workDays: 26 },
+  EMP007: { salary: 13200, otType: 'normal',    workDays: 26 },
+  EMP008: { salary: 13200, otType: 'normal',    workDays: 26 },
+  EMP009: { salary: 400,   otType: 'daily_rate',workDays: 28 },
+  EMP010: { salary: 0,     otType: 'contract',  workDays: 1  },
+};
+
+let currentEmp = 'EMP001';
+let currentType = 'normal';
+
+function selectEmp(el, code, name, pos, letter) {
+  document.querySelectorAll('.emp-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  currentEmp = code;
+  calcPreview();
+}
+
+function selectType(el, type) {
+  document.querySelectorAll('.day-type-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  currentType = type;
+  const timeSection = document.getElementById('timeSection');
+  if (['absent','sick_doc','sick_no_doc','leave_doc','leave_no_doc','holiday'].includes(type)) {
+    timeSection.style.opacity = '0.4';
+    timeSection.style.pointerEvents = 'none';
+  } else {
+    timeSection.style.opacity = '1';
+    timeSection.style.pointerEvents = 'auto';
+  }
+  calcPreview();
+}
+
+function calcPreview() {
+  const emp = employees[currentEmp];
+  const timeIn  = document.getElementById('timeIn').value;
+  const timeOut = document.getElementById('timeOut').value;
+  const otMinEl    = document.getElementById('otMin');
+  const otBahtEl   = document.getElementById('otBaht');
+  const lateMinEl  = document.getElementById('lateMin');
+  const lateBahtEl = document.getElementById('lateBaht');
+  const noteEl     = document.getElementById('specialNote');
+
+  if (currentType !== 'normal') {
+    otMinEl.textContent = '—'; otBahtEl.textContent = '';
+    lateMinEl.textContent = '—'; lateBahtEl.textContent = '';
+    noteEl.classList.remove('show');
+    return;
+  }
+
+  // Parse times
+  const [inH, inM]   = timeIn.split(':').map(Number);
+  const [outH, outM] = timeOut.split(':').map(Number);
+
+  const workStart = 8 * 60 + 30;  // 08:30
+  const workEnd   = 19 * 60 + 30; // 19:30
+  const actualIn  = inH * 60 + inM;
+  const actualOut = outH * 60 + outM;
+
+  // Late calc
+  const lateMin = Math.max(0, actualIn - workStart);
+  // OT calc
+  const otMin   = Math.max(0, actualOut - workEnd);
+
+  // Pay per minute
+  const daily  = emp.salary / emp.workDays;
+  const hourly = daily / 11;
+  const perMin = hourly / 60;
+
+  let otBaht = 0;
+  let otLabel = '';
+  if (emp.otType === 'exempt') {
+    otBaht = 0; otLabel = 'ยกเว้น OT';
+  } else if (emp.otType === 'flat75') {
+    otBaht = (otMin / 60) * 75;
+    otLabel = `= ${otBaht.toFixed(0)} บาท (75฿/ชม)`;
+  } else if (emp.otType === 'normal') {
+    otBaht = otMin * perMin * 1.5;
+    otLabel = `= ${otBaht.toFixed(0)} บาท`;
+  } else {
+    otLabel = 'ตามสัญญา';
+  }
+
+  const lateBaht = lateMin * perMin;
+
+  otMinEl.textContent   = otMin;
+  otBahtEl.textContent  = otLabel;
+  lateMinEl.textContent = lateMin;
+  lateBahtEl.textContent = lateMin > 0 ? `หัก ${lateBaht.toFixed(0)} บาท` : 'ไม่สาย ✓';
+
+  // Update input borders
+  document.getElementById('timeIn').className  = lateMin > 0 ? 'late' : '';
+  document.getElementById('timeOut').className = otMin > 0 ? 'ot' : '';
+
+  // Special notes
+  noteEl.classList.remove('show');
+  if (emp.otType === 'exempt' && otMin > 0) {
+    noteEl.textContent = '⚠️ EMP002 (แก้ว) ยกเว้น OT — ไม่คำนวณ';
+    noteEl.classList.add('show');
+  } else if (lateMin >= 180) {
+    noteEl.textContent = '⚠️ สาย ≥ 3 ชม — ตรวจสอบกับไทน์ก่อนบันทึก';
+    noteEl.classList.add('show');
+  }
+}
+
+function toggleDatePicker() {
+  const wrap = document.getElementById('datePickerWrap');
+  wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+  if (wrap.style.display === 'block') {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('datePicker').value = today;
+  }
+}
+
+function updateDate() {
+  const val = document.getElementById('datePicker').value;
+  if (!val) return;
+  const d = new Date(val);
+  const days = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const buddhistYear = d.getFullYear() + 543;
+  document.getElementById('displayDate').textContent =
+    `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${buddhistYear}`;
+  document.getElementById('datePickerWrap').style.display = 'none';
+}
+
+function mockSave() {
+  const btn = document.getElementById('saveBtn');
+  btn.textContent = '✅ บันทึกแล้ว (MOCK)';
+  btn.style.background = '#059669';
+  setTimeout(() => {
+    btn.textContent = '💾 บันทึกเข้าระบบ';
+    btn.style.background = 'var(--green)';
+  }, 2000);
+}
+
+// Init
+calcPreview();
+</script>
+</body>
+</html>
