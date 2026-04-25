@@ -2187,11 +2187,14 @@ function updateProcYield() {
 }
 
 function addScrap() {
+  const trimItems = items.filter(i => i.category === 'meat_trim')
+    .sort((a,b) => (a.name||'').localeCompare(b.name||'','th'))
+  const opts = trimItems.map(i => `<option value="${i.id}">${i.sku} · ${i.name}</option>`).join('')
   const div=document.createElement('div'); div.style.marginBottom='8px'
   div.innerHTML=`<div class="row2">
-    <div><input type="text" placeholder="ชื่อเศษ เช่น กระดูก"></div>
+    <div><select class="scrap-item"><option value="">— เลือกเศษ —</option>${opts}</select></div>
     <div style="display:flex;gap:6px">
-      <input type="number" placeholder="กรัม">
+      <input type="number" class="scrap-g" placeholder="กรัม">
       <button class="btn-danger" onclick="this.closest('.row2').remove()">✕</button>
     </div></div>`
   const btn=document.querySelector('#proc-scraps .btn')
@@ -2270,12 +2273,28 @@ async function submitProcess() {
   }
   if (outputRows.length === 0) { alert('กรุณากรอกน้ำหนัก output อย่างน้อย 1 ถุง'); return }
 
-  // 4. Scraps summary (for notes only — no item_id to insert)
+  // 4. Scraps — INSERT CW rows for each (item_id required from dropdown)
   const scraps = []
+  const scrapRows = []
   document.querySelectorAll('#proc-scraps .row2').forEach(row => {
-    const nm = row.querySelector('input[type=text]')?.value?.trim()
-    const g  = parseFloat(row.querySelector('input[type=number]')?.value)
-    if (nm && g > 0) scraps.push(`${nm} ${g}g`)
+    const sel = row.querySelector('select.scrap-item')
+    const itemId = sel?.value
+    const itemLabel = sel?.options?.[sel.selectedIndex]?.textContent || ''
+    const g = parseFloat(row.querySelector('input.scrap-g')?.value)
+    if (itemId && g > 0) {
+      scraps.push(`${itemLabel.split(' · ')[1] || itemLabel} ${g}g`)
+      scrapRows.push({
+        item_id:      itemId,
+        lot_date:     date,
+        bag_no:       scrapRows.length + 1,
+        weight_g:     g,
+        warehouse:    'C',
+        status:       '✅ In Stock',
+        date_recorded: date,
+        notes:        `เศษจากแปรรูป ${inputBags.length} ถุง`,
+        source:       'web-process-scrap'
+      })
+    }
   })
 
   const btn = document.querySelector('#page-process .btn-primary')
@@ -2298,6 +2317,16 @@ async function submitProcess() {
       body: JSON.stringify(outputRows)
     })
     if (!r2.ok) throw new Error(await r2.text())
+
+    // INSERT scrap rows (separate so output bag_no series stays clean)
+    if (scrapRows.length) {
+      const r2s = await fetch(`${SB}/rest/v1/catch_weight`, {
+        method: 'POST',
+        headers: { ...H, Prefer: 'return=minimal' },
+        body: JSON.stringify(scrapRows)
+      })
+      if (!r2s.ok) throw new Error(await r2s.text())
+    }
 
     const inKg  = inputBags.reduce((s,b) => s + b.kg, 0)
     const outKg = outputRows.reduce((s,r) => s + r.weight_g / 1000, 0)
