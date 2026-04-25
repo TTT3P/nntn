@@ -784,8 +784,9 @@
         item_id:      r.id,
         qty:          Math.max(0, currentQty - r.qty),
         dispense_qty: r.qty,
-        counted_by:   'dispense',
+        counted_by:   (window.nntnCurrentUser || 'UNKNOWN') + ' · dispense',
         event_type:   'dispense',
+        // ↑ counted_by carries USER · channel for audit traceability
         note:         'เบิก ' + r.qty + ' ' + itemUnit + (note ? ' · ' + note : '')
       };
     });
@@ -926,7 +927,7 @@
         item_id:      r.id,
         qty:          Math.max(0, currentQty - r.qty),
         dispense_qty: r.qty,
-        counted_by:   'loss',
+        counted_by:   (window.nntnCurrentUser || 'UNKNOWN') + ' · loss',
         event_type:   'loss',
         note:         '[' + r.reason + '] loss ' + r.qty + ' ' + r.unit + (noteGlobal ? ' · ' + noteGlobal : '')
       };

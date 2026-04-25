@@ -1919,7 +1919,7 @@ async function saveNewHistItem(gi) {
         qty:          newQty,
         dispense_qty: dispQty,
         event_type:   'dispense',
-        counted_by:   'hub-delivery',
+        counted_by:   (window.nntnCurrentUser || 'UNKNOWN') + ' · hub-delivery',
         note:         group.note,
         counted_at:   new Date().toISOString()
       }])
