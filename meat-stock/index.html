@@ -1946,6 +1946,18 @@ function updateRepackItemLabel() {
   }
 }
 
+// SCRAP_MAP: input SKU → trim SKU (auto-pick · ไม่ให้น้องเลือก)
+// 1 SKU ครอบ origin (ไทย/ออส) — เพราะ scrap ไม่ track origin ลึก
+const SCRAP_MAP = {
+  'SP-101': 'MT-021',  // พิคานย่าออส → เศษเนื้อพิคานย่า
+  'SP-206': 'MT-021',  // พิคานย่าไทย → เศษเนื้อพิคานย่า
+  'SP-036': 'MT-015',  // สันนอก → เศษเนื้อสะโพก
+  'SP-037': 'MT-038',  // สะโพกก้อน → เศษเนื้อสะโพกก้อน
+  'SP-087': 'MT-042',  // เสือร้องไห้ออส → เศษริ้วขาว
+  'MT-028': 'MT-012',  // สามชั้นตุ๋น (repack) → เศษคัทรวม fallback
+  'MT-019': 'MT-012'   // เนื้อสดหมักนุ่ม (repack) → เศษคัทรวม fallback
+}
+
 // REPACK_MAP: main input SKU → allowed output SKUs (null = any output)
 // Source: NNTN guide 19/04/2026 (ไทน์ confirm)
 const REPACK_MAP = {
@@ -2187,12 +2199,30 @@ function updateProcYield() {
 }
 
 function addScrap() {
-  const trimItems = items.filter(i => i.category === 'meat_trim')
-    .sort((a,b) => (a.name||'').localeCompare(b.name||'','th'))
-  const opts = trimItems.map(i => `<option value="${i.id}">${i.sku} · ${i.name}</option>`).join('')
+  // Auto-pick scrap SKU from first selected input chip via SCRAP_MAP
+  let scrapSku = '', scrapName = '', scrapItemId = ''
+  document.querySelectorAll('#proc-inputs select').forEach(sel => {
+    if (scrapSku || !sel.value) return
+    const inputItem = items.find(i => i.name === sel.value)
+    if (inputItem && SCRAP_MAP[inputItem.sku]) {
+      scrapSku = SCRAP_MAP[inputItem.sku]
+      const trimItem = items.find(i => i.sku === scrapSku)
+      if (trimItem) { scrapName = trimItem.name; scrapItemId = trimItem.id }
+    }
+  })
+  if (!scrapItemId) {
+    // Fallback: เลือก MT-012 เศษคัทรวม (catch-all)
+    const fb = items.find(i => i.sku === 'MT-012')
+    if (fb) { scrapItemId = fb.id; scrapSku = 'MT-012'; scrapName = fb.name }
+  }
+
   const div=document.createElement('div'); div.style.marginBottom='8px'
   div.innerHTML=`<div class="row2">
-    <div><select class="scrap-item"><option value="">— เลือกเศษ —</option>${opts}</select></div>
+    <div style="display:flex;align-items:center;padding:8px 10px;background:#fafafa;border:1px solid var(--border);border-radius:6px;font-size:0.9rem">
+      <span style="color:var(--muted);margin-right:6px">🗑️</span>
+      <b>${scrapSku}</b>&nbsp;·&nbsp;<span>${scrapName}</span>
+      <input type="hidden" class="scrap-item" value="${scrapItemId}">
+    </div>
     <div style="display:flex;gap:6px">
       <input type="number" class="scrap-g" placeholder="กรัม">
       <button class="btn-danger" onclick="this.closest('.row2').remove()">✕</button>
@@ -2277,12 +2307,12 @@ async function submitProcess() {
   const scraps = []
   const scrapRows = []
   document.querySelectorAll('#proc-scraps .row2').forEach(row => {
-    const sel = row.querySelector('select.scrap-item')
+    const sel = row.querySelector('.scrap-item')
     const itemId = sel?.value
-    const itemLabel = sel?.options?.[sel.selectedIndex]?.textContent || ''
+    const trimItem = items.find(i => i.id === itemId)
     const g = parseFloat(row.querySelector('input.scrap-g')?.value)
     if (itemId && g > 0) {
-      scraps.push(`${itemLabel.split(' · ')[1] || itemLabel} ${g}g`)
+      scraps.push(`${trimItem?.name || itemId} ${g}g`)
       scrapRows.push({
         item_id:      itemId,
         lot_date:     date,
