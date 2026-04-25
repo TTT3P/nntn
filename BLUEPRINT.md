@@ -3,7 +3,7 @@
 > Living reference for the **existing** website — not future redesign.
 > Open this before touching anything: know what writes where, what triggers fire, what bugs lurk.
 >
-> Last updated: **2026-04-24** · latest commit: `2b1a70f` · 51 HTML files
+> Last updated: **2026-04-25** · latest commit: `092cb0e` · 51 HTML files
 
 ---
 
@@ -231,6 +231,15 @@ flowchart LR
 |---|---|---|
 | 24/04 | `371416b` cookingbook/index SOP nav section · 3 cards · `data-role="staff,admin"` fail-open gating · QA 1/1 | CB brief 1496922698... · SOP pages shipped but invisible without nav |
 | 23/04 | `5fae97c` sales-ops live data rebuild · 1286 LoC · 6-breakpoint responsive · merged existing Supabase wiring + PoC rich design · data-driven anomaly (<50% of 7-day median) · QA 44/44 | ไทน์ flag "ดีกว่าเดิมเยอะ · ต้อง responsive ด้วย" after PoC round |
+| 25/04 | Phase B inline help banners (meat-stock #รับเนื้อสด + stock-dispense) · "ใช้เมื่อ / ไม่ใช้" guidance | Phase B step 3 · prevent wrong-tab usage |
+| 25/04 | `092cb0e` guards: confirm summary on dispense + yield 30-110% sanity warn on แปรรูป | Phase B step 2 · catch finger-slip + typo |
+| 25/04 | `821fbdb` audit: stock_counts.counted_by = `<USER> · channel` (was channel-only) | Phase B step 1 · per-user traceability |
+| 25/04 | migration `phase_a_audit_views_and_divergence_check` · v_user_actions_daily + v_sm_cw_divergence + cron 23:00 ICT | Phase A · system-driven divergence audit · auto Discord alert daily |
+| 25/04 | migration `aim_cw_status_summary_v3` · statement-level UPDATE trigger · 1 msg/SKU | Phase 1 noise reduction · transition tables aggregation |
+| 25/04 | `d9804c6` MT-044 เนื้อโกเบ + REPACK_MAP MT-004 → [MT-004, MT-044] | New product line · ชายโครงตุ๋น แปรรูป → 50% โกเบ + 50% leftover |
+| 25/04 | `2486282` แปรรูป scrap auto-pick via SCRAP_MAP · no น้องเลือก | Prevent SKU drift in scrap naming |
+| 25/04 | `79b55d8` แปรรูป scrap row → dropdown + INSERT CW (was text-only summary) | Bug fix · scrap stock ไม่ขึ้นทุกครั้ง |
+| 25/04 | `e9803ff` po-receive block MT items (meat_portioned/cooked/trim) | Force in-house repack-only path |
 | 25/04 | guide.html v2 shipped · sticky FAB + flow diagrams + gradient header · 169 inserts | UX polish · uncommitted 2-3 days · ไทน์ approve msg `1497296007682064394` |
 | 25/04 | Cleanup: 5 historical migration SQL files (05-06/04 · already applied) removed from repo root | Noise reduction · catch_weight/meat_tables/phase2_ingredients_view/phase2_recipe_costs_view/stock_schema tables/views verified exist · superseded by Supabase migrations table |
 | 24/04 | FS menu sync · 21 ops (Option 1) · migration `fs_menu_sync_20260424_opt1_21ops` · 4 price UPDATE + RCP-022-M DEACTIVATE + 18 INSERT (RCP-049..066) · RCP-009 skip (sub-recipe ref RCP-021) · QA 128/128 | CB → COO ship via COO `1497269458861953094` · CB ack `1497274670846578812` |
