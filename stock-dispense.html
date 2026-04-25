@@ -773,6 +773,13 @@
       return toast('❌ ' + overItems.map(function(r) { return r.name; }).join(', ') + ' — สต๊อกไม่พอ');
     }
 
+    // Confirm summary — user must read before submit (catches finger-slip mistakes)
+    var summary = rows.map(function(r) {
+      var item = dispenseList.find(function(d) { return d.id === r.id; }) || {};
+      return '• ' + r.name + ' × ' + r.qty + ' ' + (item.unit || '');
+    }).join('\n');
+    if (!confirm('ยืนยันเบิก ' + rows.length + ' รายการ?\n\n' + summary + (note ? '\n\nหมายเหตุ: ' + note : ''))) return;
+
     var btn = document.getElementById('btn-submit-dispense');
     btn.disabled = true;
     btn.textContent = 'กำลังบันทึก...';

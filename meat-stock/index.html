@@ -2303,6 +2303,14 @@ async function submitProcess() {
   }
   if (outputRows.length === 0) { alert('กรุณากรอกน้ำหนัก output อย่างน้อย 1 ถุง'); return }
 
+  // Yield sanity warning — output should be 30-110% of input (catches typos like extra 0)
+  const _inKg  = inputBags.reduce((s,b) => s + b.kg, 0)
+  const _outKg = outputRows.reduce((s,r) => s + r.weight_g / 1000, 0)
+  const _yPct  = _inKg > 0 ? (_outKg / _inKg * 100) : 0
+  if (_inKg > 0 && (_yPct < 30 || _yPct > 110)) {
+    if (!confirm(`⚠️ Yield ผิดปกติ: ${_yPct.toFixed(1)}%\n\nInput: ${_inKg.toFixed(3)} กก.\nOutput: ${_outKg.toFixed(3)} กก.\n\nปกติจะอยู่ 30-110% · กรอกน้ำหนักผิดหรือเปล่า?\n\nกด OK = ยืนยันส่ง · Cancel = แก้ก่อน`)) return
+  }
+
   // 4. Scraps — INSERT CW rows for each (item_id required from dropdown)
   const scraps = []
   const scrapRows = []
