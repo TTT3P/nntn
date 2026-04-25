@@ -12,7 +12,7 @@
 
 | Time | Commit | What | Channels |
 |---|---|---|---|
-| ~17:40 ICT | (pending) | HR wireframes 3 หน้า (attendance form · dashboard · config) · mock data · spec in vault | #platform · #coo |
+| ~17:40 ICT | `f4cc284` | HR wireframes 3 หน้า (attendance form · dashboard · config) · mock data · spec in vault | #platform · #coo |
 | ~17:30 ICT | `e39a6f5` | Phase B step 3 inline help banners + BLUEPRINT §6 refresh | — |
 | ~17:00 ICT | `092cb0e` | Phase B step 2 confirm dialog + yield sanity warn | — |
 | ~16:45 ICT | `821fbdb` | Phase B step 1 audit identity (USER · channel) | — |
