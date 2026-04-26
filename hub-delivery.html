@@ -1387,7 +1387,7 @@ async function loadHistory() {
     const SHh = { ...H, Authorization: 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
     // ดึงจาก deliveries + lines โดยตรง
     const res = await fetch(
-      `${SB}/rest/v1/deliveries?select=id,bill_no,branch,date,channel,delivery_lines(id,catch_weight_id,item_id,qty,weight_g,note)&order=date.desc,bill_no.desc&limit=100`,
+      `${SB}/rest/v1/deliveries?select=id,bill_no,branch,date,channel,created_at,delivery_lines(id,catch_weight_id,item_id,qty,weight_g,note)&order=created_at.desc&limit=100`,
       { headers: SHh }
     )
     const deliveries = await res.json()
