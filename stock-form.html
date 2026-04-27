@@ -424,7 +424,9 @@ function renderItems() {
         </div>
         <div class="item-right">
           <div class="qty-wrap">
-            <input class="item-input" type="number" min="0" inputmode="numeric"
+            <input class="item-input" type="number" min="0"
+              step="${window.nntnIsDecimalUnit(item.unit) ? '0.01' : '1'}"
+              inputmode="${window.nntnIsDecimalUnit(item.unit) ? 'decimal' : 'numeric'}"
               placeholder="" id="qty-${item.id}">
             <span class="unit-lbl">${item.unit}</span>
           </div>
@@ -464,17 +466,28 @@ async function submitCount() {
   const visibleIds = new Set(
     Array.from(document.querySelectorAll('[id^="qty-"]')).map(el => el.id.replace('qty-', ''))
   );
+  const guardErrors = [];
   const rows = items.filter(item => {
     if (!visibleIds.has(item.id)) return false;
     const val = document.getElementById(`qty-${item.id}`).value;
-    return val !== '' && val !== null;  // ข้ามรายการที่ไม่ได้กรอก
-  }).map(item => ({
-    item_id:    item.id,
-    qty:        Math.max(0, parseFloat(document.getElementById(`qty-${item.id}`).value) || 0),
-    counted_by: countedBy,
-    note:       document.getElementById(`note-${item.id}`).value.trim() || null,
-    event_type: 'count',
-  }));
+    return val !== '' && val !== null;
+  }).map(item => {
+    const raw = Math.max(0, parseFloat(document.getElementById(`qty-${item.id}`).value) || 0);
+    const chk = window.nntnEnforceIntegerUnit(raw, item.unit, item.name);
+    if (!chk.ok) guardErrors.push(chk.message);
+    return {
+      item_id:    item.id,
+      qty:        chk.qty,
+      counted_by: countedBy,
+      note:       document.getElementById(`note-${item.id}`).value.trim() || null,
+      event_type: 'count',
+    };
+  });
+  if (guardErrors.length > 0) {
+    showToast('❌ ' + guardErrors.join(' | '), 'error');
+    btn.disabled = false; btn.textContent = '✅ ส่งยอดนับ';
+    return;
+  }
 
   const { error } = await sb.from('stock_counts').insert(rows);
 

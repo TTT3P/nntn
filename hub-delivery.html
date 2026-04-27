@@ -853,7 +853,13 @@ function onNmChange(n) {
   const isMisc = sku.startsWith('MISC')
   const avEl   = document.getElementById(`nm-avail-${n}`)
   const noteEl = document.getElementById(`nm-note-${n}`)
-  document.getElementById(`nm-unit-${n}`).value = isMisc ? '' : (opt?.dataset?.unit || '')
+  const _nmUnit = isMisc ? '' : (opt?.dataset?.unit || '')
+  document.getElementById(`nm-unit-${n}`).value = _nmUnit
+  const _nmQtyInput = document.getElementById(`nm-qty-${n}`)
+  if (_nmQtyInput) {
+    _nmQtyInput.step = window.nntnIsDecimalUnit(_nmUnit) ? '0.01' : '1'
+    _nmQtyInput.inputMode = window.nntnIsDecimalUnit(_nmUnit) ? 'decimal' : 'numeric'
+  }
   if (noteEl) noteEl.style.display = isMisc ? '' : 'none'
   if (isMisc) {
     avEl.textContent = ''
@@ -1103,7 +1109,9 @@ function renderDraftNmRow(draftId, li, l) {
   </div>
   <div class="hist-edit-row" id="dedit-${draftId}-${li}" style="display:none">
     <label>จำนวน:</label>
-    <input type="number" id="dedit-input-${draftId}-${li}" value="${l.qty}" step="0.01" min="0">
+    <input type="number" id="dedit-input-${draftId}-${li}" value="${l.qty}" min="0"
+      step="${window.nntnIsDecimalUnit(l.unit) ? '0.01' : '1'}"
+      inputmode="${window.nntnIsDecimalUnit(l.unit) ? 'decimal' : 'numeric'}">
     <button class="hist-save-btn" onclick="saveEditDraftNm('${draftId}',${li})">บันทึก</button>
     <button class="hist-cancel-btn" onclick="cancelEditDraftNm('${draftId}',${li})">ยกเลิก</button>
     <div style="flex:1"></div>
@@ -1144,9 +1152,11 @@ async function saveNewDraftNm(id) {
   const opt  = itemSel.options[itemSel.selectedIndex]
   const unit = opt?.dataset?.unit || ''
   const name = opt?.dataset?.name || ''
+  const chkAdd = window.nntnEnforceIntegerUnit(qty, unit, name)
+  if (!chkAdd.ok) { alert(chkAdd.message); return }
   const draft = window._draftCache[id]
   if (!draft) return
-  const newLines = [...draft.nm_lines, { item_id: itemId, name, qty, unit }]
+  const newLines = [...draft.nm_lines, { item_id: itemId, name, qty: chkAdd.qty, unit }]
   try {
     await persistDraftNmLines(id, newLines)
     draft.nm_lines = newLines
@@ -1171,7 +1181,10 @@ async function saveEditDraftNm(id, li) {
   if (isNaN(qty) || qty <= 0) { alert('กรุณากรอกจำนวนที่ถูกต้อง'); return }
   const draft = window._draftCache[id]
   if (!draft) return
-  const newLines = draft.nm_lines.map((l, i) => i === li ? { ...l, qty } : l)
+  const line = draft.nm_lines[li]
+  const chkEdit = window.nntnEnforceIntegerUnit(qty, line?.unit || '', line?.name || '')
+  if (!chkEdit.ok) { alert(chkEdit.message); return }
+  const newLines = draft.nm_lines.map((l, i) => i === li ? { ...l, qty: chkEdit.qty } : l)
   try {
     await persistDraftNmLines(id, newLines)
     draft.nm_lines = newLines
@@ -2265,6 +2278,8 @@ async function submitDelivery() {
     const name   = isMisc ? note : (opt?.dataset?.name || sku)
     const unit   = unitEl?.value || opt?.dataset?.unit || 'หน่วย'
     const avail  = isMisc ? null : (spStockBySku[sku] ?? 0)
+    const chkNm  = window.nntnEnforceIntegerUnit(qty, unit, name)
+    if (!chkNm.ok) { overLimit.push(chkNm.message); return }
     if (avail !== null && qty > avail) {
       overLimit.push(`• ${name}: เบิก ${qty} แต่มีอยู่ ${avail} ${unit}`)
     }
