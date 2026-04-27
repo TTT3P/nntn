@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NNTN Web · Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --green: #005036;
+  --green-2: #00734f;
+  --gold: #D29568;
+  --gold-2: #b87a4f;
+  --bg: #fafaf7;
+  --paper: #ffffff;
+  --ink: #1a1a1a;
+  --ink-soft: #4a4a4a;
+  --line: #e6e2d8;
+  --line-soft: #f1ede4;
+  --code-bg: #f5f1e8;
+  --warn: #b8860b;
+  --crit: #b91c1c;
+  --ok: #15803d;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Sarabun', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.65;
+  font-size: 15px;
+}
+code, pre { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13.5px; }
+
+/* layout */
+.wrap { display: grid; grid-template-columns: 260px minmax(0,1fr); max-width: 1320px; margin: 0 auto; }
+
+/* sidebar */
+aside {
+  position: sticky; top: 0;
+  height: 100vh; overflow-y: auto;
+  background: var(--green);
+  color: #fff;
+  padding: 24px 18px;
+  border-right: 4px solid var(--gold);
+}
+aside .brand { font-size: 18px; font-weight: 700; letter-spacing: 0.3px; }
+aside .brand small { display: block; font-weight: 400; opacity: 0.8; font-size: 12px; margin-top: 4px; letter-spacing: 0.5px; }
+aside hr { border: 0; border-top: 1px solid rgba(255,255,255,0.18); margin: 16px 0; }
+aside nav a {
+  display: block; padding: 6px 10px; margin: 2px 0;
+  color: rgba(255,255,255,0.86); text-decoration: none;
+  border-radius: 6px; font-size: 13.5px; font-weight: 500;
+  transition: background 0.12s, color 0.12s;
+}
+aside nav a:hover { background: rgba(255,255,255,0.10); color: #fff; }
+aside nav a.active { background: var(--gold); color: var(--green); }
+aside .meta { margin-top: 18px; font-size: 11.5px; opacity: 0.75; line-height: 1.5; }
+aside .meta code { background: rgba(255,255,255,0.12); padding: 1px 5px; border-radius: 3px; color: #fff; }
+
+/* main */
+main { padding: 40px 56px 120px; max-width: 980px; }
+header.page {
+  border-bottom: 3px solid var(--gold);
+  padding-bottom: 18px; margin-bottom: 32px;
+}
+header.page h1 { margin: 0 0 6px; color: var(--green); font-size: 30px; font-weight: 700; }
+header.page .sub { color: var(--ink-soft); font-size: 14px; }
+header.page .badges { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; line-height: 1.6;
+}
+.badge.green { background: var(--green); color: #fff; }
+.badge.gold { background: var(--gold); color: #fff; }
+.badge.line { background: transparent; color: var(--green); border: 1px solid var(--green); }
+
+section {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 28px 32px;
+  margin: 0 0 24px;
+  scroll-margin-top: 16px;
+}
+section h2 {
+  margin: 0 0 18px;
+  color: var(--green);
+  font-size: 22px; font-weight: 700;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--line-soft);
+}
+section h2 .num { color: var(--gold); font-weight: 700; margin-right: 10px; }
+section h3 { color: var(--green-2); margin: 22px 0 10px; font-size: 16px; font-weight: 600; }
+section h4 { color: var(--ink); margin: 16px 0 8px; font-size: 14px; font-weight: 600; }
+
+p { margin: 8px 0 12px; }
+section p:first-of-type { margin-top: 0; }
+
+ul, ol { padding-left: 22px; margin: 8px 0; }
+li { margin: 4px 0; }
+
+a { color: var(--gold-2); }
+a:hover { color: var(--green); }
+
+code:not(pre code) {
+  background: var(--code-bg);
+  padding: 1px 6px; border-radius: 4px;
+  font-size: 0.92em; color: var(--ink);
+}
+pre {
+  background: #1f2a24; color: #e8e5dd;
+  padding: 14px 18px; border-radius: 8px;
+  overflow-x: auto; margin: 12px 0;
+  border-left: 4px solid var(--gold);
+}
+pre code { background: transparent; color: inherit; padding: 0; }
+
+table { border-collapse: collapse; width: 100%; margin: 10px 0 18px; font-size: 13.5px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { background: var(--line-soft); color: var(--green); font-weight: 600; font-size: 13px; }
+tr:hover td { background: #fbfaf5; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+blockquote {
+  border-left: 4px solid var(--gold);
+  background: #fdf9ee;
+  margin: 12px 0; padding: 10px 16px;
+  color: var(--ink-soft); font-size: 14px;
+}
+
+.callout {
+  border-left: 4px solid var(--green);
+  background: #f0f7f3; padding: 12px 16px;
+  margin: 14px 0; border-radius: 0 6px 6px 0;
+}
+.callout.warn { border-color: var(--warn); background: #fcf6e7; }
+.callout.crit { border-color: var(--crit); background: #fdf0f0; }
+.callout strong { color: var(--green); }
+.callout.warn strong { color: var(--warn); }
+.callout.crit strong { color: var(--crit); }
+
+.mermaid {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  margin: 14px 0;
+  overflow-x: auto;
+}
+
+.kbd {
+  display: inline-block; padding: 1px 7px;
+  background: #f4efe2; border: 1px solid #e0d8c2;
+  border-bottom-width: 2px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+}
+
+.tag-stable { color: var(--ok); }
+.tag-warn { color: var(--warn); }
+.tag-crit { color: var(--crit); }
+.tag-doc { color: var(--gold-2); }
+.tag-mock { color: #6b21a8; }
+
+footer {
+  margin-top: 50px; padding-top: 24px;
+  border-top: 2px solid var(--gold);
+  color: var(--ink-soft); font-size: 13px; text-align: center;
+}
+
+@media (max-width: 920px) {
+  .wrap { grid-template-columns: 1fr; }
+  aside { position: relative; height: auto; max-height: 50vh; }
+  main { padding: 28px 22px 80px; }
+}
+
+@media print {
+  aside { display: none; }
+  .wrap { grid-template-columns: 1fr; }
+  section { break-inside: avoid; box-shadow: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<aside>
+  <div class="brand">🍜 NNTN Web<small>Blueprint · v2 · 27/04/2026</small></div>
+  <hr>
+  <nav id="toc">
+    <a href="#s1">§1 Architecture</a>
+    <a href="#s2">§2 Page catalog</a>
+    <a href="#s3">§3 Stock write paths</a>
+    <a href="#s4">§4 Triggers &amp; Views</a>
+    <a href="#s5">§5 Known bugs</a>
+    <a href="#s6">§6 ADRs</a>
+    <a href="#s7">§7 RPC contracts</a>
+    <a href="#s8">§8 SLO + Observability</a>
+    <a href="#s9">§9 Conventions &amp; Glossary</a>
+    <a href="#s10">§10 Onboarding</a>
+    <a href="#s11">§11 Out of scope · pointers</a>
+    <a href="#s12">§12 Context diagram</a>
+    <a href="#s13">§13 CI / Ops / Backup</a>
+  </nav>
+  <hr>
+  <div class="meta">
+    Repo · <code>github.com/TTT3P/nntn</code><br>
+    Hub · <code>ttt3p.github.io/nntn/hub.html</code><br>
+    Supabase · <code>emjqulzikpxorvpaaiww</code><br>
+    Source · <code>BLUEPRINT.md</code> (live)
+  </div>
+</aside>
+
+<main>
+<header class="page">
+  <h1>NNTN Web — Blueprint</h1>
+  <div class="sub">Living reference for the <strong>existing</strong> website — not future redesign. Open this before touching anything: know what writes where, what triggers fire, what bugs lurk.</div>
+  <div class="badges">
+    <span class="badge green">Last updated · 2026-04-27</span>
+    <span class="badge gold">51 HTML files</span>
+    <span class="badge line">v2 · refactored from 752 → 520 lines</span>
+  </div>
+</header>
+
+<!-- §1 -->
+<section id="s1">
+<h2><span class="num">§1</span>Architecture snapshot</h2>
+
+<table>
+<thead><tr><th>Layer</th><th>Stack</th></tr></thead>
+<tbody>
+<tr><td>Frontend</td><td>Vanilla HTML/CSS/JS · no build step · GitHub Pages</td></tr>
+<tr><td>Auth</td><td>Supabase Auth email/password · JWT in <code>localStorage.nntn_sb_token</code> · shared <code>auth.js</code></td></tr>
+<tr><td>Backend</td><td>Supabase Postgres (project <code>emjqulzikpxorvpaaiww</code>) via PostgREST</td></tr>
+<tr><td>Schemas active</td><td><code>public</code> (core) · <code>stock</code> (deliveries) · <code>cookingbook</code> (BOM) · <code>sales_ops</code> (revenue) · <code>cron</code> · <code>net</code> (pg_net DLQ) · <code>auth</code></td></tr>
+<tr><td>Deploy</td><td><code>git push origin main</code> → Pages rebuild ~1–2 min</td></tr>
+<tr><td>CI</td><td><code>.github/workflows/qa-playwright.yml</code> runs 17 tests every PR</td></tr>
+<tr><td>Hub entry</td><td><code>https://ttt3p.github.io/nntn/hub.html</code></td></tr>
+<tr><td>Repo</td><td><code>github.com/TTT3P/nntn</code></td></tr>
+<tr><td>Credentials</td><td><code>~/.zshrc</code> <code>NNTN_USR</code>/<code>NNTN_PWD</code> · GitHub Secret · <code>platformci@staffnntn.co</code></td></tr>
+</tbody>
+</table>
+
+<p><strong>PostgreSQL extensions:</strong> <code>pg_cron</code> · <code>pg_net</code> · <code>pgcrypto</code> · <code>uuid-ossp</code> · <code>pg_graphql</code> · <code>supabase_vault</code> · <code>pg_stat_statements</code></p>
+
+<h3>Cron jobs (9 in <code>cron.job</code>)</h3>
+<table>
+<thead><tr><th>Job</th><th>Schedule</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>nntn-keep-alive</code></td><td><code>0 8 */5 * *</code></td><td>Prevent Supabase free-tier pause</td></tr>
+<tr><td><code>nntn-platform-auto-reconcile</code></td><td><code>*/5 * * * *</code></td><td>Sync sm↔stock_counts drift (creates count event)</td></tr>
+<tr><td><code>nntn-confirm-aim-deliveries</code></td><td><code>*/2 * * * *</code></td><td>Confirm Discord AIM webhook delivery</td></tr>
+<tr><td><code>nntn-retry-aim-failures</code></td><td><code>*/3 * * * *</code></td><td>Retry failed AIM webhooks</td></tr>
+<tr><td><code>nntn-confirm-oos-deliveries</code></td><td><code>*/2 * * * *</code></td><td>Confirm OOS alert webhooks</td></tr>
+<tr><td><code>nntn-retry-oos-failures</code></td><td><code>*/5 * * * *</code></td><td>Retry failed OOS alerts</td></tr>
+<tr><td><code>nntn-divergence-audit</code></td><td><code>0 16 * * *</code> (23:00 BKK)</td><td>Phase A · sm vs CW divergence report</td></tr>
+<tr><td><code>nntn-weekly-digest</code></td><td><code>0 13 * * 0</code> (Sun 20:00 BKK)</td><td>Phase C · weekly volume + drift</td></tr>
+<tr><td><code>nntn-aim-outbox-drain</code></td><td><code>* * * * *</code></td><td>Phase 2 · group non-meat events into 1 digest msg</td></tr>
+</tbody>
+</table>
+
+<div class="callout">
+<strong>Live snapshot queries</strong> — don't inline numbers, they drift:
+<pre><code>SELECT count(*) FROM items WHERE is_active;                 -- active items
+SELECT warehouse, count(*) FROM catch_weight                -- bags by คลัง
+  WHERE status='✅ In Stock' GROUP BY warehouse;
+SELECT count(*) FROM pg_policies;                           -- RLS policies
+SELECT count(*) FROM pg_class WHERE relrowsecurity;         -- RLS-enabled tables</code></pre>
+</div>
+</section>
+
+<!-- §2 -->
+<section id="s2">
+<h2><span class="num">§2</span>Page catalog (51 files)</h2>
+<p>Legend: <span class="tag-stable">✅ stable</span> · <span class="tag-warn">⚠️ has known issue</span> · 🚫 deprecated · <span class="tag-mock">🎨 design preview</span> · <span class="tag-doc">📖 docs</span></p>
+
+<h3>Public / entry</h3>
+<table>
+<thead><tr><th>URL</th><th class="num">LoC</th><th>Purpose</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><code>hub.html</code></td><td class="num">206</td><td>Main entry (8 cards)</td><td>✅</td></tr>
+<tr><td><code>login.html</code></td><td class="num">184</td><td>Auth gate</td><td>✅</td></tr>
+<tr><td><code>guide.html</code></td><td class="num">805</td><td>คู่มือใช้งาน · v2 sticky FAB + flow diagrams</td><td>✅</td></tr>
+<tr><td><code>app.html</code></td><td class="num">13</td><td>SPA shell iframe</td><td>✅</td></tr>
+</tbody>
+</table>
+
+<h3>Non-meat stock</h3>
+<table>
+<thead><tr><th>URL</th><th class="num">LoC</th><th>Purpose</th><th>Writes</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><code>index.html</code></td><td class="num">411</td><td>Stock status by category</td><td>—</td><td>✅</td></tr>
+<tr><td><code>dashboard.html</code></td><td class="num">567</td><td>4-card dashboard + filters</td><td>—</td><td>✅</td></tr>
+<tr><td><code>stock-form.html</code></td><td class="num">529</td><td>นับสต๊อก (manual count)</td><td>stock_counts</td><td>✅</td></tr>
+<tr><td><code>count-sheet.html</code></td><td class="num">316</td><td>ใบนับ (form variant)</td><td>stock_counts</td><td>✅</td></tr>
+<tr><td><code>stock-dispense.html</code></td><td class="num">1069</td><td>เบิก + loss</td><td>stock_counts</td><td>✅</td></tr>
+<tr><td><code>stock-report.html</code></td><td class="num">579</td><td>Report + history</td><td>—</td><td>✅</td></tr>
+<tr><td><code>portion-form.html</code></td><td class="num">401</td><td>แบ่ง SRCP→PKG portions</td><td>portion_log</td><td>✅</td></tr>
+<tr><td><code>po-receive.html</code></td><td class="num">1064</td><td>PO + รับของ</td><td>rpc_receive_universal</td><td><span class="tag-warn">⚠️ B1</span></td></tr>
+<tr><td><code>goal-dashboard.html</code></td><td class="num">611</td><td>KPI goals</td><td>—</td><td>✅</td></tr>
+<tr><td><code>data-pipeline.html</code></td><td class="num">1501</td><td>ระบบเก็บข้อมูลยอดขาย Grab/FS/Wongnai</td><td>external sales tables</td><td><span class="tag-warn">⚠️ B7</span></td></tr>
+<tr><td><code>production-log-form.html</code></td><td class="num">946</td><td>บันทึก prep (no stock effect)</td><td>production_log</td><td>✅</td></tr>
+<tr><td><code>production-log-view.html</code></td><td class="num">272</td><td>ประวัติ prep</td><td>—</td><td>✅</td></tr>
+<tr><td><code>production-history.html</code></td><td class="num">322</td><td>ประวัติผลิต</td><td>—</td><td>✅</td></tr>
+<tr><td><code>prep-form.html</code></td><td class="num">430</td><td>บันทึก Prep (alt)</td><td>prep_log</td><td>✅</td></tr>
+<tr><td><code>prep-log-view.html</code></td><td class="num">326</td><td>Prep ประวัติ</td><td>—</td><td>✅</td></tr>
+</tbody>
+</table>
+
+<h3>Admin</h3>
+<table>
+<thead><tr><th>URL</th><th class="num">LoC</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>admin-items.html</code></td><td class="num">678</td><td>ทะเบียนวัตถุดิบ (CRUD items + suppliers)</td></tr>
+<tr><td><code>admin-bom.html</code></td><td class="num">412</td><td>จัดการ BOM</td></tr>
+<tr><td><code>admin-config.html</code></td><td class="num">422</td><td>Par level config</td></tr>
+</tbody>
+</table>
+
+<h3>Meat stock</h3>
+<table>
+<thead><tr><th>URL</th><th class="num">LoC</th><th>Purpose</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><code>meat-stock/index.html</code></td><td class="num">2895</td><td>🔴 Monolith — receive/produce/stock/history</td><td><span class="tag-warn">⚠️ split planned</span></td></tr>
+<tr><td><code>meat-stock/guide.html</code></td><td class="num">589</td><td>Meat-stock คู่มือ</td><td><span class="tag-doc">📖</span></td></tr>
+</tbody>
+</table>
+
+<h3>Cross-domain</h3>
+<table>
+<thead><tr><th>URL</th><th class="num">LoC</th><th>Purpose</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><code>hub-delivery.html</code></td><td class="num">2477</td><td>🚚 ใบนำส่ง meat+non-meat</td><td><span class="tag-warn">⚠️ B2</span></td></tr>
+<tr><td><code>count-log.html</code></td><td class="num">163</td><td>📋 Transparency log</td><td>✅</td></tr>
+<tr><td><code>count-sheet-weekly.html</code></td><td class="num">293</td><td>🖨️ ใบพิมพ์ 7 วัน</td><td>✅</td></tr>
+<tr><td><code>platform-health.html</code></td><td class="num">262</td><td>🛡️ SLO / invariants / DLQ</td><td>✅</td></tr>
+</tbody>
+</table>
+
+<h3>CookingBook (CookingBook owns)</h3>
+<table>
+<thead><tr><th>URL</th><th class="num">LoC</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>cookingbook/index.html</code></td><td class="num">98</td><td>Entry · 2 sections (BOM · SOP)</td></tr>
+<tr><td><code>cookingbook/menu.html</code></td><td class="num">511</td><td>เมนู + ต้นทุน</td></tr>
+<tr><td><code>cookingbook/menu-bom.html</code></td><td class="num">154</td><td>Menu BOM + FC%</td></tr>
+<tr><td><code>cookingbook/bom-detail.html</code></td><td class="num">185</td><td>BOM detail</td></tr>
+<tr><td><code>cookingbook/ingredients.html</code></td><td class="num">133</td><td>Ingredients list</td></tr>
+<tr><td><code>cookingbook/prep-rcp.html</code></td><td class="num">132</td><td>Prep RCP</td></tr>
+<tr><td><code>admin-sop.html</code></td><td class="num">521</td><td>SOP authoring · 7-state workflow</td></tr>
+<tr><td><code>sop-review.html</code></td><td class="num">433</td><td>ไทน์ QC queue</td></tr>
+<tr><td><code>print-recipe.html</code></td><td class="num">409</td><td>A4 print</td></tr>
+</tbody>
+</table>
+
+<h3>Sales Ops</h3>
+<table>
+<thead><tr><th>URL</th><th class="num">LoC</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>sales-ops.html</code></td><td class="num">1286</td><td>Daily revenue · 6-breakpoint responsive</td></tr>
+</tbody>
+</table>
+</section>
+
+<!-- §3 -->
+<section id="s3">
+<h2><span class="num">§3</span>Stock write paths</h2>
+
+<h3>Meat (catch_weight bag-level)</h3>
+<div class="mermaid">
+flowchart LR
+  A[meat-stock#receive] -->|INSERT cw| CW[(catch_weight)]
+  CW -->|cw_emit_sm_insert| SM[(stock_movements +qty)]
+  H[hub-delivery submit_delivery RPC] -->|UPDATE status=Delivered| CW
+  CW -->|cw_emit_sm_status| SM2[(sm -qty)]
+  P[meat-stock#produce repack] -->|status=Repacked + new cw| CW
+</div>
+
+<h3>Non-meat (stock_counts event log)</h3>
+<div class="mermaid">
+flowchart LR
+  PO[po-receive] -->|rpc_receive_universal| SC[(stock_counts event=receive)]
+  ST[stock-form/count-sheet] -->|INSERT event=count| SC
+  DP[stock-dispense] -->|INSERT event=dispense| SC
+  HD[hub-delivery submit_delivery] -->|INSERT event=dispense| SC
+  SC -->|sc_emit_sm_insert| SM[(stock_movements)]
+  SC -.check_stock_before_dispense_trg.->|BEFORE insert| GUARD{qty >= dispense_qty?}
+  GUARD -->|no| BLOCK[RAISE INSUFFICIENT_STOCK]
+</div>
+
+<div class="callout">
+<strong>Read path</strong> — UI queries <code>v_stock_unified</code> (single source of truth since 21/04 · <code>SUM(qty_delta) GROUP BY item_id</code> from stock_movements).
+</div>
+
+<p><strong>PKG cascade gap (B3):</strong> PKG-009 ชุดเครื่องปรุง = bundle of PKG-001/002/003 — no cascade decrement. Waiting on CookingBook BOM spec.</p>
+</section>
+
+<!-- §4 -->
+<section id="s4">
+<h2><span class="num">§4</span>Triggers &amp; Views</h2>
+
+<h3>Triggers — critical safety</h3>
+<table>
+<thead><tr><th>Table</th><th>Trigger</th><th>When</th><th>What</th></tr></thead>
+<tbody>
+<tr><td><code>stock_movements</code></td><td><code>sm_block_mutation</code></td><td>BEFORE UPD/DEL</td><td>⚠️ <strong>Raises</strong> — sm append-only</td></tr>
+<tr><td><code>stock_movements</code></td><td><code>sm_auto_emit_activity</code></td><td>AFTER INS</td><td>Emits activity stream</td></tr>
+<tr><td><code>catch_weight</code></td><td><code>stamp_actor_catch_weight</code></td><td>BEFORE INS/UPD</td><td>Sets actor_id from <code>app.actor</code> GUC</td></tr>
+<tr><td><code>catch_weight</code></td><td><code>prevent_deliver_if_not_in_stock</code></td><td>BEFORE UPD</td><td>Blocks → Delivered if not In Stock</td></tr>
+<tr><td><code>catch_weight</code></td><td><code>cw_emit_sm_insert</code></td><td>AFTER INS</td><td>Emits sm +qty_delta</td></tr>
+<tr><td><code>catch_weight</code></td><td><code>cw_emit_sm_status</code></td><td>AFTER UPD(status)</td><td>Emits sm (Delivered=-, Disposed=-)</td></tr>
+<tr><td><code>catch_weight</code></td><td><code>cw_emit_sm_transfer</code></td><td>AFTER UPD(warehouse)</td><td>warehouse_transfer event</td></tr>
+<tr><td><code>catch_weight</code></td><td><code>cw_oos_alert_trigger</code></td><td>AFTER INS/UPD(status)</td><td>Discord OOS alert</td></tr>
+<tr><td><code>catch_weight</code></td><td><code>aim_catch_weight_insert_trg</code></td><td>AFTER INSERT (per-row)</td><td>Discord AIM (receive)</td></tr>
+<tr><td><code>catch_weight</code></td><td><code>aim_catch_weight_process_summary_trg</code></td><td>AFTER INS (statement)</td><td>Discord summary (multi-row)</td></tr>
+<tr><td><code>catch_weight</code></td><td><code>aim_catch_weight_status_summary_trg</code></td><td>AFTER UPD (statement)</td><td>Phase 1 · status aggregate</td></tr>
+<tr><td><code>stock_counts</code></td><td><code>check_stock_before_dispense_trg</code></td><td>BEFORE INS</td><td>⚠️ <strong>Guard</strong>: INSUFFICIENT_STOCK</td></tr>
+<tr><td><code>stock_counts</code></td><td><code>sc_emit_sm_insert</code></td><td>AFTER INS</td><td>Emits sm by event_type</td></tr>
+<tr><td><code>stock_counts</code></td><td><code>aim_stock_counts_trg</code></td><td>AFTER INS</td><td>Phase 2 · writes <code>aim_outbox</code> (since 27/04)</td></tr>
+<tr><td><code>deliveries</code></td><td><code>aim_deliveries_trg</code></td><td>AFTER INS</td><td>Discord AIM</td></tr>
+</tbody>
+</table>
+
+<h3>Views</h3>
+<ul>
+<li><strong><code>v_stock_unified</code></strong> — qty_on_hand per item · frontend SoT</li>
+<li><code>v_count_adjust_log</code> — count-log.html (count_adjust_up/down)</li>
+<li><code>v_production_history</code> · <code>v_production_reconciliation</code></li>
+<li><code>v_stock_history_per_item</code> · <code>v_stock_history_per_lot</code></li>
+<li><code>v_cost_per_bag</code> — cost tracking</li>
+<li><code>v_user_actions_daily</code> — Phase A unified action log</li>
+<li><code>v_sm_cw_divergence</code> — Phase A sm vs CW mismatch</li>
+</ul>
+
+<h3>Outbox / DLQ tables</h3>
+<ul>
+<li><strong><code>aim_outbox</code></strong> — Phase 2 buffer for non-meat Discord events. Drained by <code>nntn-aim-outbox-drain</code> cron. Schema: <code>id · created_at · event_type · actor · source · item_* · qty · balance_after · sent_at</code></li>
+<li><code>aim_notify_dlq</code> — failed webhook retries</li>
+<li><code>net.http_request_queue</code> — pg_net outgoing queue</li>
+</ul>
+</section>
+
+<!-- §5 -->
+<section id="s5">
+<h2><span class="num">§5</span>Known bugs + workaround</h2>
+
+<table>
+<thead><tr><th>ID</th><th>Sev</th><th>Bug</th><th>Workaround</th><th>Fix path</th></tr></thead>
+<tbody>
+<tr><td><strong>B1</strong></td><td>🔴 P1</td><td><code>rpc_receive_universal</code> + <code>emit_sm_from_stock_counts</code> receive branch uses <code>NEW.qty</code> as delta → inflates sm when before&gt;0</td><td>Zero-out SKU first: <code>INSERT stock_counts qty=0 event=count</code></td><td>Compute <code>v_delta = NEW.qty - running_total</code></td></tr>
+<tr><td><strong>B2</strong></td><td>🟠 P1</td><td>hub-delivery draft not deleted after submit → stale drafts block re-submit</td><td><code>DELETE FROM stock.delivery_drafts WHERE bill_no=X</code></td><td>Add DELETE at end of submit_delivery success</td></tr>
+<tr><td><strong>B3</strong></td><td>🟡 P2</td><td>Bundle SKU (PKG-009) dispenses without cascading sub-items</td><td>None</td><td>Waiting on CookingBook BOM spec</td></tr>
+<tr><td><strong>B5</strong></td><td>🟢 P3</td><td>count-log doesn't show receive/dispense events</td><td>Check dashboard</td><td>Add qty_on_hand column to count-log UI</td></tr>
+<tr><td><strong>B6</strong></td><td>🟢 P3</td><td>4-bill scatter when shipping combined meat+nm via SQL</td><td>bill_no UNIQUE prevents merge</td><td>UI: group bills by date+branch</td></tr>
+<tr><td><strong>B7</strong></td><td>🟢 P3</td><td><code>data-pipeline.html</code> purpose unclear (1501 LoC)</td><td>Skip</td><td>Audit + deprecate or document</td></tr>
+</tbody>
+</table>
+
+<blockquote>Removed B4 (<code>platform_slo_log</code> cron) — superseded by §8 SLO cleanup. If reinstated, file new bug.</blockquote>
+</section>
+
+<!-- §6 -->
+<section id="s6">
+<h2><span class="num">§6</span>ADRs (architecturally significant decisions)</h2>
+<blockquote>Only entries that override defaults or have permanent reasoning. Routine commits → <code>ship-log.md</code>.</blockquote>
+
+<table>
+<thead><tr><th>Date</th><th>Decision</th><th>Why (load-bearing rationale)</th></tr></thead>
+<tbody>
+<tr><td>27/04</td><td><strong>Phase 2 outbox digest</strong> for non-meat (<code>aim_outbox</code> + <code>aim_outbox_drain</code> + 1-min cron)</td><td>Trigger statement aggregation can't span multiple RPC calls. Outbox + cron is the only pattern that groups 12 separate RPC submits into 1 digest msg. Worst-case 90s latency accepted.</td></tr>
+<tr><td>25/04</td><td><strong>Phase 1 statement-level UPDATE trigger</strong> for catch_weight (<code>aim_cw_status_summary_v3</code>)</td><td>Use Postgres <code>REFERENCING OLD/NEW TABLE</code> to aggregate <code>submit_delivery</code> multi-row UPDATE into 1 msg per (item, old→new). Per-row spam was unreadable for 50-bag flows.</td></tr>
+<tr><td>25/04</td><td><strong>Phase A divergence audit</strong> (<code>v_sm_cw_divergence</code> + 23:00 cron)</td><td>sm and CW can drift silently if a trigger misfires. System-driven daily report → Discord alerts before next-day ops.</td></tr>
+<tr><td>21/04</td><td><strong><code>v_stock_unified</code> as SoT</strong> for qty_on_hand</td><td>One denominator across all UIs. Before this, dashboards disagreed because each computed qty differently.</td></tr>
+<tr><td>21/04</td><td><strong><code>stock_movements</code> append-only</strong> (sm_block_mutation raises on UPD/DEL)</td><td>Audit trail must be immutable. Errors fixed via compensating insert (see runbook-reconcile-saga.md).</td></tr>
+<tr><td>21/04</td><td><strong><code>auth.js</code> JWT auto-refresh + 401 retry</strong> (<code>ea25058</code>)</td><td>Session expiry mid-flow caused data loss. One-shot retry with fresh token recovers without UX break.</td></tr>
+<tr><td>20/04</td><td><strong>GitHub Pages + vanilla JS</strong> (no build step)</td><td>Single-store ops + small team. Build chains and SPAs add deploy risk for the ROI.</td></tr>
+<tr><td>ongoing</td><td><strong>Single Supabase region · no PITR</strong> (free tier)</td><td>Cost. Mitigation = nightly JSON backup + pg_dump pre-op for risky changes.</td></tr>
+<tr><td>ongoing</td><td><strong>Transparent-team RLS</strong> (most tables <code>authenticated_all=true</code>)</td><td>Small team · audit log is the deterrent. Sensitive tables (sm) protected by trigger, not RLS.</td></tr>
+</tbody>
+</table>
+
+<div class="callout warn"><strong>Routine commits + ships</strong> → see <code>ship-log.md</code>. Don't add <code>&lt;DD/MM&gt; &lt;SHA&gt; &lt;message&gt;</code> entries here.</div>
+</section>
+
+<!-- §7 -->
+<section id="s7">
+<h2><span class="num">§7</span>RPC API contracts</h2>
+<blockquote>Freeze point: changing any signature below = breaking change → bump frontend + bump version.</blockquote>
+
+<h3><code>public.rpc_receive_universal</code> — unified receive</h3>
+<pre><code>rpc_receive_universal(
+  p_actor:     text,     // required
+  p_item_id:   uuid,     // required
+  p_qty:       numeric,  // &gt; 0 · amount RECEIVED (not running total)
+  p_unit_note: text?,
+  p_bags:      jsonb?    // only for meat-raw · [{bag_no, weight_g, warehouse}]
+): jsonb</code></pre>
+<p><strong>Routes by <code>items.type</code>:</strong> <code>meat/raw</code> → per-bag catch_weight · else → stock_counts receive event.<br>
+<strong>Note format written:</strong> <code>รับเข้าผ่าน rpc_receive_universal · รับ &lt;qty&gt; &lt;unit&gt;</code> — consumed by <code>aim_stock_counts_trigger</code> (regex <code>รับ\s+([0-9.]+)</code>).</p>
+
+<h3><code>stock.submit_delivery</code> — atomic delivery</h3>
+<pre><code>stock.submit_delivery(
+  p_bill: text, p_branch: text, p_date: date, p_channel: text,
+  p_bag_ids: bigint[], p_nm_lines: jsonb
+): uuid</code></pre>
+<p><strong>Raises:</strong> <code>P0001: bag(s) not In Stock</code> · <code>P0001: bill/branch/date required</code> · <code>P0001: no bags and no nm lines</code></p>
+
+<h3>Other production RPCs</h3>
+<table>
+<thead><tr><th>RPC</th><th>Signature highlights</th></tr></thead>
+<tbody>
+<tr><td><code>rpc_delivery_reverse</code></td><td><code>(p_actor, p_cw_id, p_reason)</code> — undo via compensating sm</td></tr>
+<tr><td><code>rpc_count_adjust</code></td><td><code>(p_actor, p_item_id, p_counted_qty, p_note?)</code> — manager count</td></tr>
+<tr><td><code>rpc_production_execute</code></td><td><code>(p_actor, p_recipe_id, p_source_cw_ids, p_produced, p_cook_note?)</code></td></tr>
+<tr><td><code>rpc_repack_execute</code></td><td><code>(p_actor, p_source_cw_id, p_produced, p_mode='meat')</code></td></tr>
+<tr><td><code>rpc_disposal</code></td><td><code>(p_actor, p_reason, p_cw_ids?, p_item_id?, p_qty?, p_note?)</code></td></tr>
+<tr><td><code>rpc_warehouse_transfer</code></td><td><code>(p_actor, p_cw_ids, p_to_wh, p_reason?)</code></td></tr>
+<tr><td><code>rpc_stock_by_sku</code> · <code>rpc_stock_snapshot*</code></td><td>Read helpers · TABLE/jsonb</td></tr>
+</tbody>
+</table>
+
+<h3>Legacy (do not call from new code)</h3>
+<ul>
+<li><code>rpc_delivery_out</code> → use <code>submit_delivery</code></li>
+<li><code>rpc_po_receive</code> → use <code>rpc_receive_universal</code></li>
+</ul>
+
+<div class="callout">
+<strong>Compatibility rule:</strong>
+<ul>
+<li>✅ Safe: add optional param at end · add field to return JSON</li>
+<li>⚠️ Risky: rename param · change type · make optional → required</li>
+<li>🔴 Breaking: remove param · remove return field · change route logic</li>
+</ul>
+</div>
+</section>
+
+<!-- §8 -->
+<section id="s8">
+<h2><span class="num">§8</span>SLO + Observability</h2>
+
+<h3>SLO (live: <code>platform-health.html</code>)</h3>
+<table>
+<thead><tr><th>Metric</th><th>Target</th><th>Measure</th><th>Breach action</th></tr></thead>
+<tbody>
+<tr><td>Stock drift (sm vs CW)</td><td>0 items &gt; 1h</td><td>auto-reconcile every 5min · v_sm_cw_divergence daily</td><td>&gt; 1 item &gt; 2h → #platform alert</td></tr>
+<tr><td>Delivery RPC success</td><td>≥ 99%</td><td>submit_delivery 4xx/5xx</td><td>3 fails in 10min → freeze POs</td></tr>
+<tr><td>Webhook DLQ age</td><td>0 stuck &gt; 15min</td><td><code>net.http_request_queue</code></td><td>Retry crons fire 3-5min · manual replay if &gt; 1h</td></tr>
+<tr><td>Negative stock</td><td>0 SKUs qty &lt; 0</td><td><code>v_stock_unified</code></td><td>Any &lt; 0 → immediate investigation</td></tr>
+<tr><td>Page load p95</td><td>&lt; 2s</td><td>GitHub Pages + CDN</td><td>Cache bust <code>?v=timestamp</code></td></tr>
+<tr><td>Auth token validity</td><td>≥ 95% sessions</td><td><code>localStorage.nntn_sb_token</code></td><td>Auto-refresh on 401</td></tr>
+<tr><td>Playwright regression</td><td>17/17</td><td>CI workflow</td><td>Any red → revert or hotfix</td></tr>
+<tr><td>Backup freshness</td><td>&lt; 24h</td><td><code>scripts/backup.py</code></td><td>Missed nightly → run manually</td></tr>
+</tbody>
+</table>
+
+<h3>Observability layers</h3>
+<div class="mermaid">
+flowchart LR
+  T[triggers + RPCs] -->|aim_notify| Q[(net.http_request_queue)]
+  T -->|aim_outbox insert| OB[(aim_outbox)]
+  OB -->|cron 1min drain| Q
+  Q --> D[Discord webhooks]
+  C1[cron: confirm-aim] -->|verify| Q
+  C2[cron: retry-aim] -->|requeue| Q
+  C3[cron: divergence-audit 23:00] -->|alert| D
+  C4[cron: weekly-digest Sun 20:00] -->|summary| D
+  PH[platform-health.html] -->|RPCs platform_slos/invariants| DB[(postgres)]
+</div>
+
+<p><strong>Channels:</strong> <code>#aim</code> (stock events) · <code>#coo</code> · <code>#platform</code> · <code>#stock</code> · <code>#cookingbook</code> · <code>#sales-ops</code></p>
+<p><strong>Watched (not SLO):</strong> bag count by warehouse balance · items at on_hand=0 (alert if &gt; 20% catalog) · cron last-run timestamp (silent &gt; 2× interval = broken).</p>
+</section>
+
+<!-- §9 -->
+<section id="s9">
+<h2><span class="num">§9</span>Conventions &amp; Glossary</h2>
+
+<h3>Phases (from observability buildout, 25-27/04)</h3>
+<ul>
+<li><strong>Phase 1</strong> = noise reduction — statement-level aggregation for catch_weight (Apr 25)</li>
+<li><strong>Phase 2</strong> = cross-statement aggregation — <code>aim_outbox</code> + cron drain for stock_counts (Apr 27)</li>
+<li><strong>Phase A</strong> = audit-able infra — <code>v_user_actions_daily</code>, <code>v_sm_cw_divergence</code></li>
+<li><strong>Phase B</strong> = mistake-proof guards — confirm dialogs, yield sanity, audit identity</li>
+<li><strong>Phase C</strong> = self-healing — weekly digest cron Sunday 20:00</li>
+</ul>
+
+<h3>SKU prefix</h3>
+<table>
+<thead><tr><th>Prefix</th><th>Meaning</th><th>Example</th></tr></thead>
+<tbody>
+<tr><td><code>MT-xxx</code></td><td>Meat — finished portioned pack</td><td>MT-019 เนื้อสดหมักนุ่ม</td></tr>
+<tr><td><code>SP-xxx</code></td><td>Supply / single-item non-meat</td><td>SP-128 ผักบุ้งสด</td></tr>
+<tr><td><code>SRCP-xxx</code></td><td>Semi-recipe / in-house prep</td><td>SRCP-004 พริกน้ำส้ม</td></tr>
+<tr><td><code>PKG-xxx</code></td><td>Packaged ready-to-sell</td><td>PKG-006 น้ำเก็กฮวย 220ml</td></tr>
+<tr><td><code>MISC</code></td><td>Ad-hoc free-text</td><td>—</td></tr>
+</tbody>
+</table>
+
+<h3>Item categories (14 active)</h3>
+<p><code>seasoning · consumable · packaging · spice · vegetable · meat · pkg · meat_portioned · noodle · meat_cooked · srcp · meat_trim · meat_other · misc</code></p>
+
+<h3>Warehouse (คลัง) convention</h3>
+<ul>
+<li><strong>A</strong> — incoming raw staging (เพิ่งรับ ยังไม่ผ่าน process)</li>
+<li><strong>B</strong> — cooking / repack staging (ระหว่าง process)</li>
+<li><strong>C</strong> — ready-to-deliver (ปกติใหญ่สุด · ส่งจากตรงนี้ไปหน้าร้าน)</li>
+</ul>
+
+<h3>catch_weight status transitions</h3>
+<pre><code>✅ In Stock ─┬→ 🔄 Repacked   (source consumed in repack)
+              ├→ 🚚 Delivered  (shipped via submit_delivery)
+              ├→ 🗑️ Disposed   (loss/expired)
+              └→ ❌ Out        (cancelled, manual admin)</code></pre>
+<p>Blocked by <code>prevent_deliver_if_not_in_stock</code> · Blocked by <code>sm_block_mutation</code></p>
+
+<h3>Actor resolution chain</h3>
+<ol>
+<li><code>rpc_receive_universal</code> / <code>submit_delivery</code> → <code>SET app.actor = p_actor</code></li>
+<li><code>stamp_actor_catch_weight</code> BEFORE INS/UPD → reads GUC → writes <code>cw.actor_id</code></li>
+<li><code>_resolve_actor()</code> fallback → <code>current_setting('app.actor', true)</code> or <code>auth.jwt()-&gt;&gt;'email'</code></li>
+<li>UI: <code>window.nntnCurrentUser</code> (from auth.js) passed as <code>p_actor</code></li>
+</ol>
+
+<h3>Auth refresh cycle (<code>auth.js</code>)</h3>
+<ul>
+<li>On load: check <code>localStorage.nntn_sb_token</code></li>
+<li>Expired/near-expiry: auto-refresh via Supabase Auth endpoint</li>
+<li>On 401: retry once with fresh token (since <code>ea25058</code> 21/04)</li>
+<li>Not-logged-in: redirect to <code>login.html</code></li>
+</ul>
+
+<h3>Brand</h3>
+<p>SoT = <code>~/Documents/Claude-Work/ไฟล์/AI-Strategy/brand identity/.../เนื้อในตำนาน_BRAND GUIDELINE.pdf</code> (40 pages) + memory <code>nntn_brand_palette.md</code>.</p>
+<p><strong>Use exact hex</strong> — <span style="display:inline-block;width:14px;height:14px;background:#005036;border-radius:3px;vertical-align:middle"></span> green <code>#005036</code> · <span style="display:inline-block;width:14px;height:14px;background:#D29568;border-radius:3px;vertical-align:middle"></span> gold <code>#D29568</code>. Don't approximate.</p>
+</section>
+
+<!-- §10 -->
+<section id="s10">
+<h2><span class="num">§10</span>Onboarding path</h2>
+
+<ol>
+<li><strong>Read this BLUEPRINT</strong> (you are here · ~470 lines).</li>
+<li><strong>Set up local dev</strong>
+<ul>
+<li><code>cd ~/Documents/Claude-Work/ไฟล์/non-meat-stock</code></li>
+<li><code>npm install</code></li>
+<li>Verify <code>~/.zshrc</code> exports <code>NNTN_USR</code> and <code>NNTN_PWD</code></li>
+<li><code>npm test</code> should pass 17/17</li>
+</ul></li>
+<li><strong>Auth into the live system</strong>
+<ul>
+<li>Browser → <code>https://ttt3p.github.io/nntn/login.html</code> · use <code>NNTN_USR</code> / <code>NNTN_PWD</code></li>
+<li>Or platform admin: <code>platformci@staffnntn.co</code> / <code>Ci123456</code></li>
+</ul></li>
+<li><strong>Verify Supabase access</strong> · <code>SELECT count(*) FROM items WHERE is_active</code></li>
+<li><strong>First task workflow</strong>
+<ul>
+<li>Find work in #platform Discord or backlog (T-021, T-023, etc)</li>
+<li>Pre-flight (Mistake-to-Skill Loop): declare skills + past mistakes</li>
+<li>Do work · Playwright smoke if UI · BLUEPRINT update if architectural</li>
+<li>Ship: <code>git push origin main</code> → <code>ship-log.md</code> prepend → #platform self-note + commit SHA</li>
+<li>Report: #coo with "ship complete · awaiting COO QC"</li>
+</ul></li>
+<li><strong>When stuck</strong>
+<ul>
+<li>DR scenarios → <code>docs/runbook-disaster-recovery.md</code></li>
+<li>Reconcile sm/CW divergence → <code>docs/runbook-reconcile-saga.md</code></li>
+<li>pg_dump pre-op → <code>docs/pg_dump_routine.md</code></li>
+<li>Architecture questions → §3 (write paths) + §4 (triggers) + §7 (RPCs)</li>
+</ul></li>
+</ol>
+</section>
+
+<!-- §11 -->
+<section id="s11">
+<h2><span class="num">§11</span>Out of scope · pointers</h2>
+<p>This blueprint covers the <strong>NNTN web platform architecture</strong> only. For other domains:</p>
+<table>
+<thead><tr><th>Domain</th><th>Where to look</th></tr></thead>
+<tbody>
+<tr><td>CookingBook BOM internals</td><td>CookingBook room SKILL · <code>nntn-cookingbook</code></td></tr>
+<tr><td>Sales data pipeline scraping</td><td><code>data-pipeline.html</code> source · pending audit (B7)</td></tr>
+<tr><td>Web redesign target state</td><td>Phase 1 deliverable (separate · TBD)</td></tr>
+<tr><td>Mobile/responsive behavior</td><td>Desktop-first only · responsive case-by-case</td></tr>
+<tr><td>Full RLS policy audit per-table</td><td><code>pg_policies</code> (73 policies)</td></tr>
+<tr><td>DB migration history</td><td>Supabase dashboard <code>supabase_migrations.schema_migrations</code></td></tr>
+<tr><td>Routine commit log</td><td><code>ship-log.md</code> (this repo)</td></tr>
+<tr><td>Brand guide details</td><td>BRAND GUIDELINE.pdf · <code>nntn_brand_palette.md</code> memory</td></tr>
+<tr><td>DR playbook</td><td><code>docs/runbook-disaster-recovery.md</code></td></tr>
+<tr><td>Saga reconcile pattern</td><td><code>docs/runbook-reconcile-saga.md</code></td></tr>
+<tr><td>Backup/pg_dump routine</td><td><code>docs/pg_dump_routine.md</code></td></tr>
+</tbody>
+</table>
+</section>
+
+<!-- §12 -->
+<section id="s12">
+<h2><span class="num">§12</span>Context diagram (C4 Level 1)</h2>
+<div class="mermaid">
+flowchart TB
+  ไทน์[👤 ไทน์ owner<br>browser desktop] -->|login + all ops| SYS
+  น้อง1[👥 น้องครัว 3-5 คน<br>mobile + desktop] -->|count, dispense, prep| SYS
+  หน้าร้าน[🏪 FS / NT shop staff<br>receive deliveries] -->|view delivery bills| SYS
+
+  SYS[🍜 NNTN Web<br>github.io/nntn/*] --> SB[(🗄️ Supabase<br>emjqulzikpxorvpaaiww)]
+
+  SB -->|pg_net webhook| DC[📢 Discord AIM bot]
+  SB -->|pg_cron 9 jobs| SB
+
+  GRAB[📱 Grab] -.->|order CSV / scrape| PIPE[data-pipeline.html]
+  FS[📱 FoodStory POS] -.-> PIPE
+  WN[📱 Wongnai] -.-> PIPE
+  PIPE --> SB
+
+  SUP[🏭 Suppliers] -.->|physical delivery| หน้าร้าน
+  หน้าร้าน -->|po-receive form| SB
+
+  GH[📦 GitHub Actions<br>backup · keepalive · QA · security] -->|scheduled| SYS
+  GH -->|backup.py| FS2[💾 ~/Documents/NNTN-Backup/]
+
+  classDef ext fill:#fef3c7,stroke:#ca8a04
+  classDef our fill:#dbeafe,stroke:#1e40af
+  class GRAB,FS,WN,SUP,DC ext
+  class SYS,SB,GH our
+</div>
+
+<p><strong>Users:</strong> ไทน์ (owner · approves cross-room) · น้องครัว 3-5 (kitchen ops) · หน้าร้าน FS/NT (receives bills).<br>
+<strong>External:</strong> Discord (outbound) · Grab/FS/Wongnai (sales ingest) · Suppliers (physical · via PO form).<br>
+<strong>Infra:</strong> Supabase (Postgres + Auth · single region) · GitHub (Pages + Actions) · local macOS (backups + dev).</p>
+</section>
+
+<!-- §13 -->
+<section id="s13">
+<h2><span class="num">§13</span>CI / Ops / Backup</h2>
+
+<h3>GitHub Actions</h3>
+<table>
+<thead><tr><th>Workflow</th><th>Trigger</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>qa-playwright.yml</code></td><td>PR + push main</td><td>17-test regression (needs NNTN_USR/PWD secrets)</td></tr>
+<tr><td><code>backup.yml</code></td><td>Nightly cron</td><td><code>scripts/backup.py</code> JSON dump</td></tr>
+<tr><td><code>keepalive.yml</code></td><td>Periodic</td><td>Cron-poke Supabase (DB cron belt+suspenders)</td></tr>
+<tr><td><code>security-probe.yml</code></td><td>Mon 09:00 BKK</td><td>Probe anon access · all endpoints must 401</td></tr>
+</tbody>
+</table>
+
+<h3>Scripts</h3>
+<ul>
+<li><code>backup.py</code> — JSON export → <code>~/Documents/NNTN-Backup/</code></li>
+<li><code>gen_arch.py</code> — Scan HTML → <code>NNTN-Vault/System/architecture/module-catalog.md</code></li>
+</ul>
+
+<h3>RLS posture</h3>
+<ul>
+<li>56 tables RLS-enabled · 73 policies · pattern <code>authenticated_all=true</code> (transparent-team)</li>
+<li><code>stock_movements</code> protected by <code>sm_block_mutation</code> trigger (not RLS)</li>
+<li>Auth enforced at frontend via <code>auth.js</code> JWT check</li>
+</ul>
+
+<div class="callout">
+<strong>Maintenance contract:</strong>
+<ul>
+<li>Update §1 when crons/extensions change</li>
+<li>Update §2 when adding/removing/renaming HTML files</li>
+<li>Update §4 when triggers added/changed</li>
+<li>Update §5 when bugs found/fixed (don't quietly remove · cross-link to fix commit)</li>
+<li>Update §6 ADR <em>only</em> for architecturally significant decisions (not commits)</li>
+<li>Update §7 contract when RPC signatures change · bump frontend in same commit</li>
+<li>Routine ships → <code>ship-log.md</code>, never §6</li>
+</ul>
+</div>
+</section>
+
+<footer>
+NNTN Web Blueprint v2 · Source <code>BLUEPRINT.md</code> · Last refactor 2026-04-27<br>
+รับประเทียมไทย · กระเทียมแห้ง · เก็บใน <code>github.com/TTT3P/nntn</code>
+</footer>
+
+</main>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: {
+  primaryColor: '#005036',
+  primaryTextColor: '#fff',
+  primaryBorderColor: '#D29568',
+  lineColor: '#4a4a4a',
+  fontFamily: 'Sarabun, sans-serif',
+  fontSize: '13px'
+}});
+
+// active toc highlight
+const links = document.querySelectorAll('#toc a');
+const sections = [...links].map(a => document.querySelector(a.getAttribute('href')));
+const setActive = () => {
+  const y = window.scrollY + 80;
+  let i = 0;
+  for (let k = 0; k < sections.length; k++) {
+    if (sections[k] && sections[k].offsetTop <= y) i = k;
+  }
+  links.forEach(a => a.classList.remove('active'));
+  links[i] && links[i].classList.add('active');
+};
+window.addEventListener('scroll', setActive, { passive: true });
+setActive();
+</script>
+</body>
+</html>

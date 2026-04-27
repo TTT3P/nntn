@@ -8,6 +8,15 @@
 
 ---
 
+## 2026-04-27
+
+| Time | Commit | What | Channels |
+|---|---|---|---|
+| ~10:20 ICT | migration `phase2_aim_outbox_digest_for_stock_counts` | Phase 2 outbox + cron `nntn-aim-outbox-drain` (every 1 min) · non-meat 12 SKU = 1 grouped Discord msg | #platform |
+| ~10:00 ICT | migration `aim_stock_counts_trigger_fix_recv_qty_and_trim_scale` | Fix `aim_stock_counts_trigger` regex `รับ X` (rpc_receive_universal format) + `trim_scale()` numeric · trailing zeros fixed | #platform |
+
+---
+
 ## 2026-04-25
 
 | Time | Commit | What | Channels |
