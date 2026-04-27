@@ -830,7 +830,9 @@
             </div>
             <div class="qty-ordered">สั่ง: ${l.qty_ordered ?? '—'}</div>
             ${po.status === 'ordered' ? `
-              <input class="qty-received-input" type="number" min="0" step="0.01"
+              <input class="qty-received-input" type="number" min="0"
+                     step="${window.nntnIsDecimalUnit(l.items?.unit) ? '0.01' : '1'}"
+                     inputmode="${window.nntnIsDecimalUnit(l.items?.unit) ? 'decimal' : 'numeric'}"
                      placeholder="${l.qty_ordered ?? ''}" value="${l.qty_ordered ?? ''}"
                      data-line-id="${l.id}" data-item-id="${l.item_id || l.items?.id || ''}"
                      data-item-name="${l.items?.name || ''}" data-unit="${l.items?.unit || ''}"
@@ -887,6 +889,24 @@
 
     if (receives.length === 0) {
       return toast('ไม่มีรายการที่รับได้');
+    }
+
+    // Unit guard: integer-only units ห้ามมี decimal (ถุง·แผง·ชุด·ขวด·แพ็ก)
+    for (let ig = 0; ig < receives.length; ig++) {
+      const rg = receives[ig];
+      const inpG = Array.from(inputs).find(x => x.dataset.itemId === rg.item_id);
+      const unitG = inpG ? inpG.dataset.unit : '';
+      const nameG = inpG ? inpG.dataset.itemName : rg.item_id;
+      const chk = window.nntnEnforceIntegerUnit(rg.qty_received, unitG, nameG);
+      if (!chk.ok) {
+        if (confirm(chk.message + '\n\nต้องการเปลี่ยนเป็น ' + chk.qty + ' ' + (unitG || '') + ' หรือไม่?\n(ถ้าเป็นน้ำหนัก/ปริมาตร ให้ admin แก้ unit ของ item ก่อน)')) {
+          rg.qty_received = chk.qty;
+          if (inpG) inpG.value = chk.qty;
+          summary[ig] = `• ${nameG}: ${chk.qty} ${unitG || ''} (auto-rounded)`;
+        } else {
+          return;
+        }
+      }
     }
 
     // UX #1: 2-step confirm — กัน PO-03 เคส (กดก่อนของมาจริง)

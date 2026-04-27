@@ -720,7 +720,7 @@
         + '<div class="dr-meta" style="' + warnStyle + '">' + stockNote + (remText ? ' → <span id="dr-rem-' + i + '" style="font-weight:600;' + remColor + '">' + remText + '</span>' : '') + '</div>'
         + '<div class="dr-warn" id="dw-' + i + '">⚠️ จำนวนเกินสต๊อก</div>'
         + '</div>'
-        + '<input class="dr-qty-input" type="number" id="dq-' + i + '" value="' + (r.qty || 1) + '" min="0.01" step="0.01" oninput="updateQty(' + i + ',this.value,\'' + r.id + '\')">'
+        + '<input class="dr-qty-input" type="number" id="dq-' + i + '" value="' + (r.qty || 1) + '" min="' + (window.nntnIsDecimalUnit(r.unit) ? '0.01' : '1') + '" step="' + (window.nntnIsDecimalUnit(r.unit) ? '0.01' : '1') + '" inputmode="' + (window.nntnIsDecimalUnit(r.unit) ? 'decimal' : 'numeric') + '" oninput="updateQty(' + i + ',this.value,\'' + r.id + '\')">'
         + '<button class="btn-del" onclick="removeDispenseLine(' + i + ')">×</button>'
         + '</div>';
     }).join('');
@@ -768,6 +768,22 @@
       else rows.push({ id: r.id, name: r.name, qty: qty });
     });
     if (hasErr) return toast('กรอกจำนวนให้ครบทุกรายการครับ');
+
+    // Unit guard: integer-only units (ถุง·แผง·ชุด·ขวด·แพ็ก) ห้ามมี decimal
+    for (var ig = 0; ig < rows.length; ig++) {
+      var rg = rows[ig];
+      var itemG = dispenseList.find(function(d) { return d.id === rg.id; }) || {};
+      var chk = window.nntnEnforceIntegerUnit(rg.qty, itemG.unit, rg.name);
+      if (!chk.ok) {
+        if (confirm(chk.message + '\n\nต้องการเปลี่ยนเป็น ' + chk.qty + ' ' + (itemG.unit || '') + ' หรือไม่?\n(ถ้าเป็นน้ำหนัก/ปริมาตร ให้ admin แก้ unit ของ item ก่อน)')) {
+          rows[ig].qty = chk.qty;
+          var inpFix = document.getElementById('dq-' + dispenseList.indexOf(itemG));
+          if (inpFix) inpFix.value = chk.qty;
+        } else {
+          return; // user wants to fix manually
+        }
+      }
+    }
 
     // hard block: ห้ามเบิกเกินสต๊อก
     var overItems = rows.filter(function(r) {
@@ -897,7 +913,7 @@
         + '<button class="btn-del" onclick="removeLossLine(' + i + ')">×</button>'
         + '</div>'
         + '<div class="loss-row-bottom">'
-        + '<input class="lr-qty-input" type="number" id="lq-' + i + '" placeholder="จำนวน" min="0.01" step="0.01">'
+        + '<input class="lr-qty-input" type="number" id="lq-' + i + '" placeholder="จำนวน" min="' + (window.nntnIsDecimalUnit(r.unit) ? '0.01' : '1') + '" step="' + (window.nntnIsDecimalUnit(r.unit) ? '0.01' : '1') + '" inputmode="' + (window.nntnIsDecimalUnit(r.unit) ? 'decimal' : 'numeric') + '">'
         + '<select class="lr-reason-select" id="lr-' + i + '">'
         + '<option value="expired">🗓️ หมดอายุ</option>'
         + '<option value="damaged">💥 เสียหาย</option>'
@@ -928,6 +944,21 @@
       else rows.push({ id: r.id, name: r.name, unit: r.unit, qty: qty, reason: reason });
     });
     if (hasErr) return toast('กรอกจำนวนให้ครบทุกรายการครับ');
+
+    // Unit guard (loss): integer-only units
+    for (var il = 0; il < rows.length; il++) {
+      var rl = rows[il];
+      var chkL = window.nntnEnforceIntegerUnit(rl.qty, rl.unit, rl.name);
+      if (!chkL.ok) {
+        if (confirm(chkL.message + '\n\nต้องการเปลี่ยนเป็น ' + chkL.qty + ' ' + (rl.unit || '') + ' หรือไม่?')) {
+          rows[il].qty = chkL.qty;
+          var lqInp = document.getElementById('lq-' + il);
+          if (lqInp) lqInp.value = chkL.qty;
+        } else {
+          return;
+        }
+      }
+    }
 
     var btn = document.getElementById('btn-submit-loss');
     btn.disabled = true;

@@ -251,3 +251,34 @@
     document.body.appendChild(btn);
   });
 })();
+
+// ─────────────────────────────────────────────────────────────
+// Unit guard helpers — shared across stock forms (27/04/2026)
+// Reason: prevent decimal qty in integer-only units (ถุง·แผง·ชุด·ขวด·แพ็ก)
+// Decimal allowed only for weight/volume units (กก.·กรัม·ml·ลิตร·cc·oz)
+// ─────────────────────────────────────────────────────────────
+window.NNTN_DECIMAL_UNITS = ['กก.', 'กก', 'kg', 'กรัม', 'g.', 'g', 'ml', 'มล.', 'มล', 'ลิตร', 'l.', 'cc', 'ออนซ์', 'oz'];
+
+window.nntnIsDecimalUnit = function (unit) {
+  if (!unit) return true; // unknown → allow (safe default)
+  var u = String(unit).trim().toLowerCase();
+  return window.NNTN_DECIMAL_UNITS.some(function (du) {
+    return u === du.toLowerCase();
+  });
+};
+
+window.nntnIsIntegerUnit = function (unit) {
+  return !window.nntnIsDecimalUnit(unit);
+};
+
+// Returns 'auto-rounded qty if integer-required & decimal entered, else qty as-is.
+// Shows toast/alert via callback. Use in submit validation.
+window.nntnEnforceIntegerUnit = function (qty, unit, itemName) {
+  if (window.nntnIsDecimalUnit(unit)) return { ok: true, qty: qty };
+  if (qty % 1 === 0) return { ok: true, qty: qty };
+  return {
+    ok: false,
+    qty: Math.round(qty),
+    message: '❌ ' + (itemName || '') + ' หน่วย "' + unit + '" ต้องเป็นจำนวนเต็ม (พบ ' + qty + ')'
+  };
+};
