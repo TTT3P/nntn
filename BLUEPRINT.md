@@ -79,7 +79,7 @@ Legend: ✅ stable · ⚠️ has known issue · 🚫 deprecated redirect · 🎨
 | `stock-dispense.html` | 1069 | เบิก + loss | items, v_stock_unified | stock_counts | ✅ |
 | `stock-report.html` | 579 | Report + history | items, stock_counts (events) | — | ✅ |
 | `portion-form.html` | 401 | แบ่ง SRCP→PKG portions | items, v_stock_unified | portion_log | ✅ |
-| `po-receive.html` | 1064 | PO + รับของ | items, suppliers, PO | rpc_receive_universal | ⚠️ B1 receive_delta |
+| `po-receive.html` | 1064 | PO + รับของ | items, suppliers, PO | rpc_receive_universal | ✅ B1 closed 28/04 |
 | `goal-dashboard.html` | 611 | KPI goals | projects, commitments | — | ✅ |
 | `data-pipeline.html` | 1501 | ระบบเก็บข้อมูลยอดขาย Grab/FS/Wongnai ingest | — | external sales tables | ⚠️ B7 purpose audit |
 | `production-log-form.html` | 946 | บันทึก prep (no stock effect) | bom_items, recipes | production_log, ingredient_dispense | ✅ |
@@ -104,7 +104,7 @@ Legend: ✅ stable · ⚠️ has known issue · 🚫 deprecated redirect · 🎨
 ### Cross-domain
 | URL | LoC | Purpose | Reads | Writes | Status |
 |---|---:|---|---|---|---|
-| `hub-delivery.html` | 2477 | 🚚 ใบนำส่ง meat+non-meat | v_stock_unified, catch_weight, delivery_drafts | `submit_delivery` RPC | ⚠️ B2 draft auto-clear |
+| `hub-delivery.html` | 2477 | 🚚 ใบนำส่ง meat+non-meat | v_stock_unified, catch_weight, delivery_drafts | `submit_delivery` RPC | ✅ B2 closed 28/04 |
 | `count-log.html` | 163 | 📋 Transparency log (count/adjust only) | v_count_adjust_log | — | ✅ |
 | `count-sheet-weekly.html` | 293 | 🖨️ ใบพิมพ์ 7 วัน (12 pre-packaged SKU) | catch_weight, items | — | ✅ |
 | `platform-health.html` | 262 | 🛡️ SLO / invariants / DLQ | platform_* RPCs | — | ✅ |
@@ -214,8 +214,8 @@ flowchart LR
 
 | ID | Severity | Bug | Workaround | Fix path |
 |---|---|---|---|---|
-| **B1** | 🔴 P1 | `rpc_receive_universal` + `emit_sm_from_stock_counts` receive branch uses `NEW.qty` (= after total) as delta → inflates sm when before>0 | Zero-out SKU before first receive: `INSERT stock_counts qty=0 event=count` | Fix trigger: compute `v_delta = NEW.qty - running_total` OR rpc writes delta not after-total |
-| **B2** | 🟠 P1 | `hub-delivery` draft not deleted after successful submit → stale drafts block re-submit | Manual `DELETE FROM stock.delivery_drafts WHERE bill_no=X` | Add `DELETE` at end of `submit_delivery` success in hub-delivery.html submitDelivery() |
+| ~~B1~~ | ✅ closed 28/04 | sm-delta inflate via `emit_sm_from_stock_counts` | — | Fixed by migration `b1_fix_emit_sm_receive_delta_20260423` (apply 23/04) · `v_sm_cw_divergence` non-meat clean (28/04 verify) |
+| ~~B2~~ | ✅ closed 28/04 | hub-delivery draft stale after submit | — | Fixed at `hub-delivery.html:2446` — DELETE `delivery_drafts?id=eq.${_pendingDraftId}` หลัง submit success (try/catch + null guard) |
 | **B3** | 🟡 P2 | Bundle SKU (e.g. PKG-009 ชุดเครื่องปรุง) dispenses standalone qty without cascading sub-items | None | Waiting on CookingBook BOM spec → Platform implements cascade |
 | **B5** | 🟢 P3 | count-log doesn't show receive/dispense events | Check dashboard for true qty | Add qty_on_hand column to count-log UI |
 | **B6** | 🟢 P3 | 4-bill scatter when shipping combined meat+nm via SQL | bill_no UNIQUE prevents merge | UI: group bills by date+branch in hub-delivery history |

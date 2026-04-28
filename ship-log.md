@@ -12,6 +12,7 @@
 
 | Time | Commit | What | Channels |
 |---|---|---|---|
+| ~00:35 ICT (29/04) | docs only | **B1 + B2 closed formally** · B1 fix landed 23/04 (`b1_fix_emit_sm_receive_delta`) · B2 fix in `hub-delivery.html:2446` · verified `v_sm_cw_divergence` non-meat clean (1/28 SKU divergent = MT-019 meat path, unrelated) · CLAUDE.md + BLUEPRINT §2/§5 updated | #platform |
 | ~17:00 ICT | `8d88fb8` | stock-form: reload current_stock after submit · fix "ใส่เลขแล้วสต๊อกไม่เปลี่ยน" UX bug | #aim |
 | ~16:30 ICT | `a4aaca3` | meat-stock ปรับยอด modal: ตัดออก rewired to `rpc_disposal` (was broken — table `stock_adjustments` ไม่มี · PGRST205) | #aim |
 | ~14:30 ICT | `ea69683` | meat-stock: add MT-035 to MAIN_PROC_SKUS · เลือกเนื้อน่องลายตุ๋นเป็น input ได้ | — |
