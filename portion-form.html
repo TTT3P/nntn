@@ -388,6 +388,15 @@ async function submitPortion() {
   document.getElementById('note').value = '';
   document.getElementById('result-box').className = 'result-box';
   loadHistory(selectedSrcp.sku);
+  if (window.nntnSubmitDone) {
+    window.nntnSubmitDone({
+      title: '✂️ แบ่งถุงสำเร็จ',
+      summary: `<strong>${selectedSrcp.name}</strong> · แบ่งได้ <strong>${bags_out} ถุง</strong>${grams_remainder > 0 ? ' + เศษ '+grams_remainder+'g' : ''}`,
+      sku: selectedSrcp.sku,
+      eventType: 'create_bag',
+      delaySec: 3
+    });
+  }
 }
 
 // Populate current user badge from JWT (set by auth.js)

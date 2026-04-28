@@ -2423,6 +2423,18 @@ async function submitDelivery() {
     document.getElementById('preview-card').insertAdjacentHTML('beforebegin', successHtml)
     window.scrollTo({ top: 0, behavior: 'smooth' })
 
+    // Submit-done modal + redirect to history (28/04 ไทน์ rule)
+    if (window.nntnSubmitDone) {
+      const nmDetail = nmWithdrawals.slice(0,4).map(w => `• ${w.name||w.sku} × ${w.qty}`).join('<br>')
+      const nmMore = nmWithdrawals.length > 4 ? `<br>... และอีก ${nmWithdrawals.length-4} รายการ` : ''
+      window.nntnSubmitDone({
+        title: '🚚 ส่งออกสำเร็จ',
+        summary: `บิล <strong>${bill}</strong> → ${dest}<br>เนื้อ <strong>${bagCount} ถุง</strong> · ${totalKg.toFixed(3)} กก.<br>${nmLine ? '<strong>'+nmWithdrawals.length+'</strong> รายการ non-meat:<br>'+nmDetail+nmMore : ''}`,
+        eventType: 'delivery',
+        delaySec: 4
+      })
+    }
+
     // B2 fix v2: delete ONLY the source draft by id (not by bill_no)
     // Reason: bill_no fallback was sweeping unrelated drafts (e.g., draft saved for tomorrow
     // with same bill_no got nuked when today's bill submitted). Trust _pendingDraftId only.

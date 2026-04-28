@@ -838,6 +838,19 @@
     document.getElementById('d-note').value = '';
     btn.disabled = false;
     btn.textContent = '📦 ยืนยันเบิกของทั้งหมด';
+
+    // Submit-done modal + redirect to history (28/04 ไทน์ rule)
+    if (window.nntnSubmitDone) {
+      var dispItem = (window.dispenseList||[]).find(function(d){return d.id===rows[0].id})||{};
+      var dispSummary = rows.slice(0,5).map(function(r){return '• '+r.name+' × '+r.qty;}).join('<br>');
+      var dispMore = rows.length>5 ? '<br>... และอีก '+(rows.length-5)+' รายการ' : '';
+      window.nntnSubmitDone({
+        title: '✅ บันทึกเบิกออก',
+        summary: 'เบิก <strong>'+rows.length+'</strong> รายการ<br>'+dispSummary+dispMore,
+        eventType: 'dispense',
+        delaySec: 3
+      });
+    }
   }
 
   // ─── Loss tab: search ─────────────────────────────────
@@ -990,10 +1003,21 @@
     });
 
     toast('✅ บันทึก Loss แล้ว ' + rows.length + ' รายการ');
+    var lossRowsCopy = rows.slice();
     lossList = [];
     renderLossList();
     document.getElementById('l-note').value = '';
     btn.disabled = false;
+    if (window.nntnSubmitDone) {
+      var lossSummary = lossRowsCopy.slice(0,5).map(function(r){return '• '+r.name+' × '+r.qty+' '+(r.unit||'')+' ('+r.reason+')';}).join('<br>');
+      var lossMore = lossRowsCopy.length>5 ? '<br>... และอีก '+(lossRowsCopy.length-5)+' รายการ' : '';
+      window.nntnSubmitDone({
+        title: '🗑️ บันทึก Loss',
+        summary: 'Loss <strong>'+lossRowsCopy.length+'</strong> รายการ<br>'+lossSummary+lossMore,
+        eventType: 'dispense',
+        delaySec: 3
+      });
+    }
     btn.textContent = '⚠️ บันทึก Loss/Waste ทั้งหมด';
   }
 

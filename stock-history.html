@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>📋 ประวัติสต๊อก · NNTN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth.js"></script>
+<style>
+:root { --green:#005036; --green-dark:#003d29; --gold:#D29568; --bg:#fafaf7; --line:#e6e2d8; --ink:#1a1a1a; --muted:#666; }
+* { box-sizing: border-box; }
+body { margin:0; font-family:'Sarabun',system-ui,sans-serif; background:var(--bg); color:var(--ink); font-size:14px; }
+header { background:var(--green); color:#fff; padding:14px 20px; display:flex; align-items:center; gap:12px; box-shadow:0 2px 8px rgba(0,0,0,.1); }
+header h1 { margin:0; font-size:18px; flex:1; }
+header a { color:#fff; text-decoration:none; opacity:.9; }
+.wrap { max-width:1200px; margin:0 auto; padding:20px; }
+.filters { background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:16px; display:flex; flex-wrap:wrap; gap:10px; align-items:end; }
+.filters label { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted); font-weight:600; }
+.filters input, .filters select { padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:14px; font-family:inherit; }
+.filters button { background:var(--green); color:#fff; border:0; border-radius:6px; padding:9px 18px; font-weight:600; cursor:pointer; font-family:inherit; }
+.filters button.btn-add { background:var(--gold); }
+.summary { background:#f0f7f3; border-left:3px solid var(--green); padding:10px 14px; margin-bottom:14px; border-radius:0 6px 6px 0; font-size:13px; color:var(--green-dark); }
+table { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+th { background:var(--green); color:#fff; text-align:left; padding:10px 12px; font-size:12px; font-weight:600; }
+td { padding:10px 12px; border-bottom:1px solid var(--line); font-size:13px; vertical-align:top; }
+tr:last-child td { border-bottom:0; }
+tr.highlight td { background:#fff7e6; animation:pulse 1.5s ease-in-out 3; }
+@keyframes pulse { 0%,100%{background:#fff7e6;} 50%{background:#ffe4a8;} }
+.action-pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+.action-receive { background:#dcf5e6; color:#15803d; }
+.action-dispense { background:#fee; color:#b91c1c; }
+.action-delivery { background:#ddeeff; color:#0050a0; }
+.action-create { background:#fff7e6; color:#92400e; }
+.action-other { background:#eee; color:#555; }
+.empty { padding:40px; text-align:center; color:var(--muted); background:#fff; border:1px dashed var(--line); border-radius:10px; }
+.loading { padding:40px; text-align:center; color:var(--muted); }
+.qty-pos { color:#15803d; font-weight:700; }
+.qty-neg { color:#b91c1c; font-weight:700; }
+.note-cell { color:var(--muted); font-size:12px; max-width:340px; word-break:break-word; }
+@media(max-width:720px){
+  .wrap{padding:12px;}
+  th:nth-child(5),td:nth-child(5){display:none;}
+}
+</style>
+</head>
+<body>
+<header>
+  <a href="hub.html">←</a>
+  <h1>📋 ประวัติสต๊อก · ทุกการเคลื่อนไหว</h1>
+</header>
+
+<div class="wrap">
+  <div class="filters">
+    <label>SKU<input type="text" id="f-sku" placeholder="MT-037 / SP-040 / ทั้งหมด" autocomplete="off"></label>
+    <label>ประเภท
+      <select id="f-event">
+        <option value="">ทั้งหมด</option>
+        <option value="receive">📥 รับเข้า</option>
+        <option value="dispense">📤 เบิกออก</option>
+        <option value="count">📊 นับสต๊อก</option>
+        <option value="delivery">🚚 ส่งออก</option>
+        <option value="create_bag">🥩 สร้างถุงเนื้อ</option>
+      </select>
+    </label>
+    <label>ตั้งแต่<input type="date" id="f-from"></label>
+    <label>ถึง<input type="date" id="f-to"></label>
+    <label>ผู้บันทึก<input type="text" id="f-actor" placeholder="AIM / TINE" autocomplete="off"></label>
+    <button onclick="loadHistory()">🔍 ค้นหา</button>
+    <button class="btn-add" onclick="goAdd()">+ บันทึกใหม่</button>
+  </div>
+
+  <div id="summary" class="summary" style="display:none"></div>
+  <div id="results"><div class="loading">กำลังโหลด...</div></div>
+</div>
+
+<script>
+const SB_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3MTU4MDgsImV4cCI6MjA3NzI5MTgwOH0.xoavtfdf00sbGTsdz6GR3MIgrV9_oQjUeCCeyUmSIp4';
+let sb = null;
+
+const params = new URLSearchParams(location.search);
+function qsSet(k, v) { v ? document.getElementById(k).value = v : null; }
+qsSet('f-sku', params.get('sku'));
+qsSet('f-event', params.get('event'));
+qsSet('f-from', params.get('date') || todayBKK());
+qsSet('f-to',   params.get('date') || todayBKK());
+qsSet('f-actor', params.get('actor'));
+
+function todayBKK() {
+  const d = new Date();
+  const off = d.getTimezoneOffset() + 7*60;
+  const bk = new Date(d.getTime() + off*60000);
+  return bk.toISOString().slice(0,10);
+}
+
+const ACTION_META = {
+  receive: { label:'📥 รับเข้า', cls:'action-receive' },
+  dispense: { label:'📤 เบิกออก', cls:'action-dispense' },
+  count: { label:'📊 นับสต๊อก', cls:'action-other' },
+  delivery: { label:'🚚 ส่งออก', cls:'action-delivery' },
+  create_bag: { label:'🥩 สร้างถุงเนื้อ', cls:'action-create' },
+  loss: { label:'🗑️ Loss', cls:'action-dispense' },
+  disposal: { label:'🗑️ Disposed', cls:'action-dispense' }
+};
+function actionPill(a){ const m=ACTION_META[a]||{label:a,cls:'action-other'}; return `<span class="action-pill ${m.cls}">${m.label}</span>`; }
+
+async function loadHistory() {
+  if (!sb) return;
+  const div = document.getElementById('results');
+  div.innerHTML = '<div class="loading">กำลังโหลด...</div>';
+  const sku = document.getElementById('f-sku').value.trim();
+  const event = document.getElementById('f-event').value;
+  const from = document.getElementById('f-from').value;
+  const to = document.getElementById('f-to').value;
+  const actor = document.getElementById('f-actor').value.trim();
+
+  let q = sb.from('v_user_actions_daily').select('*');
+  if (sku) q = q.ilike('sku', '%'+sku.toUpperCase()+'%');
+  if (event) q = q.eq('action', event);
+  if (from) q = q.gte('ts_bkk', from + 'T00:00:00');
+  if (to) q = q.lte('ts_bkk', to + 'T23:59:59');
+  if (actor) q = q.ilike('actor', '%'+actor+'%');
+  q = q.order('ts_bkk', { ascending: false }).limit(500);
+
+  const { data, error } = await q;
+  if (error) { div.innerHTML = '<div class="empty">❌ '+error.message+'</div>'; return; }
+  if (!data || data.length === 0) { div.innerHTML = '<div class="empty">ไม่พบประวัติ · ลองขยายช่วงวันที่ หรือเปลี่ยน filter</div>'; document.getElementById('summary').style.display='none'; return; }
+
+  // Summary
+  const counts = {};
+  data.forEach(r => { counts[r.action] = (counts[r.action]||0)+1; });
+  const sumLine = Object.entries(counts).map(([k,v])=>`${(ACTION_META[k]?.label||k)} <strong>${v}</strong>`).join(' · ');
+  const sumDiv = document.getElementById('summary');
+  sumDiv.style.display = 'block';
+  sumDiv.innerHTML = `พบ <strong>${data.length}</strong> รายการ · ${sumLine}`;
+
+  // Render table
+  const highlight = params.get('highlight');
+  div.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>เวลา</th><th>ประเภท</th><th>SKU · รายการ</th><th>จำนวน</th><th>ผู้บันทึก</th><th>หมายเหตุ</th>
+      </tr></thead>
+      <tbody>
+        ${data.map(r => {
+          const tag = r.sku && highlight && (r.sku === highlight) ? ' class="highlight"' : '';
+          const qty = parseFloat(r.qty || 0);
+          const qtyCls = qty > 0 ? 'qty-pos' : (qty < 0 ? 'qty-neg' : '');
+          const t = (r.ts_bkk || '').replace('T',' ').slice(0, 16);
+          return `<tr${tag}>
+            <td style="white-space:nowrap;color:#666">${t}</td>
+            <td>${actionPill(r.action)}</td>
+            <td><strong>${r.sku||'-'}</strong> · ${r.item_name||''}</td>
+            <td class="${qtyCls}" style="text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums">${qty || '-'}</td>
+            <td style="color:#666">${r.actor||'-'}</td>
+            <td class="note-cell">${r.notes||''}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function goAdd() {
+  // Smart routing based on event filter
+  const ev = document.getElementById('f-event').value;
+  const map = {
+    receive: 'po-receive.html',
+    dispense: 'stock-dispense.html',
+    count: 'stock-form.html',
+    delivery: 'hub-delivery.html',
+    create_bag: 'meat-stock/index.html'
+  };
+  location.href = map[ev] || 'hub.html';
+}
+
+(async () => {
+  if (!window.supabase) { setTimeout(arguments.callee, 100); return; }
+  sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, storageKey: 'nntn_sb_token' } });
+  // Wait for auth.js to set token
+  await new Promise(r => setTimeout(r, 200));
+  const tok = localStorage.getItem('nntn_sb_token');
+  if (tok) {
+    try { const t = JSON.parse(tok); if (t?.access_token) sb = supabase.createClient(SB_URL, SB_KEY, { global: { headers: { Authorization: 'Bearer ' + t.access_token } } }); } catch(e){}
+  }
+  loadHistory();
+})();
+</script>
+</body>
+</html>

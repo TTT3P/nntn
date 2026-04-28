@@ -282,3 +282,59 @@ window.nntnEnforceIntegerUnit = function (qty, unit, itemName) {
     message: '❌ ' + (itemName || '') + ' หน่วย "' + unit + '" ต้องเป็นจำนวนเต็ม (พบ ' + qty + ')'
   };
 };
+
+// ─────────────────────────────────────────────────────────────
+// Submit success modal + auto-redirect to history (28/04/2026)
+// Pattern: ทุก submit ที่เข้า/ออก stock ต้อง call หลัง success
+// → กัน "ลืมว่าบันทึกหรือยัง" + force verify ผ่านหน้าประวัติ
+// ─────────────────────────────────────────────────────────────
+window.nntnSubmitDone = function (opts) {
+  opts = opts || {};
+  var title = opts.title || '✅ บันทึกสำเร็จ';
+  var summary = opts.summary || '';
+  var sku = opts.sku || '';
+  var eventType = opts.eventType || '';
+  var source = opts.source || '';
+  var delaySec = opts.delaySec != null ? opts.delaySec : 3;
+
+  var existing = document.getElementById('nntn-submit-modal');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'nntn-submit-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:Sarabun,system-ui,sans-serif;backdrop-filter:blur(3px);';
+
+  var params = new URLSearchParams();
+  if (sku) params.set('sku', sku);
+  if (eventType) params.set('event', eventType);
+  if (source) params.set('source', source);
+  // Anchor to today by default so user lands on fresh activity
+  var pad = function(n){return n<10?'0'+n:n;};
+  var d = new Date();
+  params.set('date', d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()));
+  var url = '/nntn/stock-history.html' + (params.toString() ? '?' + params.toString() : '');
+
+  overlay.innerHTML =
+    '<div style="background:#fff;border-radius:14px;padding:28px;max-width:460px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.35);text-align:center;">' +
+      '<div style="font-size:54px;margin-bottom:8px;">✅</div>' +
+      '<h2 style="color:#005036;margin:0 0 8px;font-size:22px;">' + title + '</h2>' +
+      (summary ? '<div style="color:#333;margin-bottom:18px;font-size:14px;line-height:1.6;text-align:left;background:#f8f5ec;padding:12px 14px;border-radius:8px;border-left:3px solid #D29568;">' + summary + '</div>' : '') +
+      '<div style="font-size:13px;color:#666;margin-bottom:14px;">พาไปหน้าประวัติใน <strong id="nntn-countdown" style="color:#005036">' + delaySec + '</strong> วิ · กดเองได้</div>' +
+      '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">' +
+        '<button id="nntn-go-history" style="background:#005036;color:#fff;border:0;border-radius:8px;padding:10px 22px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">📋 ดูประวัติเลย</button>' +
+        '<button id="nntn-stay" style="background:#fff;color:#666;border:1px solid #ddd;border-radius:8px;padding:10px 18px;cursor:pointer;font-family:inherit;font-size:14px;">อยู่หน้านี้</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+
+  var remaining = delaySec;
+  var cd = document.getElementById('nntn-countdown');
+  var timer = setInterval(function () {
+    remaining--;
+    if (cd) cd.textContent = remaining;
+    if (remaining <= 0) { clearInterval(timer); window.location.href = url; }
+  }, 1000);
+  document.getElementById('nntn-go-history').onclick = function () { clearInterval(timer); window.location.href = url; };
+  document.getElementById('nntn-stay').onclick = function () { clearInterval(timer); overlay.remove(); };
+};

@@ -895,11 +895,18 @@ async function submitReceive() {
 
   if (res.ok) {
     const total = rows.reduce((s,r) => s + r.weight_g, 0)
-    alert(`✅ บันทึกสำเร็จ ${rows.length} ถุง / ${(total/1000).toFixed(3)} กก.`)
     document.getElementById('recv-items').innerHTML = ''
     recvItemCount = 0
     addRecvItem()
     loadStock()
+    if (window.nntnSubmitDone) {
+      window.nntnSubmitDone({
+        title: '🥩 รับเนื้อสดสำเร็จ',
+        summary: `บันทึก <strong>${rows.length} ถุง</strong> / ${(total/1000).toFixed(3)} กก.`,
+        eventType: 'create_bag',
+        delaySec: 3
+      })
+    } else { alert(`✅ บันทึกสำเร็จ ${rows.length} ถุง / ${(total/1000).toFixed(3)} กก.`) }
   } else {
     const err = await res.text()
     alert('❌ บันทึกไม่สำเร็จ: ' + err)
@@ -1663,8 +1670,15 @@ async function submitClosePot() {
     if (!rpcRes.ok) throw new Error(`submit_close_pot RPC: HTTP ${rpcRes.status} — ${await rpcRes.text()}`)
 
     closeCookModal()
-    alert(`✅ ปิดหม้อสำเร็จ\n${bagWeights.length} ถุง / ${totalKg.toFixed(3)} กก.${bypMsg}`)
     await reloadCwAndKanban()
+    if (window.nntnSubmitDone) {
+      window.nntnSubmitDone({
+        title: '🔥 ปิดหม้อสำเร็จ',
+        summary: `บันทึก <strong>${bagWeights.length} ถุง</strong> / ${totalKg.toFixed(3)} กก.${bypMsg ? '<br>'+bypMsg.replace(/\n/g,'<br>') : ''}`,
+        eventType: 'create_bag',
+        delaySec: 4
+      })
+    } else { alert(`✅ ปิดหม้อสำเร็จ\n${bagWeights.length} ถุง / ${totalKg.toFixed(3)} กก.${bypMsg}`) }
 
   } catch(e) {
     alert(`❌ ปิดหม้อไม่สำเร็จ: ${e.message}`)
@@ -2381,7 +2395,16 @@ async function submitProcess() {
 
     let msg = `✅ บันทึกแปรรูปสำเร็จ\nInput: ${inputBags.length} ถุง / ${inKg.toFixed(3)} กก.\nOutput: ${outputRows.length} ถุง / ${outKg.toFixed(3)} กก.\nYield: ${yPct}`
     if (scraps.length) msg += `\nเศษ: ${scraps.join(', ')}`
-    alert(msg)
+
+    // Submit-done modal + redirect history (28/04 ไทน์ rule)
+    if (window.nntnSubmitDone) {
+      window.nntnSubmitDone({
+        title: '♻️ แปรรูปสำเร็จ',
+        summary: `<strong>Input:</strong> ${inputBags.length} ถุง / ${inKg.toFixed(3)} กก.<br><strong>Output:</strong> ${outputRows.length} ถุง / ${outKg.toFixed(3)} กก.<br><strong>Yield:</strong> ${yPct}${scraps.length ? '<br><strong>เศษ:</strong> '+scraps.join(', ') : ''}`,
+        eventType: 'create_bag',
+        delaySec: 4
+      })
+    } else { alert(msg) }
 
     // Reset
     document.getElementById('proc-inputs').innerHTML = ''
@@ -2959,8 +2982,15 @@ async function submitAdj() {
     }
 
     document.getElementById('adj-modal').classList.remove('open')
-    alert(`✅ บันทึกแล้ว: ${_adjDir==='loss'?'ลด':'เพิ่ม'} ${Math.abs(deltaG)}g (${reason})`)
     await loadStock() // reload
+    if (window.nntnSubmitDone) {
+      window.nntnSubmitDone({
+        title: '⚙️ ปรับยอดสำเร็จ',
+        summary: `<strong>${_adjDir==='loss'?'ลด':'เพิ่ม'}</strong> ${Math.abs(deltaG)} g · เหตุ: ${reason}${note ? '<br>หมายเหตุ: '+note : ''}<br>ถุง #${_adjBag.id}`,
+        eventType: _adjType === 'remove' ? 'dispense' : 'count',
+        delaySec: 3
+      })
+    } else { alert(`✅ บันทึกแล้ว: ${_adjDir==='loss'?'ลด':'เพิ่ม'} ${Math.abs(deltaG)}g (${reason})`) }
 
   } catch(e) {
     console.error(e)

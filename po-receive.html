@@ -950,6 +950,16 @@
 
       toast(`✅ รับของแล้ว — stock +${receives.length} รายการ`);
       setTimeout(() => loadPOList(currentFilter), 1200);
+      if (window.nntnSubmitDone) {
+        const recvSummary = summary.slice(0, 6).join('<br>');
+        const recvMore = summary.length > 6 ? `<br>... และอีก ${summary.length-6} รายการ` : '';
+        window.nntnSubmitDone({
+          title: '📥 รับของเข้าสต๊อก',
+          summary: `PO ปิดแล้ว · <strong>${receives.length}</strong> รายการ<br>${recvSummary}${recvMore}`,
+          eventType: 'receive',
+          delaySec: 3
+        });
+      }
     } catch (e) {
       console.error('confirmReceive failed:', e);
       alert(`❌ รับของล้มเหลว: ${e.message}\n\nPO ยัง status "ordered" — ลองใหม่ได้`);

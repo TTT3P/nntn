@@ -502,6 +502,21 @@ async function submitCount() {
   btn.textContent = '✅ ส่งแล้ว!';
   draftQty = {}; draftNote = {};
 
+  // Show submit-done modal · auto-redirect to history (28/04 ไทน์ rule: ทุกการเข้า/ออก stock ต้อง verify ผ่านประวัติ)
+  if (window.nntnSubmitDone) {
+    const summarySkus = rows.slice(0, 5).map(r => {
+      const it = items.find(i => i.id === r.item_id) || {};
+      return `• ${it.name || r.item_id} = ${r.qty} ${it.unit || ''}`;
+    }).join('<br>');
+    const more = rows.length > 5 ? `<br>... และอีก ${rows.length - 5} รายการ` : '';
+    window.nntnSubmitDone({
+      title: '✅ บันทึกใบนับสต๊อก',
+      summary: `บันทึก <strong>${rows.length}</strong> รายการ<br>${summarySkus}${more}`,
+      eventType: 'count',
+      delaySec: 3
+    });
+  }
+
   // Show summary of OUT/LOW items
   const criticalItems = rows
     .map(r => {
