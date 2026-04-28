@@ -106,6 +106,40 @@ const ACTION_META = {
 };
 function actionPill(a){ const m=ACTION_META[a]||{label:a,cls:'action-other'}; return `<span class="action-pill ${m.cls}">${m.label}</span>`; }
 
+// Smart qty rendering — view มี qty heterogeneous ตาม source_table
+function formatQty(r) {
+  const raw = String(r.qty || '');
+  // catch_weight: '<g>g' · เช่น "75g" → 1 ถุง 75 g
+  if (r.source_table === 'catch_weight' || /^\d+(\.\d+)?g$/.test(raw)) {
+    const g = parseFloat(raw);
+    if (!isNaN(g)) {
+      const kg = (g/1000).toFixed(3);
+      return `<span class="qty-pos">1 ถุง</span> · <span style="color:#666;font-size:12px">${kg} กก. (${g}g)</span>`;
+    }
+  }
+  // deliveries: qty = channel "NT"/"FS" (not numeric)
+  if (r.source_table === 'deliveries' || ['NT','FS','hub-delivery'].includes(raw)) {
+    return `<span style="color:#0050a0;font-weight:600">${raw}</span>`;
+  }
+  // stock_counts: dispense_qty หรือ balance
+  const num = parseFloat(raw);
+  if (isNaN(num)) return raw || '-';
+  // count event แสดง = balance level · ใส่ label
+  if (r.action === 'count') {
+    return `<span style="color:#666;font-weight:600">นับ ${num}</span>`;
+  }
+  // dispense/loss = amount dispensed (positive number, semantically -)
+  if (r.action === 'dispense' || r.action === 'loss') {
+    return `<span class="qty-neg">${num}</span>`;
+  }
+  // receive = amount received (positive)
+  if (r.action === 'receive') {
+    return `<span class="qty-pos">+${num}</span>`;
+  }
+  // create_bag from stock_counts? · default
+  return `<span class="qty-pos">${num}</span>`;
+}
+
 async function loadHistory() {
   if (!sb) return;
   const div = document.getElementById('results');
@@ -146,14 +180,13 @@ async function loadHistory() {
       <tbody>
         ${data.map(r => {
           const tag = r.sku && highlight && (r.sku === highlight) ? ' class="highlight"' : '';
-          const qty = parseFloat(r.qty || 0);
-          const qtyCls = qty > 0 ? 'qty-pos' : (qty < 0 ? 'qty-neg' : '');
           const t = (r.ts_bkk || '').replace('T',' ').slice(0, 16);
+          const qtyDisplay = formatQty(r);
           return `<tr${tag}>
             <td style="white-space:nowrap;color:#666">${t}</td>
             <td>${actionPill(r.action)}</td>
             <td><strong>${r.sku||'-'}</strong> · ${r.item_name||''}</td>
-            <td class="${qtyCls}" style="text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums">${qty || '-'}</td>
+            <td style="text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums">${qtyDisplay}</td>
             <td style="color:#666">${r.actor||'-'}</td>
             <td class="note-cell">${r.notes||''}</td>
           </tr>`;
