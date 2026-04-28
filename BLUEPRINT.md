@@ -216,11 +216,11 @@ flowchart LR
 |---|---|---|---|---|
 | ~~B1~~ | ✅ closed 28/04 | sm-delta inflate via `emit_sm_from_stock_counts` | — | Fixed by migration `b1_fix_emit_sm_receive_delta_20260423` (apply 23/04) · `v_sm_cw_divergence` non-meat clean (28/04 verify) |
 | ~~B2~~ | ✅ closed 28/04 | hub-delivery draft stale after submit | — | Fixed at `hub-delivery.html:2446` — DELETE `delivery_drafts?id=eq.${_pendingDraftId}` หลัง submit success (try/catch + null guard) |
-| **B3** | 🟡 P2 | Bundle SKU (e.g. PKG-009 ชุดเครื่องปรุง) dispenses standalone qty without cascading sub-items | None | Waiting on CookingBook BOM spec → Platform implements cascade |
+| **B3** | 🟡 P2 | Bundle SKU (e.g. PKG-009 ชุดเครื่องปรุง) dispenses standalone qty without cascading sub-items | None | BOM spec ได้แล้ว 28/04 (PKG-009 = PKG-001+002+003 · 1:1:1) · queued หลัง B8 close |
 | **B5** | 🟢 P3 | count-log doesn't show receive/dispense events | Check dashboard for true qty | Add qty_on_hand column to count-log UI |
 | **B6** | 🟢 P3 | 4-bill scatter when shipping combined meat+nm via SQL | bill_no UNIQUE prevents merge | UI: group bills by date+branch in hub-delivery history |
 | **B7** | 🟢 P3 | `data-pipeline.html` purpose unclear (1501 LoC) | Skip | Audit + deprecate or document |
-| **B8** | 🟡 P2 | `catch_weight.weight_g` PATCH ไม่ emit sm (trigger fires on status change only) → "ปรับน้ำหนัก" ใน ปรับยอด modal เปลี่ยน weight ใน DB แต่ stock balance display ที่ sum sm ยังเท่าเดิม | UX: น้องเห็นน้ำหนักเปลี่ยนใน list ทันที (frontend reads from cw direct) แต่ sm-based dashboards drift | Add trigger `cw_emit_sm_weight_adjust` AFTER UPDATE OF weight_g · emit count_adjust delta |
+| ~~B8~~ | ✅ closed 29/04 | `catch_weight.weight_g` PATCH ไม่ emit sm | — | Fixed by migration `b8_fix_cw_weight_adjust_emit_sm_20260429` · trigger `cw_emit_sm_weight_adjust` AFTER UPDATE OF weight_g · emit movement_type=`adjust` qty_delta=0 weight_g=NEW absolute (matches existing convention) · In Stock only · live-tested on lot 3800 (610→611→610 emitted 2 sm rows) |
 
 > Removed B4 (`platform_slo_log` cron) — superseded by §8 SLO + observability cleanup. If reinstated, file new bug.
 

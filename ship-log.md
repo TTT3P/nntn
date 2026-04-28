@@ -12,6 +12,7 @@
 
 | Time | Commit | What | Channels |
 |---|---|---|---|
+| ~01:30 ICT (29/04) | migration `b8_fix_cw_weight_adjust_emit_sm_20260429` | **B8 closed** · trigger `cw_emit_sm_weight_adjust` AFTER UPDATE OF weight_g · emit `adjust` (qty_delta=0 · absolute weight) เฉพาะ status='✅ In Stock' · live-test lot 3800 ผ่าน · BOM spec PKG-009 ได้แล้ว → B3 queued ต่อ | #platform |
 | ~00:35 ICT (29/04) | docs only | **B1 + B2 closed formally** · B1 fix landed 23/04 (`b1_fix_emit_sm_receive_delta`) · B2 fix in `hub-delivery.html:2446` · verified `v_sm_cw_divergence` non-meat clean (1/28 SKU divergent = MT-019 meat path, unrelated) · CLAUDE.md + BLUEPRINT §2/§5 updated | #platform |
 | ~17:00 ICT | `8d88fb8` | stock-form: reload current_stock after submit · fix "ใส่เลขแล้วสต๊อกไม่เปลี่ยน" UX bug | #aim |
 | ~16:30 ICT | `a4aaca3` | meat-stock ปรับยอด modal: ตัดออก rewired to `rpc_disposal` (was broken — table `stock_adjustments` ไม่มี · PGRST205) | #aim |
