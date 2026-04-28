@@ -3,7 +3,7 @@
 > Living reference for the **existing** website — not future redesign.
 > Open this before touching anything: know what writes where, what triggers fire, what bugs lurk.
 >
-> Last updated: **2026-04-27** · 51 HTML files · refactored from v1 (752→ ~470 lines · runbooks split out)
+> Last updated: **2026-04-28** · 51 HTML files · refactored from v1 (752→ ~470 lines · runbooks split out)
 
 ---
 
@@ -220,6 +220,7 @@ flowchart LR
 | **B5** | 🟢 P3 | count-log doesn't show receive/dispense events | Check dashboard for true qty | Add qty_on_hand column to count-log UI |
 | **B6** | 🟢 P3 | 4-bill scatter when shipping combined meat+nm via SQL | bill_no UNIQUE prevents merge | UI: group bills by date+branch in hub-delivery history |
 | **B7** | 🟢 P3 | `data-pipeline.html` purpose unclear (1501 LoC) | Skip | Audit + deprecate or document |
+| **B8** | 🟡 P2 | `catch_weight.weight_g` PATCH ไม่ emit sm (trigger fires on status change only) → "ปรับน้ำหนัก" ใน ปรับยอด modal เปลี่ยน weight ใน DB แต่ stock balance display ที่ sum sm ยังเท่าเดิม | UX: น้องเห็นน้ำหนักเปลี่ยนใน list ทันที (frontend reads from cw direct) แต่ sm-based dashboards drift | Add trigger `cw_emit_sm_weight_adjust` AFTER UPDATE OF weight_g · emit count_adjust delta |
 
 > Removed B4 (`platform_slo_log` cron) — superseded by §8 SLO + observability cleanup. If reinstated, file new bug.
 
@@ -231,6 +232,8 @@ flowchart LR
 
 | Date | Decision | Why (load-bearing rationale) |
 |---|---|---|
+| 28/04 | **ปรับยอด modal rewired to `rpc_disposal`** for "ตัดออกจากสต๊อก" path (was calling non-existent `stock_adjustments` table → PGRST205) | The `stock_adjustments` table never existed in production. RPC `rpc_disposal` is the canonical disposal path · emits compensating sm + sets cw status correctly. Audit trail through sm + cw status history (no separate adjustments table needed). |
+| 27/04 | **Client-side unit guard** in `auth.js` (`nntnIsDecimalUnit` + `nntnEnforceIntegerUnit`) · all qty inputs use `step="1"` for integer units, reject decimal at submit | Operational units (ถุง/แผง/ชุด/ขวด/แพ็ก) are inherently integer · DB has no constraint to enforce. Client-side guard prevents bad data at source. Decimal allowed only for weight/volume (`กก./กรัม/ml/ลิตร/cc/oz`). |
 | 27/04 | **Phase 2 outbox digest** for non-meat (`aim_outbox` + `aim_outbox_drain` + 1-min cron) | Trigger-level statement aggregation can't span multiple RPC calls. Outbox + cron is the only pattern that groups 12 separate RPC submits into 1 digest msg. Worst-case 90s latency accepted. |
 | 25/04 | **Phase 1 statement-level UPDATE trigger** for catch_weight (`aim_cw_status_summary_v3`) | Use Postgres `REFERENCING OLD/NEW TABLE` to aggregate `submit_delivery` multi-row UPDATE into 1 msg per (item, old→new). Per-row spam was unreadable for hub-delivery 50-bag flows. |
 | 25/04 | **Phase A divergence audit** (`v_sm_cw_divergence` + `nntn-divergence-audit` cron 23:00) | sm and CW can drift silently if a trigger misfires. System-driven daily report → Discord alerts before next-day ops. |

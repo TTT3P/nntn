@@ -8,10 +8,22 @@
 
 ---
 
+## 2026-04-28
+
+| Time | Commit | What | Channels |
+|---|---|---|---|
+| ~17:00 ICT | `8d88fb8` | stock-form: reload current_stock after submit · fix "ใส่เลขแล้วสต๊อกไม่เปลี่ยน" UX bug | #aim |
+| ~16:30 ICT | `a4aaca3` | meat-stock ปรับยอด modal: ตัดออก rewired to `rpc_disposal` (was broken — table `stock_adjustments` ไม่มี · PGRST205) | #aim |
+| ~14:30 ICT | `ea69683` | meat-stock: add MT-035 to MAIN_PROC_SKUS · เลือกเนื้อน่องลายตุ๋นเป็น input ได้ | — |
+| ~14:00 ICT | `b16d4a8` + `d135ab0` | new MT-045 'เนื้อน่องลายตุ๋น (เนื้อตุ๋น)' + REPACK_MAP `MT-035 → ['MT-035','MT-045']` (split-self · pattern เดียว MT-004) | #aim |
+| ~13:00 ICT | DB migration `cup500ml_metadata_finalize_and_reconcile_12sets` | SP-210/SP-211 ถ้วยคราฟท์ 500ml ตัว+ฝา · 1 ลัง K-TOPS = 6 ชุด · 999 บ. · SP-058/SP-183 metadata sync เหมือนกัน · reconcile 12 ชุดที่อิมรับใส่ผิด SKU 1000ml | #aim · #platform |
+| ~10:30 ICT | `ea1814d` | count-sheet print button shift left (right 20→140) · ไม่ทับกับปุ่ม "ออกจากระบบ" | — |
+
 ## 2026-04-27
 
 | Time | Commit | What | Channels |
 |---|---|---|---|
+| ~21:00 ICT | `c0eda39` | unit guard · `auth.js` `nntnIsDecimalUnit/nntnEnforceIntegerUnit` helpers · stock-dispense + po-receive · integer units (ถุง/แผง/ชุด/ขวด) ห้ามมี decimal | #platform |
 | ~10:20 ICT | migration `phase2_aim_outbox_digest_for_stock_counts` | Phase 2 outbox + cron `nntn-aim-outbox-drain` (every 1 min) · non-meat 12 SKU = 1 grouped Discord msg | #platform |
 | ~10:00 ICT | migration `aim_stock_counts_trigger_fix_recv_qty_and_trim_scale` | Fix `aim_stock_counts_trigger` regex `รับ X` (rpc_receive_universal format) + `trim_scale()` numeric · trailing zeros fixed | #platform |
 
