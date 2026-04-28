@@ -216,7 +216,7 @@ flowchart LR
 |---|---|---|---|---|
 | ~~B1~~ | ✅ closed 28/04 | sm-delta inflate via `emit_sm_from_stock_counts` | — | Fixed by migration `b1_fix_emit_sm_receive_delta_20260423` (apply 23/04) · `v_sm_cw_divergence` non-meat clean (28/04 verify) |
 | ~~B2~~ | ✅ closed 28/04 | hub-delivery draft stale after submit | — | Fixed at `hub-delivery.html:2446` — DELETE `delivery_drafts?id=eq.${_pendingDraftId}` หลัง submit success (try/catch + null guard) |
-| **B3** | 🟡 P2 | Bundle SKU (e.g. PKG-009 ชุดเครื่องปรุง) dispenses standalone qty without cascading sub-items | None | BOM spec ได้แล้ว 28/04 (PKG-009 = PKG-001+002+003 · 1:1:1) · queued หลัง B8 close |
+| ~~B3~~ | ✅ closed 29/04 | Bundle SKU cascade | — | Fixed by migration `b3_bundle_cascade_pkg009_20260429` · linked items.cb_recipe_id (PKG-001/002/003/009) + inserted 3 bom_items rows for recipe 110 + trigger `sm_cascade_bundle` AFTER INSERT on stock_movements · resolves `items.cb_recipe_id ↔ bom_items.sub_recipe_id` · outbound only (qty_delta<0 · types delivery_out/production_consume/disposal/count_adjust_down/repack_consume) · depth-guard 5 via GUC `nntn.cascade_depth` · live-test: PKG-009 dispense -1 → 3 cascade rows (PKG-001/002/003 each -1) · reversal compensating insert verified net=0 |
 | **B5** | 🟢 P3 | count-log doesn't show receive/dispense events | Check dashboard for true qty | Add qty_on_hand column to count-log UI |
 | **B6** | 🟢 P3 | 4-bill scatter when shipping combined meat+nm via SQL | bill_no UNIQUE prevents merge | UI: group bills by date+branch in hub-delivery history |
 | **B7** | 🟢 P3 | `data-pipeline.html` purpose unclear (1501 LoC) | Skip | Audit + deprecate or document |
