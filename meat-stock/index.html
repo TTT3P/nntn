@@ -2266,6 +2266,9 @@ async function submitProcess() {
       const outId = skuSel?.value
       if (!outId) { alert(`กรุณาเลือก SKU output ในทุกกลุ่ม (กลุ่มที่ ${n})`); return }
       let grpHasBag = false
+      // Output warehouse: cooked intermediate (เนื้อตุ๋น เช่น MT-004/MT-035/MT-044/MT-045) → คลัง B · portioned final → คลัง C
+      const _outItem = items.find(i => i.id === outId)
+      const _outWh = (_outItem?.tier === 'intermediate' && _outItem?.category === 'meat_cooked') ? 'B' : 'C'
       document.querySelectorAll(`#pog-bag-rows-${n} input[type=number]`).forEach(inp => {
         const g = parseFloat(inp.value)
         if (!g || g <= 0) return
@@ -2276,7 +2279,7 @@ async function submitProcess() {
           lot_date:     date,
           bag_no:       globalBagNo,
           weight_g:     g,
-          warehouse:    'C',
+          warehouse:    _outWh,
           status:       '✅ In Stock',
           date_recorded: date,
           notes:        `แปรรูปจาก ${inputBags.length} ถุง (kitchen)`,
