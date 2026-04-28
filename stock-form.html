@@ -528,6 +528,18 @@ async function submitCount() {
     if (noteEl) noteEl.value = '';
   });
   document.getElementById('counted-by').value = '';
+
+  // Reload current_stock so UI shows fresh balance (was: stale numbers after submit)
+  try {
+    const { data: freshStock } = await sb.from('current_stock')
+      .select('sku, current_qty, status, counted_at, counted_by');
+    if (freshStock) {
+      lastCounts = {};
+      freshStock.forEach(row => { lastCounts[row.sku] = row; });
+      renderItems();
+    }
+  } catch (e) { console.warn('refresh current_stock failed', e); }
+
   setTimeout(() => { btn.disabled = false; btn.textContent = '✅ ส่งยอดนับ'; }, 1500);
 }
 
