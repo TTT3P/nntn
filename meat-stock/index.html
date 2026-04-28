@@ -2928,29 +2928,22 @@ async function submitAdj() {
       deltaG = _adjDir === 'loss' ? -Math.abs(raw) : Math.abs(raw)
     }
 
-    // 1. บันทึก stock_adjustments
-    const adjRow = {
-      date: today(),
-      bag_id: _adjBag.id,
-      item_id: _adjBag.item_id,
-      lot_date: _adjBag.lot_date?.split('T')[0] || null,
-      direction: _adjDir,
-      reason: reason,
-      delta_g: deltaG,
-      note: note || null,
-      adj_type: _adjType
-    }
-    await post('stock_adjustments', adjRow)
+    // 1. (removed: stock_adjustments table doesn't exist · 28/04 bug fix)
+    //    Audit trail comes from sm + cw status history instead.
 
     // 2. PATCH catch_weight ตาม adjType
     if (_adjType === 'remove') {
-      // ตัดออก → เปลี่ยน status
-      const pr = await fetch(`${SB}/rest/v1/catch_weight?id=eq.${_adjBag.id}`, {
-        method: 'PATCH',
-        headers: {...H, Prefer:'return=minimal'},
-        body: JSON.stringify({ status: newStatus })
+      // ตัดออก → ใช้ rpc_disposal (เพื่อ emit compensating sm + ตั้ง status=Disposed อัตโนมัติ)
+      const dr = await fetch(`${SB}/rest/v1/rpc/rpc_disposal`, {
+        method: 'POST',
+        headers: {...H, 'Content-Type':'application/json'},
+        body: JSON.stringify({
+          p_actor: (window.nntnCurrentUser || 'UNKNOWN') + ' · adj-' + _adjDir,
+          p_reason: reason + (note ? ' · ' + note : ''),
+          p_cw_ids: [_adjBag.id]
+        })
       })
-      if (!pr.ok) throw new Error(`PATCH status: ${await pr.text()}`)
+      if (!dr.ok) throw new Error(`rpc_disposal: ${await dr.text()}`)
     } else {
       // ปรับน้ำหนัก → อัปเดต weight_g จริง
       const newWeightG = Math.max(0, (parseFloat(_adjBag.weight_g) || 0) + deltaG)
