@@ -109,13 +109,12 @@ function actionPill(a){ const m=ACTION_META[a]||{label:a,cls:'action-other'}; re
 // Smart qty rendering — view มี qty heterogeneous ตาม source_table
 function formatQty(r) {
   const raw = String(r.qty || '');
-  // catch_weight: '<g>g' · เช่น "75g" → 1 ถุง 75 g
-  if (r.source_table === 'catch_weight' || /^\d+(\.\d+)?g$/.test(raw)) {
-    const g = parseFloat(raw);
-    if (!isNaN(g)) {
-      const kg = (g/1000).toFixed(3);
-      return `<span class="qty-pos">1 ถุง</span> · <span style="color:#666;font-size:12px">${kg} กก. (${g}g)</span>`;
-    }
+  // catch_weight: aggregated batch · "<n> ถุง · <kg> กก."
+  if (r.source_table === 'catch_weight') {
+    const count = r._agg_count || 1;
+    const g = r._agg_g || parseFloat(raw) || 0;
+    const kg = (g/1000).toFixed(3);
+    return `<span class="qty-pos">${count} ถุง</span> · <span style="color:#666;font-size:12px">${kg} กก.</span>`;
   }
   // deliveries: qty = channel "NT"/"FS" (not numeric)
   if (r.source_table === 'deliveries' || ['NT','FS','hub-delivery'].includes(raw)) {
@@ -170,6 +169,10 @@ async function loadHistory() {
   sumDiv.style.display = 'block';
   sumDiv.innerHTML = `พบ <strong>${data.length}</strong> รายการ · ${sumLine}`;
 
+  // Aggregate catch_weight create_bag rows ที่อยู่ใน batch เดียวกัน (same minute + sku + actor + action) → 1 บรรทัด
+  // Other rows pass through as-is
+  const grouped = aggregateRows(data);
+
   // Render table
   const highlight = params.get('highlight');
   div.innerHTML = `
@@ -178,7 +181,7 @@ async function loadHistory() {
         <th>เวลา</th><th>ประเภท</th><th>SKU · รายการ</th><th>จำนวน</th><th>ผู้บันทึก</th><th>หมายเหตุ</th>
       </tr></thead>
       <tbody>
-        ${data.map(r => {
+        ${grouped.map(r => {
           const tag = r.sku && highlight && (r.sku === highlight) ? ' class="highlight"' : '';
           const t = (r.ts_bkk || '').replace('T',' ').slice(0, 16);
           const qtyDisplay = formatQty(r);
@@ -193,6 +196,31 @@ async function loadHistory() {
         }).join('')}
       </tbody>
     </table>`;
+}
+
+function aggregateRows(data) {
+  const out = [];
+  const buckets = new Map();
+  for (const r of data) {
+    // Only aggregate catch_weight rows (1 ถุง = 1 row บน DB · ควรรวมเป็น batch)
+    if (r.source_table === 'catch_weight') {
+      const key = (r.ts_bkk||'').slice(0,16) + '|' + (r.sku||'') + '|' + (r.action||'') + '|' + (r.actor||'');
+      let b = buckets.get(key);
+      if (!b) {
+        b = { ...r, _agg_count: 0, _agg_g: 0 };
+        buckets.set(key, b);
+        out.push(b);
+      }
+      b._agg_count += 1;
+      const m = String(r.qty||'').match(/^(\d+(?:\.\d+)?)g$/);
+      if (m) b._agg_g += parseFloat(m[1]);
+    } else {
+      out.push(r);
+    }
+  }
+  // Sort by ts desc to match query order
+  out.sort((a,b) => String(b.ts_bkk).localeCompare(String(a.ts_bkk)));
+  return out;
 }
 
 function goAdd() {
