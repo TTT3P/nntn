@@ -12,6 +12,7 @@
 
 | Time | Commit | What | Channels |
 |---|---|---|---|
+| ~03:35 ICT (29/04) | data ops · `rpc_delivery_reverse(3746)` | **REVERSE** FS20260428-2 line MT-004 ชายโครงตุ๋น 580g · cw 3746: 🚚 Delivered → ✅ In Stock · sm #3516 `delivery_reverse +1` (customer→B) · MT-004 In Stock 10→11 · sm_net=11 (sync) | #platform |
 | ~03:00 ICT (29/04) | data ops · UPDATE cw_id 3801 lot_date | **METADATA ม้ามตุ๋น** · lot_date=24/02/2026 (production) · date_recorded=24/04/2026 (receive) · ใช้ column ที่มีอยู่แล้ว · ไม่มี schema change · sm trail ไม่กระทบ | — |
 | ~02:55 ICT (29/04) | data ops · UPDATE cw_id 3801 weight | **CORRECTION ม้ามตุ๋น** · 213 = น้ำหนัก ไม่ใช่ SKU code (ไทน์ confirm) · weight 264→213g · B8 trigger emit sm #3398 `adjust qty=0` อัตโนมัติ ✅ · In Stock 4 ถุง · sm_net=4 (sync) | #platform |
 | ~02:50 ICT (29/04) | data ops · INSERT cw_id 3801 | **ADD STOCK** · MT-036 ม้ามตุ๋น 1 ถุง · พี่ทาย via ไทน์ · lot_date 24/04 · weight=264g (avg) · warehouse B · trigger emit sm `po_receive +1` (sm #3397) · MT-036 In Stock 3→4 · sm_net=4 (sync) | #platform |
