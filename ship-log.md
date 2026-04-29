@@ -12,6 +12,7 @@
 
 | Time | Commit | What | Channels |
 |---|---|---|---|
+| ~03:00 ICT (29/04) | data ops · UPDATE cw_id 3801 lot_date | **METADATA ม้ามตุ๋น** · lot_date=24/02/2026 (production) · date_recorded=24/04/2026 (receive) · ใช้ column ที่มีอยู่แล้ว · ไม่มี schema change · sm trail ไม่กระทบ | — |
 | ~02:55 ICT (29/04) | data ops · UPDATE cw_id 3801 weight | **CORRECTION ม้ามตุ๋น** · 213 = น้ำหนัก ไม่ใช่ SKU code (ไทน์ confirm) · weight 264→213g · B8 trigger emit sm #3398 `adjust qty=0` อัตโนมัติ ✅ · In Stock 4 ถุง · sm_net=4 (sync) | #platform |
 | ~02:50 ICT (29/04) | data ops · INSERT cw_id 3801 | **ADD STOCK** · MT-036 ม้ามตุ๋น 1 ถุง · พี่ทาย via ไทน์ · lot_date 24/04 · weight=264g (avg) · warehouse B · trigger emit sm `po_receive +1` (sm #3397) · MT-036 In Stock 3→4 · sm_net=4 (sync) | #platform |
 | ~02:30 ICT (29/04) | non-code ship · 2 skills | **Wave 1 skill dev DONE** · `/pre-flight` (schema audit shortcut · S) + `/qa-run` (Playwright fast-run · S) · written `~/.claude/skills/{pre-flight,qa-run}/SKILL.md` · loaded ใน skills list ทั้งคู่ · ลด overhead ตอน apply_migration และ pre-push QA | #platform-test |
