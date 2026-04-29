@@ -212,7 +212,7 @@ flowchart LR
 
 ## §5 Known bugs + workaround
 
-> **Backlog (29/04)**: T-STOCK-CMD-001 follow-up · migrate `/stock` Discord handler จาก single-token MCP-conflict (MVP option b) → dedicated CROO-cmd bot (option a · separate app + invite + allowlist) ตอน /stock มี usage stable
+> **Backlog item resolved (29/04)**: T-STOCK-CMD-004 · /stock Discord handler ย้ายไปใช้ add bot#6960 (app `1491088338613174313`) · separate token จาก CROO · ไม่ชน MCP · ไฟล์ `~/Documents/Claude-Work/services/discord-stock-cmd/`
 
 
 | ID | Severity | Bug | Workaround | Fix path |

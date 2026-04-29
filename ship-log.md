@@ -12,6 +12,7 @@
 
 | Time | Commit | What | Channels |
 |---|---|---|---|
+| ~05:00 ICT (29/04) | non-code ship · service v2 | **T-STOCK-CMD-004 DONE** · /stock handler ย้ายไป **add bot#6960** (app 1491088338613174313 · token DISCORD_TOKEN ใน ~/.config/nntn/.env) แทน CROO · ไม่ชน MCP · run คู่ได้ · `register-commands.js` script เพิ่มมา (one-shot REST POST · global หรือ --guild scope) · /stock no-arg = rpc_stock_snapshot grouped by type→tier · /stock <sku> = rpc_stock_by_sku single embed · BLUEPRINT §5 backlog resolved | #platform · #aim |
 | ~04:30 ICT (29/04) | non-code ship · service | **T-STOCK-CMD-001 DONE** · Discord slash `/stock <sku>` handler (CROO bot) · `~/Documents/Claude-Work/services/discord-stock-cmd/{handler.js,package.json,README.md}` + launchd plist · uses `rpc_stock_by_sku` (return: sku/name/qty/unit) · defer ack + 8s abort + green/red embed · ⚠️ token conflict MVP = manual stop MCP ก่อน start · tech-debt (a) dedicated CROO-cmd bot ใน backlog | #platform · #aim |
 | ~03:50 ICT (29/04) | data hotfix · 2 UPDATE | **Bug fix · เปิดหม้อตุ๋น ไม่มีช่องกรอกเศษ** · UI logic ถูก (อ่าน byproduct_item_id) · data ขาด/stale → fix items: SP-024→MT-042 (ริ้วขาว→เศษริ้วขาว), SP-037→MT-015 (สะโพก→เศษเนื้อสะโพก · was MT-038 deprecated) · byproduct_required=true ทั้งคู่ · UI จะแสดงช่องเศษอัตโนมัติ | #platform |
 | ~03:35 ICT (29/04) | data ops · `rpc_delivery_reverse(3746)` | **REVERSE** FS20260428-2 line MT-004 ชายโครงตุ๋น 580g · cw 3746: 🚚 Delivered → ✅ In Stock · sm #3516 `delivery_reverse +1` (customer→B) · MT-004 In Stock 10→11 · sm_net=11 (sync) | #platform |
