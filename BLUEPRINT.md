@@ -212,6 +212,9 @@ flowchart LR
 
 ## §5 Known bugs + workaround
 
+> **Backlog (29/04)**: T-STOCK-CMD-001 follow-up · migrate `/stock` Discord handler จาก single-token MCP-conflict (MVP option b) → dedicated CROO-cmd bot (option a · separate app + invite + allowlist) ตอน /stock มี usage stable
+
+
 | ID | Severity | Bug | Workaround | Fix path |
 |---|---|---|---|---|
 | ~~B1~~ | ✅ closed 28/04 | sm-delta inflate via `emit_sm_from_stock_counts` | — | Fixed by migration `b1_fix_emit_sm_receive_delta_20260423` (apply 23/04) · `v_sm_cw_divergence` non-meat clean (28/04 verify) |

@@ -12,6 +12,7 @@
 
 | Time | Commit | What | Channels |
 |---|---|---|---|
+| ~04:30 ICT (29/04) | non-code ship · service | **T-STOCK-CMD-001 DONE** · Discord slash `/stock <sku>` handler (CROO bot) · `~/Documents/Claude-Work/services/discord-stock-cmd/{handler.js,package.json,README.md}` + launchd plist · uses `rpc_stock_by_sku` (return: sku/name/qty/unit) · defer ack + 8s abort + green/red embed · ⚠️ token conflict MVP = manual stop MCP ก่อน start · tech-debt (a) dedicated CROO-cmd bot ใน backlog | #platform · #aim |
 | ~03:50 ICT (29/04) | data hotfix · 2 UPDATE | **Bug fix · เปิดหม้อตุ๋น ไม่มีช่องกรอกเศษ** · UI logic ถูก (อ่าน byproduct_item_id) · data ขาด/stale → fix items: SP-024→MT-042 (ริ้วขาว→เศษริ้วขาว), SP-037→MT-015 (สะโพก→เศษเนื้อสะโพก · was MT-038 deprecated) · byproduct_required=true ทั้งคู่ · UI จะแสดงช่องเศษอัตโนมัติ | #platform |
 | ~03:35 ICT (29/04) | data ops · `rpc_delivery_reverse(3746)` | **REVERSE** FS20260428-2 line MT-004 ชายโครงตุ๋น 580g · cw 3746: 🚚 Delivered → ✅ In Stock · sm #3516 `delivery_reverse +1` (customer→B) · MT-004 In Stock 10→11 · sm_net=11 (sync) | #platform |
 | ~03:00 ICT (29/04) | data ops · UPDATE cw_id 3801 lot_date | **METADATA ม้ามตุ๋น** · lot_date=24/02/2026 (production) · date_recorded=24/04/2026 (receive) · ใช้ column ที่มีอยู่แล้ว · ไม่มี schema change · sm trail ไม่กระทบ | — |
