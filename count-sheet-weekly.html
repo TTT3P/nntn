@@ -162,7 +162,11 @@ function render() {
     dayHeaders.push({ label: `วัน ${i+1} (${parseInt(dd)}/${parseInt(m)}) ${DAYS_TH[d.getDay()]}` })
   }
 
-  // Item rows — follow SHEET_ITEMS order (never alphabetical)
+  // Build rows · sort by portion size ([75g]→[100g]→[500g]) then Thai name
+  const sizeRank = name => {
+    const m = name.match(/^\[(\d+)\s*[Gg]\]/)
+    return m ? parseInt(m[1]) : 9999
+  }
   let rows = items.map(item => {
     const lotsMap = item.id ? (bagsByItem[item.id] || {}) : {}
     const lots = Object.entries(lotsMap)
@@ -171,8 +175,15 @@ function render() {
       .sort((a, b) => a.lot.localeCompare(b.lot))  // oldest first (FIFO)
     return { item, lots }
   })
-  // แสดงทุก SKU meat_portioned เสมอ · qty=0 ก็ขึ้นแถวให้น้องนับยืนยัน "0" ได้
-  // (ของหมดจริง vs ลืมนับ — ต่างกัน · empty row = "— ไม่มีสต็อก —")
+  rows.sort((a, b) => {
+    const sa = sizeRank(a.item.name), sb = sizeRank(b.item.name)
+    if (sa !== sb) return sa - sb
+    return a.item.name.localeCompare(b.item.name, 'th')
+  })
+
+  // Fixed row layout: ทุก SKU = maxLots + 1 (ผลิตใหม่) → grid วัน 1-7 ไม่เพี้ยน
+  const maxLots = Math.max(2, ...rows.map(r => r.lots.length))
+  const rowsPerItem = maxLots + 1
 
   const dateWeek = `${fmtDDMMYY(start)} – ${fmtDDMMYY(end)}`
   const todayDD = fmtDDMMYY(new Date().toISOString().split('T')[0])
@@ -208,39 +219,32 @@ function render() {
     <tbody>
   `
 
+  const dayCells = [...Array(7)].map(() =>
+    `<td class="col-rec day-group"></td><td class="col-dsp"></td>`).join('')
+
   rows.forEach(({ item, lots }) => {
-    const subRowCount = (lots.length > 0 ? lots.length : 1) + 1  // +1 for ผลิตใหม่
-    const totalCols = 14  // 7 days × 2
-    lots.forEach((l, idx) => {
-      const isFifo = lots.length > 1 && idx === 0
-      const cls = 'col-lot' + (isFifo ? ' fifo' : '')
-      const fifoTag = isFifo ? ' ★ FIFO!' : (idx === 0 ? ' ★' : '')
+    // Build fixed `rowsPerItem` rows: maxLots lot-rows (pad empty) + 1 ผลิตใหม่
+    for (let r = 0; r < rowsPerItem; r++) {
       html += `<tr>`
-      if (idx === 0) html += `<td rowspan="${subRowCount}" class="col-item">${item.name}</td>`
-      html += `<td class="${cls}">${fmtDDMM(l.lot)} ${l.cnt} ถุง${fifoTag}</td>`
-      for (let d = 0; d < 7; d++) {
-        html += `<td class="col-rec day-group"></td><td class="col-dsp"></td>`
+      if (r === 0) html += `<td rowspan="${rowsPerItem}" class="col-item">${item.name}</td>`
+      if (r < maxLots) {
+        const l = lots[r]
+        if (l) {
+          const isFifo = lots.length > 1 && r === 0
+          const cls = 'col-lot' + (isFifo ? ' fifo' : '')
+          const fifoTag = isFifo ? ' ★ FIFO!' : (r === 0 ? ' ★' : '')
+          html += `<td class="${cls}">${fmtDDMM(l.lot)} ${l.cnt} ถุง${fifoTag}</td>`
+        } else if (lots.length === 0 && r === 0) {
+          html += `<td class="col-lot empty">— ไม่มีสต็อก —</td>`
+        } else {
+          html += `<td class="col-lot empty"></td>`
+        }
+      } else {
+        html += `<td class="col-lot new">ผลิตใหม่</td>`
       }
+      html += dayCells
       html += `</tr>`
-    })
-    if (lots.length === 0) {
-      html += `<tr>
-        <td class="col-item">${item.name}</td>
-        <td class="col-lot empty">— ไม่มีสต็อก —</td>
-        ${[...Array(7)].map(() => `<td class="col-rec day-group"></td><td class="col-dsp"></td>`).join('')}
-      </tr>`
     }
-    // ผลิตใหม่ row
-    html += `<tr>`
-    if (lots.length > 0) {
-      html += `<td class="col-lot new">ผลิตใหม่</td>`
-    } else {
-      html += `<td class="col-lot new">ผลิตใหม่</td>`
-    }
-    for (let d = 0; d < 7; d++) {
-      html += `<td class="col-rec day-group"></td><td class="col-dsp"></td>`
-    }
-    html += `</tr>`
   })
 
   html += `</tbody></table>

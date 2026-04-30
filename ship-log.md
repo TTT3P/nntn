@@ -8,6 +8,17 @@
 
 ---
 
+## 30/04 · count-sheet-weekly layout fix
+
+`count-sheet-weekly.html` · sort + fixed row layout
+- **Sort**: by portion size [75g] → [100g] → [500g] → ชื่อไทย (extract `[<n>G]` prefix)
+- **Fixed row count**: ทุก SKU = maxLots+1 row (lot1/lot2/.../ผลิตใหม่) · pad ว่างถ้า lot ไม่ครบ
+- **Bug fix**: เดิม empty-stock SKU เขียน name td โดยไม่มี rowspan → ผลิตใหม่ row ของ SKU ถัดไปขยับ column → ป้าย "ผลิตใหม่" โผล่ผิด SKU ([75G]พิคานย่า-ออส, [100G]พิคานย่า-ออส, [75G]เนื้อกิวด้ง, [500g]ลูกชิ้นเนื้อ)
+- name td ใช้ `rowspan=rowsPerItem` ทุก SKU · grid วัน 1-7 alignment ตรง
+- T-COUNT-SHEET-WEEKLY-LAYOUT-FIX
+
+---
+
 ## 30/04 · count-sheet-weekly show-all SKU (incl. qty=0)
 
 `count-sheet-weekly.html` · ลบ checkbox 'แสดงเฉพาะที่มีสต๊อก' · แสดงทุก SKU meat_portioned active เสมอ (12 rows)
