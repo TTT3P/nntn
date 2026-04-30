@@ -34,6 +34,7 @@ thead th { background: #1a237e; color: #fff; text-align: center; font-weight: 70
 .col-lot.fifo { background: #ff9800; color: #fff; font-weight: 700; }
 .col-lot.new  { background: #eeeeee; color: #666; font-style: italic; }
 .col-lot.empty { background: #e0e0e0; color: #999; font-style: italic; font-size: 9px; }
+.col-lot.pad   { background: #fff; }
 .col-rec { background: #e8f5e9; width: 42px; }
 .col-dsp { background: #ffebee; width: 42px; }
 .date-row { background: #e3f2fd; font-size: 9px; text-align: center; color: #1976d2; font-weight: 600; }
@@ -181,9 +182,12 @@ function render() {
     return a.item.name.localeCompare(b.item.name, 'th')
   })
 
-  // Fixed row layout: ทุก SKU = maxLots + 1 (ผลิตใหม่) → grid วัน 1-7 ไม่เพี้ยน
-  const maxLots = Math.max(2, ...rows.map(r => r.lots.length))
+  // Global fixed row layout: ทุก SKU = maxLots(global) + 1 → grid วัน 1-7 ไม่เพี้ยน
+  // ห้ามใช้ per-item maxLots · ต้อง global เท่านั้น
+  const globalMaxLots = rows.reduce((m, r) => Math.max(m, r.lots.length), 0)
+  const maxLots = Math.max(2, globalMaxLots)
   const rowsPerItem = maxLots + 1
+  console.log(`globalMaxLots=${globalMaxLots} · rowsPerItem=${rowsPerItem} (uniform across all SKU)`)
 
   const dateWeek = `${fmtDDMMYY(start)} – ${fmtDDMMYY(end)}`
   const todayDD = fmtDDMMYY(new Date().toISOString().split('T')[0])
@@ -237,7 +241,7 @@ function render() {
         } else if (lots.length === 0 && r === 0) {
           html += `<td class="col-lot empty">— ไม่มีสต็อก —</td>`
         } else {
-          html += `<td class="col-lot empty"></td>`
+          html += `<td class="col-lot pad"></td>`
         }
       } else {
         html += `<td class="col-lot new">ผลิตใหม่</td>`

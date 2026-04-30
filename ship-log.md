@@ -8,6 +8,16 @@
 
 ---
 
+## 30/04 · count-sheet-weekly layout v2 (uniform rows + clean pad)
+
+`count-sheet-weekly.html` · 3 fixes
+- **Global maxLots**: ใช้ `rows.reduce((m,r)=>Math.max(m,r.lots.length),0)` · uniform rowsPerItem ทุก SKU (ไม่ใช่ per-item)
+- **Padding row**: class ใหม่ `.col-lot.pad` · background `#fff` · ไม่มี text/italic/border คู่ · empty-stock first row ยังเป็น `.empty` ("— ไม่มีสต็อก —")
+- **Header "รายการ"**: ยืนยัน TH รายการ `rowspan=2` มีอยู่แล้ว
+- T-COUNT-SHEET-WEEKLY-LAYOUT-FIX-V2
+
+---
+
 ## 30/04 · count-sheet-weekly layout fix
 
 `count-sheet-weekly.html` · sort + fixed row layout
