@@ -12,6 +12,7 @@
 
 | Time | Commit | What | Channels |
 |---|---|---|---|
+| ~11:25 ICT (30/04) | UI · hub-delivery history badge | **T-BILL-DISPLAY-REVERSED** · hub-delivery.html tab ประวัติ · เพิ่ม reverse status check (ดู cw.status=In Stock) · บิลที่ all-reversed → 🔄 REVERSED badge + strikethrough + opacity 0.55 · partial → ⚠️ partial N/M badge · normal เหมือนเดิม · เพิ่ม catch_weight(status) ใน select · ไม่กระทบ logic submit/edit · NT20260429-4 ที่ reverse เช้านี้จะโชว์ badge | — |
 | ~11:10 ICT (30/04) | data hotfix · 1 UPDATE | **MT-039 category fix** · `[500g]ลูกชิ้นเนื้อ` item_category=non_meat (stale · ผิด) → meat_portioned · 1 row · /stock meat category=🌭 แปรรูป จะแสดงแล้ว (qty=0 · ❌ หมด) | — |
 | ~10:50 ICT (30/04) | service v4 · 4-way meat | **T-STOCK-CMD-V2 BUG#1 fix** · meat 3-way → 4-way · meat_processed = meat_portioned only (10 SKU มี [xxxG]) · เพิ่ม 🪓 เศษ/เนื้อตัดแต่ง = meat_trim (4 SKU: MT-012/015/021/042) · re-register guild (status 200) · pid reload ready · MT-021 display name flag เป็น tech-debt | #platform |
 | ~10:30 ICT (30/04) | service v3 · /stock subcommands | **T-STOCK-CMD-V2 DONE** · /stock มี 3 subcommand (meat/non-meat/sku) · meat 3-way (raw/cooked/processed · 50 SKU · 2,006 chars · ใต้ 4096 limit) · non-meat overview 9 sub-cats (seasoning 59 · packaging 32 · consumable 29 · spice 26 · vegetable 26 · pkg 16 · noodle 11 · srcp 5 · misc 1) drill ผ่าน category choice · LINE-copyable format · qty=0 = ❌ หมด · CW items แสดง 'X ถุง · Yก.' · stock_counts items แสดง 'X unit' · re-register guild scope · service reload pid 17589 ready | #platform |

@@ -1400,7 +1400,7 @@ async function loadHistory() {
     const SHh = { ...H, Authorization: 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
     // ดึงจาก deliveries + lines โดยตรง
     const res = await fetch(
-      `${SB}/rest/v1/deliveries?select=id,bill_no,branch,date,channel,created_at,delivery_lines(id,catch_weight_id,item_id,qty,weight_g,note)&order=created_at.desc&limit=100`,
+      `${SB}/rest/v1/deliveries?select=id,bill_no,branch,date,channel,created_at,delivery_lines(id,catch_weight_id,item_id,qty,weight_g,note,catch_weight(status))&order=created_at.desc&limit=100`,
       { headers: SHh }
     )
     const deliveries = await res.json()
@@ -1438,17 +1438,27 @@ async function loadHistory() {
       const meatLines = lines.filter(l => l.catch_weight_id)
       const nmLines = lines.filter(l => !l.catch_weight_id && l.item_id)
       const totalKg = meatLines.reduce((s, l) => s + (l.weight_g || 0) / 1000, 0)
+      // Reverse detection: catch_weight.status = '✅ In Stock' = ถุงกลับมาแล้ว (reversed)
+      const reversedMeat = meatLines.filter(l => l.catch_weight && l.catch_weight.status === '✅ In Stock').length
+      const meatCount = meatLines.length
+      let reverseStatus = 'none'
+      if (meatCount > 0) {
+        if (reversedMeat === meatCount) reverseStatus = 'all'
+        else if (reversedMeat > 0) reverseStatus = 'partial'
+      }
       return {
         bill_no: d.bill_no,
         branch: d.branch,
         date: d.date,
-        meat_count: meatLines.length,
+        meat_count: meatCount,
         nm_count: nmLines.length,
         total_kg: totalKg,
         meat_lines: meatLines,
         nm_lines: nmLines,
         delivery_id: d.id,
-        counted_at: d.date
+        counted_at: d.date,
+        reverse_status: reverseStatus,
+        reversed_meat: reversedMeat
       }
     })
 
@@ -1482,11 +1492,20 @@ function renderDeliveryHistory(deliveries) {
       </div>`
     ).join('')
     const hasSub = (d.meat_lines?.length || 0) + (d.nm_lines?.length || 0) > 0
-    return `<div class="hist-group" style="margin-bottom:10px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+    const isAllReversed = d.reverse_status === 'all'
+    const isPartialReversed = d.reverse_status === 'partial'
+    const groupStyle = isAllReversed ? 'opacity:.55;background:#FAFAFA' : ''
+    const billStyle = isAllReversed ? 'text-decoration:line-through;color:#888' : ''
+    const reverseBadge = isAllReversed
+      ? `<span style="background:#FFEBEE;color:#C62828;border:1px solid #EF9A9A;border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:700;margin-left:6px">🔄 REVERSED</span>`
+      : isPartialReversed
+        ? `<span style="background:#FFF3E0;color:#E65100;border:1px solid #FFB74D;border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:700;margin-left:6px">⚠️ partial ${d.reversed_meat}/${d.meat_count}</span>`
+        : ''
+    return `<div class="hist-group" style="margin-bottom:10px;border:1px solid var(--border);border-radius:10px;overflow:hidden;${groupStyle}">
       <div class="hist-header" onclick="if(this.nextElementSibling)this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"
            style="padding:12px 14px;cursor:pointer;background:#fafafa;display:flex;justify-content:space-between;align-items:center;gap:10px">
         <div style="flex:1;min-width:0">
-          <span style="font-weight:700">${d.bill_no||'?'}</span>
+          <span style="font-weight:700;${billStyle}">${d.bill_no||'?'}</span>${reverseBadge}
           <span style="font-size:.8rem;color:var(--muted);margin-left:8px">${d.branch} · ${fmtDate(d.date)}</span>
         </div>
         <div style="font-size:.82rem;color:var(--muted);display:flex;gap:10px;align-items:center;flex-shrink:0">
