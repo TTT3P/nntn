@@ -60,7 +60,6 @@ thead th { background: #1a237e; color: #fff; text-align: center; font-weight: 70
   <a href="./hub.html" style="color:#666;text-decoration:none">← Hub</a>
   <label>วันเริ่ม:</label>
   <input type="date" id="week-start" onchange="load()">
-  <label><input type="checkbox" id="only-in-stock" checked onchange="render()"> แสดงเฉพาะที่มีสต๊อก</label>
   <button class="btn" onclick="window.print()">🖨️ พิมพ์ / Save PDF</button>
   <button class="btn btn-alt" onclick="shiftWeek(-7)">← สัปดาห์ก่อน</button>
   <button class="btn btn-alt" onclick="shiftWeek(7)">สัปดาห์หน้า →</button>
@@ -152,7 +151,6 @@ async function load() {
 function render() {
   const start = document.getElementById('week-start').value
   if (!start) return
-  const onlyInStock = document.getElementById('only-in-stock').checked
   const end = addDays(start, 6)
 
   // Build 7 day headers
@@ -173,9 +171,8 @@ function render() {
       .sort((a, b) => a.lot.localeCompare(b.lot))  // oldest first (FIFO)
     return { item, lots }
   })
-  // onlyInStock filters out items with 0 lots BUT still keeps items listed in whitelist
-  // When unchecked → show all whitelist items (with "— ไม่มีสต็อก —" for empty)
-  if (onlyInStock) rows = rows.filter(r => r.lots.length > 0)
+  // แสดงทุก SKU meat_portioned เสมอ · qty=0 ก็ขึ้นแถวให้น้องนับยืนยัน "0" ได้
+  // (ของหมดจริง vs ลืมนับ — ต่างกัน · empty row = "— ไม่มีสต็อก —")
 
   const dateWeek = `${fmtDDMMYY(start)} – ${fmtDDMMYY(end)}`
   const todayDD = fmtDDMMYY(new Date().toISOString().split('T')[0])

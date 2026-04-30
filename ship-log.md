@@ -8,6 +8,15 @@
 
 ---
 
+## 30/04 · count-sheet-weekly show-all SKU (incl. qty=0)
+
+`count-sheet-weekly.html` · ลบ checkbox 'แสดงเฉพาะที่มีสต๊อก' · แสดงทุก SKU meat_portioned active เสมอ (12 rows)
+- SKU qty=0 → แถวขึ้น · ช่อง Lot = "— ไม่มีสต็อก —" · น้องนับ "0" ยืนยันได้
+- เหตุผล: ของหมดจริง vs ลืมนับ ต่างกัน · ลืมนับ = blind spot ที่ทำ divergence
+- T-COUNT-SHEET-WEEKLY-SHOW-ALL
+
+---
+
 ## 30/04 · count-sheet-weekly dynamic SKU list
 
 `count-sheet-weekly.html` · ลบ hardcoded whitelist 12 SKU · query `items WHERE item_category='meat_portioned' AND is_active=true ORDER BY sku`
