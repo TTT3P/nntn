@@ -465,6 +465,35 @@ const KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const jwt  = localStorage.getItem('nntn_sb_token') || KEY
 const H    = { 'apikey': KEY, 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' }
 
+// ─── submit_log audit trail (Phase A · 30/04) ───────────────────────────────
+// Append-only log of every submit attempt (success/fail/cancel) for audit defense.
+// Best-effort: never blocks the actual submit flow.
+async function _logSubmit(action, status, payload, opts) {
+  try {
+    const tok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+    let actor = null
+    try {
+      const claims = JSON.parse(atob(tok.split('.')[1]))
+      actor = claims?.email || claims?.sub || null
+    } catch (_) {}
+    const body = {
+      actor_id:    actor,
+      device_hint: (navigator.platform || '') + ' · ' + (window.innerWidth + 'x' + window.innerHeight),
+      action,
+      status,
+      payload:     payload || null,
+      error_msg:   opts?.error_msg || null,
+      ref_id:      opts?.ref_id || null,
+      user_agent:  navigator.userAgent?.slice(0, 300) || null
+    }
+    await fetch(`${SB}/rest/v1/submit_log`, {
+      method:  'POST',
+      headers: { ...H, 'Authorization': 'Bearer ' + tok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock', 'Prefer': 'return=minimal' },
+      body:    JSON.stringify(body)
+    })
+  } catch (_) { /* swallow — audit best-effort */ }
+}
+
 // State
 let mtItems       = []   // MT- items from items table
 let spItems       = []   // SP- items from items table
@@ -2341,7 +2370,12 @@ async function submitDelivery() {
   const nmSummary = nmWithdrawals.length > 0
     ? `\nNon-meat: ${nmWithdrawals.length} รายการ`
     : ''
-  if (!confirm(`ยืนยันส่งออก?\n\nบิล: ${bill}\nปลายทาง: ${dest}\nเนื้อ: ${bagCount} ถุง / ${totalKg.toFixed(3)} กก.${nmSummary}`)) return
+  if (!confirm(`ยืนยันส่งออก?\n\nบิล: ${bill}\nปลายทาง: ${dest}\nเนื้อ: ${bagCount} ถุง / ${totalKg.toFixed(3)} กก.${nmSummary}`)) {
+    _logSubmit('hub_delivery.submit', 'cancel',
+      { bill, dest, date, bag_count: bagCount, nm_count: nmWithdrawals.length },
+      { ref_id: bill })
+    return
+  }
 
   // ── NM Stock Guard: re-fetch latest qty_on_hand ก่อน submit (กัน stale cache) ──
   if (nmWithdrawals.length > 0) {
@@ -2382,6 +2416,17 @@ async function submitDelivery() {
   btn.disabled = true
   btn.textContent = '⏳ กำลังบันทึก...'
   _submitting = true
+
+  const _auditPayload = {
+    bill, dest, date,
+    bag_count: bagCount,
+    bag_ids:   allBagIds,
+    nm_count:  nmWithdrawals.length,
+    nm_skus:   nmWithdrawals.map(w => ({ sku: w.sku, qty: w.qty, unit: w.unit })),
+    total_kg:  Number(totalKg.toFixed(3)),
+    draft_id:  window._pendingDraftId || null
+  }
+  _logSubmit('hub_delivery.submit', 'attempt', _auditPayload, { ref_id: bill })
 
   try {
     // Atomic RPC — deliveries + lines + catch_weight + stock_counts all-or-nothing
@@ -2434,6 +2479,8 @@ async function submitDelivery() {
       }
       throw new Error(`❌ บันทึกไม่สำเร็จ\nสาเหตุ: ${errText.slice(0, 300)}`)
     }
+
+    _logSubmit('hub_delivery.submit', 'success', _auditPayload, { ref_id: bill })
 
     // Update local nm stock cache
     nmWithdrawals.forEach(w => {
@@ -2494,6 +2541,8 @@ async function submitDelivery() {
     }
 
   } catch(e) {
+    _logSubmit('hub_delivery.submit', 'fail', _auditPayload,
+      { ref_id: bill, error_msg: String(e?.message || e).slice(0, 1000) })
     alert(`❌ บันทึกไม่สำเร็จ: ${friendlyErr(e.message)}`)
     btn.disabled = false
     btn.textContent = '🚛 บันทึกส่งออก'

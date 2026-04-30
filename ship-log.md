@@ -8,6 +8,16 @@
 
 ---
 
+## 30/04 · submit_log Phase A · audit defense layer
+
+`hub-delivery.html` instrument 4 hooks (attempt/success/fail/cancel) → `stock.submit_log`
+- Best-effort fire-and-forget · ไม่ block submit flow
+- Captures: actor (jwt email) · device · payload (bill/dest/bag_ids/nm) · ref_id=bill_no · error_msg
+- Append-only trigger guard already in place · RLS authenticated insert+read
+- Wave 2 direct main commit · COO formal approve T-SUBMIT-LOG-PHASE-A
+- Phase B (count-sheet/stock-form/dispense/meat-stock) · Phase C (viewer page) · queued
+
+
 ## 2026-04-28
 
 | Time | Commit | What | Channels |
