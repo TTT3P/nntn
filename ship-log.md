@@ -8,6 +8,20 @@
 
 ---
 
+## 30/04 · count-sheet-weekly REDESIGN-A (compact 2-row per SKU)
+
+`count-sheet-weekly.html` · full redesign · ไทน์ approve Option A
+- **1 SKU = 2 rows** เท่านั้น (rowspan=2 บน name td)
+  - Row 1: ชื่อ SKU | Lot summary cell (multi-lot stacked · 1 lot/บรรทัด) | 7 days รับ/เบิก
+  - Row 2: 'ผลิตใหม่' label + ช่องเขียน | 7 days
+- **Lot summary**: `DD/MM · NN ถุง · ★/★ FIFO` · FIFO ส้ม pill · ★ ตั้งไว้ amber
+- **Empty stock**: '— ไม่มีสต็อก —' italic
+- **Print**: A4 landscape margin 8mm · font 10px · 12 SKU × 2 row = 24 data rows + header → ลง 1 หน้าสบาย
+- ลบ pad row · global maxLots · rowsPerItem patterns ที่ไม่ต้องใช้แล้ว
+- T-COUNT-SHEET-WEEKLY-REDESIGN-A
+
+---
+
 ## 30/04 · count-sheet-weekly polish v3 (pad borderless + A4 fit)
 
 `count-sheet-weekly.html` · 2 fixes
