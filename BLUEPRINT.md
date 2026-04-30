@@ -106,7 +106,7 @@ Legend: ✅ stable · ⚠️ has known issue · 🚫 deprecated redirect · 🎨
 |---|---:|---|---|---|---|
 | `hub-delivery.html` | 2477 | 🚚 ใบนำส่ง meat+non-meat | v_stock_unified, catch_weight, delivery_drafts | `submit_delivery` RPC | ✅ B2 closed 28/04 |
 | `count-log.html` | 163 | 📋 Transparency log (count/adjust only) | v_count_adjust_log | — | ✅ |
-| `count-sheet-weekly.html` | 293 | 🖨️ ใบพิมพ์ 7 วัน (12 pre-packaged SKU) | catch_weight, items | — | ✅ |
+| `count-sheet-weekly.html` | 277 | 🖨️ ใบพิมพ์ 7 วัน · query `items.item_category='meat_portioned'` (dynamic · sorted [75g]→[100g]→[500g]→ชื่อไทย) · แสดงทุก SKU active รวม qty=0 · fixed-row layout | catch_weight, items | — | ✅ 30/04 |
 | `platform-health.html` | 262 | 🛡️ SLO / invariants / DLQ | platform_* RPCs | — | ✅ |
 
 ### CookingBook (cross-room — CookingBook owns)
