@@ -8,6 +8,16 @@
 
 ---
 
+## 30/04 · count-sheet-weekly dynamic SKU list
+
+`count-sheet-weekly.html` · ลบ hardcoded whitelist 12 SKU · query `items WHERE item_category='meat_portioned' AND is_active=true ORDER BY sku`
+- ก่อน: hardcoded list · ถ้า SKU ใหม่ flag meat_portioned ต้อง edit code
+- หลัง: 12 rows dynamic (MT-007/008/009/011/014/018/020/030/037/039/040/043) · ทุก [75g/100g/500g] portioned active โผล่อัตโนมัติ
+- Stock impact: น้องนับ weekly ครบ · ลด divergence จาก SKU ตกหล่น
+- T-COUNT-SHEET-WEEKLY-PORTIONED-FIX
+
+---
+
 ## 30/04 · MT-040 category fix (data-only · no commit)
 
 UPDATE `items.item_category` non_meat → meat_portioned · sku MT-040 [75G]เนื้อตุ๋น
