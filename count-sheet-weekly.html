@@ -29,15 +29,16 @@ body { font-family: 'Sarabun', sans-serif; background: #f5f5f5; color: #000; fon
 table { width: 100%; border-collapse: collapse; font-size: 10px; }
 th, td { border: 1px solid #666; padding: 3px 5px; vertical-align: middle; }
 thead th { background: #1a237e; color: #fff; text-align: center; font-weight: 700; font-size: 10px; }
-.col-item { width: 130px; text-align: left; background: #fafafa; font-weight: 600; font-size: 11px; }
-.col-lot  { width: 130px; text-align: left; background: #fff9c4; font-size: 10px; line-height: 1.5; padding: 4px 6px; }
-.col-lot .lot-line { display: block; padding: 1px 0; }
-.col-lot .fifo { background: #ff9800; color: #fff; font-weight: 700; padding: 1px 4px; border-radius: 3px; }
+.col-item { width: 120px; text-align: left; background: #fafafa; font-weight: 600; font-size: 10px; }
+.col-lot  { width: 150px; text-align: left; background: #fff9c4; font-size: 9px; line-height: 1.2; padding: 2px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.col-lot .fifo { background: #ff9800; color: #fff; font-weight: 700; padding: 0 3px; border-radius: 2px; }
 .col-lot .star { color: #b8860b; font-weight: 700; }
+.col-lot .sep  { color: #999; margin: 0 2px; }
 .col-lot.new  { background: #eeeeee; color: #666; font-style: italic; text-align: center; }
 .col-lot.empty { color: #999; font-style: italic; text-align: center; }
-.col-rec { background: #e8f5e9; width: 46px; height: 28px; }
-.col-dsp { background: #ffebee; width: 46px; height: 28px; }
+tbody tr { height: 22px; }
+.col-rec { background: #e8f5e9; width: 42px; }
+.col-dsp { background: #ffebee; width: 42px; }
 .date-row { background: #e3f2fd; font-size: 9px; text-align: center; color: #1976d2; font-weight: 600; }
 .day-group { border-left: 2px solid #333; }
 .legend { margin-top: 8px; font-size: 9px; color: #333; line-height: 1.4; }
@@ -45,16 +46,25 @@ thead th { background: #1a237e; color: #fff; text-align: center; font-weight: 70
 
 @media print {
   @page { size: A4 landscape; margin: 8mm; }
-  body { background: #fff; padding: 0; font-size: 10px; }
+  html, body { background: #fff; padding: 0; margin: 0; font-size: 9px; }
   .screen-only { max-width: none; }
   .controls { display: none; }
   .sheet { box-shadow: none; border-radius: 0; padding: 0; }
-  table { page-break-inside: avoid; font-size: 10px; }
-  thead th { font-size: 10px; padding: 3px 4px; }
-  td, th { line-height: 1.3; }
-  .col-item { width: 115px; font-size: 10px; }
-  .col-lot { width: 115px; font-size: 9px; line-height: 1.4; }
-  .col-rec, .col-dsp { width: 38px; height: 26px; }
+  .sheet-header { margin-bottom: 4px; padding-bottom: 3px; }
+  .sheet-header h1 { font-size: 13px; }
+  .sheet-header .sub { font-size: 8px; }
+  .sheet-header .meta { font-size: 9px; }
+  .sheet-header .meta .week { font-size: 11px; }
+  .sheet-header .meta .signer { margin-top: 2px; }
+  table { page-break-inside: avoid; font-size: 9px; }
+  thead th { font-size: 9px; padding: 2px 3px; }
+  td, th { padding: 1px 3px; line-height: 1.15; }
+  .col-item { width: 105px; font-size: 9px; }
+  .col-lot { width: 130px; font-size: 8px; }
+  .col-rec, .col-dsp { width: 36px; }
+  tbody tr { height: 20px; }
+  .date-row { font-size: 7px; }
+  .legend { font-size: 7px; margin-top: 3px; line-height: 1.2; }
   tr { page-break-inside: avoid; }
   thead { display: table-header-group; }
 }
@@ -235,14 +245,20 @@ function render() {
     if (lots.length === 0) {
       lotCellHtml = `<td class="col-lot empty">— ไม่มีสต็อก —</td>`
     } else {
-      const lines = lots.map((l, idx) => {
-        const isFifo = lots.length > 1 && idx === 0
-        const tag = isFifo
-          ? `<span class="fifo">★ FIFO</span>`
-          : (idx === 0 ? `<span class="star">★</span>` : '')
-        return `<span class="lot-line">${fmtDDMM(l.lot)} · ${l.cnt} ถุง ${tag}</span>`
-      }).join('')
-      lotCellHtml = `<td class="col-lot">${lines}</td>`
+      // Single-line: 'FIFO ★ DD/MM·N | DD/MM·N | ...' · ellipsis ถ้าเกิน
+      const parts = lots.map((l, idx) => {
+        const compact = `${fmtDDMM(l.lot)}·${l.cnt}`
+        if (idx === 0) {
+          const isFifo = lots.length > 1
+          return isFifo
+            ? `<span class="fifo">★FIFO ${compact}</span>`
+            : `<span class="star">★</span>${compact}`
+        }
+        return compact
+      })
+      const inner = parts.map((p, i) => i === 0 ? p : `<span class="sep">|</span>${p}`).join('')
+      const tooltip = lots.map(l => `${fmtDDMM(l.lot)}·${l.cnt}ถุง`).join(' | ')
+      lotCellHtml = `<td class="col-lot" title="${tooltip}">${inner}</td>`
     }
 
     // Row 1: SKU name (rowspan=2) + lot summary + 7 days
