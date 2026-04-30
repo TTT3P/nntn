@@ -8,6 +8,15 @@
 
 ---
 
+## 30/04 · count-sheet-weekly polish v3 (pad borderless + A4 fit)
+
+`count-sheet-weekly.html` · 2 fixes
+- **Pad row borderless**: `.col-lot.pad` ใส่ `border-top-color/bottom-color: transparent` · pad rows ในคอลัมน์ Lot ดูต่อเนื่องเป็นช่องว่างเดียว · เส้น separator ระหว่าง SKU ยังคงอยู่
+- **A4 landscape 1 page**: `@media print` บีบ font-size 8px · ลด padding td 1px 3px · col widths compact · `@page A4 landscape margin: 6mm` · 12 SKU × 4 row พิมพ์ลง 1 ใบ
+- T-COUNT-SHEET-WEEKLY-POLISH-V3
+
+---
+
 ## 30/04 · count-sheet-weekly layout v2 (uniform rows + clean pad)
 
 `count-sheet-weekly.html` · 3 fixes

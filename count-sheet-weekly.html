@@ -34,7 +34,7 @@ thead th { background: #1a237e; color: #fff; text-align: center; font-weight: 70
 .col-lot.fifo { background: #ff9800; color: #fff; font-weight: 700; }
 .col-lot.new  { background: #eeeeee; color: #666; font-style: italic; }
 .col-lot.empty { background: #e0e0e0; color: #999; font-style: italic; font-size: 9px; }
-.col-lot.pad   { background: #fff; }
+.col-lot.pad   { background: #fff; border-top-color: transparent; border-bottom-color: transparent; }
 .col-rec { background: #e8f5e9; width: 42px; }
 .col-dsp { background: #ffebee; width: 42px; }
 .date-row { background: #e3f2fd; font-size: 9px; text-align: center; color: #1976d2; font-weight: 600; }
@@ -43,12 +43,24 @@ thead th { background: #1a237e; color: #fff; text-align: center; font-weight: 70
 .legend b { color: #000; }
 
 @media print {
-  body { background: #fff; padding: 0; font-size: 10px; }
+  @page { size: A4 landscape; margin: 6mm; }
+  body { background: #fff; padding: 0; font-size: 8px; }
   .screen-only { max-width: none; }
   .controls { display: none; }
   .sheet { box-shadow: none; border-radius: 0; padding: 0; }
-  table { page-break-inside: auto; }
-  tr { page-break-inside: avoid; page-break-after: auto; }
+  .sheet-header h1 { font-size: 14px; }
+  .sheet-header .sub { font-size: 8px; }
+  .sheet-header .meta { font-size: 9px; }
+  .sheet-header .meta .week { font-size: 11px; }
+  table { page-break-inside: avoid; font-size: 8px; }
+  thead th { font-size: 8px; padding: 2px 3px; }
+  td, th { padding: 1px 3px; line-height: 1.15; }
+  .col-item { width: 90px; font-size: 8px; }
+  .col-lot { width: 80px; font-size: 8px; }
+  .col-rec, .col-dsp { width: 32px; }
+  .date-row { font-size: 7px; }
+  .legend { font-size: 7px; margin-top: 4px; }
+  tr { page-break-inside: avoid; }
   thead { display: table-header-group; }
 }
 .loading { text-align: center; padding: 40px; color: #666; }
