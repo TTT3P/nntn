@@ -8,6 +8,15 @@
 
 ---
 
+## 30/04 · MT-040 category fix (data-only · no commit)
+
+UPDATE `items.item_category` non_meat → meat_portioned · sku MT-040 [75G]เนื้อตุ๋น
+- Scan portion-prefix `[xxxG]` SKUs · เจอ stale 1 row (MT-040)
+- หลัง fix: 12/12 portion SKUs = meat_portioned ครบ
+- /stock meat category=processed จะเห็นครบ · T-CATEGORY-STALE-FIX
+
+---
+
 ## 30/04 · submit_log Phase A · audit defense layer
 
 `hub-delivery.html` instrument 4 hooks (attempt/success/fail/cancel) → `stock.submit_log`
