@@ -8,6 +8,17 @@
 
 ---
 
+## 30/04 · count-sheet-weekly fill A4 (rows + fonts scaled up)
+
+`count-sheet-weekly.html` · ขยายให้เต็มพื้นที่ A4 landscape · ยังลง 1 หน้า
+- **Screen**: tbody tr 36px · font 13px (col-item/lot.new) · 12px (lot summary) · col widths 150/200/56/56
+- **Print**: tbody tr 25px · font 11px base · col widths 130/175/50/50 · margin 6mm
+- **Math** (A4 landscape margin 6mm = ~749px usable): sheet-header 50 + thead 3 rows × 22 = 66 + 24 rows × 25 = 600 + legend 14 → ~730px ✅
+- Lot summary ยัง single-line nowrap ellipsis · ไม่ขยาย row height
+- T-COUNT-SHEET-WEEKLY-FILL-A4
+
+---
+
 ## 30/04 · count-sheet-weekly REDESIGN-A (compact 2-row per SKU)
 
 `count-sheet-weekly.html` · full redesign · ไทน์ approve Option A
