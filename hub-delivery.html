@@ -1400,7 +1400,7 @@ async function loadHistory() {
     const SHh = { ...H, Authorization: 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
     // ดึงจาก deliveries + lines โดยตรง
     const res = await fetch(
-      `${SB}/rest/v1/deliveries?select=id,bill_no,branch,date,channel,created_at,delivery_lines(id,catch_weight_id,item_id,qty,weight_g,note,catch_weight(status))&order=created_at.desc&limit=100`,
+      `${SB}/rest/v1/deliveries?select=id,bill_no,branch,date,channel,created_at,delivery_lines(id,catch_weight_id,item_id,qty,weight_g,note)&order=created_at.desc&limit=100`,
       { headers: SHh }
     )
     const deliveries = await res.json()
@@ -1424,6 +1424,27 @@ async function loadHistory() {
       })
     })
 
+    // Fetch catch_weight status for all referenced cw_ids (reverse detection)
+    const cwIds = Array.from(new Set(
+      deliveries.flatMap(d => (d.delivery_lines||[]).map(l => l.catch_weight_id).filter(Boolean))
+    ))
+    const cwStatus = {}
+    if (cwIds.length) {
+      // chunk to avoid URL length limit (~2000 chars)
+      const chunks = []
+      for (let i = 0; i < cwIds.length; i += 200) chunks.push(cwIds.slice(i, i+200))
+      for (const chunk of chunks) {
+        const cwRes = await fetch(
+          `${SB}/rest/v1/catch_weight?id=in.(${chunk.join(',')})&select=id,status`,
+          { headers: SHh }
+        )
+        if (cwRes.ok) {
+          const rows = await cwRes.json()
+          rows.forEach(r => { cwStatus[r.id] = r.status })
+        }
+      }
+    }
+
     let filtered = deliveries
     if (searchVal) {
       filtered = deliveries.filter(d =>
@@ -1439,7 +1460,7 @@ async function loadHistory() {
       const nmLines = lines.filter(l => !l.catch_weight_id && l.item_id)
       const totalKg = meatLines.reduce((s, l) => s + (l.weight_g || 0) / 1000, 0)
       // Reverse detection: catch_weight.status = '✅ In Stock' = ถุงกลับมาแล้ว (reversed)
-      const reversedMeat = meatLines.filter(l => l.catch_weight && l.catch_weight.status === '✅ In Stock').length
+      const reversedMeat = meatLines.filter(l => cwStatus[l.catch_weight_id] === '✅ In Stock').length
       const meatCount = meatLines.length
       let reverseStatus = 'none'
       if (meatCount > 0) {
