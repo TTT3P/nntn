@@ -8,6 +8,16 @@
 
 ---
 
+## 30/04 · stock-history default range = last 30 วัน
+
+`stock-history.html` · เปลี่ยน default date range
+- ก่อน: from + to = today → ไม่เจอประวัติเพราะวันนี้ยังไม่มี movement
+- หลัง: from = today−30 · to = today · (?from=/?to= URL params override)
+- เพิ่ม helper `daysAgoBKK(n)` (BKK timezone)
+- T-STOCK-HISTORY-DEFAULT-RANGE
+
+---
+
 ## 30/04 · count-sheet-weekly fill A4 (rows + fonts scaled up)
 
 `count-sheet-weekly.html` · ขยายให้เต็มพื้นที่ A4 landscape · ยังลง 1 หน้า

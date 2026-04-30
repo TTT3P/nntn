@@ -84,14 +84,21 @@ const params = new URLSearchParams(location.search);
 function qsSet(k, v) { v ? document.getElementById(k).value = v : null; }
 qsSet('f-sku', params.get('sku'));
 qsSet('f-event', params.get('event'));
-qsSet('f-from', params.get('date') || todayBKK());
-qsSet('f-to',   params.get('date') || todayBKK());
+qsSet('f-from', params.get('from') || params.get('date') || daysAgoBKK(30));
+qsSet('f-to',   params.get('to')   || params.get('date') || todayBKK());
 qsSet('f-actor', params.get('actor'));
 
 function todayBKK() {
   const d = new Date();
   const off = d.getTimezoneOffset() + 7*60;
   const bk = new Date(d.getTime() + off*60000);
+  return bk.toISOString().slice(0,10);
+}
+function daysAgoBKK(n) {
+  const d = new Date();
+  const off = d.getTimezoneOffset() + 7*60;
+  const bk = new Date(d.getTime() + off*60000);
+  bk.setDate(bk.getDate() - n);
   return bk.toISOString().slice(0,10);
 }
 
