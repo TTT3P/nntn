@@ -8,6 +8,17 @@
 
 ---
 
+## 01/05 · resource-model v1 · Open Q1 freeze criterion DECIDED
+
+`NNTN-Vault/System/architecture/resource-model-v1.md` §Open Questions Q1 updated
+- Freeze criterion = **E user-signal driven** (ไม่ใช่ dev count)
+  - น้องหน้างานไม่เจอบัคติดต่อกัน ≥ 14 วัน
+  - cross-check `#aim` + `#alerts` ไม่มี alert ใหม่ช่วงเดียวกัน
+- Reason: real-world > schema-change count · 14d ครอบ 2 weekly cycle · catch edge case · short enough เริ่ม Phase 0 ได้
+- Trigger: criterion ผ่าน → freeze proposal → Phase 0 OpenAPI generation start
+
+---
+
 ## 01/05 · resource-model v1 draft (control-plane spec · 9 entities)
 
 `NNTN-Vault/System/architecture/resource-model-v1.md` (vault · ไม่ใช่ repo file)
