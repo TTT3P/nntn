@@ -8,6 +8,18 @@
 
 ---
 
+## 01/05 · resource-model v1 · Open Q3 repack-as-entity DECIDED
+
+`NNTN-Vault/System/architecture/resource-model-v1.md` §Open Q3 + §5 updated
+- Repack-as-entity = **A first-class table** · สร้าง `public.repack_sessions`
+- Schema: id uuid · created_at · created_by · source_bag_id · reason · status · note
+- FK: `cw.repack_session_id` → `repack_sessions(id)` ON DELETE RESTRICT
+- Migration: CREATE → backfill (synthesize 1 row per distinct cw value) → ADD FK → update `rpc_repack_execute`
+- ETA 1 วัน · trigger หลัง Day 7 review (spec freeze) หรือก่อนถ้าไทน์ urgent
+- Reason: pattern consistency (cook/count มี table แล้ว) · ATUM audit ต้อง session entity · 50 < 1000 row tech-debt scaling
+
+---
+
 ## 01/05 · resource-model v1 · Open Q2 multi-tenancy DECIDED
 
 `NNTN-Vault/System/architecture/resource-model-v1.md` §Open Questions Q2 updated
