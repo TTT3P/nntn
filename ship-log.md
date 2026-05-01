@@ -8,6 +8,18 @@
 
 ---
 
+## 01/05 · resource-model v1 draft (control-plane spec · 9 entities)
+
+`NNTN-Vault/System/architecture/resource-model-v1.md` (vault · ไม่ใช่ repo file)
+- Day 1-2 Track A ของ Hybrid plan (decision D · 30/04)
+- 9 entities: Item · Bag · Movement · Count · Session · Delivery · PurchaseOrder · Recipe · Actor + cross-cutting (ActivityEvent · AIM Outbox)
+- pull จริงจาก Supabase project `emjqulzikpxorvpaaiww` schema state · 11 RPCs cataloged · all triggers/policies mapped
+- ATUM-style activity log surface matrix · WooCommerce REST verb mapping · markdown-only (ไม่ generate code)
+- 6 architectural open questions escalated: freeze criterion · multi-tenancy · repack as entity · actor normalization · recipe ownership · activity_events TTL
+- Update protocol: enforce ผ่าน /pre-flight (ทุก DDL/RPC change ต้อง update spec same commit)
+
+---
+
 ## 30/04 · stock-history default range = last 30 วัน
 
 `stock-history.html` · เปลี่ยน default date range
