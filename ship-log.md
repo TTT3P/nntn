@@ -8,6 +8,28 @@
 
 ---
 
+## 01/05 · resource-model v1 · Open Q6 activity-events-TTL DECIDED · ALL 6 CLOSED ✅
+
+`NNTN-Vault/System/architecture/resource-model-v1.md` §Open Q6 + §ActivityEvent + footer updated
+- Activity log = **D partition by month · no TTL · ไม่ลบ**
+- `PARTITION BY RANGE (created_at)` monthly · pg_cron auto-create partition เดือนถัดไป
+- Index per partition: `(resource_type, resource_id, created_at DESC)` + `(actor_id, created_at DESC)`
+- Backfill 3,658 rows → partitions
+- ETA 1 วัน · trigger หลัง Day 7 spec freeze
+- Sub-question Q6.1: apply same pattern กับ `stock_movements` ด้วยไหม (open · pending)
+
+**ALL 6 OPEN QUESTIONS CLOSED**: Q1 freeze=user-signal · Q2 multi-tenancy=defer · Q3 repack=first-class · Q4 actor=rename(forward-only) · Q5 BOM=cookingbook canonical · Q6 activity=partition no-TTL
+
+**Day 7 review (08/05)**: spec freeze go/no-go · criterion = น้องไม่เจอบัค ≥ 14 วัน + #aim/#alerts clean
+
+**Migration backlog Day 8+** (3.5 วัน total · scheduling pending COO):
+- Q3 repack_sessions table (1d)
+- Q4 actor rename forward-only (0.5d · ไทน์ confirmed)
+- Q5 DROP public.bom_items (1d · need CookingBook approve)
+- Q6 partition activity_events monthly (1d)
+
+---
+
 ## 01/05 · resource-model v1 · Open Q5 recipe-ownership DECIDED + Q4 confirm
 
 `NNTN-Vault/System/architecture/resource-model-v1.md` §Open Q5 + §8 + §3 updated
