@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · sales-ops-dashboard prototype (Phase 5)</title>
+<link rel="stylesheet" href="tokens.css?v=20260422b" />
+<script src="app-meta.js?v=20260501a" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  body { background: var(--color-bg-app); color: var(--color-ink-800); font-family: var(--font-sans); margin: 0;}
+  .page { max-width: 1440px; margin: 0 auto; padding: 32px 24px 100px;}
+
+  .top { display:flex; gap:14px; align-items:center; font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-ink-600); margin-bottom: var(--space-5);}
+  .top .dot { width:10px; height:10px; border-radius:50%; background: var(--color-danger-500); box-shadow: 0 0 0 4px var(--color-danger-50);}
+  .top .crumbs { margin-left:auto; color: var(--color-ink-500);}
+  .back-link { color: var(--color-primary-700); text-decoration: none; border-bottom: 1px dotted currentColor;}
+
+  h1.page-h { font-family: var(--font-display); font-weight: 500; font-size: 44px; line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 var(--space-3); color: var(--color-ink-900); max-width: 900px;}
+  h1 .hi { color: var(--color-danger-600);}
+  .page-lede { font-size: 16px; line-height: 1.6; color: var(--color-ink-700); max-width: 820px; margin: 0 0 var(--space-6);}
+  .page-lede b { color: var(--color-danger-600);}
+
+  /* period chips */
+  .period-row { display: flex; gap: 6px; margin-bottom: 16px;}
+  .period-row .chip { font-family: var(--font-mono); font-size: 11px; padding: 7px 14px; border-radius: 16px; border: 1px solid var(--color-ink-300); background: #fff; cursor: pointer; letter-spacing: .3px; color: var(--color-ink-700);}
+  .period-row .chip.is-on { background: var(--color-ink-900); color: #fff; border-color: var(--color-ink-900); font-weight: 700;}
+
+  /* KPI strip */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;}
+  .kpi { padding: 18px 20px; border-radius: var(--radius-md); border: 1px solid var(--color-ink-200); background: #fff;}
+  .kpi--gold { background: var(--grad-stat-orange);}
+  .kpi--green { background: var(--grad-stat-green);}
+  .kpi--red { background: var(--grad-stat-red);}
+  .kpi__l { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-ink-700); margin-bottom: 6px; font-weight: 600;}
+  .kpi__v { font-family: var(--font-display); font-weight: 500; font-size: 36px; line-height: 1; color: var(--color-ink-900); letter-spacing: -0.015em;}
+  .kpi__v small { font-family: var(--font-mono); font-size: 14px; color: var(--color-ink-700); margin-left: 4px; font-weight: 500;}
+  .kpi__d { font-family: var(--font-mono); font-size: 11px; margin-top: 8px; display: flex; align-items: center; gap: 6px; color: var(--color-ink-700);}
+  .kpi__arrow { font-family: var(--font-mono); font-weight: 700; padding: 1px 6px; border-radius: 3px;}
+  .kpi__arrow.up { background: var(--color-success-100); color: var(--color-success-700);}
+  .kpi__arrow.dn { background: var(--color-danger-50); color: var(--color-danger-700);}
+
+  /* Grid */
+  .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px;}
+  .grid--3 { grid-template-columns: 1fr 1fr 1fr;}
+  .panel { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 18px 20px;}
+  .panel__h { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--color-ink-200);}
+  .panel__h h3 { font-family: var(--font-display); font-weight: 500; font-size: 18px; margin: 0; color: var(--color-ink-900);}
+  .panel__h small { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-ink-500);}
+
+  .chart-box { height: 280px; position: relative;}
+  .chart-box--tall { height: 320px;}
+
+  /* heatmap */
+  .heatmap { display: grid; grid-template-columns: 80px repeat(3, 1fr); gap: 4px; font-size: 11px;}
+  .heatmap__hdr { font-family: var(--font-mono); font-size: 10px; padding: 6px; color: var(--color-ink-600); text-align: center; letter-spacing: .3px;}
+  .heatmap__row-l { font-size: 12px; padding: 8px 6px; color: var(--color-ink-800); display: flex; align-items: center;}
+  .heatmap__cell { padding: 8px 6px; border-radius: 4px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: center; font-weight: 600;}
+  .heatmap__cell--l1 { background: var(--color-ink-50); color: var(--color-ink-500);}
+  .heatmap__cell--l2 { background: var(--color-success-50); color: var(--color-success-700);}
+  .heatmap__cell--l3 { background: var(--color-success-100); color: var(--color-success-700);}
+  .heatmap__cell--l4 { background: var(--color-success-500); color: #fff;}
+  .heatmap__cell--l5 { background: var(--color-success-700); color: #fff; font-weight: 700;}
+  .heatmap__cell.warn { background: var(--color-danger-50); color: var(--color-danger-700);}
+
+  /* low stock list */
+  .low-stock { display: grid; gap: 8px;}
+  .low-stock-row { display: grid; grid-template-columns: auto 1fr auto auto; gap: 10px; padding: 10px 12px; background: var(--color-ink-50); border-radius: var(--radius-sm); align-items: center; font-size: 13px;}
+  .low-stock-row.urgent { background: var(--color-danger-50);}
+  .low-stock-row code { font-family: var(--font-mono); font-size: 10px; color: var(--color-primary-800); background: var(--color-primary-50); padding: 2px 7px; border-radius: 3px; font-weight: 700;}
+  .low-stock-row.urgent code { background: var(--color-danger-100); color: var(--color-danger-700);}
+  .low-stock-row .ratio { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 700; color: var(--color-ink-900);}
+  .low-stock-row.urgent .ratio { color: var(--color-danger-700);}
+  .low-stock-row .ratio small { font-weight: 400; color: var(--color-ink-500); margin-left: 2px;}
+
+  /* sales velocity table */
+  .vel-table { width: 100%; border-collapse: collapse; font-size: 12px;}
+  .vel-table th { padding: 8px 10px; text-align: left; font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-ink-500); border-bottom: 1px solid var(--color-ink-200);}
+  .vel-table td { padding: 8px 10px; border-bottom: 1px dashed var(--color-ink-100); vertical-align: middle;}
+  .vel-table .col-num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; font-weight: 600;}
+  .vel-table .vel-bar { height: 4px; background: var(--color-ink-100); border-radius: 2px; position: relative; overflow: hidden; margin-top: 3px;}
+  .vel-table .vel-bar::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; background: var(--color-primary-500); width: var(--w, 0%);}
+</style>
+</head>
+<body>
+
+<!-- floating page meta -->
+<div style="position: fixed; top: 14px; right: 14px; z-index: 1500; max-width: 280px;">
+  <page-meta
+    name="sales-ops-dashboard"
+    version="v0.3"
+    room="Sales Ops"
+    last-sync="2026-04-22T19:18"
+    edited-by="ดิว"
+    edited-at="2026-04-22T16:30"
+    schema="v_sales_daily, v_fc_trend, low_stock_v"
+  ></page-meta>
+  <button type="button" id="globalLogToggle" style="margin-top: 8px; width: 100%; padding: 8px 12px; background: var(--color-ink-900); color:#fff; border: none; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; cursor: pointer; font-weight: 700; text-transform: uppercase;">▤ Activity log</button>
+</div>
+<div id="globalLogDrawer" style="display:none; position: fixed; top: 14px; right: 310px; z-index: 1500; width: 540px; max-height: 80vh; overflow: auto; box-shadow: 0 10px 40px rgba(0,0,0,.18); border-radius: 8px;">
+  <activity-log
+    title="Activity log · sales-ops dashboard"
+    max="20"
+    events='[
+      {"ts":"2026-04-22T19:18","type":"sync","user":"cron","note":"daily sales aggregator · 4 platforms · 5,847 orders"},
+      {"ts":"2026-04-22T16:30","type":"edit","user":"ดิว","note":"adjusted FC% target line · 30% → 28% (Q2 push)"},
+      {"ts":"2026-04-22T11:00","type":"sync","user":"cron","note":"low_stock recompute · 8 SKUs flagged below par"},
+      {"ts":"2026-04-21T08:00","type":"create","user":"ดิว","note":"added Wongnai performance row to heatmap"}
+    ]'
+  ></activity-log>
+</div>
+
+<div class="page">
+  <div class="top">
+    <span class="dot"></span>
+    <span>NNTN · spike · phase 5</span>
+    <span class="crumbs">
+      <a href="index.html" class="back-link">← hub</a>
+      &nbsp;·&nbsp;
+      <a href="admin-bom-proto.html" class="back-link">BOM</a>
+    </span>
+  </div>
+
+  <h1 class="page-h"><span class="hi">sales</span> ops · revenue · FC% · platform health</h1>
+  <p class="page-lede">
+    Sales Ops home · revenue split <b>NT main vs FoodStory vs Grab vs Wongnai</b> · FC% trend เทียบ target 30% · menu performance heatmap · low-stock widget (ATUM dashboard pattern) · sales velocity per SKU · sync ทุก 1 ชม.
+  </p>
+
+  <!-- period chips -->
+  <div class="period-row">
+    <button class="chip">today</button>
+    <button class="chip is-on">this week</button>
+    <button class="chip">this month</button>
+    <button class="chip">Q2 2026</button>
+    <button class="chip">YTD</button>
+    <span style="flex:1"></span>
+    <button class="chip">▾ compare period</button>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="kpi-row">
+    <div class="kpi kpi--gold">
+      <div class="kpi__l">revenue · week 17</div>
+      <div class="kpi__v">487,200<small>฿</small></div>
+      <div class="kpi__d"><span class="kpi__arrow up">↑ 8.2%</span> vs week 16 · 5,847 orders</div>
+    </div>
+    <div class="kpi kpi--green">
+      <div class="kpi__l">average FC%</div>
+      <div class="kpi__v">28.6<small>%</small></div>
+      <div class="kpi__d"><span class="kpi__arrow up">↓ 1.4pp</span> vs target 30% · ดี</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__l">avg ticket</div>
+      <div class="kpi__v">83.30<small>฿</small></div>
+      <div class="kpi__d"><span class="kpi__arrow up">↑ 2.1฿</span> vs week 16</div>
+    </div>
+    <div class="kpi kpi--red">
+      <div class="kpi__l">below min stock</div>
+      <div class="kpi__v">8<small>skus</small></div>
+      <div class="kpi__d"><span class="kpi__arrow dn">↑ 3</span> from yesterday · 2 urgent</div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="grid">
+    <!-- revenue chart -->
+    <div class="panel">
+      <div class="panel__h">
+        <h3>revenue · NT vs FS vs Grab vs Wongnai</h3>
+        <small>weekly · 8 weeks · stacked</small>
+      </div>
+      <div class="chart-box"><canvas id="revChart"></canvas></div>
+    </div>
+    <!-- FC% trend -->
+    <div class="panel">
+      <div class="panel__h">
+        <h3>FC% trend</h3>
+        <small>target 30% · 8 weeks</small>
+      </div>
+      <div class="chart-box"><canvas id="fcChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 3-col row -->
+  <div class="grid grid--3">
+    <!-- low stock widget -->
+    <div class="panel">
+      <div class="panel__h">
+        <h3>low stock · below par</h3>
+        <small>8 SKUs · ATUM widget</small>
+      </div>
+      <div class="low-stock">
+        <div class="low-stock-row urgent">
+          <code>VG-001</code>
+          <div>ผักชีไทย</div>
+          <span class="ratio">2.4<small>/3 กก.</small></span>
+          <span style="font-family: var(--font-mono); font-size: 10px; color: var(--color-danger-700); font-weight: 700;">URGENT</span>
+        </div>
+        <div class="low-stock-row urgent">
+          <code>DR-008</code>
+          <div>เส้นหมี่อบแห้ง</div>
+          <span class="ratio">8<small>/10</small></span>
+          <span style="font-family: var(--font-mono); font-size: 10px; color: var(--color-danger-700); font-weight: 700;">URGENT</span>
+        </div>
+        <div class="low-stock-row">
+          <code>MT-020</code>
+          <div>ซี่โครงหมูตัด</div>
+          <span class="ratio">6.0<small>/6 กก.</small></span>
+          <span style="font-family: var(--font-mono); font-size: 10px; color: var(--color-warning-700);">at par</span>
+        </div>
+        <div class="low-stock-row">
+          <code>SC-007</code>
+          <div>น้ำพริกเผาเชฟ</div>
+          <span class="ratio">5<small>/6 ขวด</small></span>
+          <span style="font-family: var(--font-mono); font-size: 10px; color: var(--color-warning-700);">soon</span>
+        </div>
+        <div class="low-stock-row">
+          <code>PKG-013</code>
+          <div>ถุงพลาสติก 6×9</div>
+          <span class="ratio">12<small>/10</small></span>
+          <span style="font-family: var(--font-mono); font-size: 10px; color: var(--color-success-700);">just above</span>
+        </div>
+        <div class="low-stock-row">
+          <code>VG-005</code>
+          <div>เส้นเล็ก</div>
+          <span class="ratio">14<small>/12 กก.</small></span>
+          <span style="font-family: var(--font-mono); font-size: 10px; color: var(--color-success-700);">just above</span>
+        </div>
+      </div>
+      <button style="margin-top: 14px; padding: 10px 16px; background: var(--color-ink-900); color:#fff; border: none; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; cursor: pointer; font-weight: 700; text-transform: uppercase; width:100%;">→ สั่ง PO ทั้งหมด</button>
+    </div>
+
+    <!-- platform heatmap -->
+    <div class="panel">
+      <div class="panel__h">
+        <h3>menu performance · 7 days</h3>
+        <small>orders / day / platform</small>
+      </div>
+      <div class="heatmap">
+        <span></span>
+        <span class="heatmap__hdr">Grab</span>
+        <span class="heatmap__hdr">Wongnai</span>
+        <span class="heatmap__hdr">FoodStory</span>
+
+        <span class="heatmap__row-l">ก๋วยเตี๋ยวเรือ</span>
+        <span class="heatmap__cell heatmap__cell--l5">187</span>
+        <span class="heatmap__cell heatmap__cell--l4">94</span>
+        <span class="heatmap__cell heatmap__cell--l5">142</span>
+
+        <span class="heatmap__row-l">ราดหน้าเส้นใหญ่</span>
+        <span class="heatmap__cell heatmap__cell--l4">92</span>
+        <span class="heatmap__cell heatmap__cell--l3">48</span>
+        <span class="heatmap__cell heatmap__cell--l4">76</span>
+
+        <span class="heatmap__row-l">ผัดซีอิ๊ว</span>
+        <span class="heatmap__cell heatmap__cell--l3">54</span>
+        <span class="heatmap__cell heatmap__cell--l2">22</span>
+        <span class="heatmap__cell heatmap__cell--l3">41</span>
+
+        <span class="heatmap__row-l">ก๋วยเตี๋ยวต้มยำ</span>
+        <span class="heatmap__cell heatmap__cell--l4">71</span>
+        <span class="heatmap__cell heatmap__cell--l3">38</span>
+        <span class="heatmap__cell heatmap__cell--l4">68</span>
+
+        <span class="heatmap__row-l">ผัดไทย NT</span>
+        <span class="heatmap__cell heatmap__cell--l2">19</span>
+        <span class="heatmap__cell heatmap__cell--l1 warn">8</span>
+        <span class="heatmap__cell heatmap__cell--l2">24</span>
+
+        <span class="heatmap__row-l">ข้าวคั่วกลิ้ง</span>
+        <span class="heatmap__cell heatmap__cell--l3">42</span>
+        <span class="heatmap__cell heatmap__cell--l3">35</span>
+        <span class="heatmap__cell heatmap__cell--l4">62</span>
+
+        <span class="heatmap__row-l">เกาเหลาเนื้อตุ๋น</span>
+        <span class="heatmap__cell heatmap__cell--l5">158</span>
+        <span class="heatmap__cell heatmap__cell--l5">112</span>
+        <span class="heatmap__cell heatmap__cell--l4">88</span>
+      </div>
+      <p style="margin-top: 12px; font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); letter-spacing: .3px; line-height: 1.4;">
+        ⓘ darkest = best · ผัดไทย Wongnai ↘ 8 orders/wk → consider promo
+      </p>
+    </div>
+
+    <!-- velocity -->
+    <div class="panel">
+      <div class="panel__h">
+        <h3>sales velocity · per SKU</h3>
+        <small>top 10 · 7d</small>
+      </div>
+      <table class="vel-table">
+        <thead><tr><th>SKU</th><th>ชื่อ</th><th class="col-num">ขาย/วัน</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code style="font-family: var(--font-mono); font-size: 10px; color: var(--color-primary-800); background: var(--color-primary-50); padding: 2px 6px; border-radius: 3px;">RCP-005</code></td>
+            <td>ก๋วยเตี๋ยวเรือ<div class="vel-bar" style="--w: 100%"></div></td>
+            <td class="col-num">61.9</td>
+          </tr>
+          <tr>
+            <td><code style="font-family: var(--font-mono); font-size: 10px; color: var(--color-primary-800); background: var(--color-primary-50); padding: 2px 6px; border-radius: 3px;">RCP-001</code></td>
+            <td>เกาเหลาเนื้อตุ๋น<div class="vel-bar" style="--w: 86%"></div></td>
+            <td class="col-num">53.3</td>
+          </tr>
+          <tr>
+            <td><code style="font-family: var(--font-mono); font-size: 10px; color: var(--color-primary-800); background: var(--color-primary-50); padding: 2px 6px; border-radius: 3px;">RCP-002</code></td>
+            <td>ราดหน้าเส้นใหญ่<div class="vel-bar" style="--w: 51%"></div></td>
+            <td class="col-num">31.8</td>
+          </tr>
+          <tr>
+            <td><code style="font-family: var(--font-mono); font-size: 10px; color: var(--color-primary-800); background: var(--color-primary-50); padding: 2px 6px; border-radius: 3px;">RCP-007</code></td>
+            <td>ก๋วยเตี๋ยวต้มยำ<div class="vel-bar" style="--w: 47%"></div></td>
+            <td class="col-num">28.1</td>
+          </tr>
+          <tr>
+            <td><code style="font-family: var(--font-mono); font-size: 10px; color: var(--color-primary-800); background: var(--color-primary-50); padding: 2px 6px; border-radius: 3px;">RCP-008</code></td>
+            <td>ข้าวคั่วกลิ้ง<div class="vel-bar" style="--w: 42%"></div></td>
+            <td class="col-num">25.6</td>
+          </tr>
+          <tr>
+            <td><code style="font-family: var(--font-mono); font-size: 10px; color: var(--color-primary-800); background: var(--color-primary-50); padding: 2px 6px; border-radius: 3px;">RCP-003</code></td>
+            <td>ผัดซีอิ๊ว<div class="vel-bar" style="--w: 32%"></div></td>
+            <td class="col-num">19.6</td>
+          </tr>
+          <tr>
+            <td><code style="font-family: var(--font-mono); font-size: 10px; color: var(--color-primary-800); background: var(--color-primary-50); padding: 2px 6px; border-radius: 3px;">RCP-006</code></td>
+            <td>ผัดไทย NT<div class="vel-bar" style="--w: 12%"></div> </td>
+            <td class="col-num">7.3</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('globalLogToggle').addEventListener('click', () => {
+      const d = document.getElementById('globalLogDrawer');
+      d.style.display = d.style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.querySelectorAll('.period-row .chip').forEach(c => {
+      c.addEventListener('click', () => {
+        document.querySelectorAll('.period-row .chip').forEach(x => x.classList.remove('is-on'));
+        c.classList.add('is-on');
+      });
+    });
+
+    // ─── revenue chart (stacked bar) ───
+    const labels = ['W10','W11','W12','W13','W14','W15','W16','W17'];
+    new Chart(document.getElementById('revChart'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'NT main', data: [148,165,170,158,162,178,184,192], backgroundColor: '#2F6138' },
+          { label: 'FoodStory', data: [92,103,108,98,112,128,131,142], backgroundColor: '#C9962C' },
+          { label: 'Grab', data: [78,84,88,79,92,98,102,108], backgroundColor: '#B03224' },
+          { label: 'Wongnai', data: [32,38,40,35,42,46,48,45], backgroundColor: '#5F6860' },
+        ]
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { font: { family: 'IBM Plex Mono, monospace', size: 11 }}}},
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { font: { family: 'IBM Plex Mono, monospace', size: 10 }}},
+          y: { stacked: true, grid: { color: '#E6E8E3' }, ticks: { font: { family: 'IBM Plex Mono, monospace', size: 10 }, callback: v => v + 'k' }, beginAtZero: true }
+        }
+      }
+    });
+
+    // ─── FC% trend chart (line + target) ───
+    new Chart(document.getElementById('fcChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'avg FC%', data: [31.4, 30.8, 30.2, 31.1, 29.8, 29.2, 28.9, 28.6], borderColor: '#1F4E2A', backgroundColor: 'rgba(31,78,42,0.1)', fill: true, tension: 0.35, pointRadius: 4, pointBackgroundColor: '#1F4E2A' },
+          { label: 'target 30%', data: [30,30,30,30,30,30,30,30], borderColor: '#C9962C', borderDash: [6,4], pointRadius: 0, fill: false, tension: 0 }
+        ]
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { font: { family: 'IBM Plex Mono, monospace', size: 11 }}}},
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { family: 'IBM Plex Mono, monospace', size: 10 }}},
+          y: { grid: { color: '#E6E8E3' }, ticks: { font: { family: 'IBM Plex Mono, monospace', size: 10 }, callback: v => v + '%' }, suggestedMin: 25, suggestedMax: 35 }
+        }
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

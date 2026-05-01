@@ -8,6 +8,12 @@
 
 ---
 
+## 01/05 · Phase 4A-6 design spike sync
+
+5 new protos (admin-items · admin-bom · sales-ops · stock-dispense · pkg-cascade) + frame-template + block-library (12 components · WC mix pattern) + page-block-matrix · ATUM-style log · Inline SVG charts
+
+---
+
 ## 01/05 · resource-model v1 · Open Q6 activity-events-TTL DECIDED · ALL 6 CLOSED ✅
 
 `NNTN-Vault/System/architecture/resource-model-v1.md` §Open Q6 + §ActivityEvent + footer updated

@@ -187,8 +187,36 @@
   .route-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--radius-pill); font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: #FADFD7; color: #8F1A0B;}
 
 </style>
+<script src="app-meta.js?v=20260501a" defer></script>
 </head>
 <body>
+
+<!-- PHASE5-META-BEGIN -->
+<div class="phase5-floats" style="position: fixed; top: 14px; right: 14px; z-index: 1500; max-width: 280px;">
+  <page-meta
+    name="meat-stock#produce"
+    version="v1.0"
+    room="Stock"
+    last-sync="2026-04-22T19:25"
+    edited-by="น้องบี"
+    edited-at="2026-04-22T19:25"
+    schema="meat_bags, production_batches"
+  ></page-meta>
+  <button class="phase5-log-toggle" type="button"
+    style="margin-top: 8px; width: 100%; padding: 8px 12px; background: var(--color-ink-900,#1A1A1A); color:#fff; border: none; border-radius: 6px; font-family: var(--font-mono,ui-monospace,monospace); font-size: 11px; letter-spacing: 1px; cursor: pointer; font-weight: 700; text-transform: uppercase;"
+    onclick="(function(b){var d=document.getElementById('phase5-log-drawer'); if(d){d.style.display = d.style.display==='none'?'block':'none'; b.textContent = d.style.display==='none'?'▤  Activity log':'×  Close log';}})(this)">
+    ▤  Activity log
+  </button>
+</div>
+<div id="phase5-log-drawer" style="display:none; position: fixed; top: 14px; right: 310px; z-index: 1500; width: 540px; max-height: 80vh; overflow: auto; box-shadow: 0 10px 40px rgba(0,0,0,.18); border-radius: 8px;">
+  <activity-log
+    title="Activity log · meat-stock#produce"
+    events="[{&quot;ts&quot;:&quot;2026-04-22T19:25&quot;,&quot;type&quot;:&quot;produce&quot;,&quot;delta&quot;:&quot;+12 bags&quot;,&quot;before&quot;:&quot;4.2kg input&quot;,&quot;after&quot;:&quot;12 bags out · yield 0.92&quot;,&quot;user&quot;:&quot;น้องบี&quot;,&quot;note&quot;:&quot;MT-031 ลูกชิ้น · batch #2204A&quot;},{&quot;ts&quot;:&quot;2026-04-22T17:40&quot;,&quot;type&quot;:&quot;produce&quot;,&quot;delta&quot;:&quot;+8 bags&quot;,&quot;before&quot;:&quot;2.8kg input&quot;,&quot;after&quot;:&quot;8 bags out · yield 0.89&quot;,&quot;user&quot;:&quot;น้องบี&quot;,&quot;note&quot;:&quot;MT-032 หมูสับ · batch #2204B&quot;},{&quot;ts&quot;:&quot;2026-04-22T14:18&quot;,&quot;type&quot;:&quot;revert&quot;,&quot;user&quot;:&quot;ไทน์&quot;,&quot;note&quot;:&quot;revert batch #2203F (13 bags) · weight mismatch&quot;},{&quot;ts&quot;:&quot;2026-04-22T11:30&quot;,&quot;type&quot;:&quot;produce&quot;,&quot;delta&quot;:&quot;+15 bags&quot;,&quot;before&quot;:&quot;5.1kg input&quot;,&quot;after&quot;:&quot;15 bags · yield 0.94&quot;,&quot;user&quot;:&quot;น้องบี&quot;,&quot;note&quot;:&quot;MT-031 ลูกชิ้น · batch #2204C&quot;}]"
+    max="20"
+  ></activity-log>
+</div>
+<!-- PHASE5-META-END -->
+
 
 <div class="page">
 

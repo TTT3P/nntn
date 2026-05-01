@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · admin-items prototype (Phase 5)</title>
+<link rel="stylesheet" href="tokens.css?v=20260422b" />
+<script src="app-meta.js?v=20260501a" defer></script>
+<style>
+  body { background: var(--color-bg-app); color: var(--color-ink-800); font-family: var(--font-sans); margin: 0;}
+  .page { max-width: 1440px; margin: 0 auto; padding: 32px 24px 100px;}
+
+  .top { display:flex; gap:14px; align-items:center; font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-ink-600); margin-bottom: var(--space-5);}
+  .top .dot { width:10px; height:10px; border-radius:50%; background: var(--color-primary-600); box-shadow: 0 0 0 4px var(--color-primary-100);}
+  .top .crumbs { margin-left:auto; color: var(--color-ink-500);}
+  .back-link { color: var(--color-primary-700); text-decoration: none; border-bottom: 1px dotted currentColor;}
+
+  h1.page-h { font-family: var(--font-display); font-weight: 500; font-size: 44px; line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 var(--space-3); color: var(--color-ink-900); max-width: 900px;}
+  h1 .hi { color: var(--color-primary-700);}
+  .page-lede { font-size: 16px; line-height: 1.6; color: var(--color-ink-700); max-width: 820px; margin: 0 0 var(--space-6);}
+  .page-lede b { color: var(--color-primary-700);}
+
+  /* room badges */
+  .joint-owner { display:inline-flex; gap: 6px; align-items: center; font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 3px 10px; border-radius: 12px; margin-right: 8px;}
+  .joint-owner--stock { background: var(--color-primary-50); color: var(--color-primary-800);}
+  .joint-owner--cb { background: var(--color-accent-50); color: var(--color-accent-700);}
+
+  /* Toolbar */
+  .toolbar { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 14px 16px; display:grid; grid-template-columns: 1fr auto auto auto; gap: 12px; margin-bottom: 14px; align-items: center;}
+  .toolbar .search { position: relative;}
+  .toolbar .search input { width: 100%; padding: 10px 14px 10px 38px; border-radius: var(--radius-md); border: 1px solid var(--color-ink-200); font-family: var(--font-sans); font-size: 14px;}
+  .toolbar .search::before { content: "🔍"; position: absolute; left: 12px; top: 9px; font-size: 14px; opacity: .5;}
+  .filter-chips { display:flex; gap: 6px;}
+  .chip { font-family: var(--font-mono); font-size: 10px; padding: 6px 12px; border-radius: 16px; border: 1px solid var(--color-ink-300); background: #fff; cursor: pointer; letter-spacing: .3px; color: var(--color-ink-700);}
+  .chip.is-on { background: var(--color-ink-900); color: #fff; border-color: var(--color-ink-900); font-weight: 700;}
+  .btn-add { padding: 10px 18px; background: var(--color-primary-600); color: #fff; border: none; border-radius: var(--radius-md); font-family: var(--font-sans); font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;}
+
+  /* Table */
+  .tbl-wrap { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); overflow: hidden;}
+  table.items { width: 100%; border-collapse: collapse; font-size: 13px;}
+  table.items thead th { padding: 12px 14px; text-align: left; font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-ink-500); background: var(--color-ink-50); border-bottom: 1px solid var(--color-ink-200);}
+  table.items tbody td { padding: 12px 14px; border-bottom: 1px dashed var(--color-ink-100); vertical-align: middle;}
+  table.items tbody tr:hover { background: var(--color-ink-50);}
+  table.items tbody tr.archived { opacity: 0.45; background: var(--color-ink-50);}
+  table.items tbody tr.archived td:first-child { text-decoration: line-through;}
+  .col-sku code { font-family: var(--font-mono); font-size: 11px; color: var(--color-primary-800); background: var(--color-primary-50); padding: 2px 7px; border-radius: 3px; font-weight: 700;}
+  .col-name { font-weight: 600; color: var(--color-ink-900); font-size: 14px;}
+  .col-name small { display:block; font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); margin-top: 2px; letter-spacing: .2px;}
+  .col-num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; font-weight: 600;}
+  .col-num .below { color: var(--color-danger-600);}
+  .cat-tag { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 10px; padding: 3px 8px; border-radius: 3px; letter-spacing: .3px; font-weight: 700;}
+  .cat-tag::before { content: ""; width: 7px; height: 7px; border-radius: 50%;}
+  .cat-meat { background: #FADFD7; color: #8F1A0B;} .cat-meat::before { background: #B03224;}
+  .cat-veg  { background: #E8F2EA; color: #134A22;} .cat-veg::before  { background: #2F7A3F;}
+  .cat-sauce{ background: #EDE0F0; color: #5E2F7A;} .cat-sauce::before{ background: #7C4A9E;}
+  .cat-dry  { background: var(--color-ink-100); color: var(--color-ink-800);} .cat-dry::before { background: var(--color-ink-500);}
+  .cat-pkg  { background: #FBF3DC; color: #5A4915;} .cat-pkg::before  { background: #C9962C;}
+
+  /* inline edit visual */
+  .inline-edit { display: inline-block; padding: 2px 6px; border: 1px dashed transparent; border-radius: 3px; cursor: text; min-width: 40px;}
+  .inline-edit:hover { border-color: var(--color-ink-300); background: #fff;}
+  .inline-edit:focus { outline: none; border-color: var(--color-primary-500); border-style: solid; background: #fff; box-shadow: 0 0 0 3px var(--color-primary-100);}
+  .inline-edit.changed { background: var(--color-warning-50); border-color: var(--color-warning-500);}
+
+  .row-actions { display:flex; gap: 4px; justify-content: flex-end;}
+  .row-actions button { width: 30px; height: 30px; border: 1px solid var(--color-ink-200); background: #fff; border-radius: 5px; cursor: pointer; font-size: 13px; color: var(--color-ink-600);}
+  .row-actions button:hover { border-color: var(--color-primary-500); color: var(--color-primary-700);}
+  .row-actions button.has-log { background: var(--color-warning-50); border-color: var(--color-warning-300, #E8C265);}
+
+  /* selected row activity panel */
+  .sel-row { background: var(--color-primary-50) !important;}
+  .sel-row td { border-bottom-color: var(--color-primary-200) !important;}
+  tr.expand-row td { padding: 0 !important; background: var(--color-bg-app);}
+  .expand-inner { padding: 16px 20px; border-bottom: 2px solid var(--color-primary-300); border-top: 1px solid var(--color-primary-200);}
+
+  /* unsaved indicator */
+  .unsaved-banner { position: fixed; bottom: 0; left: 0; right: 0; background: var(--color-warning-100); border-top: 2px solid var(--color-warning-500); padding: 14px 24px; display: none; gap: 16px; align-items: center; z-index: 100;}
+  .unsaved-banner.is-on { display: flex;}
+  .unsaved-banner b { font-family: var(--font-display); font-weight: 600; color: var(--color-warning-700); font-size: 16px;}
+  .unsaved-banner .spacer { flex: 1;}
+  .unsaved-banner .btn { padding: 10px 22px; border-radius: var(--radius-md); border: none; font-family: var(--font-sans); font-weight: 600; cursor: pointer;}
+  .unsaved-banner .btn--save { background: var(--color-primary-600); color: #fff;}
+  .unsaved-banner .btn--cancel { background: transparent; color: var(--color-ink-700);}
+
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px;}
+  .stat { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 14px 16px;}
+  .stat__l { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-ink-500); margin-bottom: 6px;}
+  .stat__v { font-family: var(--font-display); font-weight: 500; font-size: 28px; line-height: 1; color: var(--color-ink-900);}
+  .stat__v.warn { color: var(--color-warning-700);}
+  .stat__s { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); margin-top: 4px;}
+
+  /* drawer for adding new item */
+  .drawer-bg { display: none; position: fixed; inset: 0; background: rgba(8,32,14,0.4); z-index: 1600;}
+  .drawer-bg.is-on { display: block;}
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 480px; background: #fff; padding: 28px 32px; overflow-y: auto; z-index: 1700; transform: translateX(100%); transition: transform .25s ease;}
+  .drawer.is-on { transform: translateX(0);}
+  .drawer h2 { font-family: var(--font-display); font-weight: 500; font-size: 28px; margin: 0 0 4px;}
+  .drawer .field { margin-bottom: 16px;}
+  .drawer label { display: block; font-size: 12px; font-weight: 600; color: var(--color-ink-700); margin-bottom: 4px; font-family: var(--font-mono); letter-spacing: .3px; text-transform: uppercase;}
+  .drawer input, .drawer select { width: 100%; padding: 10px 12px; border: 1px solid var(--color-ink-300); border-radius: var(--radius-sm); font-family: var(--font-sans); font-size: 14px;}
+</style>
+</head>
+<body>
+
+<!-- ──────── floating page meta + log toggle ──────── -->
+<div style="position: fixed; top: 14px; right: 14px; z-index: 1500; max-width: 280px;">
+  <page-meta
+    name="admin-items"
+    version="v1.0"
+    room="Stock"
+    last-sync="2026-04-22T19:24"
+    edited-by="ไทน์"
+    edited-at="2026-04-22T19:18"
+    schema="items, item_categories, item_prices_history"
+  ></page-meta>
+  <button type="button" id="globalLogToggle" style="margin-top: 8px; width: 100%; padding: 8px 12px; background: var(--color-ink-900); color:#fff; border: none; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; cursor: pointer; font-weight: 700; text-transform: uppercase;">▤ Activity log</button>
+</div>
+<div id="globalLogDrawer" style="display:none; position: fixed; top: 14px; right: 310px; z-index: 1500; width: 540px; max-height: 80vh; overflow: auto; box-shadow: 0 10px 40px rgba(0,0,0,.18); border-radius: 8px;">
+  <activity-log
+    title="Activity log · admin-items"
+    max="20"
+    events='[
+      {"ts":"2026-04-22T19:24","type":"edit","user":"ไทน์","note":"MT-019 หมูสามชั้น · ราคา 235 → 245 บาท/กก."},
+      {"ts":"2026-04-22T18:30","type":"edit","user":"ไทน์","note":"MT-019 หมูสามชั้น · min stock 8 → 10"},
+      {"ts":"2026-04-22T16:12","type":"create","user":"ไทน์","note":"PKG-018 ถาดโฟม 5 นิ้ว · เพิ่มเข้าระบบ"},
+      {"ts":"2026-04-22T11:00","type":"archive","user":"เชฟ","note":"VG-008 ผักชีฮ่องกง · ไม่ใช้แล้ว"},
+      {"ts":"2026-04-21T15:30","type":"edit","user":"เชฟ","note":"SC-003 น้ำซุปก๋วยเตี๋ยว · supplier ลุงเจริญ → ตงฮั้ว"},
+      {"ts":"2026-04-21T10:00","type":"edit","user":"ไทน์","note":"MT-020 ซี่โครงหมู · ราคา 280 → 295 บาท/กก."}
+    ]'
+  ></activity-log>
+</div>
+
+<div class="page">
+  <div class="top">
+    <span class="dot"></span>
+    <span>NNTN · spike · phase 5</span>
+    <span class="crumbs">
+      <a href="index.html" class="back-link">← hub</a>
+      &nbsp;·&nbsp;
+      <a href="components.html" class="back-link">components</a>
+    </span>
+  </div>
+
+  <h1 class="page-h"><span class="hi">items</span> master · catalog ของ SKU ทั้งหมด</h1>
+  <p class="page-lede">
+    <span class="joint-owner joint-owner--stock"><span style="width:6px;height:6px;border-radius:50%;background:#2F7A3F"></span>Stock</span>
+    <span class="joint-owner joint-owner--cb"><span style="width:6px;height:6px;border-radius:50%;background:#C9962C"></span>CookingBook</span>
+    Joint owner · Stock เป็นเจ้าของ <b>physical attributes</b> (unit · min stock · supplier) · CookingBook เป็นเจ้าของ <b>recipe linkage</b> (cost · BOM ref) ·
+    inline edit ทุก field · soft archive (ไม่ลบจริง · audit ได้) · per-row activity log สำหรับ price/min change
+  </p>
+
+  <!-- stat row -->
+  <div class="stat-row">
+    <div class="stat">
+      <div class="stat__l">Total SKUs</div>
+      <div class="stat__v">147</div>
+      <div class="stat__s">12 archived (hidden)</div>
+    </div>
+    <div class="stat">
+      <div class="stat__l">Below min stock</div>
+      <div class="stat__v warn">8</div>
+      <div class="stat__s">→ ดูใน sales-ops dashboard</div>
+    </div>
+    <div class="stat">
+      <div class="stat__l">Edits this week</div>
+      <div class="stat__v">23</div>
+      <div class="stat__s">17 prices · 4 min · 2 supplier</div>
+    </div>
+    <div class="stat">
+      <div class="stat__l">New SKUs this month</div>
+      <div class="stat__v">5</div>
+      <div class="stat__s">3 PKG · 1 MT · 1 VG</div>
+    </div>
+  </div>
+
+  <!-- toolbar -->
+  <div class="toolbar">
+    <div class="search">
+      <input type="search" placeholder="ค้นหา SKU, ชื่อ, supplier..." />
+    </div>
+    <div class="filter-chips">
+      <button class="chip is-on">all</button>
+      <button class="chip">meat</button>
+      <button class="chip">veg</button>
+      <button class="chip">sauce</button>
+      <button class="chip">pkg</button>
+      <button class="chip">dry</button>
+    </div>
+    <button class="chip" id="showArchivedToggle">show archived</button>
+    <button class="btn-add" onclick="document.getElementById('addDrawerBg').classList.add('is-on');document.getElementById('addDrawer').classList.add('is-on')">
+      + add SKU
+    </button>
+  </div>
+
+  <!-- table -->
+  <div class="tbl-wrap">
+    <table class="items">
+      <thead>
+        <tr>
+          <th style="width: 110px;">SKU</th>
+          <th>ชื่อ / category</th>
+          <th style="width: 70px;">unit</th>
+          <th style="width: 100px;" class="col-num">on hand</th>
+          <th style="width: 100px;" class="col-num">min stock</th>
+          <th style="width: 120px;" class="col-num">price (THB/u)</th>
+          <th style="width: 140px;">supplier</th>
+          <th style="width: 100px;"></th>
+        </tr>
+      </thead>
+      <tbody id="itemRows">
+        <!-- rows injected via JS -->
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- unsaved banner -->
+<div class="unsaved-banner" id="unsavedBanner">
+  <b>2 changes pending</b>
+  <span style="font-size: 13px; color: var(--color-warning-700);">MT-019 ราคา · MT-019 min stock · ทุก edit จะเข้า activity log</span>
+  <span class="spacer"></span>
+  <button class="btn btn--cancel" onclick="cancelChanges()">cancel</button>
+  <button class="btn btn--save" onclick="saveChanges()">save 2 changes</button>
+</div>
+
+<!-- add drawer -->
+<div class="drawer-bg" id="addDrawerBg" onclick="document.getElementById('addDrawerBg').classList.remove('is-on');document.getElementById('addDrawer').classList.remove('is-on')"></div>
+<div class="drawer" id="addDrawer">
+  <h2>เพิ่ม SKU ใหม่</h2>
+  <p style="color: var(--color-ink-600); font-size: 13px; margin: 0 0 24px;">SKU code จะออโต้สร้างจาก category prefix · เปลี่ยนได้</p>
+
+  <div class="field">
+    <label>category</label>
+    <select>
+      <option>MT — เนื้อสัตว์</option>
+      <option>VG — ผัก</option>
+      <option>SC — ซอส/น้ำ</option>
+      <option>PKG — packaging</option>
+      <option>DR — dry/แห้ง</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>SKU code (auto)</label>
+    <input value="MT-021" />
+  </div>
+  <div class="field">
+    <label>ชื่อรายการ</label>
+    <input placeholder="หมูสันใน, ผักชีไทย, ..." />
+  </div>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+    <div class="field">
+      <label>unit</label>
+      <select><option>กก.</option><option>ขีด</option><option>กรัม</option><option>แพ็ค</option><option>ขวด</option><option>ใบ</option></select>
+    </div>
+    <div class="field">
+      <label>min stock</label>
+      <input type="number" placeholder="0" />
+    </div>
+  </div>
+  <div class="field">
+    <label>supplier (optional)</label>
+    <input placeholder="ลุงเจริญ, ตงฮั้ว, ..." />
+  </div>
+  <div class="field">
+    <label>price (THB/unit)</label>
+    <input type="number" placeholder="0.00" />
+  </div>
+
+  <div style="display: flex; gap: 8px; margin-top: 24px;">
+    <button class="btn-add" style="flex:1; justify-content: center;">+ เพิ่มเข้า master</button>
+    <button class="chip" onclick="document.getElementById('addDrawerBg').classList.remove('is-on');document.getElementById('addDrawer').classList.remove('is-on')">cancel</button>
+  </div>
+  <p style="color: var(--color-ink-500); font-size: 11px; margin: 16px 0 0; line-height: 1.5;">
+    หมายเหตุ · ถ้าเป็น MT (เนื้อ) ระบบจะ auto-enable catch_weight · ไม่เปลี่ยน unit ทีหลังได้ (B8 lock)
+  </p>
+</div>
+
+<script>
+  // ────────────── data ──────────────
+  const ITEMS = [
+    { sku: 'MT-019', name: 'หมูสามชั้นสไลซ์', cat: 'meat', unit: 'กก.',  onHand: 17.4, min: 10,  price: 245, supplier: 'ลุงเจริญ', logChanges: 3 },
+    { sku: 'MT-020', name: 'ซี่โครงหมูตัด',   cat: 'meat', unit: 'กก.',  onHand:  6.0, min: 6,   price: 295, supplier: 'ลุงเจริญ', logChanges: 1 },
+    { sku: 'MT-031', name: 'ลูกชิ้น (แปรรูป)', cat: 'meat', unit: 'แพ็ค', onHand: 24,   min: 20,  price: null, supplier: '— produce', logChanges: 0 },
+    { sku: 'MT-032', name: 'หมูสับ (แปรรูป)',  cat: 'meat', unit: 'แพ็ค', onHand: 18,   min: 16,  price: null, supplier: '— produce', logChanges: 0 },
+    { sku: 'VG-001', name: 'ผักชีไทย',         cat: 'veg',  unit: 'กก.',  onHand:  2.4, min: 3,   price: 185, supplier: 'ตลาดไท',     logChanges: 0, below: true },
+    { sku: 'VG-002', name: 'ต้นหอมซอย',        cat: 'veg',  unit: 'กก.',  onHand:  4.2, min: 2,   price: 165, supplier: 'ตลาดไท',     logChanges: 0 },
+    { sku: 'VG-008', name: 'ผักชีฮ่องกง',       cat: 'veg',  unit: 'กก.',  onHand:  0,   min: 0,   price: 240, supplier: 'ตงฮั้ว',     logChanges: 0, archived: true },
+    { sku: 'SC-003', name: 'น้ำซุปก๋วยเตี๋ยว', cat: 'sauce',unit: 'ขวด',  onHand: 18,   min: 12,  price: 95,  supplier: 'ตงฮั้ว',     logChanges: 1 },
+    { sku: 'SC-004', name: 'น้ำปลาดี',          cat: 'sauce',unit: 'ขวด',  onHand: 32,   min: 24,  price: 75,  supplier: 'ตงฮั้ว',     logChanges: 0 },
+    { sku: 'PKG-012', name: 'กล่องห่อ size M',  cat: 'pkg',  unit: 'ใบ',   onHand: 220,  min: 150, price: 4.5, supplier: 'plastic-co', logChanges: 0 },
+    { sku: 'PKG-013', name: 'ถุงพลาสติก 6×9',   cat: 'pkg',  unit: 'แพ็ค', onHand: 12,   min: 10,  price: 35,  supplier: 'plastic-co', logChanges: 0 },
+    { sku: 'PKG-018', name: 'ถาดโฟม 5 นิ้ว',     cat: 'pkg',  unit: 'แพ็ค', onHand: 5,    min: 4,   price: 48,  supplier: 'plastic-co', logChanges: 0, isNew: true },
+    { sku: 'DR-001',  name: 'พริกแกงเขียวหวาน', cat: 'dry',  unit: 'แพ็ค', onHand: 15,   min: 12,  price: 55,  supplier: 'ตลาดไท',     logChanges: 0 },
+    { sku: 'DR-008',  name: 'เส้นหมี่อบแห้ง',    cat: 'dry',  unit: 'แพ็ค', onHand: 8,    min: 10,  price: 42,  supplier: 'ตงฮั้ว',     logChanges: 0, below: true },
+  ];
+
+  // per-item activity logs (subset shown)
+  const ITEM_LOGS = {
+    'MT-019': [
+      {"ts":"2026-04-22T19:24","type":"edit","user":"ไทน์","note":"ราคา 235 → 245 บาท/กก."},
+      {"ts":"2026-04-22T18:30","type":"edit","user":"ไทน์","note":"min stock 8 → 10"},
+      {"ts":"2026-04-15T11:00","type":"edit","user":"ไทน์","note":"ราคา 220 → 235 บาท/กก."},
+      {"ts":"2026-03-20T09:00","type":"edit","user":"เชฟ","note":"supplier ลุงสมชาย → ลุงเจริญ"},
+      {"ts":"2026-01-10T14:00","type":"create","user":"ไทน์","note":"เพิ่มเข้า master"}
+    ],
+    'MT-020': [
+      {"ts":"2026-04-21T10:00","type":"edit","user":"ไทน์","note":"ราคา 280 → 295 บาท/กก."}
+    ],
+    'SC-003': [
+      {"ts":"2026-04-21T15:30","type":"edit","user":"เชฟ","note":"supplier ลุงเจริญ → ตงฮั้ว"}
+    ]
+  };
+
+  let showArchived = false;
+
+  function render() {
+    const tbody = document.getElementById('itemRows');
+    tbody.innerHTML = '';
+    ITEMS.filter(it => showArchived || !it.archived).forEach((it, i) => {
+      const tr = document.createElement('tr');
+      if (it.archived) tr.classList.add('archived');
+      tr.dataset.sku = it.sku;
+      tr.innerHTML = `
+        <td class="col-sku"><code>${it.sku}</code></td>
+        <td class="col-name">
+          ${it.name}
+          <small><span class="cat-tag cat-${it.cat}">${it.cat}</span> ${it.isNew?'<span class="cat-tag" style="background:var(--color-accent-50);color:var(--color-accent-700);margin-left:4px">new</span>':''}</small>
+        </td>
+        <td><span class="inline-edit" contenteditable="true">${it.unit}</span></td>
+        <td class="col-num"><span class="${it.below?'below':''}">${it.onHand}</span></td>
+        <td class="col-num"><span class="inline-edit ${it.sku==='MT-019'?'changed':''}" contenteditable="true">${it.min}</span></td>
+        <td class="col-num"><span class="inline-edit ${it.sku==='MT-019'?'changed':''}" contenteditable="true">${it.price==null?'—':it.price}</span></td>
+        <td><span class="inline-edit" contenteditable="true">${it.supplier}</span></td>
+        <td>
+          <div class="row-actions">
+            <button class="${it.logChanges>0?'has-log':''}" onclick="toggleLog('${it.sku}', this)" title="activity log${it.logChanges?' ('+it.logChanges+')':''}">▤</button>
+            <button onclick="archiveItem('${it.sku}')" title="archive">⊘</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function toggleLog(sku, btn) {
+    // close any other expand-rows
+    document.querySelectorAll('tr.expand-row').forEach(r => r.remove());
+    document.querySelectorAll('tr.sel-row').forEach(r => r.classList.remove('sel-row'));
+    const tr = btn.closest('tr');
+    if (tr.dataset.expanded === '1') { tr.dataset.expanded = '0'; return; }
+    tr.classList.add('sel-row');
+    tr.dataset.expanded = '1';
+
+    const logs = ITEM_LOGS[sku] || [];
+    const item = ITEMS.find(x => x.sku === sku);
+    const eventsAttr = JSON.stringify(logs).replace(/'/g, '&#39;');
+    const expand = document.createElement('tr');
+    expand.classList.add('expand-row');
+    expand.innerHTML = `
+      <td colspan="8">
+        <div class="expand-inner">
+          <activity-log
+            entity="${sku}"
+            entity-label="${item.name}"
+            title="Per-row activity"
+            max="10"
+            events='${eventsAttr}'
+          ></activity-log>
+        </div>
+      </td>
+    `;
+    tr.after(expand);
+  }
+
+  function archiveItem(sku) {
+    const it = ITEMS.find(x => x.sku === sku);
+    if (!it) return;
+    it.archived = true;
+    render();
+  }
+
+  function cancelChanges() {
+    const banner = document.getElementById('unsavedBanner');
+    banner.classList.remove('is-on');
+  }
+  function saveChanges() {
+    const banner = document.getElementById('unsavedBanner');
+    banner.classList.remove('is-on');
+    document.querySelectorAll('.inline-edit.changed').forEach(el => el.classList.remove('changed'));
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    render();
+    setTimeout(() => document.getElementById('unsavedBanner').classList.add('is-on'), 600);
+
+    document.getElementById('showArchivedToggle').addEventListener('click', (e) => {
+      showArchived = !showArchived;
+      e.target.classList.toggle('is-on', showArchived);
+      e.target.textContent = showArchived ? 'hide archived' : 'show archived';
+      render();
+    });
+
+    // category filter chips (visual only)
+    document.querySelectorAll('.toolbar .filter-chips .chip').forEach(c => {
+      c.addEventListener('click', () => {
+        document.querySelectorAll('.toolbar .filter-chips .chip').forEach(x => x.classList.remove('is-on'));
+        c.classList.add('is-on');
+      });
+    });
+
+    // global activity log toggle
+    document.getElementById('globalLogToggle').addEventListener('click', () => {
+      const d = document.getElementById('globalLogDrawer');
+      d.style.display = d.style.display === 'none' ? 'block' : 'none';
+    });
+  });
+</script>
+
+</body>
+</html>

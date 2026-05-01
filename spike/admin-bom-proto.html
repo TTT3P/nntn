@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · admin-bom prototype (Phase 5)</title>
+<link rel="stylesheet" href="tokens.css?v=20260422b" />
+<script src="app-meta.js?v=20260501a" defer></script>
+<style>
+  body { background: var(--color-bg-app); color: var(--color-ink-800); font-family: var(--font-sans); margin: 0;}
+  .page { max-width: 1440px; margin: 0 auto; padding: 32px 24px 100px;}
+
+  .top { display:flex; gap:14px; align-items:center; font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-ink-600); margin-bottom: var(--space-5);}
+  .top .dot { width:10px; height:10px; border-radius:50%; background: var(--color-accent-500); box-shadow: 0 0 0 4px var(--color-accent-100);}
+  .top .crumbs { margin-left:auto; color: var(--color-ink-500);}
+  .back-link { color: var(--color-primary-700); text-decoration: none; border-bottom: 1px dotted currentColor;}
+
+  h1.page-h { font-family: var(--font-display); font-weight: 500; font-size: 44px; line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 var(--space-3); color: var(--color-ink-900); max-width: 900px;}
+  h1 .hi { color: var(--color-accent-600);}
+  .page-lede { font-size: 16px; line-height: 1.6; color: var(--color-ink-700); max-width: 820px; margin: 0 0 var(--space-6);}
+  .page-lede b { color: var(--color-accent-700);}
+
+  .layout { display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start;}
+
+  /* recipe list (sidebar) */
+  .recipe-list { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); overflow: hidden; position: sticky; top: 16px;}
+  .rl__h { padding: 14px 16px; background: var(--color-ink-50); border-bottom: 1px solid var(--color-ink-200); font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-ink-700); font-weight: 700;}
+  .rl__search { padding: 10px 12px; border-bottom: 1px solid var(--color-ink-200);}
+  .rl__search input { width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--color-ink-300); font-size: 13px;}
+  .rl__items { max-height: 600px; overflow-y: auto;}
+  .rl__item { padding: 10px 16px; border-bottom: 1px dashed var(--color-ink-100); cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;}
+  .rl__item:hover { background: var(--color-ink-50);}
+  .rl__item.is-on { background: var(--color-accent-50); border-left: 3px solid var(--color-accent-500); padding-left: 13px;}
+  .rl__item .n { font-weight: 600; font-size: 13px; color: var(--color-ink-900); line-height: 1.3;}
+  .rl__item code { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-500); margin-top: 2px; display: block;}
+  .rl__item .fc { font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 3px;}
+  .fc-good { background: var(--color-success-50); color: var(--color-success-700);}
+  .fc-watch { background: var(--color-warning-50); color: var(--color-warning-700);}
+  .fc-bad   { background: var(--color-danger-50); color: var(--color-danger-700);}
+
+  /* main panel */
+  .main-panel { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 24px 28px;}
+  .recipe-h { display: grid; grid-template-columns: 1fr auto; gap: 24px; margin-bottom: var(--space-5); padding-bottom: var(--space-4); border-bottom: 1px solid var(--color-ink-200);}
+  .recipe-h h2 { font-family: var(--font-display); font-weight: 500; font-size: 32px; line-height: 1.1; margin: 0 0 4px; color: var(--color-ink-900);}
+  .recipe-h .rcp-code { font-family: var(--font-mono); font-size: 12px; color: var(--color-ink-500); letter-spacing: .3px;}
+  .recipe-h .meta { display: flex; gap: 14px; font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-600); margin-top: 8px;}
+  .recipe-h .meta b { color: var(--color-ink-900);}
+
+  /* tier price comparison */
+  .tier-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: var(--space-5);}
+  .tier { padding: 16px 18px; border-radius: var(--radius-md); position: relative; overflow: hidden;}
+  .tier--nt { background: var(--grad-stat-green); }
+  .tier--fs { background: var(--grad-stat-orange); }
+  .tier--gr { background: var(--grad-stat-amber); }
+  .tier__l { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-ink-700); margin-bottom: 4px; font-weight: 600;}
+  .tier__price { font-family: var(--font-display); font-weight: 600; font-size: 32px; line-height: 1; color: var(--color-ink-900);}
+  .tier__price small { font-family: var(--font-mono); font-size: 13px; color: var(--color-ink-700); margin-left: 4px; font-weight: 500;}
+  .tier__fc { display: flex; gap: 14px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(0,0,0,0.15);}
+  .tier__fc__n { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 16px; color: var(--color-ink-900);}
+  .tier__fc__l { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-700); letter-spacing: 1px; text-transform: uppercase;}
+
+  /* BOM tree */
+  .bom-section-h { display: flex; align-items: baseline; justify-content: space-between; margin: var(--space-5) 0 var(--space-3);}
+  .bom-section-h h3 { font-family: var(--font-display); font-weight: 500; font-size: 22px; margin: 0; color: var(--color-ink-900);}
+  .bom-section-h small { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-500); letter-spacing: .3px;}
+
+  .bom-tree { background: var(--color-bg-app); border-radius: var(--radius-md); border: 1px solid var(--color-ink-200);}
+  .bom-row { display: grid; grid-template-columns: 28px 1fr 100px 100px 110px 36px; gap: 12px; padding: 11px 16px; border-bottom: 1px dashed var(--color-ink-200); align-items: center; font-size: 13px;}
+  .bom-row:last-child { border-bottom: none;}
+  .bom-row.depth-0 { background: #fff; font-weight: 600;}
+  .bom-row.depth-1 { padding-left: 36px;}
+  .bom-row.depth-2 { padding-left: 56px; background: var(--color-ink-50);}
+  .bom-row .bullet { font-family: var(--font-mono); color: var(--color-ink-400);}
+  .bom-row.depth-0 .bullet { color: var(--color-accent-600); font-weight: 700;}
+  .bom-row .ing-name { display: flex; align-items: center; gap: 8px; min-width: 0;}
+  .bom-row .ing-name code { font-family: var(--font-mono); font-size: 10px; color: var(--color-primary-700); background: var(--color-primary-50); padding: 1px 6px; border-radius: 3px; font-weight: 700; flex-shrink: 0;}
+  .bom-row .qty { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; font-weight: 600;}
+  .bom-row .cost { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; font-weight: 700; color: var(--color-ink-900);}
+  .bom-row .pct { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; font-size: 11px; color: var(--color-ink-600);}
+  .bom-row .pct__bar { display: inline-block; width: 60px; height: 4px; background: var(--color-ink-200); border-radius: 2px; margin-left: 6px; vertical-align: middle; position: relative; overflow: hidden;}
+  .bom-row .pct__bar::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: var(--w, 50%); background: var(--color-accent-500);}
+  .bom-row .ing-actions button { width: 28px; height: 28px; border: 1px solid var(--color-ink-200); background: #fff; border-radius: 4px; font-size: 12px; cursor: pointer; color: var(--color-ink-600);}
+  .bom-row .ing-actions button:hover { border-color: var(--color-accent-500); color: var(--color-accent-700);}
+  .bom-row .ing-actions button.has-log { background: var(--color-warning-50); border-color: var(--color-warning-300, #E8C265);}
+
+  .bom-total-row { display: grid; grid-template-columns: 28px 1fr 100px 100px 110px 36px; gap: 12px; padding: 14px 16px; background: var(--color-ink-900); color: #fff; border-radius: 0 0 var(--radius-md) var(--radius-md); font-size: 14px; font-weight: 700;}
+  .bom-total-row .cost { font-family: var(--font-mono); font-size: 18px; font-variant-numeric: tabular-nums;}
+  .bom-total-row .pct { font-family: var(--font-mono); font-size: 13px; color: var(--color-accent-300); text-align: right;}
+
+  /* cost waterfall */
+  .waterfall { display: grid; grid-template-columns: 200px 1fr; gap: 12px; align-items: center; margin-bottom: 6px; font-size: 13px;}
+  .waterfall__l { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-700); letter-spacing: .3px;}
+  .waterfall__bar { height: 28px; background: var(--color-ink-100); border-radius: 4px; position: relative; overflow: hidden;}
+  .waterfall__fill { position: absolute; left: 0; top: 0; bottom: 0; padding: 0 12px; display: flex; align-items: center; font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--color-ink-900);}
+  .waterfall--meat .waterfall__fill { background: linear-gradient(90deg, #FADFD7 0%, #F0B7A8 100%);}
+  .waterfall--veg .waterfall__fill { background: linear-gradient(90deg, #DCEADE 0%, #B7D2BC 100%);}
+  .waterfall--sauce .waterfall__fill { background: linear-gradient(90deg, #EDE0F0 0%, #D2B7E0 100%);}
+  .waterfall--pkg .waterfall__fill { background: linear-gradient(90deg, #FBF3DC 0%, #F5DE94 100%);}
+  .waterfall--total .waterfall__fill { background: var(--color-primary-600); color: #fff;}
+
+  .ww-grid { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 16px 18px;}
+
+  /* scope/period */
+  .scope-row { display: flex; gap: 24px; margin-bottom: 16px; padding: 12px 16px; background: var(--color-ink-50); border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-700);}
+  .scope-row b { color: var(--color-ink-900);}
+
+  /* node detail expansion */
+  .ing-detail { display: none; padding: 14px 20px; background: var(--color-bg-app); border-bottom: 1px dashed var(--color-ink-200);}
+  .ing-detail.is-on { display: block;}
+</style>
+</head>
+<body>
+
+<!-- floating page meta -->
+<div style="position: fixed; top: 14px; right: 14px; z-index: 1500; max-width: 280px;">
+  <page-meta
+    name="admin-bom"
+    version="v1.2"
+    room="CookingBook"
+    last-sync="2026-04-22T18:00"
+    edited-by="เชฟ"
+    edited-at="2026-04-21T14:00"
+    schema="recipes, recipe_ingredients, recipe_costs"
+  ></page-meta>
+  <button type="button" id="globalLogToggle" style="margin-top: 8px; width: 100%; padding: 8px 12px; background: var(--color-ink-900); color:#fff; border: none; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; cursor: pointer; font-weight: 700; text-transform: uppercase;">▤ Activity log</button>
+</div>
+<div id="globalLogDrawer" style="display:none; position: fixed; top: 14px; right: 310px; z-index: 1500; width: 540px; max-height: 80vh; overflow: auto; box-shadow: 0 10px 40px rgba(0,0,0,.18); border-radius: 8px;">
+  <activity-log
+    title="Activity log · admin-bom"
+    max="20"
+    events='[
+      {"ts":"2026-04-21T14:00","type":"edit","user":"เชฟ","note":"RCP-005 ก๋วยเตี๋ยวเรือ · เปลี่ยน MT-019 หมูสามชั้น 80g → 75g (yield ปรับ)"},
+      {"ts":"2026-04-20T11:00","type":"edit","user":"เชฟ","note":"RCP-005 · เพิ่ม VG-012 ผักบุ้งจีน 20g"},
+      {"ts":"2026-04-15T16:30","type":"edit","user":"เชฟ","note":"RCP-005 · ปรับขนาดถ้วย M → จาก 350g → 380g"},
+      {"ts":"2026-04-10T09:00","type":"create","user":"เชฟ","note":"RCP-007 ก๋วยเตี๋ยวต้มยำหมู · เพิ่มเข้า BOM master"},
+      {"ts":"2026-04-08T14:00","type":"edit","user":"ไทน์","note":"RCP-002 ราดหน้าเส้นใหญ่ · pricing tier FS +5 บาท"}
+    ]'
+  ></activity-log>
+</div>
+
+<div class="page">
+  <div class="top">
+    <span class="dot"></span>
+    <span>NNTN · spike · phase 5</span>
+    <span class="crumbs">
+      <a href="index.html" class="back-link">← hub</a>
+      &nbsp;·&nbsp;
+      <a href="admin-items-proto.html" class="back-link">items master</a>
+    </span>
+  </div>
+
+  <h1 class="page-h"><span class="hi">BOM</span> tree · recipe คอสต์โครงสร้าง</h1>
+  <p class="page-lede">
+    Bill of Materials per recipe · ingredient hierarchy (sub-recipes nested) · <b>FC% waterfall</b> · target = 30% · เทียบ pricing tier <b>NT main / FS / Grab</b> ·
+    activity log per BOM node เก็บการเปลี่ยน qty / supplier swap
+  </p>
+
+  <div class="layout">
+    <!-- ==== sidebar : recipe list ==== -->
+    <div class="recipe-list">
+      <div class="rl__h">recipes (47)</div>
+      <div class="rl__search"><input placeholder="ค้นหา recipe..." /></div>
+      <div class="rl__items">
+        <div class="rl__item">
+          <div><div class="n">เกาเหลาเนื้อตุ๋น</div><code>RCP-001 · จานหลัก</code></div>
+          <span class="fc fc-good">FC 28%</span>
+        </div>
+        <div class="rl__item">
+          <div><div class="n">ราดหน้าเส้นใหญ่</div><code>RCP-002 · จานหลัก</code></div>
+          <span class="fc fc-good">FC 26%</span>
+        </div>
+        <div class="rl__item">
+          <div><div class="n">ผัดซีอิ๊ว</div><code>RCP-003 · จานหลัก</code></div>
+          <span class="fc fc-watch">FC 31%</span>
+        </div>
+        <div class="rl__item">
+          <div><div class="n">ก๋วยเตี๋ยวต้มยำหมู</div><code>RCP-004</code></div>
+          <span class="fc fc-good">FC 27%</span>
+        </div>
+        <div class="rl__item is-on">
+          <div><div class="n">ก๋วยเตี๋ยวเรือเนื้อตุ๋น</div><code>RCP-005 · signature</code></div>
+          <span class="fc fc-watch">FC 32%</span>
+        </div>
+        <div class="rl__item">
+          <div><div class="n">ผัดไทย NT</div><code>RCP-006</code></div>
+          <span class="fc fc-good">FC 25%</span>
+        </div>
+        <div class="rl__item">
+          <div><div class="n">ก๋วยเตี๋ยวต้มยำหมู</div><code>RCP-007 · ใหม่</code></div>
+          <span class="fc fc-bad">FC 36%</span>
+        </div>
+        <div class="rl__item">
+          <div><div class="n">ข้าวคั่วกลิ้ง</div><code>RCP-008</code></div>
+          <span class="fc fc-good">FC 24%</span>
+        </div>
+        <div class="rl__item" style="opacity: .55;">
+          <div><div class="n">เพิ่มเติม 39 รายการ...</div><code>scroll</code></div>
+          <span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==== main panel ==== -->
+    <div class="main-panel">
+
+      <div class="recipe-h">
+        <div>
+          <h2>ก๋วยเตี๋ยวเรือเนื้อตุ๋น</h2>
+          <span class="rcp-code">RCP-005 · signature dish · 4-tier pricing</span>
+          <div class="meta">
+            <span><b>portion</b> ถ้วย M · 380g</span>
+            <span><b>active</b> NT, FS, Grab, Wongnai</span>
+            <span><b>last edit</b> เชฟ · เมื่อวาน</span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button style="padding: 8px 16px; border: 1px solid var(--color-ink-300); background: #fff; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 11px; letter-spacing: .3px; cursor: pointer; color: var(--color-ink-700);">duplicate</button>
+          <button style="padding: 8px 16px; border: none; background: var(--color-primary-600); color: #fff; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; cursor: pointer;">edit recipe</button>
+        </div>
+      </div>
+
+      <!-- TIER PRICING -->
+      <div class="tier-grid">
+        <div class="tier tier--nt">
+          <div class="tier__l">NT main · ถ้วย M</div>
+          <div class="tier__price">75<small>บาท</small></div>
+          <div class="tier__fc">
+            <div><div class="tier__fc__l">cost</div><div class="tier__fc__n">24.30 ฿</div></div>
+            <div><div class="tier__fc__l">FC%</div><div class="tier__fc__n" style="color: var(--color-success-700);">32.4%</div></div>
+          </div>
+        </div>
+        <div class="tier tier--fs">
+          <div class="tier__l">FoodStory · ถ้วย M</div>
+          <div class="tier__price">95<small>บาท</small></div>
+          <div class="tier__fc">
+            <div><div class="tier__fc__l">cost</div><div class="tier__fc__n">24.30 ฿</div></div>
+            <div><div class="tier__fc__l">FC%</div><div class="tier__fc__n" style="color: var(--color-success-700);">25.6%</div></div>
+          </div>
+        </div>
+        <div class="tier tier--gr">
+          <div class="tier__l">Grab/Wongnai · ถ้วย M</div>
+          <div class="tier__price">110<small>บาท</small></div>
+          <div class="tier__fc">
+            <div><div class="tier__fc__l">cost +commission</div><div class="tier__fc__n">38.50 ฿</div></div>
+            <div><div class="tier__fc__l">FC%</div><div class="tier__fc__n" style="color: var(--color-warning-700);">35.0%</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COST WATERFALL -->
+      <div class="bom-section-h">
+        <h3>cost waterfall · breakdown 24.30 ฿</h3>
+        <small>NT main pricing · 4 categories</small>
+      </div>
+      <div class="ww-grid">
+        <div class="waterfall waterfall--meat">
+          <div class="waterfall__l">เนื้อ + เครื่องใน</div>
+          <div class="waterfall__bar"><div class="waterfall__fill" style="width: 56%;">13.62 ฿ · 56%</div></div>
+        </div>
+        <div class="waterfall waterfall--veg">
+          <div class="waterfall__l">ผัก + เครื่อง</div>
+          <div class="waterfall__bar"><div class="waterfall__fill" style="width: 18%;">4.40 ฿ · 18%</div></div>
+        </div>
+        <div class="waterfall waterfall--sauce">
+          <div class="waterfall__l">น้ำซุป (sub-recipe)</div>
+          <div class="waterfall__bar"><div class="waterfall__fill" style="width: 22%;">5.31 ฿ · 22%</div></div>
+        </div>
+        <div class="waterfall waterfall--pkg">
+          <div class="waterfall__l">packaging</div>
+          <div class="waterfall__bar"><div class="waterfall__fill" style="width: 4%;">0.97 ฿ · 4%</div></div>
+        </div>
+        <div class="waterfall waterfall--total" style="margin-top: 12px;">
+          <div class="waterfall__l" style="color: var(--color-ink-900); font-weight: 700;">TOTAL</div>
+          <div class="waterfall__bar" style="background: var(--color-primary-100);"><div class="waterfall__fill" style="width: 100%;">24.30 ฿ · 100%</div></div>
+        </div>
+      </div>
+
+      <!-- BOM TREE -->
+      <div class="bom-section-h">
+        <h3>BOM tree · ingredients</h3>
+        <small>3 levels · sub-recipes nested · click ▤ → activity log per node</small>
+      </div>
+      <div class="bom-tree" id="bomTree">
+        <div class="bom-row depth-0">
+          <span class="bullet">●</span>
+          <span class="ing-name"><code>MT-019</code> หมูสามชั้นสไลซ์</span>
+          <span class="qty">75 g</span>
+          <span class="cost">9.20 ฿</span>
+          <span class="pct">38%<span class="pct__bar" style="--w:38%"></span></span>
+          <span class="ing-actions"><button class="has-log" onclick="toggleNodeLog(this, 'MT-019', 'หมูสามชั้นสไลซ์')">▤</button></span>
+        </div>
+        <div class="bom-row depth-0">
+          <span class="bullet">●</span>
+          <span class="ing-name"><code>MT-014</code> เนื้อตุ๋น (sub-recipe)</span>
+          <span class="qty">60 g</span>
+          <span class="cost">4.42 ฿</span>
+          <span class="pct">18%<span class="pct__bar" style="--w:18%"></span></span>
+          <span class="ing-actions"><button onclick="toggleNodeLog(this, 'MT-014', 'เนื้อตุ๋น (sub-recipe)')">▤</button></span>
+        </div>
+        <div class="bom-row depth-1">
+          <span class="bullet">└</span>
+          <span class="ing-name" style="font-weight:500"><code>MT-001</code> เนื้อน่อง</span>
+          <span class="qty">45 g</span>
+          <span class="cost">3.78 ฿</span>
+          <span class="pct">86%<span class="pct__bar" style="--w:86%"></span></span>
+          <span class="ing-actions"><button onclick="toggleNodeLog(this, 'MT-001', 'เนื้อน่อง')">▤</button></span>
+        </div>
+        <div class="bom-row depth-1">
+          <span class="bullet">└</span>
+          <span class="ing-name" style="font-weight:500"><code>SC-008</code> เครื่องตุ๋น (mix)</span>
+          <span class="qty">5 g</span>
+          <span class="cost">0.64 ฿</span>
+          <span class="pct">14%<span class="pct__bar" style="--w:14%"></span></span>
+          <span class="ing-actions"><button onclick="toggleNodeLog(this, 'SC-008', 'เครื่องตุ๋น mix')">▤</button></span>
+        </div>
+        <div class="bom-row depth-0">
+          <span class="bullet">●</span>
+          <span class="ing-name"><code>VG-005</code> เส้นเล็ก</span>
+          <span class="qty">120 g</span>
+          <span class="cost">2.40 ฿</span>
+          <span class="pct">10%<span class="pct__bar" style="--w:10%"></span></span>
+          <span class="ing-actions"><button onclick="toggleNodeLog(this, 'VG-005', 'เส้นเล็ก')">▤</button></span>
+        </div>
+        <div class="bom-row depth-0">
+          <span class="bullet">●</span>
+          <span class="ing-name"><code>SR-001</code> น้ำซุปก๋วยเตี๋ยวเรือ (sub-recipe)</span>
+          <span class="qty">200 ml</span>
+          <span class="cost">5.31 ฿</span>
+          <span class="pct">22%<span class="pct__bar" style="--w:22%"></span></span>
+          <span class="ing-actions"><button class="has-log" onclick="toggleNodeLog(this, 'SR-001', 'น้ำซุปก๋วยเตี๋ยวเรือ')">▤</button></span>
+        </div>
+        <div class="bom-row depth-1">
+          <span class="bullet">└</span>
+          <span class="ing-name" style="font-weight:500"><code>MT-003</code> กระดูกหมู</span>
+          <span class="qty">60 g</span>
+          <span class="cost">2.40 ฿</span>
+          <span class="pct">45%<span class="pct__bar" style="--w:45%"></span></span>
+          <span class="ing-actions"><button onclick="toggleNodeLog(this, 'MT-003', 'กระดูกหมู')">▤</button></span>
+        </div>
+        <div class="bom-row depth-1">
+          <span class="bullet">└</span>
+          <span class="ing-name" style="font-weight:500"><code>SC-009</code> เครื่องเทศซุป</span>
+          <span class="qty">8 g</span>
+          <span class="cost">1.91 ฿</span>
+          <span class="pct">36%<span class="pct__bar" style="--w:36%"></span></span>
+          <span class="ing-actions"><button onclick="toggleNodeLog(this, 'SC-009', 'เครื่องเทศซุป')">▤</button></span>
+        </div>
+        <div class="bom-row depth-1">
+          <span class="bullet">└</span>
+          <span class="ing-name" style="font-weight:500"><code>SC-002</code> ซีอิ๊วดำเค็ม</span>
+          <span class="qty">3 ml</span>
+          <span class="cost">1.00 ฿</span>
+          <span class="pct">19%<span class="pct__bar" style="--w:19%"></span></span>
+          <span class="ing-actions"><button onclick="toggleNodeLog(this, 'SC-002', 'ซีอิ๊วดำเค็ม')">▤</button></span>
+        </div>
+        <div class="bom-row depth-0">
+          <span class="bullet">●</span>
+          <span class="ing-name"><code>VG-001</code> ผักชีไทย + ต้นหอม</span>
+          <span class="qty">15 g</span>
+          <span class="cost">1.40 ฿</span>
+          <span class="pct">6%<span class="pct__bar" style="--w:6%"></span></span>
+          <span class="ing-actions"><button onclick="toggleNodeLog(this, 'VG-001', 'ผักชี+ต้นหอม')">▤</button></span>
+        </div>
+        <div class="bom-row depth-0">
+          <span class="bullet">●</span>
+          <span class="ing-name"><code>SC-014</code> น้ำจิ้ม + พริก</span>
+          <span class="qty">8 g</span>
+          <span class="cost">0.60 ฿</span>
+          <span class="pct">2%<span class="pct__bar" style="--w:2%"></span></span>
+          <span class="ing-actions"><button onclick="toggleNodeLog(this, 'SC-014', 'น้ำจิ้ม+พริก')">▤</button></span>
+        </div>
+        <div class="bom-row depth-0">
+          <span class="bullet">●</span>
+          <span class="ing-name"><code>PKG-012</code> กล่องห่อ size M</span>
+          <span class="qty">1 ใบ</span>
+          <span class="cost">0.97 ฿</span>
+          <span class="pct">4%<span class="pct__bar" style="--w:4%"></span></span>
+          <span class="ing-actions"><button onclick="toggleNodeLog(this, 'PKG-012', 'กล่องห่อ size M')">▤</button></span>
+        </div>
+      </div>
+      <div class="bom-total-row">
+        <span></span>
+        <span>Total cost (380g portion)</span>
+        <span></span>
+        <span class="cost">24.30 ฿</span>
+        <span class="pct">FC 32.4% @ 75฿</span>
+        <span></span>
+      </div>
+
+      <!-- node detail expansion target -->
+      <div class="ing-detail" id="nodeDetail"></div>
+
+      <p style="margin-top: var(--space-5); font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-500); letter-spacing: .3px;">
+        ⓘ <b style="color: var(--color-warning-700)">FC 32.4%</b> เกิน target 30% · พิจารณา · MT-019 ลด 5g (คุยเชฟ) · หรือปรับ pricing NT 75 → 79฿
+      </p>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // per-node activity log
+  const NODE_LOGS = {
+    'MT-019': [
+      {"ts":"2026-04-21T14:00","type":"edit","user":"เชฟ","note":"qty 80g → 75g (yield ปรับ ลดต้นทุน)"},
+      {"ts":"2026-04-15T16:30","type":"edit","user":"เชฟ","note":"ปรับ portion size ถ้วย M · 350g → 380g · qty bump"},
+      {"ts":"2026-03-10T11:00","type":"edit","user":"ไทน์","note":"price update · ส่งผลถึง 6 recipes ที่ใช้ MT-019"}
+    ],
+    'SR-001': [
+      {"ts":"2026-04-08T09:00","type":"edit","user":"เชฟ","note":"เพิ่ม SC-009 เครื่องเทศซุป 5g → 8g · เพิ่มกลิ่นหอม"},
+      {"ts":"2026-03-22T14:00","type":"create","user":"เชฟ","note":"แยก SR-001 ออกจาก inline · reuse ใน 4 recipes"}
+    ]
+  };
+
+  function toggleNodeLog(btn, sku, label) {
+    const tree = document.getElementById('bomTree');
+    const row = btn.closest('.bom-row');
+
+    // remove any existing inline detail
+    const existing = document.querySelector('.bom-row.expanded-detail');
+    if (existing) existing.remove();
+    document.querySelectorAll('.bom-row.is-on').forEach(r => r.classList.remove('is-on'));
+
+    if (row.dataset.expanded === '1') { row.dataset.expanded = '0'; return; }
+    row.dataset.expanded = '1';
+    row.classList.add('is-on');
+    row.style.background = 'var(--color-warning-50)';
+
+    const logs = NODE_LOGS[sku] || [];
+    const eventsAttr = JSON.stringify(logs).replace(/'/g, '&#39;');
+    const wrap = document.createElement('div');
+    wrap.className = 'bom-row expanded-detail';
+    wrap.style.gridTemplateColumns = '1fr';
+    wrap.style.padding = '14px 24px';
+    wrap.style.background = 'var(--color-bg-app)';
+    wrap.innerHTML = `
+      <activity-log
+        entity="${sku}"
+        entity-label="${label}"
+        title="BOM node activity"
+        max="10"
+        events='${eventsAttr}'
+      ></activity-log>
+    `;
+    row.after(wrap);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('globalLogToggle').addEventListener('click', () => {
+      const d = document.getElementById('globalLogDrawer');
+      d.style.display = d.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // recipe selector visual only
+    document.querySelectorAll('.rl__item').forEach(it => {
+      it.addEventListener('click', () => {
+        document.querySelectorAll('.rl__item').forEach(x => x.classList.remove('is-on'));
+        it.classList.add('is-on');
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

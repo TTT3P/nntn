@@ -160,8 +160,36 @@
   .next-strip p { font-size: 14px; color: var(--color-ink-700); margin: 0;}
   .next-strip a { padding: 12px 20px; border-radius: var(--radius-md); background: var(--color-primary-600); color: #fff; text-decoration: none; font-weight: 700; font-size: 14px;}
 </style>
+<script src="app-meta.js?v=20260501a" defer></script>
 </head>
 <body>
+
+<!-- PHASE5-META-BEGIN -->
+<div class="phase5-floats" style="position: fixed; top: 14px; right: 14px; z-index: 1500; max-width: 280px;">
+  <page-meta
+    name="platform-health"
+    version="v1.0"
+    room="Platform"
+    last-sync="2026-04-22T19:28"
+    edited-by="cron"
+    edited-at="2026-04-22T19:28"
+    schema="platform_slo_history, slo_*_watch"
+  ></page-meta>
+  <button class="phase5-log-toggle" type="button"
+    style="margin-top: 8px; width: 100%; padding: 8px 12px; background: var(--color-ink-900,#1A1A1A); color:#fff; border: none; border-radius: 6px; font-family: var(--font-mono,ui-monospace,monospace); font-size: 11px; letter-spacing: 1px; cursor: pointer; font-weight: 700; text-transform: uppercase;"
+    onclick="(function(b){var d=document.getElementById('phase5-log-drawer'); if(d){d.style.display = d.style.display==='none'?'block':'none'; b.textContent = d.style.display==='none'?'▤  Activity log':'×  Close log';}})(this)">
+    ▤  Activity log
+  </button>
+</div>
+<div id="phase5-log-drawer" style="display:none; position: fixed; top: 14px; right: 310px; z-index: 1500; width: 540px; max-height: 80vh; overflow: auto; box-shadow: 0 10px 40px rgba(0,0,0,.18); border-radius: 8px;">
+  <activity-log
+    title="Activity log · platform-health"
+    events="[{&quot;ts&quot;:&quot;2026-04-22T19:28&quot;,&quot;type&quot;:&quot;sync&quot;,&quot;user&quot;:&quot;cron&quot;,&quot;note&quot;:&quot;SLO scan · 4 ok · 1 watch (catch_weight)&quot;},{&quot;ts&quot;:&quot;2026-04-22T19:00&quot;,&quot;type&quot;:&quot;sync&quot;,&quot;user&quot;:&quot;cron&quot;,&quot;note&quot;:&quot;regression watch B1 · 0 mismatches · 61 day streak&quot;},{&quot;ts&quot;:&quot;2026-04-22T18:00&quot;,&quot;type&quot;:&quot;sync&quot;,&quot;user&quot;:&quot;cron&quot;,&quot;note&quot;:&quot;regression watch B6 · 14 suspicious bags · alerted&quot;},{&quot;ts&quot;:&quot;2026-04-21T07:00&quot;,&quot;type&quot;:&quot;edit&quot;,&quot;user&quot;:&quot;Zak&quot;,&quot;note&quot;:&quot;tightened B6 threshold from 1% → 0.5%&quot;}]"
+    max="20"
+  ></activity-log>
+</div>
+<!-- PHASE5-META-END -->
+
 
 <div class="page">
 

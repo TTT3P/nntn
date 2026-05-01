@@ -220,8 +220,36 @@
   @keyframes gpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(201, 150, 44, 0.55);} 50% { box-shadow: 0 0 0 8px rgba(201, 150, 44, 0);} }
   .glow { animation: gpulse 1.6s ease-in-out infinite;}
 </style>
+<script src="app-meta.js?v=20260501a" defer></script>
 </head>
 <body>
+
+<!-- PHASE5-META-BEGIN -->
+<div class="phase5-floats" style="position: fixed; top: 14px; right: 14px; z-index: 1500; max-width: 280px;">
+  <page-meta
+    name="hub-delivery"
+    version="v1.0"
+    room="Stock"
+    last-sync="2026-04-22T19:24"
+    edited-by="น้องเอ"
+    edited-at="2026-04-22T19:24"
+    schema="hub_delivery_drafts, stock_movements"
+  ></page-meta>
+  <button class="phase5-log-toggle" type="button"
+    style="margin-top: 8px; width: 100%; padding: 8px 12px; background: var(--color-ink-900,#1A1A1A); color:#fff; border: none; border-radius: 6px; font-family: var(--font-mono,ui-monospace,monospace); font-size: 11px; letter-spacing: 1px; cursor: pointer; font-weight: 700; text-transform: uppercase;"
+    onclick="(function(b){var d=document.getElementById('phase5-log-drawer'); if(d){d.style.display = d.style.display==='none'?'block':'none'; b.textContent = d.style.display==='none'?'▤  Activity log':'×  Close log';}})(this)">
+    ▤  Activity log
+  </button>
+</div>
+<div id="phase5-log-drawer" style="display:none; position: fixed; top: 14px; right: 310px; z-index: 1500; width: 540px; max-height: 80vh; overflow: auto; box-shadow: 0 10px 40px rgba(0,0,0,.18); border-radius: 8px;">
+  <activity-log
+    title="Activity log · hub-delivery"
+    events="[{&quot;ts&quot;:&quot;2026-04-22T19:24&quot;,&quot;type&quot;:&quot;submit&quot;,&quot;user&quot;:&quot;น้องเอ&quot;,&quot;note&quot;:&quot;4 bills merged → 1 ใบส่ง · NT FoodStory&quot;},{&quot;ts&quot;:&quot;2026-04-22T19:18&quot;,&quot;type&quot;:&quot;edit&quot;,&quot;user&quot;:&quot;น้องเอ&quot;,&quot;note&quot;:&quot;แก้จำนวน MT-019 จาก 4 → 3 ก่อนส่ง&quot;},{&quot;ts&quot;:&quot;2026-04-22T15:00&quot;,&quot;type&quot;:&quot;edit&quot;,&quot;user&quot;:&quot;ไทน์&quot;,&quot;note&quot;:&quot;auto-clear stale draft (>2 ชม.)&quot;},{&quot;ts&quot;:&quot;2026-04-22T11:30&quot;,&quot;type&quot;:&quot;submit&quot;,&quot;user&quot;:&quot;ไทน์&quot;,&quot;note&quot;:&quot;2 bills NT main · 8.6kg total&quot;}]"
+    max="20"
+  ></activity-log>
+</div>
+<!-- PHASE5-META-END -->
+
 
 <div class="page">
 

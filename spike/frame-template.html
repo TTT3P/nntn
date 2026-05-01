@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · frame-template (Phase 6)</title>
+<link rel="stylesheet" href="tokens.css?v=20260422b" />
+<link rel="stylesheet" href="block-library.css?v=20260501a" />
+<script src="block-library.js?v=20260501a" defer></script>
+<script src="app-meta.js?v=20260501a" defer></script>
+<style>
+  * { box-sizing: border-box;}
+  body { margin: 0; background: var(--color-bg-app); color: var(--color-ink-800); font-family: var(--font-sans); min-height: 100vh;}
+
+  /* ─────────── frame layout ─────────── */
+  .frame {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    grid-template-rows: 56px 1fr;
+    grid-template-areas: "logo top" "side body";
+    min-height: 100vh;
+  }
+  @media (max-width: 900px){
+    .frame { grid-template-columns: 1fr; grid-template-rows: 56px auto 1fr; grid-template-areas: "top" "side" "body";}
+    .frame__logo { display: none;}
+  }
+
+  /* ─────────── top-left logo cell ─────────── */
+  .frame__logo {
+    grid-area: logo;
+    background: var(--color-ink-900);
+    color: #fff;
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 18px;
+    border-right: 1px solid var(--color-ink-800);
+  }
+  .frame__logo .mark {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+    display: grid; place-items: center;
+    font-family: var(--font-display); font-weight: 700; font-size: 14px;
+    color: #fff;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
+  }
+  .frame__logo .name {
+    font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: 0.5px;
+  }
+  .frame__logo .name small { display: block; font-family: var(--font-mono); font-size: 9px; letter-spacing: 1.5px; color: var(--color-accent-400, #E8C265); margin-top: 1px; font-weight: 400;}
+
+  /* ─────────── top bar ─────────── */
+  .frame__top {
+    grid-area: top;
+    background: #fff;
+    border-bottom: 1px solid var(--color-ink-200);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 18px;
+    padding: 0 22px;
+  }
+  .breadcrumb {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--color-ink-500);
+  }
+  .breadcrumb b { color: var(--color-ink-900); font-weight: 600;}
+  .breadcrumb .crumb-sep { color: var(--color-ink-300); margin: 0 6px;}
+
+  .top-actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end;}
+  .top-action {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 32px; padding: 0 12px;
+    background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-sm);
+    font-family: var(--font-sans); font-size: 12px; font-weight: 500;
+    color: var(--color-ink-800); cursor: pointer;
+  }
+  .top-action:hover { background: var(--color-ink-50); border-color: var(--color-ink-300);}
+  .top-action--primary { background: var(--color-primary-700); color: #fff; border-color: var(--color-primary-700);}
+  .top-action--primary:hover { background: var(--color-primary-800);}
+  .top-action svg { width: 14px; height: 14px;}
+
+  .date-range {
+    display: inline-flex; align-items: center;
+    height: 32px; padding: 0 4px 0 12px;
+    background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-sm);
+    font-family: var(--font-mono); font-size: 12px;
+  }
+  .date-range__pill { padding: 0 10px; height: 24px; border-radius: 3px; display: inline-flex; align-items: center; cursor: pointer; color: var(--color-ink-600);}
+  .date-range__pill--active { background: var(--color-primary-100); color: var(--color-primary-800); font-weight: 600;}
+
+  .view-toggle { display: flex; background: var(--color-ink-100); border-radius: var(--radius-sm); padding: 2px; gap: 2px;}
+  .view-toggle button {
+    width: 30px; height: 28px; border: none; background: transparent;
+    border-radius: 3px; cursor: pointer; color: var(--color-ink-500);
+    font-family: var(--font-mono); font-size: 11px;
+  }
+  .view-toggle button.is-active { background: #fff; color: var(--color-ink-900); box-shadow: 0 1px 2px rgba(0,0,0,.05);}
+
+  .top-meta-anchor { position: relative; }
+
+  /* ─────────── sidebar ─────────── */
+  .frame__side {
+    grid-area: side;
+    background: var(--color-ink-900);
+    color: var(--color-ink-200);
+    padding: 18px 0;
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+  }
+  @media (max-width: 900px){ .frame__side { flex-direction: row; padding: 8px; gap: 4px; overflow-x: auto;}}
+  .nav-h {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--color-ink-500);
+    padding: 12px 22px 6px;
+  }
+  @media (max-width: 900px){ .nav-h { display: none;}}
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 22px;
+    color: var(--color-ink-300);
+    text-decoration: none;
+    font-size: 13px; font-weight: 500;
+    border-left: 3px solid transparent;
+    white-space: nowrap;
+  }
+  @media (max-width: 900px){ .nav-item { padding: 8px 12px; border-left: none; border-bottom: 3px solid transparent; flex-shrink: 0;}}
+  .nav-item:hover { background: var(--color-ink-800); color: #fff;}
+  .nav-item.is-active { background: var(--color-ink-800); color: #fff; border-color: var(--color-accent-500);}
+  .nav-item .icon { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.85;}
+  .nav-item .badge { margin-left: auto; font-family: var(--font-mono); font-size: 9px; padding: 2px 5px; border-radius: 3px; background: var(--color-danger-500); color: #fff; font-weight: 700;}
+
+  /* ─────────── body / page ─────────── */
+  .frame__body {
+    grid-area: body;
+    overflow: auto;
+    padding: 22px 28px 40px;
+  }
+  .page-h-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; gap: 16px; flex-wrap: wrap;}
+  .page-h {
+    font-family: var(--font-display); font-weight: 500; font-size: 30px; line-height: 1.1;
+    letter-spacing: -0.01em; color: var(--color-ink-900); margin: 0;
+  }
+  .page-sub {
+    font-size: 13px; color: var(--color-ink-600); margin: 4px 0 0;
+  }
+  .page-h-meta { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-500); display: flex; gap: 14px; align-items: center;}
+  .page-h-meta b { color: var(--color-ink-800);}
+
+  .annotation-strip {
+    background: linear-gradient(90deg, var(--color-warning-50, #FBF3DC), var(--color-bg-surface));
+    border: 1px solid var(--color-accent-300, #E5C77E);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px; align-items: center;
+    font-size: 13px;
+  }
+  .annotation-strip__id { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-accent-700, #8C6D1F); font-weight: 700;}
+  .annotation-strip__d { color: var(--color-ink-800); line-height: 1.5;}
+  .annotation-strip__d code { font-family: var(--font-mono); font-size: 11px; background: #fff; padding: 1px 5px; border-radius: 3px;}
+  .annotation-strip__close {
+    border: none; background: transparent; cursor: pointer; color: var(--color-ink-500);
+    width: 28px; height: 28px; border-radius: 4px; font-size: 16px;
+  }
+  .annotation-strip__close:hover { background: rgba(0,0,0,0.05); color: var(--color-ink-800);}
+
+  /* ─────────── block grid ─────────── */
+  .block-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  @media (max-width: 1280px){ .block-grid { grid-template-columns: repeat(3, 1fr);}}
+  @media (max-width: 980px){  .block-grid { grid-template-columns: repeat(2, 1fr);}}
+  @media (max-width: 640px){  .block-grid { grid-template-columns: 1fr;}}
+
+  .block-grid > .span-2 { grid-column: span 2;}
+  .block-grid > .span-3 { grid-column: span 3;}
+  .block-grid > .span-4 { grid-column: span 4;}
+  @media (max-width: 980px){ .block-grid > .span-3, .block-grid > .span-4 { grid-column: span 2;}}
+  @media (max-width: 640px){ .block-grid > .span-2, .block-grid > .span-3, .block-grid > .span-4 { grid-column: span 1;}}
+
+  /* drag/eye affordances on block-card */
+  .frame__body block-card {
+    position: relative;
+  }
+  .block-controls {
+    position: absolute; top: 8px; left: 8px; z-index: 5;
+    display: none; gap: 4px;
+  }
+  .frame__body[data-edit-mode="true"] .block-controls { display: flex;}
+  .block-ctrl {
+    width: 22px; height: 22px; border-radius: 4px;
+    background: var(--color-ink-100); border: 1px solid var(--color-ink-200);
+    color: var(--color-ink-600); cursor: grab; padding: 0;
+    display: grid; place-items: center; font-size: 11px;
+  }
+  .block-ctrl:hover { background: var(--color-primary-100); color: var(--color-primary-800); border-color: var(--color-primary-300);}
+  .frame__body[data-edit-mode="true"] block-card { outline: 1px dashed var(--color-accent-500); outline-offset: 2px;}
+
+  /* ─────────── detail table (collapsible) ─────────── */
+  .detail-table {
+    background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md);
+    margin-bottom: 22px;
+    overflow: hidden;
+  }
+  .detail-table__head {
+    display: grid; grid-template-columns: auto 1fr auto auto;
+    gap: 12px; align-items: center;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--color-ink-200);
+    background: var(--color-ink-50);
+    cursor: pointer;
+  }
+  .detail-table[data-collapsed="true"] .detail-table__head { border-bottom: none;}
+  .detail-table[data-collapsed="true"] .detail-table__body { display: none;}
+  .detail-table__chev {
+    width: 22px; height: 22px; border-radius: 4px;
+    background: #fff; border: 1px solid var(--color-ink-200);
+    display: grid; place-items: center; font-size: 11px; color: var(--color-ink-600);
+    transition: transform .15s;
+  }
+  .detail-table[data-collapsed="true"] .detail-table__chev { transform: rotate(-90deg);}
+  .detail-table__t { font-family: var(--font-display); font-weight: 600; font-size: 15px; color: var(--color-ink-900); margin: 0;}
+  .detail-table__count { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-500);}
+  .detail-table__filter {
+    height: 28px; padding: 0 10px; font-size: 12px;
+    background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-sm);
+    width: 200px;
+  }
+  .detail-table__sort {
+    font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-600);
+    background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-sm);
+    height: 28px; padding: 0 10px; cursor: pointer;
+  }
+
+  .detail-table__body { padding: 0;}
+  .detail-table table { width: 100%; border-collapse: collapse; font-size: 13px;}
+  .detail-table thead th {
+    text-align: left; padding: 10px 18px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--color-ink-500); font-weight: 500;
+    border-bottom: 1px solid var(--color-ink-200);
+    background: #fff;
+  }
+  .detail-table thead th[data-sort] { cursor: pointer;}
+  .detail-table thead th[data-sort]:hover { color: var(--color-ink-900);}
+  .detail-table thead th[data-sort]::after { content: ' ⇅'; opacity: 0.3;}
+  .detail-table tbody td {
+    padding: 11px 18px; border-bottom: 1px dashed var(--color-ink-200); color: var(--color-ink-800);
+  }
+  .detail-table tbody tr:hover { background: var(--color-ink-50);}
+  .detail-table .col-num { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums;}
+  .detail-table .col-id  { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-600);}
+
+  /* ─────────── annotation bubbles (educational) ─────────── */
+  .anno-bubble {
+    position: absolute;
+    background: var(--color-ink-900);
+    color: #fff;
+    padding: 6px 10px; border-radius: 4px;
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .anno-bubble::before {
+    content: ''; position: absolute;
+    border: 5px solid transparent;
+  }
+  .anno-bubble--right { right: 100%; top: 50%; margin-right: 8px; transform: translateY(-50%);}
+  .anno-bubble--right::before { left: 100%; top: 50%; transform: translateY(-50%); border-left-color: var(--color-ink-900);}
+  .anno-bubble--bottom { top: 100%; left: 50%; transform: translateX(-50%); margin-top: 8px;}
+  .anno-bubble--bottom::before { bottom: 100%; left: 50%; transform: translateX(-50%); border-bottom-color: var(--color-ink-900);}
+
+  /* ─────────── doc strip (above frame) ─────────── */
+  .doc-strip {
+    background: var(--color-ink-900); color: #fff;
+    padding: 10px 28px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 2px solid var(--color-accent-500);
+  }
+  .doc-strip__pill { background: var(--color-accent-500); color: var(--color-ink-900); padding: 3px 8px; border-radius: 3px; font-weight: 700;}
+  .doc-strip a { color: var(--color-accent-300); text-decoration: none; border-bottom: 1px dotted currentColor;}
+  .doc-strip__spacer { flex: 1;}
+</style>
+</head>
+<body>
+
+<div class="doc-strip">
+  <span class="doc-strip__pill">Phase 6</span>
+  <span>frame-template · standard page chrome ที่ทุก dashboard ใช้</span>
+  <span class="doc-strip__spacer"></span>
+  <a href="components.html#10">block library →</a>
+  <a href="page-block-matrix.html">page-block matrix →</a>
+  <a href="index.html">← spike hub</a>
+</div>
+
+<div class="frame">
+
+  <!-- ───────── logo cell ───────── -->
+  <div class="frame__logo">
+    <div class="mark">น</div>
+    <div class="name">NNTN<small>nai noi tom yam · ๔๐ ปี</small></div>
+  </div>
+
+  <!-- ───────── top bar ───────── -->
+  <header class="frame__top">
+    <nav class="breadcrumb">
+      <span>NNTN</span>
+      <span class="crumb-sep">/</span>
+      <span>sales</span>
+      <span class="crumb-sep">/</span>
+      <b>ops dashboard</b>
+    </nav>
+
+    <div class="date-range" style="justify-self: end; margin-right: 8px;">
+      <span class="date-range__pill">today</span>
+      <span class="date-range__pill date-range__pill--active">7d</span>
+      <span class="date-range__pill">30d</span>
+      <span class="date-range__pill">MTD</span>
+      <span class="date-range__pill">custom</span>
+    </div>
+
+    <div class="top-actions">
+      <div class="view-toggle" title="block layout density">
+        <button class="is-active">▦</button>
+        <button>≡</button>
+        <button>⊟</button>
+      </div>
+      <button class="top-action" id="editToggle">⊞ จัดเรียง</button>
+      <button class="top-action">↓ export</button>
+      <button class="top-action top-action--primary">↻ refresh</button>
+    </div>
+  </header>
+
+  <!-- ───────── sidebar ───────── -->
+  <aside class="frame__side">
+    <div class="nav-h">ส่งของ · รับของ</div>
+    <a class="nav-item" href="hub-delivery-proto.html">
+      <span class="icon">📦</span>ส่งออก<span class="badge">3</span>
+    </a>
+    <a class="nav-item" href="po-receive-proto.html">
+      <span class="icon">📥</span>รับของ
+    </a>
+    <a class="nav-item" href="meat-produce-proto.html">
+      <span class="icon">🔪</span>แปรรูป
+    </a>
+
+    <div class="nav-h">stock</div>
+    <a class="nav-item" href="meat-stock-kanban-proto.html">
+      <span class="icon">❄</span>คลัง 3 จุด
+    </a>
+    <a class="nav-item" href="stock-dispense-proto.html">
+      <span class="icon">→</span>เบิก
+    </a>
+    <a class="nav-item" href="count-sheet-weekly-proto.html">
+      <span class="icon">▤</span>นับสต๊อก
+    </a>
+
+    <div class="nav-h">sales · admin</div>
+    <a class="nav-item is-active" href="sales-ops-dashboard-proto.html">
+      <span class="icon">📊</span>sales<span class="badge" style="background: var(--color-accent-500); color: var(--color-ink-900);">●</span>
+    </a>
+    <a class="nav-item" href="admin-items-proto.html">
+      <span class="icon">⚙</span>admin
+    </a>
+
+    <div class="nav-h">platform</div>
+    <a class="nav-item" href="platform-health-proto.html">
+      <span class="icon">♥</span>health
+    </a>
+    <a class="nav-item" href="ops-console-proto.html">
+      <span class="icon">⌂</span>console (ไทน์)
+    </a>
+  </aside>
+
+  <!-- ───────── body ───────── -->
+  <main class="frame__body" data-edit-mode="false">
+
+    <div class="page-h-row">
+      <div>
+        <h1 class="page-h">sales · ops dashboard</h1>
+        <p class="page-sub">ครัวขายเป็นยังไง · per channel · COGS · top SKU · daily review ของไทน์</p>
+      </div>
+      <div class="page-h-meta">
+        <span><b>last sync</b> 19:24 · 2 นาทีที่แล้ว</span>
+        <span><b>edited by</b> ไทน์ · 22/04 16:30</span>
+      </div>
+    </div>
+
+    <!-- annotation strip explaining the frame -->
+    <div class="annotation-strip">
+      <span class="annotation-strip__id">Phase 6 · frame demo</span>
+      <span class="annotation-strip__d">
+        นี่คือ template ที่ทุก dashboard ใช้ · top bar (date-range · refresh · export) · sidebar (8 surfaces) · block-grid responsive (1/2/3/4 col) · detail table ใต้ blocks (collapsible · sortable · filterable) · กด <code>⊞ จัดเรียง</code> ด้านบนเพื่อเข้า edit mode → drag handle + eye icon โผล่ขึ้นมา
+      </span>
+      <button class="annotation-strip__close" onclick="this.parentElement.remove()">×</button>
+    </div>
+
+    <!-- block grid · 8 blocks demo -->
+    <div class="block-grid" id="blockGrid">
+      <block-card title="วันนี้" period="today" trend="8.2" tooltip="vs เมื่อวาน">
+        <div class="block-controls">
+          <button class="block-ctrl" title="drag">⋮⋮</button>
+          <button class="block-ctrl" title="hide">⊘</button>
+        </div>
+        <metric-kpi value="42,180" unit="฿" caption="32 บิล · 1,318/บิล"></metric-kpi>
+      </block-card>
+
+      <block-card title="MTD" period="MTD" trend="11.8">
+        <div class="block-controls">
+          <button class="block-ctrl">⋮⋮</button>
+          <button class="block-ctrl">⊘</button>
+        </div>
+        <metric-kpi value="1.21M" unit="฿" caption="vs target 1.0M (+21%)"></metric-kpi>
+      </block-card>
+
+      <block-card title="avg order" period="7d" trend="2.4">
+        <div class="block-controls">
+          <button class="block-ctrl">⋮⋮</button>
+          <button class="block-ctrl">⊘</button>
+        </div>
+        <metric-kpi value="1,318" unit="฿" caption="median 1,180"></metric-kpi>
+      </block-card>
+
+      <block-card title="bills" period="today" trend="-4">
+        <div class="block-controls">
+          <button class="block-ctrl">⋮⋮</button>
+          <button class="block-ctrl">⊘</button>
+        </div>
+        <metric-kpi value="32" caption="cancel 1 · void 0"></metric-kpi>
+      </block-card>
+
+      <block-card class="span-2" title="ยอด 30 วัน" period="30d" trend="9.1" drilldown="sales-ops-dashboard-proto.html#trend">
+        <div class="block-controls">
+          <button class="block-ctrl">⋮⋮</button>
+          <button class="block-ctrl">⊘</button>
+        </div>
+        <chart-line
+          data="[28,32,30,35,42,38,40,44,41,46,43,38,42,45,41,38,44,46,42,45,48,44,40,42,46,49,46,43,45,48]"
+          labels='["22/03","30/03","08/04","16/04","22/04"]'
+          height="160"
+        ></chart-line>
+      </block-card>
+
+      <block-card title="Channel mix" period="MTD">
+        <div class="block-controls">
+          <button class="block-ctrl">⋮⋮</button>
+          <button class="block-ctrl">⊘</button>
+        </div>
+        <chart-donut
+          center="68%"
+          center-label="หน้าร้าน"
+          data='[{"label":"หน้าร้าน","value":68},{"label":"LINE","value":18},{"label":"Grab","value":9},{"label":"Lineman","value":5}]'
+        ></chart-donut>
+      </block-card>
+
+      <block-card title="Top SKU" period="MTD" trend="9.8" drilldown="sales-ops-dashboard-proto.html">
+        <div class="block-controls">
+          <button class="block-ctrl">⋮⋮</button>
+          <button class="block-ctrl">⊘</button>
+        </div>
+        <chart-bar
+          data='[{"label":"เปื่อย","value":48},{"label":"ตุ๋น","value":36},{"label":"NM","value":29},{"label":"ลูก","value":22},{"label":"แห้ง","value":14}]'
+          accent-index="0"
+        ></chart-bar>
+      </block-card>
+
+      <block-card class="span-2" title="Activity heatmap" period="60d">
+        <div class="block-controls">
+          <button class="block-ctrl">⋮⋮</button>
+          <button class="block-ctrl">⊘</button>
+        </div>
+        <heatmap-grid
+          cols="9"
+          data='[
+            {"date":"22/02","value":2},{"date":"23/02","value":4},{"date":"24/02","value":6},{"date":"25/02","value":8},{"date":"26/02","value":10},{"date":"27/02","value":3},{"date":"28/02","value":1},
+            {"date":"01/03","value":5},{"date":"02/03","value":7},{"date":"03/03","value":3},{"date":"04/03","value":9},{"date":"05/03","value":11},{"date":"06/03","value":12},{"date":"07/03","value":4},
+            {"date":"08/03","value":6},{"date":"09/03","value":8},{"date":"10/03","value":4},{"date":"11/03","value":10},{"date":"12/03","value":12},{"date":"13/03","value":13},{"date":"14/03","value":5},
+            {"date":"15/03","value":7},{"date":"16/03","value":9},{"date":"17/03","value":5},{"date":"18/03","value":11},{"date":"19/03","value":13},{"date":"20/03","value":14},{"date":"21/03","value":6},
+            {"date":"22/03","value":7},{"date":"23/03","value":10},{"date":"24/03","value":6},{"date":"25/03","value":12},{"date":"26/03","value":14},{"date":"27/03","value":15},{"date":"28/03","value":7},
+            {"date":"29/03","value":8},{"date":"30/03","value":11},{"date":"31/03","value":7},{"date":"01/04","value":13},{"date":"02/04","value":15},{"date":"03/04","value":16},{"date":"04/04","value":8},
+            {"date":"05/04","value":9},{"date":"06/04","value":12},{"date":"07/04","value":7},{"date":"08/04","value":13},{"date":"09/04","value":15},{"date":"10/04","value":15},{"date":"11/04","value":8},
+            {"date":"12/04","value":10},{"date":"13/04","value":13},{"date":"14/04","value":8},{"date":"15/04","value":14},{"date":"16/04","value":16},{"date":"17/04","value":17},{"date":"18/04","value":9},
+            {"date":"19/04","value":11},{"date":"20/04","value":13},{"date":"21/04","value":9},{"date":"22/04","value":15}
+          ]'
+        ></heatmap-grid>
+      </block-card>
+
+      <block-card class="span-2" title="Today's events" period="today">
+        <div class="block-controls">
+          <button class="block-ctrl">⋮⋮</button>
+          <button class="block-ctrl">⊘</button>
+        </div>
+        <timeline-event
+          data='[
+            {"time":"19:24","title":"ส่งออก FS20260422-3","note":"4 บิลรวม 1 ใบ","tone":"ok"},
+            {"time":"16:30","title":"PKG-012 mismatch resolved","tone":"warn"},
+            {"time":"14:00","title":"ผลิต MT-019 → 12 ถุง","tone":"ok"},
+            {"time":"08:30","title":"รับ PO-0422-lung +8 กก.","tone":"ok"}
+          ]'
+        ></timeline-event>
+      </block-card>
+    </div>
+
+    <!-- detail table (collapsible · sortable · filterable) -->
+    <div class="detail-table" id="detailTable" data-collapsed="false">
+      <header class="detail-table__head" onclick="(function(t){t.dataset.collapsed = t.dataset.collapsed === 'true' ? 'false' : 'true';})(this.parentElement)">
+        <span class="detail-table__chev">▾</span>
+        <div>
+          <h3 class="detail-table__t">รายการขาย · 32 ใบบิล</h3>
+        </div>
+        <input type="text" class="detail-table__filter" placeholder="ค้นหา bill_no / SKU / channel…" onclick="event.stopPropagation()" />
+        <button class="detail-table__sort" onclick="event.stopPropagation()">↓ เวลาล่าสุด</button>
+      </header>
+      <div class="detail-table__body">
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="time">time</th>
+              <th data-sort="bill">bill_no</th>
+              <th>channel</th>
+              <th>items</th>
+              <th data-sort="gross" style="text-align: right;">gross ฿</th>
+              <th data-sort="margin" style="text-align: right;">margin %</th>
+              <th>status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="col-id">19:24</td><td class="col-id">FS20260422-3</td><td>หน้าร้าน</td><td>4 รายการ · เปื่อย ×2 + nm</td><td class="col-num">2,180</td><td class="col-num">38%</td><td><span style="background: var(--color-success-50); color: var(--color-success-700); font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; border-radius: 3px;">ส่งแล้ว</span></td></tr>
+            <tr><td class="col-id">19:08</td><td class="col-id">FS20260422-2</td><td>LINE</td><td>3 รายการ · ตุ๋น × 3</td><td class="col-num">1,470</td><td class="col-num">42%</td><td><span style="background: var(--color-success-50); color: var(--color-success-700); font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; border-radius: 3px;">ส่งแล้ว</span></td></tr>
+            <tr><td class="col-id">18:42</td><td class="col-id">FS20260422-1</td><td>หน้าร้าน</td><td>2 รายการ · NM ใหญ่ + เครื่องดื่ม</td><td class="col-num">820</td><td class="col-num">35%</td><td><span style="background: var(--color-success-50); color: var(--color-success-700); font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; border-radius: 3px;">ส่งแล้ว</span></td></tr>
+            <tr><td class="col-id">18:15</td><td class="col-id">FS20260422-X</td><td>Grab</td><td>1 รายการ · เปื่อยพิเศษ</td><td class="col-num">450</td><td class="col-num">32%</td><td><span style="background: var(--color-warning-50); color: var(--color-warning-700); font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; border-radius: 3px;">รอจัดส่ง</span></td></tr>
+            <tr><td class="col-id">17:50</td><td class="col-id">FS20260422-W</td><td>Lineman</td><td>2 รายการ · เปื่อย + nm</td><td class="col-num">1,140</td><td class="col-num">36%</td><td><span style="background: var(--color-success-50); color: var(--color-success-700); font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; border-radius: 3px;">ส่งแล้ว</span></td></tr>
+            <tr><td colspan="7" style="text-align: center; color: var(--color-ink-500); font-style: italic; padding: 14px;">… 27 บิลก่อนหน้า · กดดูทั้งหมด</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- meta + activity log floats top-right -->
+    <div style="position: fixed; bottom: 14px; right: 14px; z-index: 200; display: flex; flex-direction: column; gap: 10px; align-items: flex-end;">
+      <button id="logToggle" type="button"
+        style="padding: 8px 14px; background: var(--color-ink-900); color:#fff; border: none; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; cursor: pointer; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 12px rgba(0,0,0,.15);">
+        ▤ Activity
+      </button>
+    </div>
+    <div id="logDrawer" style="display:none; position: fixed; bottom: 60px; right: 14px; z-index: 1500; width: 460px; max-height: 70vh; overflow: auto; box-shadow: 0 10px 40px rgba(0,0,0,.18); border-radius: 8px;">
+      <activity-log
+        title="Activity log · this page"
+        max="10"
+        events='[
+          {"ts":"2026-04-22T19:24","type":"refresh","user":"system","note":"data refreshed · 32 bills loaded"},
+          {"ts":"2026-04-22T18:00","type":"edit","user":"ไทน์","note":"เพิ่ม block · channel mix donut"},
+          {"ts":"2026-04-22T11:00","type":"sync","user":"cron","note":"daily aggregation rolled up"}
+        ]'
+      ></activity-log>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // edit mode toggle (visual affordance only)
+  document.getElementById('editToggle').addEventListener('click', e => {
+    const body = document.querySelector('.frame__body');
+    const cur = body.dataset.editMode === 'true';
+    body.dataset.editMode = !cur;
+    e.currentTarget.style.background = !cur ? 'var(--color-accent-500)' : '';
+    e.currentTarget.style.color = !cur ? 'var(--color-ink-900)' : '';
+    e.currentTarget.style.borderColor = !cur ? 'var(--color-accent-600)' : '';
+  });
+
+  // activity log drawer toggle
+  document.getElementById('logToggle').addEventListener('click', () => {
+    const d = document.getElementById('logDrawer');
+    d.style.display = d.style.display === 'none' ? 'block' : 'none';
+  });
+
+  // date-range pills
+  document.querySelectorAll('.date-range__pill').forEach(p => {
+    p.addEventListener('click', () => {
+      document.querySelectorAll('.date-range__pill').forEach(x => x.classList.remove('date-range__pill--active'));
+      p.classList.add('date-range__pill--active');
+    });
+  });
+
+  // view-toggle
+  document.querySelectorAll('.view-toggle button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.view-toggle button').forEach(x => x.classList.remove('is-active'));
+      b.classList.add('is-active');
+    });
+  });
+</script>
+</body>
+</html>

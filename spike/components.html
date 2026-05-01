@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>NNTN · Components (Phase 1C)</title>
 <link rel="stylesheet" href="tokens.css?v=20260422b" />
+<link rel="stylesheet" href="block-library.css?v=20260501a" />
+<script src="block-library.js?v=20260501a" defer></script>
+<script src="app-meta.js?v=20260501a" defer></script>
 <script>
   try {
     var saved = localStorage.getItem('nntn_theme');
@@ -37,8 +40,8 @@
   }
   .page-lede { font-size: 17px; line-height: 1.6; color: var(--color-ink-700); max-width: 820px; margin: 0 0 var(--space-3);}
   .page-lede b { color: var(--color-primary-700); }
-  .page-meta { display:flex; gap: 20px; flex-wrap:wrap; font-family: var(--font-mono); font-size: 12px; color: var(--color-ink-600); margin-bottom: var(--space-7);}
-  .page-meta b { color: var(--color-ink-900); font-weight: 600;}
+  .head-meta { display:flex; gap: 20px; flex-wrap:wrap; font-family: var(--font-mono); font-size: 12px; color: var(--color-ink-600); margin-bottom: var(--space-7);}
+  .head-meta b { color: var(--color-ink-900); font-weight: 600;}
 
   /* Section */
   section.s { margin-bottom: var(--space-8); }
@@ -288,6 +291,7 @@
   .footer-cap p { font-size: 14px; color: var(--color-ink-700); margin: 0;}
   .footer-cap .btn { white-space: nowrap; }
 </style>
+<script src="app-meta.js?v=20260501a" defer></script>
 </head>
 <body>
 
@@ -304,7 +308,7 @@
     ทุกหน้าของ NNTN ใหม่จะประกอบจากชิ้นส่วนชุดนี้ — <b>เน้นโมบายล์เป็นหลัก</b> เพราะน้องครัวกลางทำงานจากมือถือ 90% ของเวลา
     · Heritage feel มาจาก <b>Trirong slab serif</b> ในหัวข้อ + <b>gold diamond</b> ornament · ตัวเลขทั้งหมดใช้ <b>IBM Plex Mono tabular</b> — column เรียงตรง
   </p>
-  <div class="page-meta">
+  <div class="head-meta">
     <span><b>Tokens</b> tokens.css?v=20260422b</span>
     <span><b>Type</b> Trirong / Noto Sans Thai / IBM Plex Mono</span>
     <span><b>Status</b> draft · pending review</span>
@@ -799,11 +803,220 @@
     </div>
   </section>
 
+  <!-- ═════════ SECTION 9 · Page meta + activity log (Phase 5) ═════════ -->
+  <section class="s">
+    <div class="s__head">
+      <div class="s__no">09 · Phase 5</div>
+      <h2 class="s__title">Page meta · Activity log</h2>
+      <p class="s__note">2 custom elements · ใส่ทุกหน้า · ATUM Logs pattern · audit ทุก mutation</p>
+    </div>
+
+    <h3 class="sub">&lt;page-meta&gt; · top-right floating card</h3>
+    <div class="label">version · room owner · last sync · edited-by · schema source</div>
+    <div class="surface" style="margin-bottom: var(--space-5);">
+      <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+        <page-meta
+          name="po-receive"
+          version="v1.0"
+          room="Stock"
+          last-sync="2026-04-22T19:24"
+          edited-by="ไทน์"
+          edited-at="2026-04-22T18:01"
+          schema="purchase_orders, stock_movements"
+        ></page-meta>
+        <page-meta
+          name="sales-ops-dashboard"
+          version="v0.3"
+          room="Sales Ops"
+          last-sync="2026-04-22T19:18"
+          edited-by="ดิว"
+          edited-at="2026-04-22T16:30"
+          schema="v_sales_daily, fc_targets"
+        ></page-meta>
+        <page-meta
+          name="admin-bom"
+          version="v1.2"
+          room="CookingBook"
+          last-sync="2026-04-22T18:00"
+          edited-by="เชฟ"
+          edited-at="2026-04-21T14:00"
+          schema="recipes, recipe_ingredients"
+        ></page-meta>
+      </div>
+      </div>
+    </div>
+
+    <h3 class="sub" style="margin-top: var(--space-6);">&lt;activity-log&gt; · per-entity feed (ATUM pattern)</h3>
+    <div class="label">timestamp · event chip · Δqty · before→after · user · note · filter chips · expand</div>
+    <div class="surface">
+        <activity-log
+          entity="MT-019"
+          entity-label="หมูสามชั้นสไลซ์"
+          title="Activity log · MT-019"
+          max="6"
+          events='[
+            {"ts":"2026-04-22T19:24","type":"receive","delta":"+11","before":"6.4kg","after":"17.4kg","user":"ไทน์","note":"PO-0422-lung · ลุงเจริญ"},
+            {"ts":"2026-04-22T14:08","type":"dispense","delta":"−3.6kg","before":"17.4kg","after":"13.8kg","user":"ครัว","note":"แปรรูป → ลูกชิ้น batch #2204A"},
+            {"ts":"2026-04-22T11:00","type":"split","user":"ลุงนัก","note":"bag #2025 (1.2kg) → 3 bags · 0.4kg each"},
+            {"ts":"2026-04-21T16:30","type":"adjust","delta":"−1","before":"18","after":"17","user":"ไทน์","note":"weekly count Week 17 · note: หาย 1 ถุง"},
+            {"ts":"2026-04-21T08:00","type":"transfer","delta":"2 bags","before":"A · 9","after":"B · 11","user":"ลุงนัก","note":"ย้ายไป freezer B"},
+            {"ts":"2026-04-20T18:30","type":"edit","user":"ไทน์","note":"แก้ราคา 235 → 245 บาท/กก."},
+            {"ts":"2026-04-20T11:12","type":"receive","delta":"+8","before":"4.0kg","after":"12.0kg","user":"ไทน์","note":"PO-0420-lung"}
+          ]'
+        ></activity-log>
+    </div>
+
+    <div style="padding: 14px 18px; background: var(--color-primary-50); border: 1px solid var(--color-primary-200); border-radius: var(--radius-md); margin-top: var(--space-4); font-size: 13px; line-height: 1.55; color: var(--color-ink-800);">
+      <b>ATUM Logs pattern</b> · per-entity activity feed (ไม่ใช่ global event log) — user สนใจว่า "<i>รายการนี้</i>เกิดอะไร" มากกว่า "ทั้งระบบเกิดอะไร" · event types: <code style="font-family: var(--font-mono); font-size: 12px;">receive · dispense · adjust · transfer · produce · split · edit · revert · cascade · submit · print · sync</code>
+    </div>
+  </section>
+
+  <!-- ═════════ SECTION 10 · Block library (Phase 6) ═════════ -->
+  <section class="s">
+    <div class="s__head">
+      <div class="s__no">10 · Phase 6</div>
+      <h2 class="s__title">Block library</h2>
+      <p class="s__note">12 dashboard blocks · WooCommerce/ATUM pattern · all use &lt;block-card&gt; chrome · inline SVG · zero deps</p>
+    </div>
+
+    <div class="blk-anatomy">
+      <b>anatomy</b> · <code>&lt;block-card title period tooltip trend drilldown state&gt;</code> handles chrome (title, period badge, trend chip, info tooltip, drilldown link, loading/empty/error states). Body is slotted HTML — usually one of the 12 specialized renderers below.
+      <br/><b>states</b> · <code>state="ready" | "loading" | "empty" | "error"</code> — same chrome, body swaps · <b>responsive</b> · grid 1/2/3/4 col by viewport · <b>tooltip</b> · hover the <code>?</code>
+    </div>
+
+    <h3 class="blk-h">10.0 · 4 states (chrome demo)</h3>
+    <div class="blk-states">
+      <block-card title="Revenue · 7d" period="7d" tooltip="Sum of v_sales_daily.gross" trend="12.4" state="ready">
+        <metric-kpi value="248,300" unit="บาท" caption="vs 7 วันก่อน 220,800" compare="🟢 ดีขึ้น 12.4%"></metric-kpi>
+      </block-card>
+      <block-card title="Revenue · 7d" period="7d" tooltip="Loading example" state="loading"></block-card>
+      <block-card title="Revenue · 7d" period="7d" empty-text="ยังไม่มีข้อมูลใน 7 วันที่ผ่านมา · ลองเปลี่ยนช่วงเวลา" empty-cta="เปลี่ยนช่วง" state="empty"></block-card>
+    </div>
+
+    <h3 class="blk-h">10.1 · KPI · line · bar · donut</h3>
+    <div class="blk-grid blk-grid--4">
+      <block-card title="วันนี้" period="today" trend="8.2" tooltip="ยอดวันนี้เทียบเมื่อวาน">
+        <metric-kpi value="42,180" unit="฿" caption="32 บิล · เฉลี่ย 1,318/บิล"></metric-kpi>
+      </block-card>
+      <block-card title="ยอด 14 วัน" period="14d" trend="-3.1" trend-suffix="%">
+        <chart-line
+          data="[28,32,30,35,42,38,40,44,41,46,43,38,42,45]"
+          labels='["8","11","14","17","21"]'
+        ></chart-line>
+      </block-card>
+      <block-card title="Top 5 SKU" period="7d" tooltip="By gross revenue">
+        <chart-bar
+          data='[{"label":"เปื่อย","value":48},{"label":"ตุ๋น","value":36},{"label":"NM","value":29},{"label":"ลูก","value":22},{"label":"แห้ง","value":14}]'
+          accent-index="0"
+        ></chart-bar>
+      </block-card>
+      <block-card title="Channel mix" period="MTD" tooltip="ช่องทางขาย">
+        <chart-donut
+          center="68%"
+          center-label="หน้าร้าน"
+          data='[{"label":"หน้าร้าน","value":68},{"label":"LINE","value":18},{"label":"Grab","value":9},{"label":"Lineman","value":5}]'
+        ></chart-donut>
+      </block-card>
+    </div>
+
+    <h3 class="blk-h">10.2 · leaderboard · heatmap (drilldown demo)</h3>
+    <div class="blk-grid blk-grid--12">
+      <block-card title="Top sellers · เดือนนี้" period="MTD" trend="9.8" drilldown="sales-ops-dashboard-proto.html">
+        <table-leaderbd
+          value-label="ยอด ฿"
+          data='[
+            {"label":"เปื่อยพิเศษ","value":48200,"trend":12},
+            {"label":"ตุ๋นชาม","value":36400,"trend":4},
+            {"label":"NM ใหญ่","value":29800,"trend":-2},
+            {"label":"ลูกชิ้นรวม","value":22100,"trend":18},
+            {"label":"ของแห้งรวม","value":14600,"trend":-7}
+          ]'
+        ></table-leaderbd>
+      </block-card>
+      <block-card title="Activity heatmap" period="60d" tooltip="กิจกรรมรายวัน · 7 แถว = วันในสัปดาห์">
+        <heatmap-grid
+          cols="9"
+          data='[
+            {"date":"22/02","value":2},{"date":"23/02","value":4},{"date":"24/02","value":6},{"date":"25/02","value":8},{"date":"26/02","value":10},{"date":"27/02","value":3},{"date":"28/02","value":1},
+            {"date":"01/03","value":5},{"date":"02/03","value":7},{"date":"03/03","value":3},{"date":"04/03","value":9},{"date":"05/03","value":11},{"date":"06/03","value":12},{"date":"07/03","value":4},
+            {"date":"08/03","value":6},{"date":"09/03","value":8},{"date":"10/03","value":4},{"date":"11/03","value":10},{"date":"12/03","value":12},{"date":"13/03","value":13},{"date":"14/03","value":5},
+            {"date":"15/03","value":7},{"date":"16/03","value":9},{"date":"17/03","value":5},{"date":"18/03","value":11},{"date":"19/03","value":13},{"date":"20/03","value":14},{"date":"21/03","value":6},
+            {"date":"22/03","value":7},{"date":"23/03","value":10},{"date":"24/03","value":6},{"date":"25/03","value":12},{"date":"26/03","value":14},{"date":"27/03","value":15},{"date":"28/03","value":7},
+            {"date":"29/03","value":8},{"date":"30/03","value":11},{"date":"31/03","value":7},{"date":"01/04","value":13},{"date":"02/04","value":15},{"date":"03/04","value":16},{"date":"04/04","value":8},
+            {"date":"05/04","value":9},{"date":"06/04","value":12},{"date":"07/04","value":7},{"date":"08/04","value":13},{"date":"09/04","value":15},{"date":"10/04","value":15},{"date":"11/04","value":8},
+            {"date":"12/04","value":10},{"date":"13/04","value":13},{"date":"14/04","value":8},{"date":"15/04","value":14},{"date":"16/04","value":16},{"date":"17/04","value":17},{"date":"18/04","value":9},
+            {"date":"19/04","value":11},{"date":"20/04","value":13},{"date":"21/04","value":9},{"date":"22/04","value":15}
+          ]'
+        ></heatmap-grid>
+      </block-card>
+    </div>
+
+    <h3 class="blk-h">10.3 · low-stock · progress-tier · map-cards</h3>
+    <div class="blk-grid blk-grid--3">
+      <block-card title="Low stock alert" period="now" trend="-2" trend-suffix=" SKU" tooltip="qty &lt; min · ทุก SKU ที่ต่ำกว่าเกณฑ์">
+        <low-stock-alert
+          data='[
+            {"sku":"MT-019","name":"หมูสามชั้น","qty":4,"unit":"ถุง","min":10,"severity":"critical"},
+            {"sku":"NM-007","name":"ลูกชิ้นเอ็น","qty":12,"unit":"กก.","min":20,"severity":"warn"},
+            {"sku":"DR-103","name":"พริกแห้ง","qty":2,"unit":"กก.","min":5,"severity":"critical"},
+            {"sku":"PKG-013","name":"ถุง 6×9","qty":186,"unit":"ใบ","min":300,"severity":"warn"}
+          ]'
+        ></low-stock-alert>
+      </block-card>
+      <block-card title="Stock by warehouse" period="now" tooltip="กระจาย stock 3 คลัง">
+        <progress-tier
+          data='[
+            {"label":"คลัง A · เย็น","value":42},
+            {"label":"คลัง B · แช่แข็ง","value":68},
+            {"label":"คลัง C · พร้อมขาย","value":31},
+            {"label":"out","value":4}
+          ]'
+        ></progress-tier>
+      </block-card>
+      <block-card title="3 คลัง · summary" period="now">
+        <map-cards
+          data='[
+            {"id":"A","name":"คลังเย็น","metric":"42","metricLabel":"SKU","status":"ok","note":"อายุเฉลี่ย 4 วัน"},
+            {"id":"B","name":"แช่แข็ง","metric":"68","metricLabel":"ถุง","status":"warn","note":"3 ถุง อายุ &gt; 14 วัน"},
+            {"id":"C","name":"พร้อมขาย","metric":"31","metricLabel":"SKU","status":"alert","note":"PKG-018 ต่ำกว่า min"}
+          ]'
+        ></map-cards>
+      </block-card>
+    </div>
+
+    <h3 class="blk-h">10.4 · timeline-event · empty-state</h3>
+    <div class="blk-grid blk-grid--2">
+      <block-card title="Today's events" period="today" tooltip="รวม events วันนี้">
+        <timeline-event
+          data='[
+            {"time":"19:24","title":"ส่งออก FS20260422-3 สำเร็จ","note":"4 บิลรวม 1 ใบ · ตัด stock −22.4 L · auto-clear draft","tone":"ok"},
+            {"time":"16:30","title":"พบ mismatch PKG-012","note":"ขาด 1 ใบ · ไทน์ resolve แล้ว","tone":"warn"},
+            {"time":"14:00","title":"ผลิต MT-019 → 12 ถุง","note":"yield 88% · cost 245 ฿/กก.","tone":"ok"},
+            {"time":"11:00","title":"นับสต๊อก week 17","note":"adj −1 ถุง MT-019 (note: หาย)","tone":"default"},
+            {"time":"08:30","title":"รับ PO-0422-lung","note":"+8 กก. หมูสามชั้น · ราคา 245","tone":"ok"}
+          ]'
+        ></timeline-event>
+      </block-card>
+      <block-card title="ส่งออกที่รอ" period="now">
+        <empty-state
+          icon="✓"
+          title="ไม่มีอะไรค้าง"
+          note="ส่งครบ 4 บิลแล้ว · ย้อนดู archive ได้ในเมนู"
+          cta="ดู archive"
+        ></empty-state>
+      </block-card>
+    </div>
+
+    <div style="padding: 14px 18px; background: var(--color-primary-50); border: 1px solid var(--color-primary-200); border-radius: var(--radius-md); margin-top: var(--space-5); font-size: 13px; line-height: 1.55; color: var(--color-ink-800);">
+      <b>ใช้ยังไง</b> · ดู <a href="frame-template.html" style="color: var(--color-primary-700); font-weight: 600; text-decoration: underline dotted;">frame-template.html</a> · ทุกหน้า dashboard ใช้ <code style="font-family: var(--font-mono); font-size: 12px; background: #fff; padding: 1px 5px; border-radius: 3px;">&lt;block-card&gt;</code> + 1 ใน 12 renderers · grid responsive · drag handle + eye icon (visual affordance) · <a href="page-block-matrix.html" style="color: var(--color-primary-700); font-weight: 600; text-decoration: underline dotted;">page-block-matrix.html</a> แสดงว่าหน้าไหนใช้ block อะไร
+    </div>
+  </section>
+
   <!-- ═════ Footer ═════ -->
   <div class="footer-cap">
     <div>
-      <h2>พร้อมไป Phase 1D</h2>
-      <p>เอาชิ้นส่วนเหล่านี้ไปสร้าง hub-delivery prototype ที่ใช้ progressive disclosure แก้ B2/B6 bug</p>
+      <h2>9 sections · ใช้ component เดิมต่อไป</h2>
+      <p>Components ทุกตัวมาจาก library นี้ · ไม่สร้างใหม่ในหน้าใหม่</p>
     </div>
     <a href="index.html" class="btn btn--primary btn--lg">→ กลับ hub</a>
   </div>
@@ -812,6 +1025,30 @@
 
 <style>
   @keyframes spin { to { transform: rotate(360deg); }}
+  /* ═════ Phase 6 block-library showcase ═════ */
+  .blk-grid { display: grid; gap: 16px; }
+  .blk-grid--3 { grid-template-columns: repeat(3, 1fr);}
+  .blk-grid--4 { grid-template-columns: repeat(4, 1fr);}
+  .blk-grid--2 { grid-template-columns: repeat(2, 1fr);}
+  .blk-grid--12 { grid-template-columns: 2fr 1fr;}
+  @media (max-width: 1100px){
+    .blk-grid--3, .blk-grid--4, .blk-grid--12 { grid-template-columns: repeat(2, 1fr);}
+  }
+  @media (max-width: 700px){
+    .blk-grid--3, .blk-grid--4, .blk-grid--12, .blk-grid--2 { grid-template-columns: 1fr;}
+  }
+  .blk-states { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;}
+  @media (max-width: 900px){ .blk-states { grid-template-columns: 1fr;}}
+  .blk-anatomy {
+    background: var(--color-bg-app);
+    padding: 18px 22px; border-radius: var(--radius-md);
+    border: 1px dashed var(--color-ink-300);
+    margin-bottom: var(--space-5);
+    font-size: 13px; line-height: 1.7; color: var(--color-ink-700);
+  }
+  .blk-anatomy code { font-family: var(--font-mono); font-size: 11px; background: var(--color-ink-100); color: var(--color-ink-800); padding: 1px 5px; border-radius: 3px;}
+  .blk-anatomy b { color: var(--color-primary-700); font-family: var(--font-mono); font-size: 12px;}
+  .blk-h { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-accent-600); margin: var(--space-5) 0 12px; padding-bottom: 8px; border-bottom: 1px dashed var(--color-ink-200);}
 </style>
 
 </body>

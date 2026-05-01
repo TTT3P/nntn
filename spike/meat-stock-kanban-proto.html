@@ -184,8 +184,36 @@
   .next-strip p { font-size: 14px; color: var(--color-ink-700); margin: 0;}
   .next-strip a { padding: 12px 20px; border-radius: var(--radius-md); background: var(--color-primary-600); color: #fff; text-decoration: none; font-weight: 700; font-size: 14px;}
 </style>
+<script src="app-meta.js?v=20260501a" defer></script>
 </head>
 <body>
+
+<!-- PHASE5-META-BEGIN -->
+<div class="phase5-floats" style="position: fixed; top: 14px; right: 14px; z-index: 1500; max-width: 280px;">
+  <page-meta
+    name="meat-stock#kanban"
+    version="v1.0"
+    room="Stock"
+    last-sync="2026-04-22T19:24"
+    edited-by="ลุงนัก"
+    edited-at="2026-04-22T19:24"
+    schema="meat_bags, v_stock_unified"
+  ></page-meta>
+  <button class="phase5-log-toggle" type="button"
+    style="margin-top: 8px; width: 100%; padding: 8px 12px; background: var(--color-ink-900,#1A1A1A); color:#fff; border: none; border-radius: 6px; font-family: var(--font-mono,ui-monospace,monospace); font-size: 11px; letter-spacing: 1px; cursor: pointer; font-weight: 700; text-transform: uppercase;"
+    onclick="(function(b){var d=document.getElementById('phase5-log-drawer'); if(d){d.style.display = d.style.display==='none'?'block':'none'; b.textContent = d.style.display==='none'?'▤  Activity log':'×  Close log';}})(this)">
+    ▤  Activity log
+  </button>
+</div>
+<div id="phase5-log-drawer" style="display:none; position: fixed; top: 14px; right: 310px; z-index: 1500; width: 540px; max-height: 80vh; overflow: auto; box-shadow: 0 10px 40px rgba(0,0,0,.18); border-radius: 8px;">
+  <activity-log
+    title="Activity log · meat-stock#kanban"
+    events="[{&quot;ts&quot;:&quot;2026-04-22T19:24&quot;,&quot;type&quot;:&quot;transfer&quot;,&quot;delta&quot;:&quot;1 bag&quot;,&quot;before&quot;:&quot;A · 4&quot;,&quot;after&quot;:&quot;B · 5&quot;,&quot;user&quot;:&quot;ลุงนัก&quot;,&quot;note&quot;:&quot;bag #2041 · 0.548kg · A → B&quot;},{&quot;ts&quot;:&quot;2026-04-22T17:12&quot;,&quot;type&quot;:&quot;transfer&quot;,&quot;delta&quot;:&quot;2 bags&quot;,&quot;before&quot;:&quot;B · 7&quot;,&quot;after&quot;:&quot;C · 9&quot;,&quot;user&quot;:&quot;น้องบี&quot;,&quot;note&quot;:&quot;bags #2032,#2033 · B → C (เก็บไว้พรุ่งนี้)&quot;},{&quot;ts&quot;:&quot;2026-04-22T14:08&quot;,&quot;type&quot;:&quot;dispense&quot;,&quot;delta&quot;:&quot;−3.6kg&quot;,&quot;before&quot;:&quot;17.4kg&quot;,&quot;after&quot;:&quot;13.8kg&quot;,&quot;user&quot;:&quot;ครัว&quot;,&quot;note&quot;:&quot;MT-019 → ลูกชิ้น batch #2204A&quot;},{&quot;ts&quot;:&quot;2026-04-22T11:00&quot;,&quot;type&quot;:&quot;split&quot;,&quot;user&quot;:&quot;ลุงนัก&quot;,&quot;note&quot;:&quot;bag #2025 (1.2kg) → 3 bags · 0.4kg each&quot;}]"
+    max="20"
+  ></activity-log>
+</div>
+<!-- PHASE5-META-END -->
+
 
 <div class="page">
 

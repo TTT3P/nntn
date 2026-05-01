@@ -94,7 +94,7 @@
   <div class="top">
     <span class="dot"></span>
     <span>NNTN · Web Redesign Spike</span>
-    <span style="margin-left:auto">v0.2 · 22 APR 2026</span>
+    <span style="margin-left:auto">v0.6 · 01 MAY 2026</span>
   </div>
 
   <div class="diamond-rule">◆ ◆ ◆</div>
@@ -102,7 +102,7 @@
   <p class="lede">
     Blueprint เผย 47 หน้าในปัจจุบันเกิดจากการต่อ feature ทีละชิ้น — <b>prep มี 5 หน้า · นับมี 3 · stock status มี 3</b> · meat-stock เป็น monolith 2900 LoC
     <br/><br/>
-    Spike นี้ redesign ให้เหลือ <b>25 หน้า</b> ยึด hybrid IA (task → lifecycle → domain), mobile-first สำหรับน้องครัว, แก้ bugs B2/B5/B6 ในระดับ UI, คง brand <b>heritage green + gold diamond</b>
+    Spike นี้ redesign ให้เหลือ <b>25 หน้า</b> ยึด hybrid IA (task → lifecycle → domain), mobile-first สำหรับน้องครัว, แก้ bugs <b>B1/B2/B3/B6/B8</b> ในระดับ UI, ใส่ <b>page-meta + activity-log</b> เป็น meta-system ทุกหน้า, คง brand <b>heritage green + gold diamond</b>
   </p>
 
   <div class="phases">
@@ -168,10 +168,73 @@
     </a>
   </div>
 
+  <div class="phase-heading"><b>Phase 4</b> · ไทน์'s desktop home</div>
+
+  <div class="phases phases--p2" style="grid-template-columns: 1fr;">
+    <a class="ph ph--done" href="ops-console-proto.html">
+      <div class="ph__n">PHASE 4A · DONE</div>
+      <div class="ph__t">ops-console · desktop home</div>
+      <div class="ph__d">Single-pane-of-glass สำหรับไทน์ · today snapshot · pending actions · 8 surface launchers · platform health roll-up</div>
+    </a>
+  </div>
+
+  <div class="phase-heading"><b>Phase 5</b> · admin surfaces + meta-system + remaining bug fixes</div>
+
+  <div class="phases">
+    <a class="ph ph--done" href="admin-items-proto.html">
+      <div class="ph__n">PHASE 5 · DONE</div>
+      <div class="ph__t">admin · items master</div>
+      <div class="ph__d">SKU registry · 4 type tabs (raw/cooked/dry/pkg) · inline edit · whitelist toggle</div>
+    </a>
+    <a class="ph ph--done" href="admin-bom-proto.html">
+      <div class="ph__n">PHASE 5 · DONE</div>
+      <div class="ph__t">admin · BOM editor</div>
+      <div class="ph__d">recipe → ingredients tree · per-output yield · cost roll-up · version history</div>
+    </a>
+    <a class="ph ph--done" href="sales-ops-dashboard-proto.html">
+      <div class="ph__n">PHASE 5 · DONE</div>
+      <div class="ph__t">sales · ops dashboard</div>
+      <div class="ph__d">รายวัน/สัปดาห์ · per-channel · COGS roll-up · top SKUs · ไทน์ daily review</div>
+    </a>
+    <a class="ph ph--done" href="stock-dispense-proto.html">
+      <div class="ph__n">PHASE 5 · B8 FIX</div>
+      <div class="ph__t">stock · dispense</div>
+      <div class="ph__d">B8 P2 · clear who/why per movement · 5 reason codes · audit trail</div>
+    </a>
+  </div>
+
+  <div class="phases phases--p2" style="grid-template-columns: 1fr;">
+    <a class="ph ph--done" href="pkg-cascade-proto.html">
+      <div class="ph__n">PHASE 5 · B3 FIX</div>
+      <div class="ph__t">pkg-cascade · parent–child SKU integrity</div>
+      <div class="ph__d">B3 P2 · child consume → parent reflect · cron reconcile ทุก 15 นาที · resolve mismatch UI · activity log บันทึกทุก cascade event</div>
+    </a>
+  </div>
+
+  <div class="phase-heading"><b>Phase 6</b> · block library + standard frame (WooCommerce + ATUM pattern)</div>
+
+  <div class="phases">
+    <a class="ph ph--done" href="frame-template.html">
+      <div class="ph__n">PHASE 6 T1 · DONE</div>
+      <div class="ph__t">frame-template</div>
+      <div class="ph__d">standard page chrome · sidebar (8 launchers) + top bar + responsive block grid + collapsible detail table</div>
+    </a>
+    <a class="ph ph--done" href="components.html#10">
+      <div class="ph__n">PHASE 6 T2 · DONE</div>
+      <div class="ph__t">block library</div>
+      <div class="ph__d">12 blocks · &lt;block-card&gt; chrome + slotted body · inline SVG charts · loading/empty/error states</div>
+    </a>
+    <a class="ph ph--done" href="page-block-matrix.html">
+      <div class="ph__n">PHASE 6 T3 · DONE</div>
+      <div class="ph__t">page-block matrix</div>
+      <div class="ph__d">15 protos × 12 blocks coverage · takeaways: invest in activity-log + metric-kpi + low-stock</div>
+    </a>
+  </div>
+
   <div class="meta">
     <div>
       <div class="meta__k">Phase status</div>
-      <div class="meta__v">Phase 1 ✓ · Phase 2 ✓ · Phase 3 ✓ · <b>10 artifacts</b> delivered</div>
+      <div class="meta__v">P1 ✓ · P2 ✓ · P3 ✓ · P4 ✓ · P5 ✓ · P6 ✓ · <b>18 artifacts</b> delivered</div>
     </div>
     <div>
       <div class="meta__k">Target users</div>

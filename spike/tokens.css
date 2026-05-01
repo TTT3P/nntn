@@ -9,28 +9,28 @@
 @import url("https://fonts.googleapis.com/css2?family=Trirong:wght@400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
 
 :root {
-  /* ---------- Brand palette — OFFICIAL (BRAND GUIDELINE.pdf §2.1) ---------
-     Primary = deep forest green #005036 · RGB 0 80 54 · CMYK 91 41 85 42
-     Accent  = warm terracotta #D29568 · RGB 210 149 104 · CMYK 16 45 64 1
-     Scale derived from official HSL (hue + saturation preserved, L varied) */
-  --color-primary-50:  #E6F2EC;
-  --color-primary-100: #BFDDC9;
-  --color-primary-200: #8AC4A0;
-  --color-primary-300: #4DA371;
-  --color-primary-400: #1A7A4A;
-  --color-primary-500: #005036;  /* core brand · official hex */
-  --color-primary-600: #004028;  /* CTA default */
-  --color-primary-700: #00301E;  /* CTA hover */
-  --color-primary-800: #002014;
-  --color-primary-900: #00100A;
+  /* ---------- Brand palette ----------------------------------------------
+     Primary = deep forest green (mature, formal, premium heritage).
+     Accent  = gold/orange diamond ornament from the NNTN logo (CTAs,
+     ornaments, warning highlights). */
+  --color-primary-50:  #EAF2EC;
+  --color-primary-100: #CFE0D2;
+  --color-primary-200: #A5C3AB;
+  --color-primary-300: #75A07D;
+  --color-primary-400: #4A7E54;
+  --color-primary-500: #2F6138;  /* core brand */
+  --color-primary-600: #1F4E2A;  /* CTA default — deep forest green */
+  --color-primary-700: #173D20;  /* CTA hover */
+  --color-primary-800: #0F2E17;
+  --color-primary-900: #08200E;
 
-  /* ---------- Accent (terracotta / diamond ornament) — OFFICIAL ---------- */
-  --color-accent-50:   #FBEEE2;
-  --color-accent-100:  #F7DCC1;
-  --color-accent-300:  #E5A579;
-  --color-accent-500:  #D29568;  /* core accent · official hex */
-  --color-accent-600:  #B87A48;
-  --color-accent-700:  #8E5A32;
+  /* ---------- Accent (gold/orange diamond ornament) ---------------------- */
+  --color-accent-50:   #FBF3DC;
+  --color-accent-100:  #F5E0A4;
+  --color-accent-300:  #E8C265;
+  --color-accent-500:  #C9962C;  /* heritage gold */
+  --color-accent-600:  #A87A1B;
+  --color-accent-700:  #7E5A11;
 
   /* ---------- Neutrals (warm paper ink, heritage feel) ------------------ */
   --color-ink-900:  #141A13;

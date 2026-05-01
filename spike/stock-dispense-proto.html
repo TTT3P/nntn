@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NNTN · stock-dispense prototype (Phase 5 · B8 P2 fix)</title>
+<link rel="stylesheet" href="tokens.css?v=20260422b" />
+<script src="app-meta.js?v=20260501a" defer></script>
+<style>
+  body { background: var(--color-bg-app); color: var(--color-ink-800); font-family: var(--font-sans); margin: 0;}
+  .page { max-width: 1240px; margin: 0 auto; padding: 32px 24px 100px;}
+
+  .top { display:flex; gap:14px; align-items:center; font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-ink-600); margin-bottom: var(--space-5);}
+  .top .dot { width:10px; height:10px; border-radius:50%; background: var(--color-danger-500); box-shadow: 0 0 0 4px var(--color-danger-50);}
+  .top .crumbs { margin-left:auto; color: var(--color-ink-500);}
+  .back-link { color: var(--color-primary-700); text-decoration: none; border-bottom: 1px dotted currentColor;}
+
+  h1.page-h { font-family: var(--font-display); font-weight: 500; font-size: 44px; line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 var(--space-3); color: var(--color-ink-900); max-width: 900px;}
+  h1 .hi { color: var(--color-danger-600);}
+  .page-lede { font-size: 16px; line-height: 1.6; color: var(--color-ink-700); max-width: 820px; margin: 0 0 var(--space-5);}
+  .page-lede b { color: var(--color-danger-600);}
+
+  .b8-bug { background: #fff; border: 1px solid var(--color-danger-100); border-left: 4px solid var(--color-danger-500); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: var(--space-6);}
+  .b8-bug__id { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-danger-700); font-weight: 700;}
+  .b8-bug__t { font-family: var(--font-display); font-weight: 600; font-size: 22px; margin: 4px 0; color: var(--color-ink-900);}
+  .b8-bug__d { font-size: 13px; line-height: 1.6; color: var(--color-ink-700);}
+  .b8-bug__d code { font-family: var(--font-mono); font-size: 11px; background: var(--color-danger-50); color: var(--color-danger-700); padding: 1px 6px; border-radius: 3px;}
+  .b8-bug__lock { display: inline-block; margin-top: 8px; padding: 4px 10px; background: var(--color-danger-50); color: var(--color-danger-700); font-family: var(--font-mono); font-size: 11px; letter-spacing: .3px; border-radius: 3px; font-weight: 700;}
+
+  .layout { display: grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: start;}
+
+  /* item picker (left) */
+  .picker { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); overflow: hidden;}
+  .picker__h { padding: 14px 16px; background: var(--color-ink-50); border-bottom: 1px solid var(--color-ink-200); font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-ink-700); font-weight: 700;}
+  .picker__row { padding: 12px 16px; border-bottom: 1px dashed var(--color-ink-100); cursor: pointer;}
+  .picker__row:hover { background: var(--color-ink-50);}
+  .picker__row.is-on { background: var(--color-danger-50); border-left: 3px solid var(--color-danger-500); padding-left: 13px;}
+  .picker__n { font-weight: 600; font-size: 14px; color: var(--color-ink-900);}
+  .picker__sku { font-family: var(--font-mono); font-size: 10px; color: var(--color-primary-700); margin-top: 2px;}
+  .picker__stock { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 12px; color: var(--color-ink-700); margin-top: 4px; display: flex; gap: 12px;}
+  .picker__stock b { color: var(--color-ink-900); font-weight: 700;}
+
+  /* dispense workspace (right) */
+  .work { background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-md); padding: 24px 28px;}
+  .work-h { display: grid; grid-template-columns: 1fr auto; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--color-ink-200); margin-bottom: var(--space-5); align-items: end;}
+  .work-h h2 { font-family: var(--font-display); font-weight: 500; font-size: 28px; margin: 0; color: var(--color-ink-900);}
+  .work-h .sku-tag { font-family: var(--font-mono); font-size: 12px; color: var(--color-primary-800); background: var(--color-primary-50); padding: 4px 10px; border-radius: 4px; font-weight: 700;}
+  .work-h .lock-pill { font-family: var(--font-mono); font-size: 10px; padding: 4px 9px; background: var(--color-warning-50); color: var(--color-warning-700); border-radius: 3px; letter-spacing: .3px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;}
+
+  /* total */
+  .total-card { background: var(--color-primary-900); color: #fff; border-radius: var(--radius-md); padding: 18px 22px; display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; margin-bottom: var(--space-4);}
+  .total-card .l { font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #A5C3AB; margin-bottom: 6px;}
+  .total-card .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 38px; font-weight: 500; line-height: 1;}
+  .total-card .v small { font-size: 14px; color: var(--color-accent-300); margin-left: 4px;}
+  .total-card .target-input { background: var(--color-primary-700); border: 1px solid #4A7E54; border-radius: var(--radius-md); padding: 10px 14px; color: #fff; font-family: var(--font-mono); font-size: 22px; font-weight: 600; width: 140px; text-align: right;}
+
+  /* bag rows */
+  .bag-section-h { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-ink-600); margin: var(--space-4) 0 10px; font-weight: 700;}
+  .bag-list { background: var(--color-bg-app); border: 1px solid var(--color-ink-200); border-radius: var(--radius-md);}
+  .bag-row { display: grid; grid-template-columns: 28px 80px 1fr 130px 130px 36px; gap: 12px; padding: 12px 14px; border-bottom: 1px dashed var(--color-ink-200); align-items: center; font-size: 13px; background: #fff;}
+  .bag-row:first-child { border-radius: var(--radius-md) var(--radius-md) 0 0;}
+  .bag-row:last-child { border-bottom: none; border-radius: 0 0 var(--radius-md) var(--radius-md);}
+  .bag-row.dispensed { background: var(--color-success-50); opacity: .85;}
+  .bag-row.partial { background: var(--color-warning-50);}
+  .bag-row .cb { width: 22px; height: 22px; border: 2px solid var(--color-ink-300); border-radius: 4px; cursor: pointer; display: grid; place-items: center; background: #fff; font-size: 14px; color: transparent;}
+  .bag-row.partial .cb, .bag-row.dispensed .cb { background: var(--color-success-500); border-color: var(--color-success-500); color: #fff;}
+  .bag-row .bag-id { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-700); font-weight: 700; letter-spacing: .2px;}
+  .bag-row .meta { font-size: 12px; color: var(--color-ink-700);}
+  .bag-row .meta b { color: var(--color-ink-900);}
+  .bag-row .weight-current { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 700; text-align: right; color: var(--color-ink-900);}
+  .bag-row .weight-current small { display: block; font-weight: 400; font-size: 10px; color: var(--color-ink-500); margin-top: 2px;}
+  .bag-row .dispense-input { display: flex; align-items: center; gap: 6px;}
+  .bag-row .dispense-input input { width: 78px; padding: 6px 8px; border: 1px solid var(--color-ink-300); border-radius: 4px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 700; text-align: right; background: #fff;}
+  .bag-row .dispense-input input:focus { outline: none; border-color: var(--color-danger-500); background: var(--color-danger-50);}
+  .bag-row .dispense-input small { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-500);}
+  .bag-row .row-log { width: 30px; height: 30px; border: 1px solid var(--color-ink-200); background: #fff; border-radius: 5px; cursor: pointer; font-size: 13px; color: var(--color-ink-600);}
+  .bag-row .row-log:hover { border-color: var(--color-warning-500); color: var(--color-warning-700);}
+  .bag-row .row-log.has-log { background: var(--color-warning-50); border-color: var(--color-warning-300, #E8C265);}
+
+  /* split-bag math hint */
+  .split-hint { display: grid; grid-template-columns: auto 1fr; gap: 12px; padding: 8px 14px; background: var(--color-warning-50); color: var(--color-warning-700); font-family: var(--font-mono); font-size: 11px; border-radius: 4px; margin-left: 124px; margin-bottom: 10px; align-items: center;}
+  .split-hint::before { content: "↳"; font-size: 14px;}
+
+  /* dispense action bar */
+  .action-bar { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; margin-top: var(--space-5); padding: 16px 20px; background: var(--color-ink-900); color: #fff; border-radius: var(--radius-md);}
+  .action-bar .summary { font-size: 14px;}
+  .action-bar .summary b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 18px; color: var(--color-accent-300); margin: 0 4px;}
+  .action-bar .btn { padding: 12px 24px; border-radius: var(--radius-md); border: none; font-family: var(--font-sans); font-weight: 700; font-size: 14px; cursor: pointer;}
+  .action-bar .btn--cancel { background: transparent; color: #A5C3AB; border: 1px solid rgba(255,255,255,0.2);}
+  .action-bar .btn--save { background: var(--color-accent-500); color: var(--color-primary-900);}
+
+  /* bag log expand */
+  tr.log-row td { padding: 0 !important; background: var(--color-bg-app);}
+  .log-inner { padding: 16px 20px; border-bottom: 1px solid var(--color-warning-300, #E8C265);}
+</style>
+</head>
+<body>
+
+<div style="position: fixed; top: 14px; right: 14px; z-index: 1500; max-width: 280px;">
+  <page-meta
+    name="stock-dispense"
+    version="v1.0"
+    room="Stock"
+    last-sync="2026-04-22T19:24"
+    edited-by="ครัว · น้องบี"
+    edited-at="2026-04-22T19:18"
+    schema="meat_bags, stock_movements, dispense_log"
+  ></page-meta>
+  <button type="button" id="globalLogToggle" style="margin-top: 8px; width: 100%; padding: 8px 12px; background: var(--color-ink-900); color:#fff; border: none; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; cursor: pointer; font-weight: 700; text-transform: uppercase;">▤ Activity log</button>
+</div>
+<div id="globalLogDrawer" style="display:none; position: fixed; top: 14px; right: 310px; z-index: 1500; width: 540px; max-height: 80vh; overflow: auto; box-shadow: 0 10px 40px rgba(0,0,0,.18); border-radius: 8px;">
+  <activity-log
+    title="Activity log · MT-019 dispense"
+    max="20"
+    events='[
+      {"ts":"2026-04-22T19:18","type":"dispense","delta":"−3.0kg","before":"17.4kg","after":"14.4kg","user":"น้องบี","note":"bag #2041 (full) + bag #2042 (partial 0.6kg)"},
+      {"ts":"2026-04-22T14:08","type":"dispense","delta":"−3.6kg","before":"21.0kg","after":"17.4kg","user":"ครัว","note":"3 bags full · ลูกชิ้น batch #2204A"},
+      {"ts":"2026-04-22T11:00","type":"split","user":"ลุงนัก","note":"bag #2025 (1.2kg) → 3 bags · 0.4kg each"},
+      {"ts":"2026-04-21T08:30","type":"receive","delta":"+8.0kg","before":"13.0kg","after":"21.0kg","user":"ไทน์","note":"PO-0421-lung · 7 bags"}
+    ]'
+  ></activity-log>
+</div>
+
+<div class="page">
+  <div class="top">
+    <span class="dot"></span>
+    <span>NNTN · spike · phase 5 · B8 P2 fix</span>
+    <span class="crumbs">
+      <a href="index.html" class="back-link">← hub</a>
+      &nbsp;·&nbsp;
+      <a href="meat-stock-kanban-proto.html" class="back-link">kanban</a>
+    </span>
+  </div>
+
+  <h1 class="page-h"><span class="hi">เบิก</span>เนื้อ · partial dispense ระดับถุง</h1>
+  <p class="page-lede">
+    เบิกเนื้อแบบบางส่วน เช่น ถุง 12 กก. → เบิก 3 → เหลือ 9 · update <b>weight_g per bag</b> ไม่ใช่ count · ยังคง <b>catch_weight</b> เป็น <b>weight-based</b> ห้ามเปลี่ยนเป็น unit-based · activity log บันทึกทุก bag · before → after weight
+  </p>
+
+  <!-- B8 bug strip -->
+  <div class="b8-bug">
+    <div class="b8-bug__id">B8 · P2 · meat partial dispense gap</div>
+    <h2 class="b8-bug__t">ก่อนหน้านี้ · ระบบบังคับเบิกทั้งถุง — ครัวต้องโกหกเครื่องชั่ง</h2>
+    <p class="b8-bug__d">
+      legacy flow: <code>dispense(bag_id)</code> = subtract <b>full bag weight</b> · ครัวเบิก 3 กก. จากถุง 12 กก. ทำได้แค่ 1) เบิกถุงทั้งหมด เพื่อน return 9 กก. ทีหลัง (paper trail หาย) หรือ 2) ขอลุงนัก split ถุงก่อน (queue + delay) · <b>weight_g บนถุงเริ่มไม่ตรง physical reality</b> → catch_weight regression
+    </p>
+    <span class="b8-bug__lock">🔒 LOCK · catch_weight ต้องเป็น weight-based · ห้ามเปลี่ยนเป็น unit/bag count</span>
+  </div>
+
+  <div class="layout">
+    <!-- ============ picker ============ -->
+    <div class="picker">
+      <div class="picker__h">เลือก SKU เบิก</div>
+      <div class="picker__row is-on">
+        <div class="picker__n">หมูสามชั้นสไลซ์</div>
+        <div class="picker__sku">MT-019</div>
+        <div class="picker__stock">
+          <span><b>17.4 kg</b> on hand</span>
+          <span><b>5</b> bags</span>
+        </div>
+      </div>
+      <div class="picker__row">
+        <div class="picker__n">เนื้อน่องตุ๋น</div>
+        <div class="picker__sku">MT-001</div>
+        <div class="picker__stock">
+          <span><b>8.2 kg</b></span>
+          <span><b>3</b> bags</span>
+        </div>
+      </div>
+      <div class="picker__row">
+        <div class="picker__n">ซี่โครงหมูตัด</div>
+        <div class="picker__sku">MT-020</div>
+        <div class="picker__stock">
+          <span><b>6.0 kg</b></span>
+          <span><b>2</b> bags</span>
+        </div>
+      </div>
+      <div class="picker__row">
+        <div class="picker__n">เนื้อน่องไม่หั่น</div>
+        <div class="picker__sku">MT-002</div>
+        <div class="picker__stock">
+          <span><b>12.1 kg</b></span>
+          <span><b>4</b> bags</span>
+        </div>
+      </div>
+      <div class="picker__row">
+        <div class="picker__n">กระดูกหมู</div>
+        <div class="picker__sku">MT-003</div>
+        <div class="picker__stock">
+          <span><b>4.4 kg</b></span>
+          <span><b>2</b> bags</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ work area ============ -->
+    <div class="work">
+      <div class="work-h">
+        <div>
+          <h2>เบิก · หมูสามชั้นสไลซ์</h2>
+          <div style="margin-top: 6px; display: flex; gap: 10px; align-items: center;">
+            <span class="sku-tag">MT-019</span>
+            <span class="lock-pill">🔒 catch_weight · weight-based</span>
+          </div>
+        </div>
+        <div style="text-align: right; font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-600);">
+          <div>ครัว: <b style="color: var(--color-ink-900);">น้องบี</b></div>
+          <div style="margin-top: 4px;">batch: <b style="color: var(--color-ink-900);">#2204D</b> (ลูกชิ้น)</div>
+        </div>
+      </div>
+
+      <!-- target weight -->
+      <div class="total-card">
+        <div>
+          <div class="l">target dispense weight</div>
+          <div class="v">3.0<small>kg</small></div>
+          <div style="font-family: var(--font-mono); font-size: 11px; color: #75A07D; margin-top: 6px;">เปลี่ยน target → ระบบจะ suggest split bag ใหม่</div>
+        </div>
+        <input type="text" class="target-input" value="3.000" />
+      </div>
+
+      <div class="bag-section-h">เลือกถุงเพื่อเบิก · 5 ถุง · partial allowed</div>
+      <div class="bag-list">
+        <div class="bag-row dispensed">
+          <span class="cb">✓</span>
+          <span class="bag-id">#2041</span>
+          <span class="meta">รับเข้า <b>21/04 08:30</b> · A1<br/><span style="font-size: 10px; color: var(--color-ink-500);">PO-0421-lung · ลุงเจริญ</span></span>
+          <span class="weight-current">0.000 kg<small>เบิกหมดทั้งถุง</small></span>
+          <div class="dispense-input">
+            <input value="2.400" />
+            <small>kg</small>
+          </div>
+          <button class="row-log has-log" onclick="toggleBagLog(this, '2041')" title="bag activity">▤</button>
+        </div>
+        <div class="bag-row partial">
+          <span class="cb">~</span>
+          <span class="bag-id">#2042</span>
+          <span class="meta">รับเข้า <b>21/04 08:30</b> · A1<br/><span style="font-size: 10px; color: var(--color-ink-500);">PO-0421-lung · ลุงเจริญ</span></span>
+          <span class="weight-current">2.080 kg<small>เหลือหลังเบิก · partial</small></span>
+          <div class="dispense-input">
+            <input value="0.600" />
+            <small>kg</small>
+          </div>
+          <button class="row-log has-log" onclick="toggleBagLog(this, '2042')" title="bag activity">▤</button>
+        </div>
+      </div>
+      <div class="split-hint">ถุง #2042 (น้ำหนักเดิม 2.68kg) · เบิก 0.6 → เหลือ 2.08kg ในถุงเดิม · weight_g บันทึกใหม่ · ไม่ split ถุง</div>
+
+      <div class="bag-section-h">ถุงที่ยังไม่เบิก · click เพื่อเพิ่ม</div>
+      <div class="bag-list">
+        <div class="bag-row">
+          <span class="cb"></span>
+          <span class="bag-id">#2043</span>
+          <span class="meta">รับเข้า <b>21/04 08:30</b> · A1<br/><span style="font-size: 10px; color: var(--color-ink-500);">PO-0421-lung · ลุงเจริญ</span></span>
+          <span class="weight-current">2.940 kg<small>คงคลัง</small></span>
+          <div class="dispense-input">
+            <input placeholder="0.000" disabled />
+            <small>kg</small>
+          </div>
+          <button class="row-log" title="bag activity">▤</button>
+        </div>
+        <div class="bag-row">
+          <span class="cb"></span>
+          <span class="bag-id">#2044</span>
+          <span class="meta">รับเข้า <b>22/04 19:24</b> · A1<br/><span style="font-size: 10px; color: var(--color-ink-500);">PO-0422-lung · ลุงเจริญ</span></span>
+          <span class="weight-current">3.180 kg<small>คงคลัง</small></span>
+          <div class="dispense-input">
+            <input placeholder="0.000" disabled />
+            <small>kg</small>
+          </div>
+          <button class="row-log" title="bag activity">▤</button>
+        </div>
+        <div class="bag-row">
+          <span class="cb"></span>
+          <span class="bag-id">#2045</span>
+          <span class="meta">รับเข้า <b>22/04 19:24</b> · A1<br/><span style="font-size: 10px; color: var(--color-ink-500);">PO-0422-lung · ลุงเจริญ</span></span>
+          <span class="weight-current">2.820 kg<small>คงคลัง</small></span>
+          <div class="dispense-input">
+            <input placeholder="0.000" disabled />
+            <small>kg</small>
+          </div>
+          <button class="row-log" title="bag activity">▤</button>
+        </div>
+      </div>
+
+      <!-- floating action -->
+      <div class="action-bar">
+        <div class="summary">
+          เบิกรวม · <b>3.000</b> kg จาก <b>2</b> ถุง (1 full + 1 partial) → MT-019 เหลือ <b>14.400</b> kg
+        </div>
+        <button class="btn btn--cancel">cancel</button>
+        <button class="btn btn--save">→ confirm dispense</button>
+      </div>
+
+      <p style="margin-top: var(--space-4); padding: 12px 16px; background: var(--color-success-50); color: var(--color-success-700); border-radius: var(--radius-sm); font-size: 12px; line-height: 1.6;">
+        <b>✓ B8 fix</b> · partial weight ถูกบันทึกที่ระดับถุง · weight_g table ยังเป็น <code style="font-family: var(--font-mono); font-size: 11px; background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 3px;">numeric</code> · catch_weight ไม่เปลี่ยน schema · ทุก partial dispense → row ใน activity log · before/after weight ที่บันทึก
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const BAG_LOGS = {
+    '2041': [
+      {"ts":"2026-04-22T19:18","type":"dispense","delta":"−2.4kg","before":"2.4kg","after":"0.0kg","user":"น้องบี","note":"เบิกหมดถุง · ใส่ batch #2204D"},
+      {"ts":"2026-04-21T08:30","type":"receive","delta":"+2.4kg","before":"—","after":"2.4kg","user":"ไทน์","note":"PO-0421-lung · ลุงเจริญ"}
+    ],
+    '2042': [
+      {"ts":"2026-04-22T19:18","type":"dispense","delta":"−0.6kg","before":"2.68kg","after":"2.08kg","user":"น้องบี","note":"partial · ถุงยังอยู่ · weight_g updated"},
+      {"ts":"2026-04-21T08:30","type":"receive","delta":"+2.68kg","before":"—","after":"2.68kg","user":"ไทน์","note":"PO-0421-lung · ลุงเจริญ"}
+    ]
+  };
+
+  function toggleBagLog(btn, bagId) {
+    const row = btn.closest('.bag-row');
+    // remove other open inline logs
+    document.querySelectorAll('.inline-bag-log').forEach(x => x.remove());
+    if (row.dataset.expanded === '1') { row.dataset.expanded = '0'; return; }
+    row.dataset.expanded = '1';
+    const events = BAG_LOGS[bagId] || [];
+    const wrap = document.createElement('div');
+    wrap.className = 'inline-bag-log';
+    wrap.style.gridColumn = '1 / -1';
+    wrap.style.padding = '14px 24px';
+    wrap.style.background = 'var(--color-bg-app)';
+    wrap.style.borderTop = '1px dashed var(--color-warning-500)';
+    wrap.style.borderBottom = '1px dashed var(--color-warning-500)';
+    wrap.innerHTML = `
+      <activity-log
+        entity="bag #${bagId}"
+        entity-label="MT-019 หมูสามชั้น"
+        title="Bag activity"
+        max="6"
+        events='${JSON.stringify(events).replace(/'/g, '&#39;')}'
+      ></activity-log>
+    `;
+    // append after the row inside the same .bag-list
+    row.parentNode.insertBefore(wrap, row.nextSibling);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('globalLogToggle').addEventListener('click', () => {
+      const d = document.getElementById('globalLogDrawer');
+      d.style.display = d.style.display === 'none' ? 'block' : 'none';
+    });
+  });
+</script>
+
+</body>
+</html>
