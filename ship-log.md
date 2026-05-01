@@ -8,6 +8,20 @@
 
 ---
 
+## 01/05 · resource-model v1 · Open Q4 actor-normalization DECIDED
+
+`NNTN-Vault/System/architecture/resource-model-v1.md` §Open Q4 + §9 Actor updated
+- Actor normalization = **B-pragmatic** · rename `AIM` → `im` · ไม่ build PIN/OAuth ตอนนี้
+- **Live audit (01/05)** rows กระทบ: cw 873 · aim_outbox 379 (287+92) · stock_counts 490 (380+110)
+- ⚠️ **sm 367 rows BLOCKED** by `sm_block_mutation` (append-only) → migration = **forward-only**
+  - Downstream tables (cw · aim_outbox · stock_counts) update
+  - sm history คงเดิม (audit truth) · row ใหม่ใช้ `im` ตั้งแต่ migrate
+- Update: frontend constants · webhook payload · handler.js · AIM trigger default
+- Trigger re-open Q4: ถ้าคน 2 join AIM device → build login layer ตอนนั้น
+- ETA 0.5 วัน · รอไทน์ confirm forward-only OK ก่อน apply
+
+---
+
 ## 01/05 · resource-model v1 · Open Q3 repack-as-entity DECIDED
 
 `NNTN-Vault/System/architecture/resource-model-v1.md` §Open Q3 + §5 updated
