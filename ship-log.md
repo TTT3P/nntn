@@ -8,6 +8,19 @@
 
 ---
 
+## 01/05 · resource-model v1 · Open Q5 recipe-ownership DECIDED + Q4 confirm
+
+`NNTN-Vault/System/architecture/resource-model-v1.md` §Open Q5 + §8 + §3 updated
+- Recipe ownership = **A** · `cookingbook.bom_items` = canonical SOT · DROP `public.bom_items` (329) + `bom_items_archive_20260414_herbal`
+- Plan: audit refs (sm_cascade_bundle · RPCs) → repoint → optional view bridge → pre-flight (R12) → DROP → QA 17 tests + cascade B3 verify
+- Reason: CookingBook = canonical per CLAUDE.md · single SOT prevent drift
+- Cross-room coordination: CookingBook room approve schema stable ก่อน drop public copy
+- ETA 1 วัน · trigger หลัง Day 7 spec freeze · urgent ถ้าไทน์ flag
+
+**Q4 forward-only confirmed by ไทน์**: sm 367 row คงเดิม (audit truth) · downstream 1,742 row update · ใหม่ใช้ 'im' จาก migrate-day · proceed apply ได้เมื่อ schedule
+
+---
+
 ## 01/05 · resource-model v1 · Open Q4 actor-normalization DECIDED
 
 `NNTN-Vault/System/architecture/resource-model-v1.md` §Open Q4 + §9 Actor updated
