@@ -8,6 +8,17 @@
 
 ---
 
+## 01/05 · resource-model v1 · Open Q2 multi-tenancy DECIDED
+
+`NNTN-Vault/System/architecture/resource-model-v1.md` §Open Questions Q2 updated
+- Multi-tenancy = **B defer** · ไม่เพิ่ม `org_id` ตอนนี้
+- Trigger: รอ customer ที่ 2 confirmed → design migration จาก real customer
+- Pivot path ถ้า SaaS: backfill `org_id='nntn'` ทุก core table ตอนนั้น (ยอม cost)
+- Reason: 1 tenant · เพิ่ม field ตอนนี้ = 10-15% schema cost ไม่ test จริง · design from-real ตรงกว่าเดา
+- RLS implication: scope `authenticated` ปัจจุบันพอ · ไม่ต้อง multi-tenant aware
+
+---
+
 ## 01/05 · resource-model v1 · Open Q1 freeze criterion DECIDED
 
 `NNTN-Vault/System/architecture/resource-model-v1.md` §Open Questions Q1 updated
