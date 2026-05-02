@@ -1,0 +1,51 @@
+name: Semgrep SAST
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # Sun 01:00 BKK = Sat 18:00 UTC (BKK = UTC+7)
+    - cron: '0 18 * * 6'
+
+permissions:
+  contents: read
+  security-events: write   # upload SARIF to Code Scanning
+  pull-requests: read
+
+jobs:
+  semgrep:
+    name: Semgrep scan
+    runs-on: ubuntu-latest
+    container:
+      # Pinned tag for reproducibility — bump deliberately, not via :latest
+      image: semgrep/semgrep:1.95.0
+    if: (github.actor != 'dependabot[bot]')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so diff-aware scan can resolve base ref
+
+      # Phase A · ERROR-only gate. Legacy code has many WARNING findings
+      # (innerHTML/onclick patterns: hub-delivery 84 · po-receive 29 · stock-dispense 26 ·
+      # stock-report 24 · sop-review 23 · admin-items 21). Promote to ERROR+WARNING
+      # in Phase B once cleanup is done.
+      - name: Run Semgrep (ERROR-only gate · SARIF upload all severities)
+        run: |
+          semgrep ci \
+            --config=p/security-audit \
+            --config=p/owasp-top-ten \
+            --config=p/javascript \
+            --severity=ERROR \
+            --sarif --output=semgrep.sarif \
+            --metrics=off
+        env:
+          SEMGREP_ENABLE_VERSION_CHECK: 0
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
