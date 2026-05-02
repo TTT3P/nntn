@@ -1348,9 +1348,54 @@ async function submitDraft(draftId) {
   document.getElementById('dl-bill').value = ''
   await suggestBillNum()
 
+  // B9 fix: re-validate meat_lines against live catch_weight status before loading
+  // (prevents stale draft from holding bags already Delivered/disposed by another session)
+  let meatLines = draft.meat_lines || []
+  const prunedBags = []
+  if (meatLines.length > 0) {
+    try {
+      const vTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+      const vH   = { 'apikey': KEY, 'Authorization': 'Bearer ' + vTok }
+      const ids  = meatLines.map(m => Number(m.bag_id)).filter(n => Number.isFinite(n))
+      if (ids.length > 0) {
+        const url = `${SB}/rest/v1/catch_weight?id=in.(${ids.join(',')})&select=id,status`
+        const r   = await fetch(url, { headers: vH })
+        if (r.ok) {
+          const rows = await r.json()
+          const statusById = new Map(rows.map(x => [String(x.id), x.status]))
+          const fresh = []
+          meatLines.forEach(m => {
+            const st = statusById.get(String(m.bag_id))
+            if (st === '✅ In Stock') fresh.push(m)
+            else prunedBags.push({ ...m, _liveStatus: st || '(ไม่พบ)' })
+          })
+          meatLines = fresh
+        }
+      }
+    } catch (_) { /* network glitch — load draft as-is, submit guard will catch */ }
+  }
+  if (prunedBags.length > 0) {
+    const lines = prunedBags.slice(0, 15).map(p => `• ${p.name} bag ${p.bag_id} → ${p._liveStatus}`).join('\n')
+    const more  = prunedBags.length > 15 ? `\n…และอีก ${prunedBags.length - 15} ถุง` : ''
+    alert(`⚠️ ตัด ${prunedBags.length} ถุงออกจาก Draft อัตโนมัติ\n\nถุงพวกนี้ไม่อยู่ใน "✅ In Stock" แล้ว (อาจถูกส่ง / ปรับสต๊อกโดย session อื่น):\n\n${lines}${more}\n\nDraft จะถูกอัปเดตให้เหลือเฉพาะถุงที่ยังส่งได้ (${meatLines.length} ถุง)`)
+    // persist pruned set so the draft stays clean for next reload
+    try {
+      const pTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+      const pH   = { 'apikey': KEY, 'Authorization': 'Bearer ' + pTok, 'Content-Type': 'application/json',
+                     'Content-Profile': 'stock', 'Accept-Profile': 'stock', 'Prefer': 'return=minimal' }
+      await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${draftId}`, {
+        method: 'PATCH', headers: pH, body: JSON.stringify({ meat_lines: meatLines })
+      })
+      // refresh local cache so subsequent submit cross-check sees pruned set
+      if (window._draftCache && window._draftCache[draftId]) {
+        window._draftCache[draftId] = { ...window._draftCache[draftId], meat_lines: meatLines }
+      }
+    } catch (_) { /* best-effort persist */ }
+  }
+
   // Rebuild meat blocks grouped by item_id
   const meatByItem = {}
-  ;(draft.meat_lines || []).forEach(m => {
+  meatLines.forEach(m => {
     if (!meatByItem[m.item_id]) meatByItem[m.item_id] = { itemId: m.item_id, name: m.name, bags: [] }
     meatByItem[m.item_id].bags.push(m.bag_id)
   })
@@ -1404,7 +1449,7 @@ async function submitDraft(draftId) {
 
   updatePreview()
   await new Promise(r => setTimeout(r, 200))
-  _hdToast(`✅ โหลด Draft แล้ว — ตรวจสอบแล้วกด 🚛 บันทึกส่งออก (เนื้อ ${(draft.meat_lines||[]).length} ถุง / nm ${nmList.length} รายการ)`)
+  _hdToast(`✅ โหลด Draft แล้ว — ตรวจสอบแล้วกด 🚛 บันทึกส่งออก (เนื้อ ${meatLines.length} ถุง / nm ${nmList.length} รายการ)`)
   window._pendingDraftId = draftId
 }
 
