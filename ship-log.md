@@ -8,16 +8,29 @@
 
 ---
 
-## 02/05 · B9 manifest + fix layer-1 · loadDraft re-validate (PR #2 pending merge)
+## 02/05 16:05 · PICANHA bundle · OP1 + OP3 + OP4 ship · OP2 skipped
 
-PR https://github.com/TTT3P/nntn/pull/2 · branch `fix/b9-loaddraft-revalidate` · nntn-platform · #platform · #aim
+Squad-tier bundle · Platform lead · cross-room (CookingBook · Sales) · nntn-platform · #platform · #coo
+- **OP1** INSERT public.items SP-212 'พิคานย่าไทย (สด)' · id `f4ec61df-a6ca-4a95-a7c5-ad73c56cfeab` · meat/raw · qty_per_pack=1 cost=250 yield=0.9 is_bom_eligible=true · CB unblocked → ใส่ bom_items + cb_ingredient_id=153
+- **OP2** SKIPPED · CB verdict A · B3 stock cascade (deploy 29/04) sufficient · cost-cascade NEW = ticket แยก CB-Phase3-cost-cascade
+- **OP3** Migration `salesops_menu_aliases_v2_20260502` · `sales_ops.menu_aliases` (V2 supersedes menu_rcp_mapping V1) · 15 cols · 5 indexes · 1 trigger
+  - Schema: M:1 alias→rcp_code · platform CHECK enum · branch_id NULL=ทุกสาขา · `menu_name_norm` GENERATED (lower+btrim) · size_modifier nullable · confidence enum · hits_count + last_seen_at สำหรับ analytics
+  - Partial UNIQUE (platform, COALESCE(branch,''), name_norm, COALESCE(size,'')) WHERE is_active · 3 lookup indexes · updated_at trigger
+  - V1 ไม่ drop (1 seed row คงไว้) · CB ตัดสินใจตอน wire เสร็จ · RLS รอ followup
+- **OP4** Platform-side NO-OP · `RCP-TBD-STEAK-PICANHA` ไม่มี ref ใน DB ทั้ง cookingbook.recipes / public.bom_items / sales_ops.menu_rcp_mapping · Sales wire ผ่าน menu_aliases V2 ตามขั้น
+
+## 02/05 15:43 · B9 MERGED · `5b7e8ff` · loadDraft re-validate live (PR #2)
+
+PR https://github.com/TTT3P/nntn/pull/2 · merged main · nntn-platform · QA review nntn-qa · #platform · #aim · #coo
 - **Manifest เช้า 02/05:** draft FS NT20260502-1 ส่งไม่ได้ — 5 ถุงเนื้อสดหมักนุ่ม (cw 4156-4161) ค้างใน meat_lines แต่ status เป็น 🚚 Delivered แล้วโดยบิล NT20260501-1 (12:15 BKK)
 - **Root cause incident:** บิล NT20260501-1 คนกรอก 5 ถุงเนื้อสดหมักนุ่ม แต่ของจริง 10 ถุง · อีก 5 ถุงค้างใน FS draft → trigger `prevent_deliver_if_not_in_stock` ขัด submit ถูกต้อง
 - **Manual fix:** `rpc_delivery_reverse` 10 ถุง (4153-4162) คืน In Stock · sm_id 4341-4350 · บิล NT20260501-1 เหลือ items อื่นไม่กระทบ · น้องส่ง FS20260502-1 สำเร็จ 10:33 BKK
 - **Layer-1 fix:** `submitDraft()` ใน hub-delivery.html — ก่อน rebuild form, query live `catch_weight.status` ทุก bag, prune ถุง !=`✅ In Stock`, alert popup, PATCH `delivery_drafts.meat_lines` ให้ draft สะอาดสำหรับ reload ครั้งหน้า
-- **QA:** Playwright 88 pass / 1 fail (preexisting on main · history bill ถูกลบจาก DB) · Live test on local server: popup + form prune + DB persisted ครบ
-- **Out of scope:** Layer-2 (soft-lock reservation) + Layer-3 (Supabase Realtime) — รอประเมินถ้าเคสซ้ำ
-- **Status:** PR open · รอ Gale review architecture · ไทน์ approve merge → deploy → ปิด B9 ใน CLAUDE.md/BLUEPRINT
+- **QA verdict (nntn-qa):** GO · code clean · no side-effects บน FS submit/stock-dispense/count-adjust · SQL injection safe (Number.isFinite filter)
+- **CI note:** failure on PR = preexisting `auth.setup.js` login redirect timeout (main red 3 runs prior) · NOT B9 regression · followup task issued to nntn-platform (P2 · CI baseline restore)
+- **Diagnose miss caught:** Platform initial claim "1 fail = NT-20260418-01" ผิด · จริง = auth.setup.js · QA จับได้ · feedback ส่ง Platform แล้ว
+- **Out of scope (carry):** Layer-2 (soft-lock reservation) + Layer-3 (Supabase Realtime) — รอประเมินถ้าเคสซ้ำ
+- **Status:** ✅ MERGED · GitHub Pages deploy auto · B9 closed
 
 ## 01/05 · B10 root cause #2 · cw_emit_sm_status idempotent (balance check)
 
