@@ -8,6 +8,54 @@
 
 ---
 
+## 02/05 · B9 manifest + fix layer-1 · loadDraft re-validate (PR #2 pending merge)
+
+PR https://github.com/TTT3P/nntn/pull/2 · branch `fix/b9-loaddraft-revalidate` · nntn-platform · #platform · #aim
+- **Manifest เช้า 02/05:** draft FS NT20260502-1 ส่งไม่ได้ — 5 ถุงเนื้อสดหมักนุ่ม (cw 4156-4161) ค้างใน meat_lines แต่ status เป็น 🚚 Delivered แล้วโดยบิล NT20260501-1 (12:15 BKK)
+- **Root cause incident:** บิล NT20260501-1 คนกรอก 5 ถุงเนื้อสดหมักนุ่ม แต่ของจริง 10 ถุง · อีก 5 ถุงค้างใน FS draft → trigger `prevent_deliver_if_not_in_stock` ขัด submit ถูกต้อง
+- **Manual fix:** `rpc_delivery_reverse` 10 ถุง (4153-4162) คืน In Stock · sm_id 4341-4350 · บิล NT20260501-1 เหลือ items อื่นไม่กระทบ · น้องส่ง FS20260502-1 สำเร็จ 10:33 BKK
+- **Layer-1 fix:** `submitDraft()` ใน hub-delivery.html — ก่อน rebuild form, query live `catch_weight.status` ทุก bag, prune ถุง !=`✅ In Stock`, alert popup, PATCH `delivery_drafts.meat_lines` ให้ draft สะอาดสำหรับ reload ครั้งหน้า
+- **QA:** Playwright 88 pass / 1 fail (preexisting on main · history bill ถูกลบจาก DB) · Live test on local server: popup + form prune + DB persisted ครบ
+- **Out of scope:** Layer-2 (soft-lock reservation) + Layer-3 (Supabase Realtime) — รอประเมินถ้าเคสซ้ำ
+- **Status:** PR open · รอ Gale review architecture · ไทน์ approve merge → deploy → ปิด B9 ใน CLAUDE.md/BLUEPRINT
+
+## 01/05 · B10 root cause #2 · cw_emit_sm_status idempotent (balance check)
+
+Migration `b10rc2_cw_emit_sm_status_idempotent_balance_check_20260501` · nntn-platform · #platform
+- **Why:** session cancel/re-attach pattern (✅→❌→✅→❌) ทำให้ trigger emit consume ซ้ำ · root cause ของ B10 drift
+- **Idempotency:** ก่อน insert ตรวจ `SUM(sm.qty_delta) WHERE lot_id=NEW.id`
+  - Forward (qty=-1): skip if balance ≤ 0 (already terminal)
+  - Reverse (qty=+1): skip if balance ≥ 1 (already restored)
+- **Invariant enforced:** balance ∈ {0, 1} per lot
+- **Pre-flight:** 433/433 In Stock cw มี balance=1 · 2162/2164 not-In-Stock มี balance=0 · 2 historical anomalies (lots 3283/3284) แยก ticket
+- **Test 3 scenarios (rolled back · lot 3801):** S1 first execute emit ✅ · S2 cancel+re-attach skip second ✅ · S3 revert+re-execute emit ✅
+- **Normal flow ไม่กระทบ:** delivery_reverse · first consume · re-execute หลัง compensating refund ทำงานครบ
+
+---
+
+## 01/05 · B10 follow-up · revert_close_pot bypass sm_block_mutation (FK SET NULL)
+
+Migration `b10_revert_close_pot_bypass_sm_mutation_for_fk_setnull_20260501` · nntn-platform · #platform
+- **Root cause ที่ patch แรกพลาด:** HTTP 400 "append_only" จาก UI ปุ่ม "↩️ ย้อนหม้อ" ไม่ใช่จาก code · แต่จาก FK `stock_movements.lot_id` = `ON DELETE SET NULL` → DELETE cw ทำให้ implicit UPDATE sm.lot_id=NULL → ตรง `sm_block_mutation`
+- **Fix:** RPC ใช้ bypass GUC ของ `block_sm_mutation`: `set_config('app.allow_sm_mutation','on',true)` LOCAL ก่อน DELETE cw · auto-reset ตอน commit
+- **Order:** insert compensating disposal sm ก่อน → enable bypass → DELETE cw (FK SET NULL ไม่ block) → DELETE cook_outputs → UPDATE cook_sessions
+- **Frontend:** ไม่แก้ · เรียก `/rpc/revert_close_pot` signature เดิม
+- **Pending live test:** ไทน์กดปุ่ม UI 1 ครั้ง confirm end-to-end
+
+---
+
+## 01/05 · B10 drift fix · เอ็นแก้วตุ๋น revert_close_pot
+
+Migration `b10_drift_fix_revert_close_pot_compensating_sm_20260501` · nntn-platform · #platform #aim
+- **Issue:** input miscount session f087e89e (1.4kg recorded vs 2 ถุง actual) · ไทน์ revert+re-execute ผ่าน UI · revert_close_pot DELETE cw → orphan sm + cw_emit_sm_status ยิง consume ซ้ำตอน re-attach = drift
+- **Drift before:** MT-033 +4 ถุง 2607g over · SP-025 lot 3339 consumed 3x · lot 3475 2x
+- **Fix Step 1:** insert 7 compensating sm (4 disposal MT-033 + 3 count_adjust_up SP-025 lot 3339×2 + lot 3475×1) · sm append-only respected
+- **Fix Step 2:** patch `revert_close_pot` RPC · INSERT compensating disposal sm BEFORE DELETE cw · returns `compensating_sm` count
+- **QA verify:** sm = cw reality 100% (MT-033 4ถุง 2607g · SP-025 1ถุง 2610g)
+- **Pending separate ticket:** `cw_emit_sm_status` idempotency (ยิง consume ซ้ำตอน session cancel/re-attach · root cause #2 untouched)
+
+---
+
 ## 01/05 · Phase 4A-6 design spike sync
 
 5 new protos (admin-items · admin-bom · sales-ops · stock-dispense · pkg-cascade) + frame-template + block-library (12 components · WC mix pattern) + page-block-matrix · ATUM-style log · Inline SVG charts
