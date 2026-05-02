@@ -31,6 +31,7 @@ jobs:
 
       - name: Run Playwright tests
         env:
+          NNTN_USR: ${{ secrets.NNTN_USR }}
           NNTN_PWD: ${{ secrets.NNTN_PWD }}
           CI: true
         run: npx playwright test
