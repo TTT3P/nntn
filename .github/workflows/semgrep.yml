@@ -1,0 +1,47 @@
+name: Semgrep SAST
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 18 * * 0'  # Sun 01:00 BKK weekly baseline scan
+
+permissions:
+  contents: read
+  security-events: write   # upload SARIF to Code Scanning
+  pull-requests: read
+
+jobs:
+  semgrep:
+    name: Semgrep scan
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    if: (github.actor != 'dependabot[bot]')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so diff-aware scan can resolve base ref
+
+      - name: Run Semgrep (rulesets · SARIF output · fail on high+)
+        run: |
+          semgrep ci \
+            --config=p/security-audit \
+            --config=p/owasp-top-ten \
+            --config=p/javascript \
+            --severity=ERROR \
+            --severity=WARNING \
+            --sarif --output=semgrep.sarif \
+            --metrics=off
+        env:
+          # Block PR merge on ERROR-severity findings (high/critical)
+          SEMGREP_ENABLE_VERSION_CHECK: 0
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
