@@ -8,6 +8,20 @@
 
 ---
 
+## 03/05 09:50 · T-LOT3283 · historical anomaly cleanup (Option B · 4 sm rows append)
+
+Ticket T-LOT3283 (COO brief 03/05 09:34 · ไทน์ approve B 09:49) · nntn-platform · #aim · #coo
+- **Goal:** ปิด per-lot balance invariant {0,1} ของ lots 3283/3284 (MT-019 เนื้อสดหมักนุ่ม cook_session 2983b206 22-25/04 · pre-RC2 anomaly)
+- **Yesterday's gap:** sm 4512/4513 (02/05 fix) ใส่ qty + ref_id ถูก แต่ลืม set lot_id field → per-lot invariant ไม่ปิด · item-level OK
+- **Try Option A first (failed):** apply_migration with `SET LOCAL app.allow_sm_mutation='on'` + UPDATE sm 4512/4513.lot_id → success=true แต่ verify lot_id ยัง NULL → discovered `sm_block_mutation` BEFORE ROW trigger bug (`RETURN NULL` instead of `RETURN NEW` · silent cancel)
+- **Pivot to Option B (TINE pick):** insert 4 sm rows pure append-only:
+  - sm 4699 lot_id=3283 +1 count_adjust_up · close per-lot
+  - sm 4700 lot_id=3284 +1 count_adjust_up · close per-lot
+  - sm 4701 (no lot_id) -1 count_adjust_down · offset 4512
+  - sm 4702 (no lot_id) -1 count_adjust_down · offset 4513
+- **End state:** lot 3283 balance = 0 (4 rows) ✓ · lot 3284 balance = 0 (4 rows) ✓ · MT-019 item sm_net unchanged · system divergence = 0 ✓
+- **Bug discovered (deferred):** GitHub issue #6 https://github.com/TTT3P/nntn/issues/6 · `sm_block_mutation BEFORE ROW returns NULL · silent cancel · bypass mechanism broken` · P3 · Phase 4 backlog · also flag verify B10 revert_close_pot บน sm.lot_id (อาจ silent no-op เช่นกัน)
+
 ## 02/05 16:05 · PICANHA bundle · OP1 + OP3 + OP4 ship · OP2 skipped
 
 Squad-tier bundle · Platform lead · cross-room (CookingBook · Sales) · nntn-platform · #platform · #coo
