@@ -8,6 +8,18 @@
 
 ---
 
+## 03/05 16:25 · T-PLATFORM-CATALOG-BACKFILL · Wave A · DEC-2026-05-03-012
+
+Migration `t_catalog_backfill_wave_a_mt_bracket_unit_weight_g_20260503` · ไทน์/COO approve 16:22 · nntn-platform · #platform · #coo
+
+- **Scope:** UPDATE 16 MT-* items ที่มี `[Ng]` / `[NG]` ใน name → set `unit_weight_g` (regex extract) + `qty_per_pack=1`
+- **Why:** Phase 4 #5 BOM coverage prereq · MT structure debt (44 rows · 0 มี qty/cost/cb_link) เริ่มจากที่ deterministic ก่อน
+- **Pattern derived:** 8 × 75g · 2 × 100g · 2 × 200g · 4 × 500g
+- **Untouched:** stock columns · cost_per_pack · cb_ingredient_id · is_active · is_bom_eligible · name
+- **AIM trigger:** ไม่ fire (aim_items_trigger ตรวจเฉพาะ cost/is_active/name)
+- **Verify:** 16/16 rows updated ตามที่ regex match · ที่เหลือ 28 MT ยัง NULL = variable catch_weight items (expected)
+- **Next:** Wave B (cost backfill · waiting TINE methodology) · Wave C (cb_id allocation · waiting CB next session) · Wave D (is_bom_eligible flip · sequential)
+
 ## 03/05 13:05 · T-B10-ORPHAN-CLEANUP · DEC-2026-05-03-004
 
 Migration `t_b10_orphan_cleanup_set_lot_id_null_for_sm_4120_4123_20260503` · ไทน์ approve 13:02 (4Q · Option A) · nntn-platform · #platform · #coo
