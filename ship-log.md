@@ -8,6 +8,26 @@
 
 ---
 
+## 03/05 12:08 · T-VERIFY-B10 · sm_block_mutation bypass FIX (RETURN NEW/OLD)
+
+Migrations:
+- `t_verify_b10_fix_sm_block_mutation_return_new_20260503` (initial · UPDATE only)
+- `t_verify_b10_fix_block_sm_mutation_handle_delete_correctly_20260503` (follow-up · DELETE OLD)
+nntn-platform · TINE approve 12:01 (Option B · trigger fix only · defer 4 orphan cleanup) · #platform · #stock · #coo
+
+- **Bug:** `block_sm_mutation` BEFORE ROW trigger returned NULL ใน bypass path → silent cancel row (PostgreSQL semantics) · bypass GUC `app.allow_sm_mutation='on'` ทำให้ trigger ไม่ raise · แต่ row mutation ยังโดน cancel
+- **Discovered via Issue #6 + T-VERIFY-B10 verify (03/05 09:46-12:01 BKK)**
+- **Impact uncovered:** 4 orphan sm rows (id 4120-4123 · cook_session f087e89e · 01/05 เอ็นแก้วตุ๋น drift) — B10 revert_close_pot Step C-2 (FK SET NULL on sm.lot_id) silent-cancelled · sm.lot_id ค้างชี้ cw ที่ DELETE ไปแล้ว
+- **Fix v1:** `RETURN NULL` → `RETURN NEW` · smoke test caught: UPDATE works แต่ DELETE rows=0 (BEFORE DELETE ROW ต้อง RETURN OLD · RETURN NEW = NULL = cancel)
+- **Fix v2:** `IF TG_OP='DELETE' THEN RETURN OLD ELSE RETURN NEW END IF` · all 3 paths verified
+- **Smoke tests passed (DO block in apply_migration · auto-cleanup):**
+  - INSERT temp sm ✓
+  - UPDATE with bypass · note changed ✓
+  - DELETE with bypass · row removed ✓
+  - bypass-off UPDATE on sm 4514 → still raises P0001 ✓
+- **Deferred (separate task post-Wave 1):** 4 orphan sm rows cleanup · `allow_sm_mutation` usage audit (revert_close_pot คือ user เดียว confirmed via pg_proc grep)
+- **Closes:** Issue #6 (will mark resolved after orphan cleanup ship)
+
 ## 03/05 09:50 · T-LOT3283 · historical anomaly cleanup (Option B · 4 sm rows append)
 
 Ticket T-LOT3283 (COO brief 03/05 09:34 · ไทน์ approve B 09:49) · nntn-platform · #aim · #coo
