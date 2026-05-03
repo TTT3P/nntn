@@ -8,6 +8,20 @@
 
 ---
 
+## 03/05 13:05 · T-B10-ORPHAN-CLEANUP · DEC-2026-05-03-004
+
+Migration `t_b10_orphan_cleanup_set_lot_id_null_for_sm_4120_4123_20260503` · ไทน์ approve 13:02 (4Q · Option A) · nntn-platform · #platform · #coo
+
+- **Scope:** UPDATE 4 sm rows (id 4120-4123) SET lot_id=NULL · ใช้ bypass GUC ที่ตอนนี้ทำงานจริง (post commit 8bc5949)
+- **Why:** sm 4120-4123 มี lot_id ชี้ cw 4147-4150 ที่ revert_close_pot DELETE เมื่อ 01/05 09:39 BKK · FK ON DELETE SET NULL ตอนนั้นถูก trigger silent-cancel · ทิ้ง dangling FK reference 5 วัน
+- **Item-level:** unchanged · compensating sm 4319-4322 (B10 drift fix 01/05 13:23) ดูแลให้ MT-033 balance อยู่แล้ว · cw=4 / sm_net=4 ก่อนและหลัง
+- **Verify:**
+  - sm 4120-4123 lot_id = NULL ✓
+  - per-lot lots 4147-4150 = 0 rows (filtered out) ✓
+  - system divergence = 0 · orphan_remaining = 0 ✓
+- **Closes:** B10 follow-up · Issue #6 ดวลครบ (trigger fix + orphan cleanup)
+- **Pending followup:** `allow_sm_mutation` usage audit (revert_close_pot คือ user เดียว · low-priority backlog)
+
 ## 03/05 12:08 · T-VERIFY-B10 · sm_block_mutation bypass FIX (RETURN NEW/OLD)
 
 Migrations:
