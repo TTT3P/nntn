@@ -2672,13 +2672,13 @@ async function loadStock() {
           <td style="text-align:right;color:var(--muted)">0.000</td>
           <td><span class="badge badge-low">❌ หมด</span></td>
         </tr>`:`
-        <tr class="stock-group-row" onclick="toggleStockExpand('${name.replace(/'/g,"\\'")}')">
+        <tr class="stock-group-row" onclick="toggleStockExpand('${wh}','${name.replace(/'/g,"\\'")}')">
           <td>${name}</td>
           <td style="color:var(--muted);font-size:.8rem">${[...d.lots].map(fmtDate).join(', ')}</td>
           <td style="text-align:right;font-weight:600">${d.kg.toFixed(3)}</td>
           <td><span class="badge badge-ok">✅ ${d.count} ถุง</span></td>
         </tr>
-        <tr class="stock-expand-row" id="expand-${name.replace(/[^a-zA-Z0-9ก-๙]/g,'_')}" style="display:none">
+        <tr class="stock-expand-row" id="expand-${wh}-${name.replace(/[^a-zA-Z0-9ก-๙]/g,'_')}" style="display:none">
           <td colspan="4">
             <div class="stock-bag-list">
               ${d.bags.sort((a,b)=>new Date(a.lot_date)-new Date(b.lot_date)).map(bag=>`
@@ -2722,8 +2722,12 @@ async function loadStock() {
 }
 
 // ── Stock expand ───────────────────────────────────────
-function toggleStockExpand(name) {
-  const key = name.replace(/[^a-zA-Z0-9ก-๙]/g,'_')
+// FIX 04/05 (T-EXPAND-DUPLICATE-ID): include warehouse in id key.
+// Old code used id='expand-${name}' so item present in 2 warehouses (e.g. ชายโครงตุ๋น
+// in WH B + WH C) collided · getElementById returned only the first row · clicking
+// the second warehouse's row toggled the first (invisible to user).
+function toggleStockExpand(wh, name) {
+  const key = (wh ? wh + '-' : '') + name.replace(/[^a-zA-Z0-9ก-๙]/g,'_')
   const row = document.getElementById('expand-'+key)
   if (!row) return
   row.style.display = row.style.display==='none' ? 'table-row' : 'none'
