@@ -8,6 +8,20 @@
 
 ---
 
+## 04/05 18:05 · T-2BUGS · Bug 2 expand-row id collision FIX · Bug 1 PARK
+
+nntn-platform · #platform · #coo · TINE flag 17:58 · Bug 2 fixed 18:01 · Bug 1 verdict 18:05
+
+- **Bug 2 (P1 · expand UI not working) FIXED commit a3a119f**
+  - Root cause: `meat-stock/index.html` line 2681 ใช้ id='expand-${name}' · ไม่รวม warehouse → item ที่อยู่ 2+ wh มี duplicate DOM id · `getElementById` คืน first only · click row WH C ไป toggle hidden row WH B (invisible)
+  - Evidence: ชายโครงตุ๋น MT-004 In Stock = 9 ถุง · WH B 1 (cw 3406) + WH C 8 (cw 4441-4445/4480-4482)
+  - Fix: prefix id ด้วย wh + pass wh เป็น arg แรก toggleStockExpand · scope กว้างกว่า ชายโครง (ทุก item-cross-warehouse แก้พร้อมกัน)
+  - Production verify: GitHub Pages built 11:03:42 UTC · ETag matches a3a119f · TINE re-test
+- **Bug 1 (Lv.1/Lv.2 naming collision) PARK · TINE verdict 18:05**
+  - Finding: ทุก 9 ถุง MT-004 source='web-process' · cook_session_id=NULL · repack_session_id=NULL = bypass RPC ทั้งหมด · ไม่มี SKU 'ชายโครงตุ๋น (เนื้อตุ๋น)' Lv.2 ใน DB
+  - Verdict: PARK existing 9 ถุง · ปล่อย self-heal (ขายหมดเอง · 4.411 kg = ไม่กี่วัน) · effort/value ไม่คุ้ม classify+migrate
+  - Backlog: scope extension ใน Issue #7 — enforcement gate ต้องอยู่ทั้ง 2 layer (RPC + form Kanban web-process) · ป้องกัน operator pick Lv.2 SKU bypass RPC ในอนาคต
+
 ## 04/05 17:05 · T-MULTI-LEVEL-PRODUCE · revert wrong-output cook session
 
 cook_session `bebe3ed4-f320-4894-b2c2-409f125f4b7c` (03/05 09:36 BKK · MT-045 wrong output) · TINE approve revert 04/05 17:00 · nntn-platform · #aim · #coo · #platform
