@@ -245,7 +245,11 @@ function goAdd() {
 
 (async () => {
   if (!window.supabase) { setTimeout(arguments.callee, 100); return; }
-  sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, storageKey: 'nntn_sb_token' } });
+  // FIX 04/05 (T-STOCK-HISTORY-BACK-LOGIN): removed `auth.persistSession + storageKey`
+  // SDK was overwriting raw JWT (set by login.html) with its own session object · wiping
+  // localStorage.nntn_sb_token → back-button next pageload hit auth.js with no token →
+  // redirect to login. auth.js monkey-patch handles Authorization header automatically.
+  sb = supabase.createClient(SB_URL, SB_KEY);
   // Wait for auth.js to set token
   await new Promise(r => setTimeout(r, 200));
   const tok = localStorage.getItem('nntn_sb_token');
