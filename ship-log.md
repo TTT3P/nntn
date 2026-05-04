@@ -8,6 +8,18 @@
 
 ---
 
+## 04/05 17:05 · T-MULTI-LEVEL-PRODUCE · revert wrong-output cook session
+
+cook_session `bebe3ed4-f320-4894-b2c2-409f125f4b7c` (03/05 09:36 BKK · MT-045 wrong output) · TINE approve revert 04/05 17:00 · nntn-platform · #aim · #coo · #platform
+
+- **Bug:** น้องเลือก output SKU MT-045 'เนื้อน่องลายตุ๋น (เนื้อตุ๋น)' ใน rpc_production_execute · ผิด process model (TINE canonical: เตาตุ๋น output Lv.1 intermediate · MT-045 = Lv.2 repack-output)
+- **Action 1:** `rpc_revert_close_pot('bebe3ed4', 'wrong output SKU')` → DELETE cw 4439+4440 · session status cooking · 2 compensating disposal sm
+- **Gap discovered:** revert_close_pot ไม่ revert source cw (handles outputs only)
+- **Action 2:** Manual source restore · INSERT sm 5109 count_adjust_up qty=+1 · UPDATE cw 3752 SET status='✅ In Stock' cook_session_id=NULL (Out→In Stock · trigger no-op for this transition · per emit_sm_from_cw_status)
+- **Verify:** cw 3752 In Stock 1980g · cw 4439/4440 deleted · session status='cooking' · lot_3752 sm balance=1 · system divergence=0 · orphan=0
+- **น้อง redo via hub-produce:** consume cw 3752 SP-027 1.98kg → produce **MT-035** 'เนื้อน่องลายตุ๋น' (Lv.1 intermediate · ไม่ใช่ MT-045)
+- **Backlog ticket Issue #7:** rpc_production_execute enforce output Lv.1 only · proposed Option A (`production_output_eligible` flag) · prevent foot-gun
+
 ## 03/05 16:25 · T-PLATFORM-CATALOG-BACKFILL · Wave A · DEC-2026-05-03-012
 
 Migration `t_catalog_backfill_wave_a_mt_bracket_unit_weight_g_20260503` · ไทน์/COO approve 16:22 · nntn-platform · #platform · #coo
