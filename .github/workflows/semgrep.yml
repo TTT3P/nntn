@@ -25,19 +25,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # full history so diff-aware scan can resolve base ref
+          fetch-depth: 0
+
+      - name: Mark workspace safe (container UID mismatch with checkout owner)
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       # Phase A · ERROR-only gate. Legacy code has many WARNING findings
-      # (innerHTML/onclick patterns: hub-delivery 84 · po-receive 29 · stock-dispense 26 ·
-      # stock-report 24 · sop-review 23 · admin-items 21). Promote to ERROR+WARNING
-      # in Phase B once cleanup is done.
+      # (innerHTML/onclick patterns). Promote to ERROR+WARNING in Phase B
+      # once cleanup is done.
+      #
+      # `--severity` is a `semgrep scan` flag (not `semgrep ci`). Use `scan`
+      # so the gate actually filters severity. `--error` exits non-zero on findings.
       - name: Run Semgrep (ERROR-only gate · SARIF upload all severities)
         run: |
-          semgrep ci \
+          semgrep scan \
             --config=p/security-audit \
             --config=p/owasp-top-ten \
             --config=p/javascript \
             --severity=ERROR \
+            --error \
             --sarif --output=semgrep.sarif \
             --metrics=off
         env:
