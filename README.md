@@ -1,6 +1,6 @@
 # NNTN — ระบบสต๊อกครัวเนื้อในตำนาน
 
-> Vanilla HTML/CSS/JS · Supabase Postgres · GitHub Pages
+> Vanilla HTML/CSS/JS · Supabase Postgres · GitHub Pages · QA Gate enforced (qa-pass label required for merge)
 > Live: <https://ttt3p.github.io/nntn/hub.html>
 
 ดู `BLUEPRINT.md` สำหรับสถาปัตยกรรม · `ship-log.md` สำหรับประวัติ deploy
