@@ -1,0 +1,32 @@
+name: QA Gate
+
+# Mechanical guard · PR ต้องมี label 'qa-pass' จาก Kati ก่อน merge
+# Triggered on label add/remove + PR sync · re-runs ทุกครั้ง label เปลี่ยน
+# Reference: STL escalation ladder N=3 (3/7 PR bypass Kati gate · trust corrosion)
+# Approved by TINE 2026-05-06 19:28
+
+on:
+  pull_request_target:
+    types: [opened, reopened, labeled, unlabeled, synchronize]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  require-qa-pass:
+    name: Require qa-pass label
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify qa-pass label present
+        env:
+          LABELS_JSON: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          echo "PR #${PR_NUMBER} labels: ${LABELS_JSON}"
+          if echo "${LABELS_JSON}" | jq -e 'index("qa-pass")' >/dev/null; then
+            echo "✅ qa-pass label present · gate open"
+            exit 0
+          fi
+          echo "::error::PR missing qa-pass label · Kati must verify + post 'qa-pass' label before merge"
+          exit 1
