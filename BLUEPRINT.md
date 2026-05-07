@@ -283,6 +283,21 @@ stock.submit_delivery(
 rpc_delivery_reverse(p_actor, p_cw_id: bigint, p_reason: text): jsonb
 ```
 
+### `public.rpc_delivery_add_bag` — add bag to existing delivery
+```ts
+rpc_delivery_add_bag(p_actor: text, p_delivery_id: uuid, p_cw_id: bigint, p_reason: text): jsonb
+```
+**Guardrails:** reason ≥ 10 chars · delivery within 24hr · created_by match (NULL=allow) · bag must be In Stock.
+**Triggers:** `cw_emit_sm_status` auto-emits `delivery_out` sm. Inserts `stock.delivery_lines` row.
+
+### `public.rpc_delivery_swap_bag` — atomic swap (reverse old + deliver new)
+```ts
+rpc_delivery_swap_bag(p_actor: text, p_old_cw_id: bigint, p_new_cw_id: bigint, p_reason: text): jsonb
+```
+**Atomic:** single transaction · deterministic lock order · full rollback on failure.
+**Guardrails:** same as add_bag. Infers delivery_id from old bag's delivery_line.
+**Triggers:** emits `delivery_reverse` sm (+1) for old bag + `delivery_out` sm (-1) for new bag.
+
 ### `public.rpc_count_adjust` — manager count adjust
 ```ts
 rpc_count_adjust(p_actor, p_item_id: uuid, p_counted_qty: numeric, p_note?: text): jsonb
