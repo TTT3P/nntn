@@ -22,15 +22,18 @@ async function callRpc(page, rpcName, params) {
   }, { rpcName, params });
 }
 
-/** Helper: query Supabase REST from page context */
+/** Helper: query Supabase REST from page context (supports schema prefix e.g. 'stock/deliveries') */
 async function query(page, table, params) {
   return page.evaluate(async ({ table, params }) => {
     const sb = window.NNTN_SB_URL;
     const tok = localStorage.getItem('nntn_sb_token');
     const q = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
-    const res = await fetch(`${sb}/rest/v1/${table}?${q}`, {
-      headers: { Authorization: 'Bearer ' + tok, apikey: window.NNTN_SB_ANON }
-    });
+    const parts = table.split('/');
+    const schema = parts.length > 1 ? parts[0] : null;
+    const tbl = parts.length > 1 ? parts.slice(1).join('/') : table;
+    const h = { Authorization: 'Bearer ' + tok, apikey: window.NNTN_SB_ANON };
+    if (schema) { h['Accept-Profile'] = schema; }
+    const res = await fetch(`${sb}/rest/v1/${tbl}?${q}`, { headers: h });
     return res.json();
   }, { table, params });
 }
