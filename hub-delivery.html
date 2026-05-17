@@ -543,7 +543,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     const [allItems, bags, stockRows] = await Promise.all([
-      get('items', { select: 'id,sku,name,unit', is_active: 'eq.true', order: 'sku.asc', limit: 500 }),
+      get('items', { select: 'id,sku,name,unit,category', is_active: 'eq.true', order: 'sku.asc', limit: 500 }),
       get('catch_weight', {
         select: 'id,item_id,weight_g,lot_date,warehouse,legacy_cw_row',
         status: 'eq.✅ In Stock',
@@ -554,8 +554,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     ])
 
     const items = Array.isArray(allItems) ? allItems : []
-    mtItems = items.filter(i => i.sku && i.sku.startsWith('MT'))
-    spItems = items.filter(i => i.sku && (i.sku.startsWith('SP') || i.sku.startsWith('MISC') || i.sku.startsWith('PKG')))
+    mtItems = items.filter(i => i.category && i.category.startsWith('meat'))
+    spItems = items.filter(i => !i.category || !i.category.startsWith('meat'))
     window._itemsById = {}
     items.forEach(i => { window._itemsById[i.id] = i })
 
