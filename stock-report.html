@@ -288,7 +288,7 @@ async function load() {
     new Date().toLocaleDateString('th-TH', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
   const [{ data: items }, { data: evts }] = await Promise.all([
-    sb.from('items').select('id,sku,name,unit,category,min_stock,qty_per_pack')
+    sb.from('items').select('id,sku,name,unit,category,par_level,qty_per_pack')
       .eq('is_active', true).order('category').order('sku'),
     sb.from('stock_counts').select('item_id,qty,event_type,note,counted_at')
       .order('counted_at', { ascending: true }),
@@ -346,8 +346,8 @@ async function load() {
 
     const status = currentQty !== null
       ? (currentQty === 0 ? 'OUT'
-        : currentQty < (item.min_stock || 0) ? 'ORDER_NOW'
-        : currentQty < (item.min_stock || 0) * 1.5 ? 'LOW' : 'OK')
+        : currentQty < (item.par_level || 0) ? 'ORDER_NOW'
+        : currentQty < (item.par_level || 0) * 1.5 ? 'LOW' : 'OK')
       : 'OUT';
 
     return {

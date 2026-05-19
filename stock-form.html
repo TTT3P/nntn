@@ -316,7 +316,7 @@ async function loadItems() {
   // Load items
   const { data: itemData, error: itemErr } = await sb
     .from('items')
-    .select('id, sku, name, unit, category, min_stock, qty_per_pack')
+    .select('id, sku, name, unit, category, par_level, qty_per_pack')
     .eq('is_active', true)
     .order('category')
     .order('sku');
@@ -521,7 +521,7 @@ async function submitCount() {
   const criticalItems = rows
     .map(r => {
       const item = items.find(i => i.id === r.item_id);
-      const status = calcStatus(r.qty, item.min_stock);
+      const status = calcStatus(r.qty, item.par_level);
       return { name: item.name, qty: r.qty, unit: item.unit, status };
     })
     .filter(r => r.status === 'OUT' || r.status === 'ORDER_NOW' || r.status === 'LOW');

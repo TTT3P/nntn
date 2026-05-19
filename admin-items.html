@@ -368,7 +368,7 @@ function toggleGuide() {
 async function loadAll() {
   const [itemsRes, suppRes, linkRes] = await Promise.all([
     sb.from('items')
-      .select('id, sku, name, category, unit, min_stock, max_level, is_active, brand, cost_per_pack, qty_per_pack, yield_pct, notes, price_per_pack')
+      .select('id, sku, name, category, unit, par_level, max_level, is_active, brand, cost_per_pack, qty_per_pack, yield_pct, notes, price_per_pack')
       .order('category').order('sku'),
     sb.from('suppliers').select('id, name').eq('is_active', true).order('name'),
     sb.from('item_suppliers').select('item_id, supplier_id, is_preferred')
@@ -459,7 +459,7 @@ function renderList() {
           <div class="item-chips">
             <span class="sku-chip">${item.sku}</span>
             <span class="unit-chip">${item.unit || ''}</span>
-            ${item.min_stock != null ? `<span class="par-chip">Par ${item.min_stock}${item.max_level != null ? '/' + item.max_level : ''}</span>` : ''}
+            ${item.par_level != null ? `<span class="par-chip">Par ${item.par_level}${item.max_level != null ? '/' + item.max_level : ''}</span>` : ''}
             ${priceStr ? `<span class="price-chip">${priceStr}${perGStr ? ' · ' + perGStr : ''}</span>` : ''}
             ${sup ? `<span class="supplier-chip">${sup.name}</span>` : ''}
             ${item.brand ? `<span class="supplier-chip">${item.brand}</span>` : ''}
@@ -556,7 +556,7 @@ function openEdit(id) {
   document.getElementById('f-yield').value = item.yield_pct != null ? Math.round(item.yield_pct * 100) : '';
   updateBomPreview();
   document.getElementById('f-notes').value = item.notes || '';
-  document.getElementById('f-par').value = item.min_stock || '';
+  document.getElementById('f-par').value = item.par_level || '';
   document.getElementById('f-max').value = item.max_level || '';
 
   const sup = getPreferredSupplier(id);
@@ -604,7 +604,7 @@ async function saveItem() {
   btn.textContent = '⏳ กำลังบันทึก...';
 
   const notes   = document.getElementById('f-notes').value.trim() || null;
-  const payload = { name, unit, category, brand, price_per_pack, cost_per_pack, qty_per_pack, yield_pct, min_stock: par, max_level: max, notes };
+  const payload = { name, unit, category, brand, price_per_pack, cost_per_pack, qty_per_pack, yield_pct, par_level: par, max_level: max, notes };
   let error, savedId;
 
   if (editId) {

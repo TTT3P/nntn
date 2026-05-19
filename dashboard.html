@@ -402,14 +402,14 @@ async function loadStock() {
   // Query public.current_stock VIEW
   const { data: csData, error: csErr } = await sb
     .from('current_stock')
-    .select('sku, name, category, unit, min_stock, current_qty, status, counted_at, counted_by');
+    .select('sku, name, category, unit, par_level, current_qty, status, counted_at, counted_by');
 
   if (!csErr && csData && csData.length > 0) {
     data = csData.map(r => ({ ...r, last_counted: r.counted_at, last_counted_by: r.counted_by }));
   } else {
     // Fallback: build from public.items + v_stock_unified (SoT)
     const [{ data: items }, { data: unified }] = await Promise.all([
-      sb.from('items').select('id,sku,name,category,unit,min_stock').eq('is_active', true),
+      sb.from('items').select('id,sku,name,category,unit,par_level').eq('is_active', true),
       sb.from('v_stock_unified').select('item_id,qty_on_hand,last_movement_at')
     ]);
 
@@ -420,7 +420,7 @@ async function loadStock() {
       data = items.map(item => {
         const c = qtyMap[item.id];
         const qty = c ? (c.qty_on_hand ?? 0) : 0;
-        const par = item.min_stock || 1;
+        const par = item.par_level || 1;
         let status = 'OK';
         if (qty === null || qty === 0) status = 'OUT';
         else if (qty < par)           status = 'ORDER_NOW';
@@ -430,7 +430,7 @@ async function loadStock() {
           name:           item.name,
           category:       item.category || 'other',
           unit:           item.unit,
-          min_stock:      item.min_stock,
+          par_level:      item.par_level,
           current_qty:    qty,
           last_counted:   c?.last_movement_at,
           status,

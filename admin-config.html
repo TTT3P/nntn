@@ -222,7 +222,7 @@ const CAT_LABELS = {
   noodle:     '🍜 เส้น & ข้าว',
 };
 
-let items = []; // { id, sku, name, category, unit, min_stock, max_level, current_qty, status }
+let items = []; // { id, sku, name, category, unit, par_level, max_level, current_qty, status }
 
 function showToast(msg, type) {
   const t = document.getElementById('toast');
@@ -237,7 +237,7 @@ function updateChangeCount() {
   items.forEach(item => {
     const p = parseFloat(document.getElementById(`par-${item.id}`)?.value);
     const m = parseFloat(document.getElementById(`max-${item.id}`)?.value);
-    if (p !== item.min_stock || m !== item.max_level) changed++;
+    if (p !== item.par_level || m !== item.max_level) changed++;
   });
   document.getElementById('change-count').textContent =
     changed > 0 ? `มี ${changed} รายการที่เปลี่ยน` : 'ยังไม่มีการเปลี่ยนแปลง';
@@ -249,7 +249,7 @@ function markChanged(itemId) {
   const item = items.find(i => i.id === itemId);
   if (!item) return;
 
-  const parChanged = parseFloat(parInput.value) !== item.min_stock;
+  const parChanged = parseFloat(parInput.value) !== item.par_level;
   const maxChanged = parseFloat(maxInput.value) !== item.max_level;
   parInput.classList.toggle('changed', parChanged);
   maxInput.classList.toggle('changed', maxChanged);
@@ -270,7 +270,7 @@ async function saveRow(itemId) {
   btn.disabled = true;
 
   const { error } = await sb.from('items')
-    .update({ min_stock: newPar, max_level: newMax })
+    .update({ par_level: newPar, max_level: newMax })
     .eq('id', itemId);
 
   if (error) {
@@ -280,7 +280,7 @@ async function saveRow(itemId) {
   }
 
   // Update local state
-  item.min_stock = newPar;
+  item.par_level = newPar;
   item.max_level = newMax;
   document.getElementById(`par-${itemId}`).classList.remove('changed');
   document.getElementById(`max-${itemId}`).classList.remove('changed');
@@ -298,7 +298,7 @@ async function saveAll() {
   const changed = items.filter(item => {
     const p = parseFloat(document.getElementById(`par-${item.id}`)?.value);
     const m = parseFloat(document.getElementById(`max-${item.id}`)?.value);
-    return p !== item.min_stock || m !== item.max_level;
+    return p !== item.par_level || m !== item.max_level;
   });
 
   if (changed.length === 0) { showToast('ไม่มีการเปลี่ยนแปลง', 'success'); return; }
@@ -314,11 +314,11 @@ async function saveAll() {
     if (isNaN(newPar) || isNaN(newMax) || newPar < 0 || newMax < newPar) { errors++; continue; }
 
     const { error } = await sb.from('items')
-      .update({ min_stock: newPar, max_level: newMax })
+      .update({ par_level: newPar, max_level: newMax })
       .eq('id', item.id);
 
     if (!error) {
-      item.min_stock = newPar;
+      item.par_level = newPar;
       item.max_level = newMax;
       document.getElementById(`par-${item.id}`).classList.remove('changed');
       document.getElementById(`max-${item.id}`).classList.remove('changed');
@@ -339,7 +339,7 @@ async function saveAll() {
 async function loadItems() {
   const { data: itemData, error } = await sb
     .from('items')
-    .select('id, sku, name, category, unit, min_stock, max_level')
+    .select('id, sku, name, category, unit, par_level, max_level')
     .eq('is_active', true)
     .order('category').order('sku');
 
@@ -365,8 +365,8 @@ async function loadItems() {
     const qty = latest ? latest.qty : 0;
     let status;
     if (qty === 0)                       status = 'OUT';
-    else if (qty < item.min_stock)       status = 'ORDER_NOW';
-    else if (qty < item.min_stock * 1.5) status = 'LOW';
+    else if (qty < item.par_level)       status = 'ORDER_NOW';
+    else if (qty < item.par_level * 1.5) status = 'LOW';
     else                                 status = 'OK';
     return { ...item, current_qty: qty, status };
   });
@@ -398,7 +398,7 @@ async function loadItems() {
           <div class="ctrl-group">
             <label>Par (ขั้นต่ำ)</label>
             <input type="number" min="0" step="0.5" id="par-${item.id}"
-              value="${item.min_stock}"
+              value="${item.par_level}"
               oninput="markChanged('${item.id}')">
           </div>
           <div class="ctrl-group">
