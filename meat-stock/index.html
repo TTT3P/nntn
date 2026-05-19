@@ -2599,11 +2599,13 @@ async function loadStock() {
     document.getElementById('sk-c').textContent=byWh.C>0?byWh.C+' ถุง':'—'
 
     // Infer warehouse from item name (for 0-stock items that have no bags)
-    function inferWh(name) {
+    function inferWh(name, cat) {
       const n = name||''
-      // [XXG] ขึ้นต้นชื่อเท่านั้น = packed → C (เช่น [75G]เนื้อตุ๋น)
-      // วากิวเสือ3[200g], มันเนื้อออส[500g] = bracket ท้าย = เนื้อสด → A
+      const c = cat||''
       if(/^\[[\d]+[Gg]\]/.test(n)) return 'C'
+      if(c==='meat_portioned') return 'C'
+      if(c==='meat_cooked') return 'B'
+      if(c==='meat_raw'||c==='meat_fresh') return 'A'
       if(n.includes('ตุ๋น')||n.includes('หมักนุ่ม')) return 'B'
       return 'A'
     }
@@ -2616,7 +2618,7 @@ async function loadStock() {
     const byWhGroups={A:{},B:{},C:{},SCRAP:{}}
     const itemsInStock=new Set()
     rows.forEach(r=>{
-      const wh = r.warehouse||inferWh(r.items?.name||'')
+      const wh = r.warehouse||inferWh(r.items?.name||'',r.items?.category||'')
       const nm = r.items?.name || r.item_name || '?'
       const cat = itemCatMap[r.item_id]||''
       itemsInStock.add(nm)
@@ -2629,7 +2631,7 @@ async function loadStock() {
     })
 
     // 0-stock: MT- (cooked/portion) และ SP- ที่เป็นเนื้อ (raw cuts เช่น สะโพกก้อน พิคานย่า)
-    const MEAT_CATS=['meat','meat_raw','meat_cooked','meat_portioned','meat_other']
+    const MEAT_CATS=['meat','meat_raw','meat_fresh','meat_cooked','meat_portioned','meat_other']
     items.filter(it=>it.sku&&(it.sku.startsWith('MT')||it.sku.startsWith('SP-'))&&MEAT_CATS.includes(it.category)).forEach(it=>{
       if(!it.name||itemsInStock.has(it.name)) return
       if(it.category==='meat_trim'){
@@ -2637,7 +2639,7 @@ async function loadStock() {
         return
       }
       if(!MEAT_CATS.includes(it.category)) return
-      const wh=inferWh(it.name)
+      const wh=inferWh(it.name,it.category)
       if(!byWhGroups[wh][it.name]) byWhGroups[wh][it.name]={count:0,kg:0,lots:new Set(),bags:[],outOfStock:true}
     })
 
