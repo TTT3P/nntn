@@ -1121,7 +1121,7 @@
         <text x="136" y="161" text-anchor="middle" font-size="12" font-weight="700" fill="white">items</text>
         <text x="48" y="186" font-size="10" fill="#444">🔑 id (uuid)</text>
         <text x="48" y="200" font-size="10" fill="#444">sku, name, category, unit</text>
-        <text x="48" y="214" font-size="10" fill="#444">par_level, max_level</text>
+        <text x="48" y="214" font-size="10" fill="#444">min_stock, max_level</text>
         <text x="48" y="228" font-size="10" fill="#444">purchase_price_per_kg</text>
         <text x="48" y="242" font-size="10" fill="#444">yield_expected_min/max</text>
         <text x="48" y="256" font-size="10" fill="#888">category: vegetable/meat/srcp/pkg...</text>
@@ -1177,7 +1177,7 @@
         <text x="663" y="161" text-anchor="middle" font-size="12" font-weight="700" fill="white">stock.items</text>
         <text x="588" y="186" font-size="10" fill="#444">🔑 id · sku · name</text>
         <text x="588" y="200" font-size="10" fill="#444">category · unit</text>
-        <text x="588" y="214" font-size="10" fill="#444">par_level · max_level</text>
+        <text x="588" y="214" font-size="10" fill="#444">min_stock · max_level</text>
         <text x="588" y="228" font-size="10" fill="#888">[75G]สามชั้น, [75G]เอ็น ...</text>
         <rect x="768" y="142" width="255" height="120" rx="8" fill="white" stroke="#90CAF9" stroke-width="1.5"/>
         <rect x="768" y="142" width="255" height="28" rx="8" fill="#0D47A1"/>
@@ -1351,7 +1351,7 @@
         <div class="er-col pk"><span class="er-col-name">id</span><span class="er-col-type">uuid PK</span></div>
         <div class="er-col"><span class="er-col-name">sku</span><span class="er-col-type">text UNIQUE</span></div>
         <div class="er-col"><span class="er-col-name">name / category / unit</span><span class="er-col-type">text</span></div>
-        <div class="er-col"><span class="er-col-name">par_level / max_level</span><span class="er-col-type">numeric</span></div>
+        <div class="er-col"><span class="er-col-name">min_stock / max_level</span><span class="er-col-type">numeric</span></div>
         <div class="er-col"><span class="er-col-name">purchase_price_per_kg</span><span class="er-col-type">numeric</span></div>
         <div class="er-col"><span class="er-col-name">yield_expected_min/max</span><span class="er-col-type">numeric</span></div>
         <div class="er-col"><span class="er-col-name">is_active</span><span class="er-col-type">bool</span></div>

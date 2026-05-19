@@ -351,7 +351,7 @@ const sbStock = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema
 
 (async function() {
   const { data: cs } = await sbStock.from('current_stock')
-    .select('item_id,current_qty,status,par_level');
+    .select('item_id,current_qty,status,min_stock');
 
   if (cs && cs.length > 0) {
     let out = 0, order = 0, low = 0, ok = 0;
@@ -367,7 +367,7 @@ const sbStock = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema
     document.getElementById('s-ok').textContent    = ok;
     document.getElementById('date-bar').textContent = `อัปเดตจาก Supabase · ${new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
   } else {
-    const { data: items }  = await sb.from('items').select('id,par_level').eq('is_active', true);
+    const { data: items }  = await sb.from('items').select('id,min_stock').eq('is_active', true);
     const { data: unified } = await sb.from('v_stock_unified').select('item_id,qty_on_hand,last_movement_at');
     if (!items || !unified) { document.getElementById('date-bar').textContent = 'ไม่พบข้อมูลสต๊อก'; return; }
     const qtyMap = {};
@@ -376,7 +376,7 @@ const sbStock = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema
     items.forEach(item => {
       const c = qtyMap[item.id];
       const qty = c ? c.qty_on_hand : null;
-      const par = item.par_level || 1;
+      const par = item.min_stock || 1;
       if (qty === null || qty === 0) out++;
       else if (qty < par) order++;
       else if (qty < par * 1.5) low++;
