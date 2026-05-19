@@ -479,7 +479,7 @@ function renderList() {
 function getPrefix(category) {
   if (category === 'srcp') return 'SRCP';
   if (category === 'pkg')  return 'PKG';
-  if (category === 'meat') return 'SP';
+  if (category === 'meat' || category === 'meat_raw' || category === 'meat_fresh') return 'SP';
   return 'SP';
 }
 

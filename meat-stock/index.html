@@ -761,7 +761,7 @@ async function init() {
 function addRecvItem() {
   recvItemCount++
   const n = recvItemCount
-  const rawItems = items.filter(i => i.category==='meat_raw' || i.category==='meat' || (!i.category && !i.name.includes('ตุ๋น')))
+  const rawItems = items.filter(i => i.category==='meat_raw' || i.category==='meat_fresh' || i.category==='meat' || (!i.category && !i.name.includes('ตุ๋น')))
   const opts = rawItems.map(i=>`<option value="${i.id}">${i.name}</option>`).join('')
 
   const div = document.createElement('div')
@@ -1121,7 +1121,7 @@ function loadNewPotItemDropdown() {
     const item = items.find(i => i.id === b.item_id)
     if (!item) return
     if (item.name.includes('[')) return  // ตัด pre-packed (เช่น เสือร้องไห้ออส[500g]) — ไม่เข้าหม้อตุ๋น
-    if (item.category && item.category !== 'meat_raw' && item.category !== 'meat' && !item.name.includes('สด') && !item.name.includes('ดิบ')) return
+    if (item.category && item.category !== 'meat_raw' && item.category !== 'meat_fresh' && item.category !== 'meat' && !item.name.includes('สด') && !item.name.includes('ดิบ')) return
     if (!_npRawBagsByItem[item.id]) _npRawBagsByItem[item.id] = { item, bags: [] }
     _npRawBagsByItem[item.id].bags.push(b)
   })

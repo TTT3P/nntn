@@ -565,7 +565,7 @@
     var itmResult = await sb.from('items')
       .select('id,name,unit,category')
       .eq('is_active', true)
-      .not('category', 'in', '("srcp","pkg","meat","raw_meat")')
+      .not('category', 'in', '("srcp","pkg","meat","meat_raw","meat_fresh","raw_meat")')
       .order('category').order('name');
     items = itmResult.data || [];
 
