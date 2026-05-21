@@ -61,6 +61,10 @@
     #nntn-sidebar .nav-group-children { display:none; padding-left: var(--nntn-space-6); margin-top:2px; border-left: 1px solid #2e3135; margin-left:var(--nntn-space-4); }
     #nntn-sidebar .nav-group.open .nav-group-children { display:block; }
     #nntn-sidebar .nav-group-children a.nav-item { padding: 6px var(--nntn-space-3); font-size: 13px; }
+    #nntn-sidebar .nav-footer { padding: var(--nntn-space-3) var(--nntn-space-2) var(--nntn-space-4); border-top: 1px solid #2e3135; }
+    #nntn-sidebar .nav-cutover { display:block; background:#2F6138; color:#fff; text-decoration:none; border-radius: var(--nntn-radius-md); padding: 10px 12px; font-size: var(--nntn-font-sm); font-weight: var(--nntn-weight-semibold); line-height:1.4; }
+    #nntn-sidebar .nav-cutover:hover { background:#285431; }
+    #nntn-sidebar .nav-cutover small { display:block; margin-top:4px; font-size: var(--nntn-font-xs); color: rgba(255,255,255,0.85); font-weight: var(--nntn-weight-regular); }
 
     #nntn-topbar { grid-area: topbar; background: var(--nntn-color-surface); border-bottom: 1px solid var(--nntn-color-border); display:flex; align-items:center; justify-content:space-between; padding: 0 var(--nntn-space-6); }
     #nntn-topbar .breadcrumb { color: var(--nntn-color-text-subdued); font-size: var(--nntn-font-sm); }
@@ -117,6 +121,12 @@
         <div><div class="brand-name">NNTN</div><div class="brand-sub">ครัวเนื้อในตำนาน</div></div>
       </div>
       <nav id="nntn-nav"></nav>
+      <div class="nav-footer">
+        <a class="nav-cutover" href="https://ttt3p.github.io/nntn-stock-v2/" target="_blank" rel="noopener">
+          ทดลองระบบใหม่ NNTN v2 →
+          <small>เวอร์ชันทดสอบ — ใช้ควบคู่กับระบบเดิมได้</small>
+        </a>
+      </div>
     </aside>
     <div id="nntn-topbar">
       <div style="display:flex; align-items:center; gap:var(--nntn-space-3);">
