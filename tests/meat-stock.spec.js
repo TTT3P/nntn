@@ -78,7 +78,7 @@ test.describe('meat-stock page', () => {
     expect(hasPackedInMain).toBe(false);
   });
 
-  test('แปรรูป output — 12 SKUs curated (portion/packed)', async ({ page }) => {
+  test('แปรรูป output — 13 SKUs curated (portion/packed)', async ({ page }) => {
     await page.click('button:has-text("แปรรูป")');
     // Switch to mix mode to reveal legacy single-SKU dropdown
     await page.selectOption('#proc-type', 'mix');
@@ -86,8 +86,8 @@ test.describe('meat-stock page', () => {
     await expect(dropdown).toBeVisible();
 
     const options = await dropdown.locator('option').allTextContents();
-    // 1 placeholder + 12 SKUs = 13 (MT-031 เนื้อคุ้น hard-deleted 20/04)
-    expect(options.length).toBe(13);
+    // 1 placeholder + 13 SKUs = 14 (MT-049 [75G]น่องลายตุ๋น added 30/05)
+    expect(options.length).toBe(14);
 
     // ควรมี MT-020, MT-014 (พิคานย่า)
     expect(options.some(o => o.includes('MT-020'))).toBe(true);
