@@ -3,7 +3,7 @@
 NNTN Backup Script
 Export all critical tables from Supabase → local JSON files
 Usage: python3 scripts/backup.py
-Output: ~/Documents/NNTN-Backup/YYYY-MM-DD/
+Output: ~/tt3p/vault/nntn-backup/YYYY-MM-DD/  (or BACKUP_DIR env var)
 """
 
 import os
@@ -16,7 +16,7 @@ from pathlib import Path
 # ── Config ────────────────────────────────────────────────────────────────────
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SERVICE_KEY  = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
-LOCAL_DIR    = Path(os.environ.get("BACKUP_DIR", str(Path.home() / "Documents" / "NNTN-Backup")))
+LOCAL_DIR    = Path(os.environ.get("BACKUP_DIR", str(Path.home() / "tt3p" / "vault" / "nntn-backup")))
 
 if not SUPABASE_URL or not SERVICE_KEY:
     # Try loading from .env file

@@ -10,7 +10,7 @@ Scans non-meat-stock/**/*.html for:
 - Title, line count
 
 Outputs auto-generated Markdown catalog to:
-  ~/Documents/NNTN-Vault/System/architecture/module-catalog.md
+  ~/tt3p/vault/nntn/System/architecture/module-catalog.md
 
 Run:
   python3 scripts/gen_arch.py
@@ -31,8 +31,9 @@ from typing import Optional
 REPO_DIR = Path(__file__).resolve().parent.parent
 OUT_FILE = (
     Path.home()
-    / "Documents"
-    / "NNTN-Vault"
+    / "tt3p"
+    / "vault"
+    / "nntn"
     / "System"
     / "architecture"
     / "module-catalog.md"
