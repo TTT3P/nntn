@@ -302,6 +302,12 @@
   <button class="tab" onclick="setFilter('OK',this)">🟢 ปกติ</button>
 </div>
 
+<!-- Search -->
+<div style="padding:8px 16px; background:white; border-bottom:1px solid var(--border);">
+  <input type="text" id="search-input" placeholder="🔍 ค้นหาวัตถุดิบ..." oninput="renderStock()"
+    style="width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:8px; font-size:15px; font-family:inherit; outline:none;">
+</div>
+
 <!-- Category chips -->
 <div class="cat-chips" id="cat-chips">
   <button class="cat-chip active" onclick="setCat('')">ทุกหมวด</button>
@@ -467,6 +473,8 @@ async function loadStock() {
 function renderStock() {
   let filtered = activeFilter === 'all' ? allData : allData.filter(r => r.status === activeFilter);
   if (activeCat) filtered = filtered.filter(r => r.category === activeCat);
+  const q = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
+  if (q) filtered = filtered.filter(r => r.name.toLowerCase().includes(q) || r.sku.toLowerCase().includes(q));
 
   if (filtered.length === 0) {
     document.getElementById('stock-container').innerHTML =
