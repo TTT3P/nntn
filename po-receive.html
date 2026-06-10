@@ -370,7 +370,118 @@
     .search-drop-opt .opt-name { font-size: 13px; font-weight: 600; }
     .search-drop-opt .opt-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
     .line-item { grid-template-columns: 1fr 76px 58px 36px; }
-  
+
+    /* ── Edit PO mode ── */
+    .po-edit-line {
+      display: grid;
+      grid-template-columns: 1fr 76px 36px;
+      gap: 6px;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .po-edit-line:last-child { border-bottom: none; }
+    .po-edit-line .edit-qty {
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      text-align: center;
+      width: 100%;
+    }
+    .po-edit-line .edit-qty:focus { outline: none; border-color: var(--green); }
+    .btn-remove-edit {
+      background: #ffebee;
+      border: none;
+      border-radius: 6px;
+      color: var(--red);
+      font-size: 18px;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .btn-edit-po {
+      padding: 8px 14px;
+      background: #E3F2FD;
+      border: 1px solid var(--blue);
+      border-radius: 8px;
+      color: var(--blue);
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-edit-po:hover { background: #BBDEFB; }
+    .btn-save-edit {
+      padding: 10px 16px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+    }
+    .btn-save-edit:disabled { background: #90a4ae; cursor: default; }
+    .btn-cancel-edit {
+      padding: 10px 16px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #555;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 6px;
+    }
+    .btn-add-edit-line {
+      width: 100%;
+      padding: 8px;
+      background: #e8f5e9;
+      border: 1px dashed var(--green);
+      border-radius: 8px;
+      color: var(--green-dark);
+      font-family: 'Sarabun', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    /* ── Per-line receive ── */
+    .po-line-row.with-receive-btn {
+      grid-template-columns: 1fr 70px 90px 44px;
+    }
+    .btn-receive-line {
+      padding: 4px 8px;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-receive-line:disabled { background: #bdbdbd; cursor: default; }
+    .line-received-badge {
+      font-size: 12px;
+      color: var(--green-dark);
+      font-weight: 700;
+      text-align: center;
+      white-space: nowrap;
+    }
+
 
 
   
@@ -803,12 +914,17 @@
   function buildPOCard(po) {
     const card = document.createElement('div');
     card.className = 'po-card';
+    card.id = 'pocard-' + po.id;
 
     const orderedDate = po.ordered_at ? new Date(po.ordered_at).toLocaleDateString('th-TH') : '-';
     const badgeClass  = { ordered: 'badge-ordered', received: 'badge-received', draft: 'badge-draft' }[po.status] || '';
     const badgeLabel  = { ordered: 'รอรับของ', received: 'รับแล้ว', draft: 'Draft' }[po.status] || po.status;
 
     const lines = po.purchase_order_items || [];
+    // Check which lines are already received (partial receive)
+    const allReceived = po.status === 'ordered' && lines.length > 0 && lines.every(l => (l.qty_received || 0) > 0);
+    const someReceived = po.status === 'ordered' && lines.some(l => (l.qty_received || 0) > 0);
+    const unreceived = lines.filter(l => !(l.qty_received > 0));
 
     card.innerHTML = `
       <div class="po-card-header">
@@ -822,36 +938,333 @@
         </div>
       </div>
       <div class="po-lines" id="lines-${po.id}">
-        ${lines.map(l => `
-          <div class="po-line-row">
-            <div>
-              <div class="item-name">${l.items?.name || '-'}</div>
-              <div class="item-unit">${l.items?.unit || ''}</div>
-            </div>
-            <div class="qty-ordered">สั่ง: ${l.qty_ordered ?? '—'}</div>
-            ${po.status === 'ordered' ? `
-              <input class="qty-received-input" type="number" min="0"
-                     step="${window.nntnIsDecimalUnit(l.items?.unit) ? '0.01' : '1'}"
-                     inputmode="${window.nntnIsDecimalUnit(l.items?.unit) ? 'decimal' : 'numeric'}"
-                     placeholder="${l.qty_ordered ?? ''}" value="${l.qty_ordered ?? ''}"
-                     data-line-id="${l.id}" data-item-id="${l.item_id || l.items?.id || ''}"
-                     data-item-name="${l.items?.name || ''}" data-unit="${l.items?.unit || ''}"
-                     data-qty-ordered="${l.qty_ordered ?? ''}" />
-            ` : `<div style="text-align:center;font-size:13px;color:var(--green-dark);font-weight:700">
-                   รับ ${l.qty_received ?? '—'}
-                 </div>`}
-          </div>
-        `).join('')}
+        ${lines.map(l => {
+          const isReceived = (l.qty_received || 0) > 0;
+          if (po.status === 'ordered') {
+            return `
+            <div class="po-line-row with-receive-btn" data-line-id="${l.id}" data-received="${isReceived ? '1' : '0'}">
+              <div>
+                <div class="item-name">${l.items?.name || '-'}</div>
+                <div class="item-unit">${l.items?.unit || ''}</div>
+              </div>
+              <div class="qty-ordered">สั่ง: ${l.qty_ordered ?? '—'}</div>
+              ${isReceived ? `
+                <div class="line-received-badge">รับแล้ว ${l.qty_received}</div>
+                <div></div>
+              ` : `
+                <input class="qty-received-input" type="number" min="0"
+                       step="${window.nntnIsDecimalUnit(l.items?.unit) ? '0.01' : '1'}"
+                       inputmode="${window.nntnIsDecimalUnit(l.items?.unit) ? 'decimal' : 'numeric'}"
+                       placeholder="${l.qty_ordered ?? ''}" value="${l.qty_ordered ?? ''}"
+                       data-line-id="${l.id}" data-item-id="${l.item_id || l.items?.id || ''}"
+                       data-item-name="${l.items?.name || ''}" data-unit="${l.items?.unit || ''}"
+                       data-qty-ordered="${l.qty_ordered ?? ''}" />
+                <button class="btn-receive-line" onclick="receiveOneLine('${po.id}','${l.id}','${l.item_id || l.items?.id || ''}',this)">รับ</button>
+              `}
+            </div>`;
+          } else {
+            return `
+            <div class="po-line-row">
+              <div>
+                <div class="item-name">${l.items?.name || '-'}</div>
+                <div class="item-unit">${l.items?.unit || ''}</div>
+              </div>
+              <div class="qty-ordered">สั่ง: ${l.qty_ordered ?? '—'}</div>
+              <div style="text-align:center;font-size:13px;color:var(--green-dark);font-weight:700">
+                รับ ${l.qty_received ?? '—'}
+              </div>
+            </div>`;
+          }
+        }).join('')}
       </div>
       ${po.status === 'ordered' ? `
-        <div class="po-footer">
+        <div class="po-footer" id="footer-${po.id}">
           ${po.note ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">หมายเหตุ: ${po.note}</div>` : ''}
-          <button class="btn btn-success" onclick="confirmReceive('${po.id}')">✅ ยืนยันรับของแล้ว</button>
-          <button class="btn btn-outline" style="color:var(--red);border-color:var(--red);margin-top:8px;" onclick="cancelPO('${po.id}','${po.po_number}')">✕ ยกเลิก PO นี้</button>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <button class="btn btn-success" style="flex:1" onclick="confirmReceive('${po.id}')">
+              ${someReceived ? 'รับทั้งหมดที่เหลือ' : 'รับของทั้งหมด'}
+            </button>
+            <button class="btn-edit-po" onclick="enterEditMode('${po.id}')">แก้ไข</button>
+          </div>
+          <button class="btn btn-outline" style="color:var(--red);border-color:var(--red);" onclick="cancelPO('${po.id}','${po.po_number}')">ยกเลิก PO นี้</button>
         </div>
       ` : ''}
     `;
     return card;
+  }
+
+  // ─── Receive One Line ─────────────────────────────────
+  async function receiveOneLine(poId, lineId, itemId, btn) {
+    const row = btn.closest('.po-line-row');
+    const inp = row.querySelector('.qty-received-input');
+    if (!inp) return;
+
+    let qty = parseFloat(inp.value);
+    const qtyOrdered = parseFloat(inp.dataset.qtyOrdered);
+    const itemName = inp.dataset.itemName || 'item';
+    const unit = inp.dataset.unit || '';
+
+    if (!Number.isFinite(qty) || qty <= 0) {
+      if (Number.isFinite(qtyOrdered) && qtyOrdered > 0) {
+        qty = qtyOrdered;
+      } else {
+        return toast('ระบุจำนวนที่รับก่อนครับ');
+      }
+    }
+
+    // Unit guard
+    const chk = window.nntnEnforceIntegerUnit(qty, unit, itemName);
+    if (!chk.ok) {
+      if (confirm(chk.message + '\n\nเปลี่ยนเป็น ' + chk.qty + ' ' + unit + ' ?')) {
+        qty = chk.qty;
+      } else {
+        return;
+      }
+    }
+
+    if (!confirm(`รับ ${itemName} จำนวน ${qty} ${unit} ?`)) return;
+
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    try {
+      // Update qty_received on the line
+      const { error: uErr } = await sb.from('purchase_order_items')
+        .update({ qty_received: qty })
+        .eq('id', lineId);
+      if (uErr) throw new Error('update line: ' + uErr.message);
+
+      // Call RPC to add to stock
+      const { data: res, error: rErr } = await sb.rpc('rpc_receive_universal', {
+        p_actor:    (window.nntnCurrentUser || 'PO-receive'),
+        p_item_id:  itemId,
+        p_qty:      qty,
+        p_unit_note: `PO ${poId}`,
+        p_bags:     null
+      });
+      if (rErr) throw new Error('rpc: ' + rErr.message);
+      if (!res?.ok) throw new Error('receive rejected: ' + JSON.stringify(res));
+
+      // Replace row with received badge
+      row.dataset.received = '1';
+      row.innerHTML = `
+        <div>
+          <div class="item-name">${itemName}</div>
+          <div class="item-unit">${unit}</div>
+        </div>
+        <div class="qty-ordered">สั่ง: ${inp.dataset.qtyOrdered ?? '—'}</div>
+        <div class="line-received-badge">รับแล้ว ${qty}</div>
+        <div></div>
+      `;
+
+      toast(`รับ ${itemName} ${qty} ${unit} แล้ว`);
+
+      // Check if all lines in this PO are now received
+      const allRows = document.querySelectorAll(`#lines-${poId} .po-line-row`);
+      const allDone = Array.from(allRows).every(r => r.dataset.received === '1');
+      if (allDone) {
+        // Auto-close PO
+        const { error: psErr } = await sb.from('purchase_orders')
+          .update({ status: 'received', received_at: new Date().toISOString() })
+          .eq('id', poId);
+        if (psErr) { toast('รับครบแล้วแต่ปิด PO ไม่ได้: ' + psErr.message); return; }
+        toast('รับครบทุกรายการ — PO ปิดแล้ว');
+        setTimeout(() => loadPOList(currentFilter), 1200);
+      } else {
+        // Update the main button text
+        const footer = document.getElementById('footer-' + poId);
+        const mainBtn = footer?.querySelector('.btn.btn-success');
+        if (mainBtn) mainBtn.textContent = 'รับทั้งหมดที่เหลือ';
+      }
+    } catch (e) {
+      console.error('receiveOneLine:', e);
+      toast('รับไม่สำเร็จ: ' + e.message);
+      btn.disabled = false;
+      btn.textContent = 'รับ';
+    }
+  }
+
+  // ─── Edit PO Mode ───────────────────────────────────
+  let editLineCount = 0;
+
+  async function enterEditMode(poId) {
+    const card = document.getElementById('pocard-' + poId);
+    if (!card) return;
+
+    // Load current PO items
+    const { data: poLines, error } = await sb
+      .from('purchase_order_items')
+      .select('id, item_id, qty_ordered, qty_received, unit_price, items(id, name, unit)')
+      .eq('po_id', poId);
+
+    if (error) return toast('โหลดรายการไม่ได้: ' + error.message);
+
+    const linesDiv = card.querySelector('.po-lines');
+    const footer = card.querySelector('.po-footer');
+    editLineCount = 0;
+
+    // Build edit UI
+    let editHTML = '';
+    (poLines || []).forEach(l => {
+      const eidx = editLineCount++;
+      const isReceived = (l.qty_received || 0) > 0;
+      editHTML += `
+        <div class="po-edit-line" data-edit-idx="${eidx}" data-line-id="${l.id}" data-item-id="${l.item_id}" data-is-new="0" ${isReceived ? 'data-received="1"' : ''}>
+          <div>
+            <div class="item-name">${l.items?.name || '-'}</div>
+            <div class="item-unit">${l.items?.unit || ''} ${isReceived ? '<span style="color:var(--green-dark);font-size:11px;">(รับแล้ว)</span>' : ''}</div>
+          </div>
+          <input class="edit-qty" type="number" min="0.01" step="0.01" value="${l.qty_ordered ?? ''}"
+                 ${isReceived ? 'disabled style="background:#f5f5f5;color:#999;"' : ''} />
+          ${isReceived ? '<div></div>' : `<button class="btn-remove-edit" onclick="this.closest('.po-edit-line').remove()">x</button>`}
+        </div>`;
+    });
+
+    linesDiv.innerHTML = editHTML +
+      `<div id="edit-new-lines-${poId}"></div>
+       <button class="btn-add-edit-line" onclick="addEditLine('${poId}')">+ เพิ่มรายการ</button>`;
+
+    // Replace footer with save/cancel
+    footer.innerHTML = `
+      <button class="btn-save-edit" onclick="saveEditPO('${poId}')">บันทึกการแก้ไข</button>
+      <button class="btn-cancel-edit" onclick="loadPOList(currentFilter)">ยกเลิก</button>
+    `;
+  }
+
+  function addEditLine(poId) {
+    const container = document.getElementById('edit-new-lines-' + poId);
+    if (!container) return;
+    const eidx = editLineCount++;
+    const div = document.createElement('div');
+    div.className = 'po-edit-line';
+    div.dataset.editIdx = eidx;
+    div.dataset.isNew = '1';
+    div.innerHTML = `
+      <div class="search-wrap">
+        <input class="search-input" id="els-${eidx}" type="text"
+          placeholder="พิมพ์ชื่อวัตถุดิบ..." autocomplete="off"
+          oninput="searchEditLine(${eidx},this.value)" onfocus="searchEditLine(${eidx},this.value)">
+        <input type="hidden" id="eli-${eidx}">
+        <div class="search-drop" id="eld-${eidx}"></div>
+      </div>
+      <input class="edit-qty" type="number" id="elq-${eidx}" min="0.01" step="0.01" placeholder="จำนวน">
+      <button class="btn-remove-edit" onclick="this.closest('.po-edit-line').remove()">x</button>
+    `;
+    container.appendChild(div);
+  }
+
+  function searchEditLine(idx, val) {
+    const drop = document.getElementById('eld-' + idx);
+    const q = val.trim();
+    if (q.length < 1) { drop.classList.remove('open'); return; }
+    const matches = items.filter(i =>
+      i.name.toLowerCase().includes(q.toLowerCase()) ||
+      (i.category || '').toLowerCase().includes(q.toLowerCase())
+    ).slice(0, 15);
+    drop.innerHTML = matches.length === 0
+      ? '<div class="search-drop-opt"><div class="opt-name" style="color:#999">ไม่พบรายการ</div></div>'
+      : matches.map(i => `
+          <div class="search-drop-opt" onclick="selectEditLine(${idx},'${i.id}','${i.name.replace(/'/g,"\\'")}','${i.unit}')">
+            <div class="opt-name">${i.name}</div>
+            <div class="opt-meta">${i.unit} · ${i.category || '-'}</div>
+          </div>`).join('');
+    drop.classList.add('open');
+  }
+
+  function selectEditLine(idx, id, name, unit) {
+    document.getElementById('eli-' + idx).value = id;
+    document.getElementById('els-' + idx).value = name;
+    document.getElementById('eld-' + idx).classList.remove('open');
+  }
+
+  async function saveEditPO(poId) {
+    const card = document.getElementById('pocard-' + poId);
+    if (!card) return;
+
+    const allEditLines = card.querySelectorAll('.po-edit-line');
+    const updates = [];   // existing lines to update qty
+    const deletes = [];   // line IDs that were removed (we compare with original)
+    const inserts = [];   // new lines to insert
+
+    // Collect existing lines that remain (not new, not removed)
+    const remainingExistingIds = new Set();
+
+    allEditLines.forEach(div => {
+      const isNew = div.dataset.isNew === '1';
+      const isReceived = div.dataset.received === '1';
+
+      if (isNew) {
+        const eidx = div.dataset.editIdx;
+        const itemId = document.getElementById('eli-' + eidx)?.value;
+        const qty = parseFloat(document.getElementById('elq-' + eidx)?.value);
+        if (itemId && Number.isFinite(qty) && qty > 0) {
+          inserts.push({ po_id: poId, item_id: itemId, qty_ordered: qty });
+        }
+      } else {
+        const lineId = div.dataset.lineId;
+        remainingExistingIds.add(lineId);
+        if (!isReceived) {
+          const qtyInput = div.querySelector('.edit-qty');
+          const qty = parseFloat(qtyInput?.value);
+          if (Number.isFinite(qty) && qty > 0) {
+            updates.push({ id: lineId, qty_ordered: qty });
+          }
+        }
+      }
+    });
+
+    // Find which original lines were removed (we need the original list)
+    const { data: origLines } = await sb
+      .from('purchase_order_items')
+      .select('id, qty_received')
+      .eq('po_id', poId);
+
+    (origLines || []).forEach(ol => {
+      if (!remainingExistingIds.has(ol.id) && !(ol.qty_received > 0)) {
+        deletes.push(ol.id);
+      }
+    });
+
+    if (updates.length === 0 && inserts.length === 0 && deletes.length === 0) {
+      return toast('ไม่มีอะไรเปลี่ยน');
+    }
+
+    const summary = [];
+    if (updates.length) summary.push(`แก้ ${updates.length} รายการ`);
+    if (inserts.length) summary.push(`เพิ่ม ${inserts.length} รายการ`);
+    if (deletes.length) summary.push(`ลบ ${deletes.length} รายการ`);
+
+    if (!confirm(`บันทึกการแก้ไข PO?\n${summary.join(' · ')}`)) return;
+
+    const saveBtn = card.querySelector('.btn-save-edit');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'กำลังบันทึก...'; }
+
+    try {
+      // Delete removed lines
+      for (const id of deletes) {
+        const { error } = await sb.from('purchase_order_items').delete().eq('id', id);
+        if (error) throw new Error('ลบรายการไม่ได้: ' + error.message);
+      }
+      // Update existing lines
+      for (const u of updates) {
+        const { error } = await sb.from('purchase_order_items')
+          .update({ qty_ordered: u.qty_ordered })
+          .eq('id', u.id);
+        if (error) throw new Error('แก้จำนวนไม่ได้: ' + error.message);
+      }
+      // Insert new lines
+      if (inserts.length > 0) {
+        const { error } = await sb.from('purchase_order_items').insert(inserts);
+        if (error) throw new Error('เพิ่มรายการไม่ได้: ' + error.message);
+      }
+
+      toast(`บันทึกแล้ว (${summary.join(' · ')})`);
+      setTimeout(() => loadPOList(currentFilter), 800);
+    } catch (e) {
+      console.error('saveEditPO:', e);
+      toast('บันทึกไม่ได้: ' + e.message);
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'บันทึกการแก้ไข'; }
+    }
   }
 
   // ─── Confirm Receive ──────────────────────────────────
@@ -861,7 +1274,8 @@
     if (processingPOs.has(poId)) return;
 
     const linesDiv = document.getElementById('lines-' + poId);
-    const inputs   = linesDiv.querySelectorAll('.qty-received-input');
+    // Only collect inputs from lines NOT already received
+    const inputs = linesDiv.querySelectorAll('.po-line-row:not([data-received="1"]) .qty-received-input');
 
     const receives = [];
     const summary  = [];
@@ -888,7 +1302,7 @@
     });
 
     if (receives.length === 0) {
-      return toast('ไม่มีรายการที่รับได้');
+      return toast('ไม่มีรายการที่ยังไม่ได้รับ');
     }
 
     // Unit guard: integer-only units ห้ามมี decimal (ถุง·แผง·ชุด·ขวด·แพ็ก)
@@ -909,18 +1323,24 @@
       }
     }
 
+    // Check if some lines were already received individually
+    const allRows = linesDiv.querySelectorAll('.po-line-row');
+    const prevReceived = Array.from(allRows).filter(r => r.dataset.received === '1').length;
+    const remainLabel = prevReceived > 0 ? `(${prevReceived} รายการรับไปแล้ว)\n\n` : '';
+
     // UX #1: 2-step confirm — กัน PO-03 เคส (กดก่อนของมาจริง)
     const confirmMsg =
-      `📦 ยืนยันว่า "ของถึงมือแล้วจริง ๆ " ?\n\n` +
-      `PO จะถูกปิดและสต๊อกจะเพิ่มทันที — รายการ:\n\n` +
+      `ยืนยันว่า "ของถึงมือแล้วจริง" ?\n\n` +
+      remainLabel +
+      `PO จะถูกปิดและสต๊อกจะเพิ่มทันที — รายการที่เหลือ:\n\n` +
       summary.join('\n') +
-      (skipped.length ? `\n\n⚠️ ค่า fallback:\n${skipped.join('\n')}` : '') +
-      `\n\n⚠️ ถ้าของยัง "ไม่ถึง" กด Cancel — รอของมาก่อนค่อยกด`;
+      (skipped.length ? `\n\nค่า fallback:\n${skipped.join('\n')}` : '') +
+      `\n\nถ้าของยัง "ไม่ถึง" กด Cancel — รอของมาก่อนค่อยกด`;
     if (!confirm(confirmMsg)) return;
 
     processingPOs.add(poId);
-    const btn = document.querySelector(`button[onclick="confirmReceive('${poId}')"]`);
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
+    const btn = document.querySelector(`#footer-${poId} .btn.btn-success`);
+    if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
 
     try {
       // Loop FIRST — แต่ละ row ทำ UPDATE + RPC (atomic ต่อ row)
@@ -948,13 +1368,13 @@
         .eq('id', poId);
       if (psErr) throw new Error(`ปิด PO ล้มเหลว: ${psErr.message}`);
 
-      toast(`✅ รับของแล้ว — stock +${receives.length} รายการ`);
+      toast(`รับของแล้ว — stock +${receives.length} รายการ`);
       setTimeout(() => loadPOList(currentFilter), 1200);
       if (window.nntnSubmitDone) {
         const recvSummary = summary.slice(0, 6).join('<br>');
         const recvMore = summary.length > 6 ? `<br>... และอีก ${summary.length-6} รายการ` : '';
         window.nntnSubmitDone({
-          title: '📥 รับของเข้าสต๊อก',
+          title: 'รับของเข้าสต๊อก',
           summary: `PO ปิดแล้ว · <strong>${receives.length}</strong> รายการ<br>${recvSummary}${recvMore}`,
           eventType: 'receive',
           delaySec: 3
@@ -962,8 +1382,8 @@
       }
     } catch (e) {
       console.error('confirmReceive failed:', e);
-      alert(`❌ รับของล้มเหลว: ${e.message}\n\nPO ยัง status "ordered" — ลองใหม่ได้`);
-      if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันรับของแล้ว'; }
+      alert(`รับของล้มเหลว: ${e.message}\n\nPO ยัง status "ordered" — ลองใหม่ได้`);
+      if (btn) { btn.disabled = false; btn.textContent = 'รับทั้งหมดที่เหลือ'; }
     } finally {
       processingPOs.delete(poId);
     }
