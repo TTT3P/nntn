@@ -1028,6 +1028,15 @@
     btn.textContent = '...';
 
     try {
+      // DB guard: check if already received (prevent double receive)
+      const { data: lineCheck } = await sb.from('purchase_order_items')
+        .select('qty_received').eq('id', lineId).single();
+      if ((lineCheck?.qty_received || 0) > 0) {
+        toast('รายการนี้รับไปแล้ว');
+        btn.textContent = 'รับแล้ว';
+        return;
+      }
+
       // Update qty_received on the line
       const { error: uErr } = await sb.from('purchase_order_items')
         .update({ qty_received: qty })
@@ -1273,24 +1282,29 @@
   async function confirmReceive(poId) {
     if (processingPOs.has(poId)) return;
 
+    // DB check: fetch which lines are already received (prevent double receive after page refresh)
+    const { data: dbLines } = await sb.from('purchase_order_items')
+      .select('id, qty_received')
+      .eq('po_id', poId);
+    const alreadyReceived = new Set((dbLines || []).filter(l => (l.qty_received || 0) > 0).map(l => l.id));
+
     const linesDiv = document.getElementById('lines-' + poId);
-    // Only collect inputs from lines NOT already received
-    const inputs = linesDiv.querySelectorAll('.po-line-row:not([data-received="1"]) .qty-received-input');
+    const inputs = linesDiv.querySelectorAll('.qty-received-input');
 
     const receives = [];
     const summary  = [];
     const skipped  = [];
     inputs.forEach(inp => {
       if (!inp.dataset.itemId) return;
+      if (alreadyReceived.has(inp.dataset.lineId)) return; // skip already received in DB
       let qty = parseFloat(inp.value);
-      // Fallback: empty/NaN → ใช้ qty_ordered (ปุ่ม "รับตามที่เปิด PO")
       if (!Number.isFinite(qty) || qty <= 0) {
         const ordered = parseFloat(inp.dataset.qtyOrdered);
         if (Number.isFinite(ordered) && ordered > 0) {
           qty = ordered;
           skipped.push(`• ${inp.dataset.itemName || 'item'}: input ว่าง → ใช้ค่าสั่ง ${ordered}`);
         } else {
-          return; // no ordered qty either — truly skip
+          return;
         }
       }
       receives.push({
