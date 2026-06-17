@@ -285,7 +285,7 @@ const CAT_LABELS = {
   vegetable:  '🥬 ผัก',
   packaging:  '📦 แพ็กเกจจิ้ง',
   consumable: '🛒 วัสดุสิ้นเปลือง',
-  noodle:     '🍜 เส้น & ข้าว',
+  noodle:     '🍜 เส้น ข้าว ไข่',
   srcp:       '🥄 Sub-Recipe (bulk)',
   pkg:        '🛍️ Portioned (ถุง)',
 };
@@ -350,7 +350,7 @@ function buildCatChips(itemData) {
   const shortLabels = {
     all: 'ทั้งหมด', seasoning: '🧂 เครื่องปรุง', spice: '🌿 สมุนไพร',
     vegetable: '🥬 ผัก', packaging: '📦 แพ็กเกจ', consumable: '🛒 วัสดุ',
-    noodle: '🍜 เส้น', srcp: '🥄 Sub-Recipe', pkg: '🛍️ Portioned',
+    noodle: '🍜 เส้น ข้าว ไข่', srcp: '🥄 Sub-Recipe', pkg: '🛍️ Portioned',
   };
   const el = document.getElementById('cat-chips');
   el.innerHTML = cats.map(c =>
