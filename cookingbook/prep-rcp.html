@@ -72,7 +72,7 @@ let allIngredients = [];
 
 async function load() {
   const [rcpRes, bomRes, ingRes] = await Promise.all([
-    sb.from('recipes').select('*').in('type', ['prep','sub','kitchen']).order('rcp_code'),
+    sb.from('recipes').select('*').in('type', ['prep','sub','kitchen']).eq('is_active', true).order('rcp_code'),
     sb.from('bom_items').select('*'),
     sb.from('ingredients').select('id, name, unit')
   ]);
@@ -88,6 +88,14 @@ function filterList() {
   const filtered = q ? allRecipes.filter(r => r.name.toLowerCase().includes(q) || r.rcp_code.toLowerCase().includes(q)) : allRecipes;
   document.getElementById('count').textContent = `แสดง ${filtered.length} สูตร`;
   renderList(filtered);
+}
+
+// yield_pct is stored in two conventions: a fraction (e.g. 1.0 = 100%) or an
+// already-percent value (e.g. 100 = 100%). Normalize for display only.
+function yieldDisplay(y) {
+  if (y === null || y === undefined) return '100%';
+  const pct = y <= 1 ? y * 100 : y;
+  return pct.toFixed(0) + '%';
 }
 
 function renderList(recipes) {
@@ -107,7 +115,7 @@ function renderList(recipes) {
         </div>
         <span class="toggle-icon" id="icon-${r.id}">▼</span>
       </div>
-      ${r.batch_size_g ? `<div class="rcp-meta">batch: ${r.batch_size_g}g · yield: ${r.yield_pct ? (r.yield_pct*100).toFixed(0)+'%' : '100%'}</div>` : ''}
+      ${r.batch_size_g ? `<div class="rcp-meta">batch: ${r.batch_size_g}g · yield: ${yieldDisplay(r.yield_pct)}</div>` : ''}
       <div class="bom-list" id="bom-${r.id}">
         ${bom.length ? bom.map(b => `
           <div class="bom-row">

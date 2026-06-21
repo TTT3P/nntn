@@ -77,7 +77,7 @@ let allRecipes = [];
 
 async function load() {
   const [costsRes, bomRes, ingRes, rcpRes] = await Promise.all([
-    sb.from('recipe_costs').select('*').eq('type', 'menu').order('rcp_code'),
+    sb.from('recipe_costs').select('*').eq('type', 'menu').eq('is_active', true).order('rcp_code'),
     sb.from('bom_items').select('*').order('line_no'),
     sb.from('ingredients').select('id, name, sp_code'),
     sb.from('recipes').select('id, rcp_code, name').in('type', ['prep','sub','kitchen'])
