@@ -463,9 +463,9 @@ async function loadStock() {
   allData = data.filter(r => !MEAT_CATS.includes(r.category));
   buildCatChips();
 
-  // Update counters
+  // Update counters — นับจาก allData (หลังกรองเนื้อ) ให้ตรงกับรายการที่แสดง
   const counts = { OUT: 0, ORDER_NOW: 0, LOW: 0, OK: 0 };
-  data.forEach(r => { counts[r.status] = (counts[r.status] || 0) + 1; });
+  allData.forEach(r => { counts[r.status] = (counts[r.status] || 0) + 1; });
   document.getElementById('cnt-out').textContent   = counts.OUT;
   document.getElementById('cnt-order').textContent = counts.ORDER_NOW;
   document.getElementById('cnt-low').textContent   = counts.LOW;
