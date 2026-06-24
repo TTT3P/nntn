@@ -345,7 +345,12 @@ const CAT_LABELS = {
   meat_portioned:  '📦 เนื้อพอร์ชั่น',
   meat_other:      '🥩 เนื้ออื่นๆ',
   meat_trim:       '♻️ เศษเนื้อ',
+  misc:            '📋 อื่นๆ',
 };
+
+// หมวดเนื้อ — บริหารในระบบ Meat Stock (catch_weight ระดับถุง) แยกต่างหาก
+// กรองออกจาก dashboard non-meat เพื่อไม่ให้ตัวเลขสับสน (เป็น display filter เท่านั้น ไม่แตะข้อมูล DB)
+const MEAT_CATS = ['meat','meat_raw','meat_fresh','meat_cooked','meat_portioned','meat_other','meat_trim'];
 
 const STATUS_LABELS = { OUT: 'หมด', ORDER_NOW: 'ต้องสั่ง', LOW: 'ใกล้หมด', OK: 'ปกติ' };
 
@@ -454,7 +459,8 @@ async function loadStock() {
     return;
   }
 
-  allData = data;
+  // กรองหมวดเนื้อออก — แสดงเฉพาะ non-meat (เนื้อดูที่ระบบ Meat Stock)
+  allData = data.filter(r => !MEAT_CATS.includes(r.category));
   buildCatChips();
 
   // Update counters
