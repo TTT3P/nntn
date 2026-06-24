@@ -290,6 +290,10 @@ const CAT_LABELS = {
   pkg:        '🛍️ Portioned (ถุง)',
 };
 
+// หมวดเนื้อ — นับผ่านระบบ Meat Stock (catch_weight) เท่านั้น
+// กรองออกจากจอนับ non-meat กันนับซ้ำ (display filter เท่านั้น ไม่แตะข้อมูล DB)
+const MEAT_CATS = ['meat','meat_raw','meat_fresh','meat_cooked','meat_portioned','meat_other','meat_trim'];
+
 const STATUS_LABELS = { OUT: 'หมด', ORDER_NOW: 'ต้องสั่ง', LOW: 'ใกล้หมด', OK: 'ปกติ' };
 
 // Date header
@@ -339,8 +343,10 @@ async function loadItems() {
     });
   }
 
-  items = itemData;
-  buildCatChips(itemData);
+  // กรองหมวดเนื้อออก — เนื้อนับที่ระบบ Meat Stock เท่านั้น (กันนับซ้ำ)
+  const nonMeat = itemData.filter(i => !MEAT_CATS.includes(i.category));
+  items = nonMeat;
+  buildCatChips(nonMeat);
   renderItems();
 }
 
