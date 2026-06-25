@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- CookBook (full book) · cookbook.html · created 2026-06-25 · cookingbook.* (recipes+bom+sop_steps)
-     ตำราครัว NNTN ทั้งเล่ม · 1 สูตร/หน้า · จัดกลุ่มตาม recipes.category · กด Print → Save as PDF ได้เล่มจริง -->
+     ตำราครัว NNTN ทั้งเล่ม · 1 สูตร/หน้า · จัดกลุ่มตาม recipes.category · กด Print → Save as PDF ได้เล่มจริง
+     2026-06-25: filter ปริ้นทีละหมวด (catFilter) + แก้ line-height/footer/TOC + ตัด BOM note ออกจากเล่ม -->
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -40,8 +41,16 @@
         background: white; padding: 12px 16px; border-bottom: 2px solid var(--border);
         display: flex; gap: 10px; align-items: center; flex-wrap: wrap; position: sticky; top: 52px; z-index: 9;
       }
-      .ctrl-label { font-size: 13px; color: #444; }
+      .ctrl-label { font-size: 13px; color: #444; white-space: nowrap; }
       .ctrl-hint { font-size: 12px; color: var(--muted); flex: 1; min-width: 180px; }
+      .ctrl-select {
+        padding: 8px 30px 8px 12px; border: 1.5px solid var(--border);
+        border-radius: 8px; font-family: inherit; font-size: 14px; background: white;
+        appearance: none; min-width: 190px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%23666'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 10px center;
+      }
+      .ctrl-select:focus { outline: none; border-color: var(--green); }
       .btn-print {
         padding: 10px 20px; background: var(--green); color: white;
         border: none; border-radius: 8px; font-family: inherit; font-size: 15px;
@@ -181,8 +190,10 @@
 </nav>
 
 <div class="print-controls">
-  <span class="ctrl-label" id="bookStatus">กำลังโหลดทั้งเล่ม...</span>
-  <span class="ctrl-hint">💡 กดปริ้น → เลือก "Save as PDF" · เปิด "Headers and footers" เพื่อให้มีเลขหน้า · 1 สูตร = 1 หน้า</span>
+  <span class="ctrl-label">เลือกปริ้น:</span>
+  <select class="ctrl-select" id="catFilter" onchange="applyFilter()" disabled><option value="__all__">📖 ทั้งเล่ม</option></select>
+  <span class="ctrl-label" id="bookStatus">กำลังโหลด...</span>
+  <span class="ctrl-hint">💡 เลือกหมวดเพื่อปริ้นทีละส่วน (ไม่ต้องรวดเดียว) → กดปริ้น → "Save as PDF"</span>
   <button class="btn-print" id="printBtn" onclick="window.print()" disabled>🖨️ พิมพ์ / บันทึก PDF</button>
 </div>
 
@@ -244,7 +255,7 @@ async function buildBook() {
 
   // ── ปก ──
   let html = `
-    <section class="page cover">
+    <section class="page cover" data-section="cover">
       <div class="logo">🍜</div>
       <div class="book-title">ตำราครัว<br>เนื้อในตำนาน</div>
       <div class="rule"></div>
@@ -267,7 +278,7 @@ async function buildBook() {
     });
     tocBody += `</div></div>`;
   });
-  html += `<section class="page toc"><h2>สารบัญ</h2><div class="toc-grid">${tocBody}</div></section>`;
+  html += `<section class="page toc" data-section="toc"><h2>สารบัญ</h2><div class="toc-grid">${tocBody}</div></section>`;
 
   // ── หน้าสูตร (1 สูตร/หน้า) ──
   recipes.forEach(r => {
@@ -292,7 +303,7 @@ async function buildBook() {
     const batch = r.batch_size_g ? `batch ${r.batch_size_g} g` : '';
 
     html += `
-    <section class="page recipe-page">
+    <section class="page recipe-page" data-cat="${esc(r.category || '')}">
       <div class="doc-header">
         ${cover}
         <div class="doc-title-block">
@@ -328,8 +339,34 @@ async function buildBook() {
 
   document.getElementById('bookWrap').innerHTML = html;
   document.getElementById('loadingMsg').style.display = 'none';
+
+  // populate category filter (ทั้งเล่ม + ทีละหมวด)
+  const sel = document.getElementById('catFilter');
+  CAT_ORDER.forEach(cat => {
+    const n = recipes.filter(r => r.category === cat).length;
+    if (!n) return;
+    const o = document.createElement('option');
+    o.value = cat; o.textContent = `${cat} (${n})`;
+    sel.appendChild(o);
+  });
+  sel.disabled = false;
   document.getElementById('bookStatus').textContent = `✅ พร้อมปริ้น — ${recipes.length} สูตร`;
   document.getElementById('printBtn').disabled = false;
+}
+
+// กรองหมวด: __all__ = ทั้งเล่ม (โชว์ปก+สารบัญ) · เลือกหมวด = โชว์เฉพาะสูตรในหมวดนั้น (ซ่อนปก/สารบัญ)
+function applyFilter() {
+  const v = document.getElementById('catFilter').value;
+  const all = v === '__all__';
+  document.querySelectorAll('[data-section]').forEach(el => { el.style.display = all ? '' : 'none'; });
+  let n = 0;
+  document.querySelectorAll('.recipe-page').forEach(el => {
+    const show = all || el.dataset.cat === v;
+    el.style.display = show ? '' : 'none';
+    if (show) n++;
+  });
+  document.getElementById('bookStatus').textContent = all ? `✅ ทั้งเล่ม — ${n} สูตร` : `✅ ${v} — ${n} สูตร`;
+  window.scrollTo(0, 0);
 }
 </script>
 </body>
