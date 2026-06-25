@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<!-- Print Recipe A4 · print-recipe.html · live 2026-04-23 · cookingbook.sop_steps -->
+<!-- Print Recipe A4 · print-recipe.html · live 2026-04-23 · cookingbook.sop_steps
+     2026-06-25: dropdown จัดกลุ่มตาม cookingbook.recipes.category (13 หมวด) + emoji บอก type 🍽️/🧪/📦 -->
+
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -208,6 +210,7 @@
   <a href="admin-sop.html">กรอก SOP</a>
   <a href="sop-review.html">รีวิว SOP</a>
   <a href="print-recipe.html" class="active">พิมพ์ SOP</a>
+  <a href="cookbook.html">ตำราทั้งเล่ม</a>
 </nav>
 
 <div class="print-controls">
@@ -301,19 +304,35 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
+// Category display order (menu-food first, then kitchen-prep). Emoji marks role: 🍽️ขาย 🧪เตรียม 📦แพ็ค
+const CAT_ORDER = ['ข้าว/จานเดียว','ก๋วยเตี๋ยว/เกาเหลา','กะเพรา','เนื้อจานหลัก','ของทานเล่น','ไข่','เครื่องดื่ม','เซ็ต/ดีล','ซอส/น้ำจิ้ม','น้ำซุป/สต๊อก','หมักเนื้อ','เครื่องปรุง/ผง','กระเทียม-พริกเจียว'];
+const TYPE_EMOJI = { menu: '🍽️', prep: '🧪', sub: '📦' };
+
 async function loadRecipeList() {
   const { data, error } = await sb.schema('cookingbook').from('recipes')
-    .select('id, rcp_code, name, type').eq('is_active', true).order('rcp_code');
+    .select('id, rcp_code, name, type, category').eq('is_active', true).order('rcp_code');
   if (error || !data) return;
   const sel = document.getElementById('recipeSelector');
-  data.forEach(r => {
-    const opt = document.createElement('option');
-    opt.value = r.id;
-    opt.textContent = `${r.rcp_code} — ${r.name}`;
-    opt.dataset.code = r.rcp_code;
-    opt.dataset.name = r.name;
-    opt.dataset.type = r.type;
-    sel.appendChild(opt);
+
+  // Bucket recipes by category
+  const buckets = {};
+  data.forEach(r => { const cat = r.category || 'อื่นๆ'; (buckets[cat] ||= []).push(r); });
+
+  // Render optgroups in defined order; any unlisted category appended after
+  const cats = [...CAT_ORDER.filter(c => buckets[c]), ...Object.keys(buckets).filter(c => !CAT_ORDER.includes(c))];
+  cats.forEach(cat => {
+    const og = document.createElement('optgroup');
+    og.label = `${cat} (${buckets[cat].length})`;
+    buckets[cat].forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = `${TYPE_EMOJI[r.type] || ''} ${r.rcp_code} — ${r.name}`;
+      opt.dataset.code = r.rcp_code;
+      opt.dataset.name = r.name;
+      opt.dataset.type = r.type;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
   });
 }
 

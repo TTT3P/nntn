@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<!-- CookBook (full book) · cookbook.html · created 2026-06-25 · cookingbook.* (recipes+bom+sop_steps)
+     ตำราครัว NNTN ทั้งเล่ม · 1 สูตร/หน้า · จัดกลุ่มตาม recipes.category · กด Print → Save as PDF ได้เล่มจริง -->
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="/nntn/auth.js"></script>
+  <title>ตำราครัว NNTN — CookBook</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green: #005036;
+      --gold: #D29568;
+      --bg: #F5F5F2;
+      --border: #ddd;
+      --muted: #666;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: #1a1a1a; font-size: 16px; }
+
+    /* ── Screen-only UI ── */
+    @media screen {
+      header {
+        background: var(--green); color: white;
+        padding: 14px 16px; position: sticky; top: 0; z-index: 10;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        display: flex; align-items: center; justify-content: space-between;
+      }
+      header h1 { font-size: 18px; font-weight: 700; }
+      header p { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+      .user-badge { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 10px; font-size: 12px; }
+
+      nav { display: flex; gap: 8px; padding: 10px 16px; background: white; border-bottom: 1px solid var(--border); overflow-x: auto; }
+      nav a { text-decoration: none; color: var(--green); font-size: 13px; white-space: nowrap; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); }
+      nav a.active { background: var(--green); color: white; border-color: var(--green); }
+
+      .print-controls {
+        background: white; padding: 12px 16px; border-bottom: 2px solid var(--border);
+        display: flex; gap: 10px; align-items: center; flex-wrap: wrap; position: sticky; top: 52px; z-index: 9;
+      }
+      .ctrl-label { font-size: 13px; color: #444; }
+      .ctrl-hint { font-size: 12px; color: var(--muted); flex: 1; min-width: 180px; }
+      .btn-print {
+        padding: 10px 20px; background: var(--green); color: white;
+        border: none; border-radius: 8px; font-family: inherit; font-size: 15px;
+        font-weight: 700; cursor: pointer; white-space: nowrap;
+      }
+      .btn-print:disabled { background: #9E9E9E; cursor: default; }
+      .btn-print:active { opacity: 0.85; }
+
+      .book-wrap { padding: 24px 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+      .page { box-shadow: 0 4px 24px rgba(0,0,0,0.12); }
+      .loading-msg { text-align: center; padding: 60px 24px; color: var(--muted); }
+      .loading-msg .icon { font-size: 48px; margin-bottom: 12px; }
+    }
+
+    /* ── A4 page base (screen + print) ── */
+    .page {
+      background: white;
+      width: 210mm;
+      min-height: 297mm;
+      padding: 16mm 16mm 14mm;
+      position: relative;
+      color: #1a1a1a;
+    }
+
+    /* ── Cover ── */
+    .cover {
+      background: var(--green); color: white;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; gap: 14px;
+    }
+    .cover .logo { font-size: 64px; }
+    .cover .book-title { font-size: 40px; font-weight: 700; line-height: 1.2; }
+    .cover .book-sub { font-size: 18px; opacity: 0.85; letter-spacing: 0.04em; }
+    .cover .rule { width: 80px; height: 3px; background: var(--gold); margin: 8px 0; }
+    .cover .meta { font-size: 14px; opacity: 0.8; margin-top: 24px; }
+    .cover .count-badge {
+      margin-top: 6px; background: rgba(255,255,255,0.15);
+      padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;
+    }
+
+    /* ── TOC ── */
+    .toc h2 { color: var(--green); font-size: 26px; border-bottom: 3px solid var(--gold); padding-bottom: 8px; margin-bottom: 14px; }
+    .toc-cat { break-inside: avoid; margin-bottom: 10px; }
+    .toc-cat-title { font-size: 14px; font-weight: 700; color: var(--green); margin: 10px 0 4px; }
+    .toc-grid { columns: 2; column-gap: 24px; }
+    .toc-item { font-size: 12px; padding: 2px 0; display: flex; gap: 6px; break-inside: avoid; }
+    .toc-item .seq { color: var(--gold); font-weight: 700; font-family: monospace; min-width: 34px; }
+    .toc-item .code { color: var(--muted); font-family: monospace; font-size: 11px; }
+
+    /* ── Recipe page ── */
+    .doc-header {
+      display: flex; align-items: flex-start; gap: 16px;
+      border-bottom: 3px solid var(--green); padding-bottom: 14px; margin-bottom: 16px;
+    }
+    .doc-cover-img { width: 90px; height: 90px; object-fit: cover; border-radius: 8px; border: 2px solid var(--border); flex-shrink: 0; }
+    .doc-cover-placeholder {
+      width: 90px; height: 90px; border-radius: 8px; border: 2px dashed var(--border); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 32px; background: #f8f8f8; color: #ccc;
+    }
+    .doc-title-block { flex: 1; }
+    .doc-cat-tag { font-size: 11px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.06em; }
+    .doc-menu-name { font-size: 22px; font-weight: 700; color: var(--green); line-height: 1.2; }
+    .doc-rcp-code {
+      display: inline-block; margin-top: 4px; background: var(--green); color: white;
+      font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 4px;
+      font-family: monospace; letter-spacing: 0.05em;
+    }
+    .doc-meta { margin-top: 6px; font-size: 12px; color: var(--muted); }
+    .doc-status-badge { display: inline-block; margin-top: 6px; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .doc-status-badge.approved { background: #E8F5E9; color: #1B5E20; }
+    .doc-status-badge.pending  { background: #E3F2FD; color: #0D47A1; }
+    .doc-status-badge.draft    { background: #FFF9C4; color: #7B6000; }
+
+    .doc-section-title {
+      font-size: 13px; font-weight: 700; color: var(--green);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      border-bottom: 1.5px solid var(--gold); padding-bottom: 4px; margin: 16px 0 10px;
+    }
+    .ing-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .ing-table th { background: var(--green); color: white; padding: 7px 10px; text-align: left; font-weight: 600; font-size: 12px; }
+    .ing-table th:last-child { text-align: right; }
+    .ing-table td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; }
+    .ing-table td:last-child { text-align: right; font-family: monospace; font-size: 12px; }
+    .ing-table tr:nth-child(even) td { background: #F8FBF9; }
+    .ing-table .ing-note { font-size: 11px; color: var(--muted); }
+
+    .steps-body {
+      font-size: 14px; line-height: 1.9; white-space: pre-wrap;
+      background: #FAFAFA; border: 1px solid #e8e8e8; border-radius: 6px; padding: 12px 14px; min-height: 50px;
+    }
+
+    .doc-footer {
+      margin-top: 20px; border-top: 2px solid var(--green); padding-top: 12px;
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; font-size: 12px;
+    }
+    .footer-item .footer-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .footer-item .footer-value { font-weight: 600; margin-top: 2px; }
+    .footer-item .footer-sig-line { border-top: 1px solid #333; margin-top: 24px; padding-top: 4px; font-size: 11px; color: var(--muted); }
+
+    .page-foot {
+      position: absolute; bottom: 8mm; left: 16mm; right: 16mm;
+      display: flex; justify-content: space-between;
+      font-size: 10px; color: #aaa; font-family: monospace;
+      border-top: 1px solid #eee; padding-top: 4px;
+    }
+
+    /* ── Print ── */
+    @media print {
+      header, nav, .print-controls { display: none !important; }
+      body { background: white; }
+      .book-wrap { padding: 0; gap: 0; }
+      .page { width: 100%; min-height: auto; box-shadow: none; padding: 14mm 14mm 12mm; }
+      .page-foot { left: 14mm; right: 14mm; }
+      .cover, .toc, .recipe-page { page-break-before: always; }
+      .cover { page-break-before: avoid; }   /* cover is first page */
+      .recipe-page { page-break-inside: auto; }
+      .ing-table tr { page-break-inside: avoid; }
+      .steps-body { background: white; border-color: #ccc; }
+      @page { size: A4 portrait; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>📖 ตำราครัว NNTN</h1>
+    <p>CookBook · ทั้งเล่ม · พร้อมปริ้น</p>
+  </div>
+  <div class="user-badge" id="userBadge">กำลังโหลด...</div>
+</header>
+
+<nav>
+  <a href="/nntn/cookingbook/">CookingBook</a>
+  <a href="admin-sop.html">กรอก SOP</a>
+  <a href="print-recipe.html">พิมพ์ทีละสูตร</a>
+  <a href="cookbook.html" class="active">ตำราทั้งเล่ม</a>
+</nav>
+
+<div class="print-controls">
+  <span class="ctrl-label" id="bookStatus">กำลังโหลดทั้งเล่ม...</span>
+  <span class="ctrl-hint">💡 กดปริ้น → เลือก "Save as PDF" · เปิด "Headers and footers" เพื่อให้มีเลขหน้า · 1 สูตร = 1 หน้า</span>
+  <button class="btn-print" id="printBtn" onclick="window.print()" disabled>🖨️ พิมพ์ / บันทึก PDF</button>
+</div>
+
+<div class="loading-msg" id="loadingMsg">
+  <div class="icon">📖</div>
+  <div style="font-size:16px;font-weight:600;color:#444;">กำลังประกอบตำราทั้งเล่ม...</div>
+</div>
+
+<div class="book-wrap" id="bookWrap"></div>
+
+<script>
+const SB_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+// หมวดเรียงเหมือน print-recipe.html (เมนูอาหารก่อน → ครัวเตรียม) · emoji บอก type
+const CAT_ORDER = ['ข้าว/จานเดียว','ก๋วยเตี๋ยว/เกาเหลา','กะเพรา','เนื้อจานหลัก','ของทานเล่น','ไข่','เครื่องดื่ม','เซ็ต/ดีล','ซอส/น้ำจิ้ม','น้ำซุป/สต๊อก','หมักเนื้อ','เครื่องปรุง/ผง','กระเทียม-พริกเจียว'];
+const TYPE_EMOJI = { menu: '🍽️', prep: '🧪', sub: '📦' };
+const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = window.nntnCurrentUser || null;
+  document.getElementById('userBadge').textContent = user?.email?.split('@')[0] || 'User';
+  await buildBook();
+});
+
+async function buildBook() {
+  // 1. recipes (active)
+  const { data: recipes, error } = await sb.schema('cookingbook').from('recipes')
+    .select('id, rcp_code, name, type, category, batch_size_g, unit').eq('is_active', true);
+  if (error || !recipes?.length) {
+    document.getElementById('loadingMsg').innerHTML = '<div class="icon">⚠️</div><div>โหลดข้อมูลไม่สำเร็จ</div>';
+    return;
+  }
+  const ids = recipes.map(r => r.id);
+
+  // 2-4. ดึง BOM + ingredients + sop_steps พร้อมกัน
+  const [bomRes, ingRes, sopRes] = await Promise.all([
+    sb.schema('cookingbook').from('bom_items')
+      .select('recipe_id, line_no, qty_g, unit, note, ingredient_id, sub_recipe_id').in('recipe_id', ids).order('line_no').limit(2000),
+    sb.schema('cookingbook').from('ingredients').select('id, name').limit(2000),
+    sb.schema('cookingbook').from('sop_steps')
+      .select('recipe_id, steps_freeform, cover_photo_url, status, reviewed_by, reviewed_at, version').in('recipe_id', ids).order('version', { ascending: false }).limit(2000),
+  ]);
+
+  const ingMap = {}; (ingRes.data || []).forEach(i => { ingMap[i.id] = i.name; });
+  const recMap = {}; recipes.forEach(r => { recMap[r.id] = `${r.name} (${r.rcp_code})`; });
+  const bomByRecipe = {}; (bomRes.data || []).forEach(b => { (bomByRecipe[b.recipe_id] ||= []).push(b); });
+  const sopByRecipe = {}; (sopRes.data || []).forEach(s => { if (!sopByRecipe[s.recipe_id]) sopByRecipe[s.recipe_id] = s; }); // latest version (order desc → first wins)
+
+  // จัดเรียง: ตาม CAT_ORDER แล้วตาม rcp_code · หมวดที่ไม่อยู่ใน list ต่อท้าย
+  const catRank = c => { const i = CAT_ORDER.indexOf(c); return i === -1 ? 999 : i; };
+  recipes.sort((a, b) =>
+    catRank(a.category) - catRank(b.category) ||
+    String(a.category).localeCompare(String(b.category)) ||
+    a.rcp_code.localeCompare(b.rcp_code, 'th'));
+
+  const today = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  // ── ปก ──
+  let html = `
+    <section class="page cover">
+      <div class="logo">🍜</div>
+      <div class="book-title">ตำราครัว<br>เนื้อในตำนาน</div>
+      <div class="rule"></div>
+      <div class="book-sub">NNTN · CookBook · ฉบับครัวกลาง</div>
+      <div class="count-badge">${recipes.length} สูตร · ${CAT_ORDER.filter(c => recipes.some(r => r.category === c)).length} หมวด</div>
+      <div class="meta">จัดทำ ${today}</div>
+    </section>`;
+
+  // ── สารบัญ ──
+  let seq = 0;
+  const seqMap = {};
+  recipes.forEach(r => { seqMap[r.id] = ++seq; });
+  let tocBody = '';
+  CAT_ORDER.forEach(cat => {
+    const items = recipes.filter(r => r.category === cat);
+    if (!items.length) return;
+    tocBody += `<div class="toc-cat"><div class="toc-cat-title">${esc(cat)} (${items.length})</div>`;
+    items.forEach(r => {
+      tocBody += `<div class="toc-item"><span class="seq">#${seqMap[r.id]}</span><span>${TYPE_EMOJI[r.type] || ''} ${esc(r.name)}</span><span class="code">${esc(r.rcp_code)}</span></div>`;
+    });
+    tocBody += `</div>`;
+  });
+  html += `<section class="page toc"><h2>สารบัญ</h2><div class="toc-grid">${tocBody}</div></section>`;
+
+  // ── หน้าสูตร (1 สูตร/หน้า) ──
+  recipes.forEach(r => {
+    const bom = bomByRecipe[r.id] || [];
+    const sop = sopByRecipe[r.id] || {};
+    const rows = bom.length
+      ? bom.map(b => `<tr>
+          <td>${b.line_no}</td>
+          <td>${b.ingredient_id ? esc(ingMap[b.ingredient_id] || '—') : esc(recMap[b.sub_recipe_id] || '(sub-recipe)')}
+            ${b.note ? `<div class="ing-note">${esc(b.note)}</div>` : ''}</td>
+          <td>${b.qty_g ? esc(b.qty_g + ' ' + (b.unit || 'g')) : esc(b.unit || '—')}</td>
+        </tr>`).join('')
+      : `<tr><td colspan="3" style="text-align:center;color:#999;padding:12px;">ยังไม่ได้กรอก BOM</td></tr>`;
+
+    const steps = sop.steps_freeform || '(ยังไม่ได้กรอกขั้นตอน)';
+    const st = sop.status || 'draft';
+    const cover = sop.cover_photo_url
+      ? `<img class="doc-cover-img" src="${esc(sop.cover_photo_url)}" alt="">`
+      : `<div class="doc-cover-placeholder">${TYPE_EMOJI[r.type] || '🍜'}</div>`;
+    const approvedBy = sop.reviewed_by || '—';
+    const date = sop.reviewed_at ? new Date(sop.reviewed_at).toLocaleDateString('th-TH') : '—';
+    const ver = 'v' + (sop.version || 1) + '.0';
+    const batch = r.batch_size_g ? `batch ${r.batch_size_g} g` : '';
+
+    html += `
+    <section class="page recipe-page">
+      <div class="doc-header">
+        ${cover}
+        <div class="doc-title-block">
+          <div class="doc-cat-tag">${TYPE_EMOJI[r.type] || ''} ${esc(r.category || '')}</div>
+          <div class="doc-menu-name">${esc(r.name)}</div>
+          <div><span class="doc-rcp-code">${esc(r.rcp_code)}</span></div>
+          <div class="doc-meta">ประเภท: ${esc(r.type)}${batch ? ' · ' + batch : ''}</div>
+          <span class="doc-status-badge ${esc(st)}">${esc(st)}</span>
+        </div>
+      </div>
+
+      <div class="doc-section-title">ส่วนผสม (BOM)</div>
+      <table class="ing-table">
+        <thead><tr><th>#</th><th>วัตถุดิบ</th><th style="text-align:right;">ปริมาณ</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+
+      <div class="doc-section-title">ขั้นตอนการทำ</div>
+      <div class="steps-body">${esc(steps)}</div>
+
+      <div class="doc-footer">
+        <div class="footer-item"><div class="footer-label">อนุมัติโดย</div><div class="footer-value">${esc(approvedBy)}</div><div class="footer-sig-line">ลายเซ็น</div></div>
+        <div class="footer-item"><div class="footer-label">วันที่อนุมัติ</div><div class="footer-value">${esc(date)}</div></div>
+        <div class="footer-item"><div class="footer-label">เวอร์ชัน</div><div class="footer-value">${esc(ver)}</div></div>
+      </div>
+
+      <div class="page-foot">
+        <span>NNTN CookBook · ${esc(r.category || '')}</span>
+        <span>${esc(r.rcp_code)} · สูตรที่ ${seqMap[r.id]}/${recipes.length}</span>
+      </div>
+    </section>`;
+  });
+
+  document.getElementById('bookWrap').innerHTML = html;
+  document.getElementById('loadingMsg').style.display = 'none';
+  document.getElementById('bookStatus').textContent = `✅ พร้อมปริ้น — ${recipes.length} สูตร`;
+  document.getElementById('printBtn').disabled = false;
+}
+</script>
+</body>
+</html>
