@@ -2575,6 +2575,14 @@ async function submitDelivery() {
   if (!bill) { alert('กรุณาระบุเลขที่ใบนำส่ง'); return }
   if (!date) { alert('กรุณาเลือกวันที่ส่ง'); return }
 
+  // (c) anti double-submit: claim the lock + disable the button BEFORE any async work
+  //   (covers the draft-fetch + stock-guard await windows, not just the RPC). Every
+  //   pre-RPC abort path below must call _release() so the lock never sticks.
+  const btn = document.getElementById('submit-btn')
+  _submitting = true
+  btn.disabled = true
+  const _release = () => { _submitting = false; btn.disabled = false }
+
   // Collect meat bags — if linked to a draft, refetch draft from DB as source of truth
   //   (prevents stale form vs draft desync when user edits draft in another tab)
   let allBagIds = []
@@ -2600,7 +2608,7 @@ async function submitDelivery() {
         if (onlyForm.length > 0)  lines.push(`• ในฟอร์มแต่ไม่อยู่ใน Draft (${onlyForm.length}): ${onlyForm.slice(0,10).join(', ')}${onlyForm.length>10?'…':''}`)
         if (onlyDraft.length > 0) lines.push(`• ใน Draft แต่ไม่อยู่ในฟอร์ม (${onlyDraft.length}): ${onlyDraft.slice(0,10).join(', ')}${onlyDraft.length>10?'…':''}`)
         const msg = `⚠️ Form กับ Draft ไม่ตรงกัน\n\n${lines.join('\n')}\n\n[ตกลง] = ใช้ Draft เป็นหลัก (ปลอดภัย · Draft คือสิ่งที่บันทึกไว้ล่าสุด)\n[ยกเลิก] = หยุด · ไปตรวจ Draft + Form เอง`
-        if (!confirm(msg)) return
+        if (!confirm(msg)) { _release(); return }
         // User chose draft → use draft as source + reload form to reflect
         allBagIds = draftBagIds.map(Number)
         nmOverride = fresh.nm_lines || null
@@ -2611,7 +2619,7 @@ async function submitDelivery() {
       }
     } catch (e) {
       alert('❌ ตรวจ Draft ไม่สำเร็จ: ' + e.message + '\nยกเลิก submit เพื่อความปลอดภัย')
-      return
+      _release(); return
     }
   } else {
     Object.values(meatSel).forEach(s => s.selectedBags.forEach(id => allBagIds.push(Number(id))))
@@ -2650,12 +2658,12 @@ async function submitDelivery() {
 
   if (overLimit.length > 0) {
     alert(`❌ เบิกเกินสต๊อก — ไม่สามารถส่งออกได้\n\n${overLimit.join('\n')}\n\nกรุณาแก้ไขจำนวนก่อน`)
-    return
+    _release(); return
   }
 
   if (allBagIds.length === 0 && nmWithdrawals.length === 0) {
     alert('กรุณาเลือกถุงเนื้อ หรือเพิ่มรายการ Non-meat อย่างน้อย 1 รายการ')
-    return
+    _release(); return
   }
 
   const bagCount = allBagIds.length
@@ -2667,7 +2675,7 @@ async function submitDelivery() {
     _logSubmit('hub_delivery.submit', 'cancel',
       { bill, dest, date, bag_count: bagCount, nm_count: nmWithdrawals.length },
       { ref_id: bill })
-    return
+    _release(); return
   }
 
   // ── NM Stock Guard: re-fetch latest qty_on_hand ก่อน submit (กัน stale cache) ──
@@ -2705,10 +2713,8 @@ async function submitDelivery() {
     }
   }
 
-  const btn = document.getElementById('submit-btn')
-  btn.disabled = true
+  // lock + btn.disabled already set at top of submitDelivery (anti double-submit)
   btn.textContent = '⏳ กำลังบันทึก...'
-  _submitting = true
 
   const _auditPayload = {
     bill, dest, date,
@@ -2763,6 +2769,32 @@ async function submitDelivery() {
           ? matches.map(m => `• ${m[1].trim()} — มี ${m[2]} เบิก ${m[3]}`).join('\n')
           : errText.split('INSUFFICIENT_STOCK:')[1]?.split('\\n')[0] || errText
         throw new Error(`❌ สต๊อกไม่พอ — เบิกเกินที่มี\n\n${lines}\n\nกรุณานับสต๊อกจริง + ปรับก่อนเบิก`)
+      }
+      // (b) P0001 "some bag IDs not found" — submit_delivery couldn't match one or more
+      //   bag IDs to an In-Stock row (delivered/repacked by another session, or a stale
+      //   draft submitted twice). Re-fetch the real status of the submitted bags, tell the
+      //   user exactly which bag + its current status, then reload to clear the stale list.
+      if (/bag ids? not found/i.test(errText) || errText.includes('some bag IDs')) {
+        let detail = ''
+        try {
+          const idList = allBagIds.map(id => `"${id}"`).join(',')
+          const sRes = await fetch(`${SB}/rest/v1/catch_weight?id=in.(${idList})&select=id,bag_no,status`, { headers: H })
+          if (sRes.ok) {
+            const rows = await sRes.json()
+            const byId = {}; rows.forEach(r => { byId[String(r.id)] = r })
+            const bad = allBagIds
+              .map(id => byId[String(id)] || { id, bag_no: id, status: 'ไม่พบในระบบ' })
+              .filter(r => r.status !== '✅ In Stock')
+            if (bad.length > 0) {
+              detail = '\n\n' + bad.map(r => `• ถุง #${r.bag_no ?? r.id} — สถานะ: ${r.status}`).join('\n')
+            }
+          }
+        } catch (_) {}
+        _logSubmit('hub_delivery.submit', 'fail', _auditPayload,
+          { ref_id: bill, error_msg: 'P0001 some bag IDs not found' + detail })
+        alert(`❌ ส่งออกไม่ได้ — ถุงบางถุงถูกส่งไปแล้ว / ไม่พร้อมส่ง${detail}\n\nหน้าจะรีเฟรชเพื่อโหลดสต๊อกล่าสุด แล้วลองใหม่อีกครั้ง`)
+        location.reload()
+        return
       }
       if (errText.includes('not In Stock') || errText.includes('Cannot deliver bag')) {
         throw new Error(`❌ DB ปฏิเสธ: มีถุงที่ไม่ได้อยู่ใน In Stock — รีเฟรชแล้วลองใหม่`)
