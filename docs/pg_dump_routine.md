@@ -99,7 +99,7 @@ pg_dump --version   # verify 16+
 # Copy the "Session pooler" string (port 5432)
 
 # 3. Add to ~/.zshrc (secret — do not commit)
-echo 'export SUPABASE_DB_URL="postgresql://postgres.emjqulzikpxorvpaaiww:<password>@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"' >> ~/.zshrc
+echo 'export SUPABASE_DB_URL="postgresql://postgres.emjqulzikpxorvpaaiww:<DB_PASSWORD>@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"' >> ~/.zshrc
 
 # 4. Test connection
 pg_dump "$SUPABASE_DB_URL" --schema-only --schema=public -t items | head
