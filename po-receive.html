@@ -1037,13 +1037,8 @@
         return;
       }
 
-      // Update qty_received on the line
-      const { error: uErr } = await sb.from('purchase_order_items')
-        .update({ qty_received: qty })
-        .eq('id', lineId);
-      if (uErr) throw new Error('update line: ' + uErr.message);
-
-      // Call RPC to add to stock
+      // Call RPC to add to stock FIRST — qty_received ต้องผูกกับ stock ที่เข้าจริงเสมอ
+      // (ถ้า RPC fail ห้าม set qty_received เด็ดขาด — line ถือว่า "ยังไม่รับ" กด retry ได้)
       const { data: res, error: rErr } = await sb.rpc('rpc_receive_universal', {
         p_actor:    (window.nntnCurrentUser || 'PO-receive'),
         p_item_id:  itemId,
@@ -1053,6 +1048,12 @@
       });
       if (rErr) throw new Error('rpc: ' + rErr.message);
       if (!res?.ok) throw new Error('receive rejected: ' + JSON.stringify(res));
+
+      // Stock เข้าแล้วจริง — ค่อย mark line ว่ารับแล้ว
+      const { error: uErr } = await sb.from('purchase_order_items')
+        .update({ qty_received: qty })
+        .eq('id', lineId);
+      if (uErr) throw new Error('stock เข้าแล้วแต่บันทึก qty_received ไม่ได้ — ติดต่อ platform ด่วน: ' + uErr.message);
 
       // Replace row with received badge
       row.dataset.received = '1';
@@ -1316,6 +1317,22 @@
     });
 
     if (receives.length === 0) {
+      // Reconcile: ทุก line มี stock เข้าจริงครบแล้ว (qty_received>0 ทุกแถว) แต่ PO ยังไม่ปิด
+      // → เกิดจาก session ถูกขัดจังหวะก่อนปิด PO, หรือ data ถูกแก้ให้ครบทีหลัง — ปิดให้ตรงนี้
+      const allLinesReceived = (dbLines || []).length > 0 && dbLines.every(l => (l.qty_received || 0) > 0);
+      if (allLinesReceived) {
+        const now = new Date().toISOString();
+        const { error: psErr } = await sb.from('purchase_orders')
+          .update({ status: 'received', received_at: now })
+          .eq('id', poId);
+        if (psErr) {
+          toast('ทุกรายการรับแล้วแต่ปิด PO ไม่ได้: ' + psErr.message);
+          return;
+        }
+        toast('รับครบทุกรายการอยู่แล้ว — ปิด PO ที่ค้างให้แล้ว');
+        setTimeout(() => loadPOList(currentFilter), 1200);
+        return;
+      }
       return toast('ไม่มีรายการที่ยังไม่ได้รับ');
     }
 
@@ -1357,13 +1374,9 @@
     if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
 
     try {
-      // Loop FIRST — แต่ละ row ทำ UPDATE + RPC (atomic ต่อ row)
+      // Loop — RPC ก่อน (เข้าสต๊อกจริง) แล้วค่อย update qty_received ต่อ row
+      // qty_received ต้องผูกกับ stock ที่เข้าจริงเสมอ — RPC fail = แถวนั้นยังไม่รับ (retry ได้)
       for (const r of receives) {
-        const { error: uErr } = await sb.from('purchase_order_items')
-          .update({ qty_received: r.qty_received })
-          .eq('id', r.line_id);
-        if (uErr) throw new Error(`update line ล้มเหลว (${r.item_id}): ${uErr.message}`);
-
         const { data: receiveResult, error: rErr } = await sb.rpc('rpc_receive_universal', {
           p_actor:    (window.nntnCurrentUser || 'PO-receive'),
           p_item_id:  r.item_id,
@@ -1373,6 +1386,11 @@
         });
         if (rErr) throw new Error(`rpc_receive_universal ล้มเหลว (${r.item_id}): ${rErr.message}`);
         if (!receiveResult?.ok) throw new Error(`receive rejected: ${JSON.stringify(receiveResult)}`);
+
+        const { error: uErr } = await sb.from('purchase_order_items')
+          .update({ qty_received: r.qty_received })
+          .eq('id', r.line_id);
+        if (uErr) throw new Error(`stock เข้าแล้วแต่บันทึก qty_received ไม่ได้ (${r.item_id}) — ติดต่อ platform ด่วน: ${uErr.message}`);
       }
 
       // Close PO AFTER all rows succeeded — ถ้า loop fail จะยังรับใหม่ได้
