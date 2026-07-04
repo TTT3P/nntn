@@ -315,6 +315,12 @@ def fs_transform(raw_rows: list[dict], account: dict, source_month: str) -> list
         m = re.search(r">([^<]+)</a>", raw)
         return m.group(1) if m else raw
 
+    def parse_num(raw):
+        """FS formats numbers with thousands commas (e.g. '1,592') — strip before float."""
+        if raw is None or raw == "":
+            return 0.0
+        return float(str(raw).replace(",", ""))
+
     def parse_options(raw):
         """FoodStory returns option_name as a JSON string of arrays. Parse to native list."""
         if not raw:
@@ -351,10 +357,10 @@ def fs_transform(raw_rows: list[dict], account: dict, source_month: str) -> list
             "menu_name": strip_html(r.get("menu_name")),
             "menu_name_raw": r.get("menu_name"),
             "category": r.get("category"),
-            "qty": float(r.get("quantity") or 0),
-            "unit_price": float(r.get("price") or 0),
-            "discounted_price": float(r.get("discounted_price") or 0),
-            "discount_amount": float(r.get("discount_value") or 0),
+            "qty": parse_num(r.get("quantity")),
+            "unit_price": parse_num(r.get("price")),
+            "discounted_price": parse_num(r.get("discounted_price")),
+            "discount_amount": parse_num(r.get("discount_value")),
             "channel_name": r.get("channel_name") or r.get("channel"),
             "order_type": r.get("order_type"),
             "payment_type": r.get("payment_type"),
