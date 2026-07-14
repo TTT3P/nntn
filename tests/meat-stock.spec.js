@@ -40,6 +40,38 @@ test.describe('meat-stock page', () => {
   });
 
   test('หม้อตุ๋น input — ตัด pre-packed [...] ออก', async ({ page }) => {
+    // NOTE (fixed 2026-07-14): this was flaky — it asserted "สามชั้น" is present
+    // in the dropdown, but the dropdown is populated straight from LIVE
+    // production stock (warehouse A raw meat in `catch_weight`/`items`).
+    // Whether "สามชั้น" happens to be in stock at CI run time is unrelated to
+    // whether the app's filtering LOGIC (drop pre-packed [...] items, keep raw
+    // meat) is correct. Fix: mock the two REST calls the page makes on load so
+    // the dropdown content is deterministic, then reload so init() re-runs
+    // against the mocked data. This keeps the original intent (verify the
+    // "เปิดหม้อตุ๋น" dropdown surfaces raw meat and excludes pre-packed items)
+    // without depending on live stock.
+    const MOCK_ITEMS = [
+      // synthetic test fixture — not real catalog SKUs, just enough shape to
+      // exercise loadNewPotItemDropdown()'s filters in meat-stock/index.html
+      { id: 9001, name: 'สามชั้น (ดิบ)', sku: 'TEST-SAMCHAN', category: 'meat_raw', item_category: null, byproduct_item_id: null, byproduct_required: false, yield_expected_min: null, yield_expected_max: null },
+      { id: 9002, name: 'สันนอก (ดิบ)', sku: 'TEST-SANNOK', category: 'meat_raw', item_category: null, byproduct_item_id: null, byproduct_required: false, yield_expected_min: null, yield_expected_max: null },
+      { id: 9003, name: 'เสือร้องไห้ออส [500g]', sku: 'TEST-PACKED', category: 'meat_raw', item_category: null, byproduct_item_id: null, byproduct_required: false, yield_expected_min: null, yield_expected_max: null },
+    ];
+    const MOCK_CW = MOCK_ITEMS.map((it, i) => ({
+      id: 90100 + i,
+      item_id: it.id,
+      weight_g: 1000,
+      lot_date: '2026-07-01',
+      warehouse: 'A',
+      status: '✅ In Stock',
+      legacy_cw_row: false,
+      items: { name: it.name, sku: it.sku, category: it.category },
+    }));
+    await page.route('**/rest/v1/items*', route => route.fulfill({ json: MOCK_ITEMS }));
+    await page.route('**/rest/v1/catch_weight*', route => route.fulfill({ json: MOCK_CW }));
+    await page.reload();
+    await expect(page.locator('#header-cw')).toContainText('ถุง', { timeout: 15_000 });
+
     // Switch to หม้อตุ๋น tab
     await page.click('button:has-text("หม้อตุ๋น")');
     // Click "เปิดเนื้อใหม่"
@@ -52,8 +84,9 @@ test.describe('meat-stock page', () => {
     // ไม่ควรมี [500g], [75G], [200g], [100G]
     const hasPrePackaged = options.some(o => /\[(500g|75G|200g|100G)\]/i.test(o));
     expect(hasPrePackaged).toBe(false);
-    // ควรมีอย่างน้อย: สามชั้น, สันนอก, ลิ้นวัว
+    // ควรมี: สามชั้น, สันนอก (raw meat, seeded via mock above)
     expect(options.some(o => o.includes('สามชั้น'))).toBe(true);
+    expect(options.some(o => o.includes('สันนอก'))).toBe(true);
   });
 
   test('แปรรูป input — มี optgroup "หลัก" และ "เศษเนื้อ"', async ({ page }) => {
@@ -86,8 +119,10 @@ test.describe('meat-stock page', () => {
     await expect(dropdown).toBeVisible();
 
     const options = await dropdown.locator('option').allTextContents();
-    // 1 placeholder + 13 SKUs = 14 (MT-049 [75G]น่องลายตุ๋น added 30/05)
-    expect(options.length).toBe(14);
+    // 1 placeholder + 14 SKUs = 15 (PROC_OUTPUT_SKUS in meat-stock/index.html
+    // counted 14 as of MT-052 [150G]เนื้อแดดเดียว, added 10/07 — verified by
+    // reading the literal array, not by trusting the old comment)
+    expect(options.length).toBe(15);
 
     // ควรมี MT-020, MT-014 (พิคานย่า)
     expect(options.some(o => o.includes('MT-020'))).toBe(true);
