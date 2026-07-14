@@ -130,6 +130,10 @@
       .no-print { display: none; }
       .section-title, thead th, .td-sys, .td-count { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .td-count input { border: none; }
+      /* แต่ละหมวดขึ้นหน้ากระดาษใหม่ (หมวดแรกไม่ต้อง) */
+      .cat-block { page-break-before: always; break-before: page; }
+      .cat-block:first-child { page-break-before: avoid; break-before: auto; }
+      thead { display: table-header-group; }  /* หัวตารางซ้ำทุกหน้าถ้าหมวดยาวข้ามหน้า */
     }
 
     /* ── Screen only ── */
@@ -217,14 +221,12 @@
     noodle:      '🍜 เส้น ข้าว ไข่',
     packaging:   '📦 แพ็กเกจจิ้ง',
     consumable:  '🧻 ของใช้สิ้นเปลือง',
-    meat_raw:    '🥩 เนื้อดิบ (ชั่ง กก.)',
-    meat_fresh:  '🍖 เนื้อ/ลูกชิ้น พร้อมใช้',
     misc:        '📋 อื่นๆ',
   };
 
-  // ตัดออก: sub-recipe, เนื้อ catch-weight (MT ถุง นับคนละใบ), สินค้าสำเร็จอื่นๆ
+  // ตัดออก: sub-recipe, เนื้อ catch-weight (MT ถุง) + SP-เนื้อชั่งกิโล (นับคนละใบ), สินค้าสำเร็จอื่นๆ
   const SKIP_PREFIXES  = ['SRCP-', 'MT-'];
-  const SKIP_CATEGORIES = ['pkg', 'srcp'];
+  const SKIP_CATEGORIES = ['pkg', 'srcp', 'meat_fresh', 'meat_raw'];
 
   async function load() {
     try {
@@ -310,8 +312,10 @@
       }).join('');
 
       html += `
-        <div class="section-title"><span>${label}</span><span class="cnt">${groups[cat].length} รายการ</span></div>
-        <table>${tableHead}<tbody>${rows}</tbody></table>
+        <div class="cat-block">
+          <div class="section-title"><span>${label}</span><span class="cnt">${groups[cat].length} รายการ</span></div>
+          <table>${tableHead}<tbody>${rows}</tbody></table>
+        </div>
       `;
     }
 
