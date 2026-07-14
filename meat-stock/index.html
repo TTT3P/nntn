@@ -2130,6 +2130,7 @@ function loadProcBagChips(n) {
           return `<div class="lot-chip" id="pcbag-${n}-${r.id}"
                        data-id="${r.id}" data-kg="${(r.weight_g||0)/1000}"
                        data-name="${r.item_name||''}" data-item-id="${r.item_id||''}"
+                       data-warehouse="${r.warehouse||''}"
                        onclick="toggleProcBag(${n},'${r.id}')">
             <div class="lot-name">${cw}</div>
             <div class="lot-kg">${kg} กก.</div>
@@ -2268,10 +2269,11 @@ async function submitProcess() {
   const inputBags = []
   document.querySelectorAll('#proc-inputs .lot-chip.selected').forEach(chip => {
     inputBags.push({
-      id:      chip.dataset.id,
-      item_id: chip.dataset.itemId,
-      kg:      parseFloat(chip.dataset.kg) || 0,
-      name:    chip.dataset.name
+      id:        chip.dataset.id,
+      item_id:   chip.dataset.itemId,
+      kg:        parseFloat(chip.dataset.kg) || 0,
+      name:      chip.dataset.name,
+      warehouse: chip.dataset.warehouse || ''
     })
   })
   if (inputBags.length === 0) { alert('กรุณาเลือกถุงต้นทางอย่างน้อย 1 ถุง'); return }
@@ -2315,7 +2317,9 @@ async function submitProcess() {
       ? inputBags[0].item_id
       : document.getElementById('proc-sku-out')?.value
     if (!outItemId) { alert('กรุณาเลือก SKU output'); return }
-    const outWarehouse = type === 'repack' ? 'B' : 'C'
+    // repack = แบ่งถุงของเดิม ไม่เปลี่ยน SKU → ต้องอยู่คลังเดิมของ input เสมอ
+    // (เดิม hardcode 'B' ทำให้ของดิบจากคลัง A เช่น SP-037 หลุดไปโผล่ B — fix 14/07 TINE approve)
+    const outWarehouse = type === 'repack' ? (inputBags[0].warehouse || 'B') : 'C'
     document.querySelectorAll('#proc-bag-rows input[type=number]').forEach((inp, idx) => {
       const g = parseFloat(inp.value)
       if (!g || g <= 0) return
@@ -2752,7 +2756,7 @@ async function openTraceModal(bagId) {
 
   try {
     const bagRows = await get('catch_weight', {
-      select: 'id,item_id,weight_g,warehouse,status,legacy_cw_row,lot_date,cook_session_id,notes,source,items(name,category)',
+      select: 'id,item_id,weight_g,warehouse,status,legacy_cw_row,lot_date,cook_session_id,notes,source,created_at,items(name,category)',
       id: `eq.${bagId}`,
       limit: '1'
     })
@@ -2802,6 +2806,77 @@ async function openTraceModal(bagId) {
           </div>
         `
       }
+    }
+
+    // ── BACKWARD (repack/mix/kitchen): ไม่มี cook_session_id + ไม่มี session table ผูก proc flow นี้เลย
+    // (repack_session_id ไม่เคยถูกเขียนค่าจริงในระบบ — ยืนยันแล้วว่าเป็น dead column)
+    // Reconstruct ย้อนหลังจาก stock_movements: หา repack_consume/production_consume ที่เวลาใกล้เคียงกับตอนถุงนี้ถูกสร้าง
+    // best-effort, ไม่ใช่ link ที่แน่นอน 100% — โชว์ทุก candidate ถ้าเจอมากกว่า 1 ไม่เดาเลือกให้
+    if (!bag.cook_session_id && bag.source === 'web-process' && /\((repack|mix|kitchen)\)/.test(bag.notes || '') && bag.created_at) {
+      try {
+        const createdMs = new Date(bag.created_at).getTime()
+        const winStart = new Date(createdMs - 120000).toISOString() // เผื่อ 2 นาทีก่อนหน้า (batch submit ใช้เวลาประมวลผล)
+        const winEnd   = new Date(createdMs + 5000).toISOString()
+        const isRepack = /\(repack\)/.test(bag.notes)
+        // repack (แบ่งถุง) = SKU เดิม → filter item_id แม่นได้ · mix/kitchen = SKU เปลี่ยน → ค้นกว้างกว่า ไม่ filter item_id
+        const mvUrl = `${SB}/rest/v1/stock_movements?select=ref_id,item_id,weight_g,occurred_at,movement_type`
+          + `&movement_type=in.(repack_consume,production_consume)`
+          + `&occurred_at=gte.${encodeURIComponent(winStart)}&occurred_at=lte.${encodeURIComponent(winEnd)}`
+          + (isRepack ? `&item_id=eq.${bag.item_id}` : '')
+          + `&order=occurred_at.desc&limit=20`
+        const mvRes = await fetch(mvUrl, { headers: H })
+        const candidates = mvRes.ok ? await mvRes.json() : []
+
+        // sibling outputs จาก batch เดียวกัน (created_at ตรงเป๊ะ) — ใช้ช่วยกระทบยอดน้ำหนัก
+        const siblings = await get('catch_weight', {
+          select: 'id,weight_g,legacy_cw_row',
+          created_at: `eq.${bag.created_at}`,
+          item_id: `eq.${bag.item_id}`
+        })
+        const siblingList = Array.isArray(siblings) ? siblings : []
+        const siblingTotalG = siblingList.reduce((s, r) => s + (Number(r.weight_g) || 0), 0)
+
+        if (candidates.length > 0) {
+          const refIds = [...new Set(candidates.map(c => c.ref_id))]
+          const sourceBags = await get('catch_weight', {
+            select: 'id,weight_g,lot_date,source,legacy_cw_row,items(name)',
+            id: `in.(${refIds.join(',')})`
+          })
+          const srcById = {}
+          ;(Array.isArray(sourceBags) ? sourceBags : []).forEach(s => { srcById[s.id] = s })
+
+          const candRows = candidates.map(c => {
+            const src = srcById[c.ref_id]
+            if (!src) return ''
+            const srcKg = ((Number(src.weight_g) || 0) / 1000).toFixed(3)
+            const srcLot = src.lot_date ? fmtDate(src.lot_date.split('T')[0]) : '—'
+            const label = src.legacy_cw_row || `#${String(src.id).substring(0,6)}`
+            return `<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:4px 0;border-bottom:1px dashed var(--border)">
+              <span>${escHtml(label)} · ${escHtml(src.items?.name || '—')} (${escHtml(src.source || '—')})</span>
+              <span>${srcKg} กก. · รับเข้า ${srcLot}</span>
+            </div>`
+          }).filter(Boolean).join('')
+
+          const siblingNote = siblingList.length > 1
+            ? `<div style="font-size:.72rem;color:var(--muted);margin-top:4px">แบ่งเป็น ${siblingList.length} ถุงจากรอบเดียวกัน — รวม ${(siblingTotalG/1000).toFixed(3)} กก.</div>`
+            : ''
+
+          backwardHtml = `
+            <div class="cook-sec" style="background:#FFF3E0;border:1.5px solid #FFCC80">
+              <div class="cook-sec-label" style="color:#E65100">⬅️ ที่มา (reconstruct จาก stock_movements — best-effort${candidates.length > 1 ? `, พบ ${candidates.length} candidate` : ''})</div>
+              ${candRows || '<div style="color:var(--muted);font-size:.8rem">หา source bag ไม่เจอ</div>'}
+              ${siblingNote}
+            </div>
+          `
+        } else {
+          backwardHtml = `
+            <div class="cook-sec" style="background:#f5f5f5">
+              <div class="cook-sec-label">⬅️ ที่มา</div>
+              <div style="font-size:.8rem;color:var(--muted)">ไม่พบ movement ต้นทางที่ match ได้ในช่วงเวลาใกล้เคียง (อาจเป็นข้อมูลเก่าก่อนมี tracking นี้)</div>
+            </div>
+          `
+        }
+      } catch(_) {}
     }
 
     // ── FORWARD: delivery (if bag is delivered or via delivery_lines) ──
