@@ -283,19 +283,36 @@ let catFilter = { all:'all', used:'all' };
 let varFilter = 'all';
 
 // ─── Data loading ──────────────────────────────────────
+// ดึง stock_counts ให้ครบทุกแถวด้วย pagination — PostgREST cap 1000 แถว/request
+// (ตอนนี้ ledger > 5000 แถว) ถ้าดึงตรงจะได้แค่ 1000 แถวเก่าสุด → current qty เพี้ยนเป็นค่าเก่า
+async function fetchAllStockCounts() {
+  const PAGE = 1000;
+  let from = 0, all = [];
+  while (true) {
+    const { data, error } = await sb.from('stock_counts')
+      .select('item_id,qty,event_type,note,counted_at')
+      .order('counted_at', { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all = all.concat(data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
+
 async function load() {
   document.getElementById('rpt-date').textContent =
     new Date().toLocaleDateString('th-TH', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
-  const [{ data: items }, { data: evts }] = await Promise.all([
+  const [{ data: items }, events] = await Promise.all([
     sb.from('items').select('id,sku,name,unit,category,par_level,qty_per_pack')
       .eq('is_active', true).order('category').order('sku'),
-    sb.from('stock_counts').select('item_id,qty,event_type,note,counted_at')
-      .order('counted_at', { ascending: true }),
+    fetchAllStockCounts(),
   ]);
 
   if (!items) return;
-  const events = evts || [];
 
   // Group events by item_id
   const byItem = {};
