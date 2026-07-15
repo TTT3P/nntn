@@ -349,16 +349,21 @@ async function loadItems() {
     return;
   }
 
-  // Load latest count per item
-  const { data: countData } = await sb
-    .from('stock_counts')
-    .select('item_id, qty, counted_at')
-    .order('counted_at', { ascending: false });
-
+  // Load latest count per item — paginate (PostgREST cap 1000/req, ledger >5000 แถว)
+  // ดึงตรงได้แค่ 1000 แถวใหม่สุด → item ที่ event ล่าสุดเก่ากว่านั้นหลุด → โชว์ 0/OUT หลอก
   const latestMap = {};
-  (countData || []).forEach(row => {
-    if (!latestMap[row.item_id]) latestMap[row.item_id] = row;
-  });
+  for (let from = 0; ; from += 1000) {
+    const { data: page, error: pErr } = await sb
+      .from('stock_counts')
+      .select('item_id, qty, counted_at')
+      .order('counted_at', { ascending: false })
+      .range(from, from + 999);
+    if (pErr) break;
+    (page || []).forEach(row => {
+      if (!latestMap[row.item_id]) latestMap[row.item_id] = row;
+    });
+    if (!page || page.length < 1000) break;
+  }
 
   items = (itemData || []).map(item => {
     const latest = latestMap[item.id];
