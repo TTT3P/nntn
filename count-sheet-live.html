@@ -230,33 +230,29 @@
 
   async function load() {
     try {
-      const [{ data: items, error: e1 }, { data: evts, error: e2 }] = await Promise.all([
-        sb.from('items').select('id,sku,name,unit,category')
-          .eq('is_active', true).order('category').order('sku'),
-        sb.from('stock_counts').select('item_id,qty,counted_at')
-          .order('counted_at', { ascending: true }),
-      ]);
-      if (e1) throw e1;
-      if (e2) throw e2;
-      if (!items) throw new Error('ไม่พบรายการ items');
-
-      // current qty = qty ของ event ล่าสุด (stock_counts เก็บ balance สัมบูรณ์)
-      const latestQty = {};
-      (evts || []).forEach(e => { latestQty[e.item_id] = parseFloat(e.qty); });
+      // current_stock = view canonical (server คำนวณ current_qty จาก event ทั้งหมด)
+      // ห้ามดึง stock_counts มาหา latest เอง — ledger มีหลายพันแถว ชน PostgREST limit 1000
+      // → ได้แต่ event เก่าสุด → current qty เพี้ยน. view = 1 แถว/item ไม่ชน limit
+      const { data: rows, error } = await sb.from('current_stock')
+        .select('sku,name,category,unit,current_qty')
+        .order('category').order('sku');
+      if (error) throw error;
+      if (!rows) throw new Error('ไม่พบข้อมูล current_stock');
 
       // กรอง
-      const rows = items.filter(i =>
+      const filtered = rows.filter(i =>
         !SKIP_PREFIXES.some(p => i.sku.startsWith(p)) &&
         !SKIP_CATEGORIES.includes(i.category)
       );
 
       // group by category
       const groups = {};
-      for (const item of rows) {
+      for (const item of filtered) {
         const cat = item.category || 'misc';
+        const q = item.current_qty;
         (groups[cat] = groups[cat] || []).push({
           ...item,
-          sys: (item.id in latestQty) ? latestQty[item.id] : null,
+          sys: (q === null || q === undefined || q === '') ? null : parseFloat(q),
         });
       }
 
