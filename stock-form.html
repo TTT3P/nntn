@@ -346,6 +346,19 @@ async function loadItems() {
 
   // กรองหมวดเนื้อออก — เนื้อนับที่ระบบ Meat Stock เท่านั้น (กันนับซ้ำ)
   const nonMeat = itemData.filter(i => !MEAT_CATS.includes(i.category));
+  // เรียง: หมวดตามตัวอักษร แต่ Sub-Recipe (srcp) ท้ายสุดเสมอ ·
+  //        ในหมวดน้ำสมุนไพร จัดน้ำขวด 220ml (PKG) ให้ติดกันก่อน แล้วค่อยชุดแห้ง
+  nonMeat.sort((a, b) => {
+    const aLast = a.category === 'srcp', bLast = b.category === 'srcp';
+    if (aLast !== bLast) return aLast ? 1 : -1;            // Sub-Recipe ท้ายสุดเสมอ
+    if (a.category !== b.category) return a.category.localeCompare(b.category);
+    if (a.category === 'herbal_drink') {                    // น้ำขวด 220ml ติดกันก่อน
+      const isBottle = x => /220\s*ml/i.test(x.name) || (x.sku || '').startsWith('PKG');
+      const ba = isBottle(a), bb = isBottle(b);
+      if (ba !== bb) return ba ? -1 : 1;
+    }
+    return (a.sku || '').localeCompare(b.sku || '');
+  });
   items = nonMeat;
   buildCatChips(nonMeat);
   renderItems();
