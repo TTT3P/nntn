@@ -289,6 +289,8 @@ const CAT_LABELS = {
   noodle:     '🍜 เส้น ข้าว ไข่',
   srcp:       '🥄 Sub-Recipe (bulk)',
   pkg:        '🛍️ Portioned (ถุง)',
+  herbal_drink:'🍵 น้ำสมุนไพร',
+  misc:       '📋 อื่นๆ',
 };
 
 // หมวดเนื้อ — นับผ่านระบบ Meat Stock (catch_weight) เท่านั้น
@@ -371,6 +373,7 @@ function buildCatChips(itemData) {
     all: 'ทั้งหมด', seasoning: '🧂 เครื่องปรุง', spice: '🌿 สมุนไพร',
     vegetable: '🥬 ผักตลาด', veg_process: '🥬 ผักรอแปรรูป', packaging: '📦 แพ็กเกจ', consumable: '🛒 วัสดุ',
     noodle: '🍜 เส้น ข้าว ไข่', srcp: '🥄 Sub-Recipe', pkg: '🛍️ Portioned',
+    herbal_drink: '🍵 น้ำสมุนไพร', misc: '📋 อื่นๆ',
   };
   const el = document.getElementById('cat-chips');
   el.innerHTML = cats.map(c =>
