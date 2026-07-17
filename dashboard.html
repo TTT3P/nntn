@@ -389,7 +389,7 @@ function setCat(cat) {
 }
 
 function buildCatChips() {
-  const cats = [...new Set(allData.map(r => r.category))].sort();
+  const cats = [...new Set(allData.map(r => r.category))]; // ตามลำดับ allData (srcp ท้ายสุด)
   const row = document.getElementById('cat-chips');
   row.innerHTML = '<button class="cat-chip active" onclick="setCat(\'\')">ทุกหมวด</button>';
   cats.forEach(cat => {
@@ -462,6 +462,19 @@ async function loadStock() {
 
   // กรองหมวดเนื้อออก — แสดงเฉพาะ non-meat (เนื้อดูที่ระบบ Meat Stock)
   allData = data.filter(r => !MEAT_CATS.includes(r.category));
+  // เรียง: หมวดตามตัวอักษร แต่ Sub-Recipe (srcp) ท้ายสุดเสมอ ·
+  //        ในหมวดน้ำสมุนไพร จัดน้ำขวด 220ml (PKG) ให้ติดกันก่อน แล้วค่อยชุดแห้ง
+  allData.sort((a, b) => {
+    const aLast = a.category === 'srcp', bLast = b.category === 'srcp';
+    if (aLast !== bLast) return aLast ? 1 : -1;
+    if (a.category !== b.category) return a.category.localeCompare(b.category);
+    if (a.category === 'herbal_drink') {
+      const isBottle = x => /220\s*ml/i.test(x.name) || (x.sku || '').startsWith('PKG');
+      const ba = isBottle(a), bb = isBottle(b);
+      if (ba !== bb) return ba ? -1 : 1;
+    }
+    return (a.sku || '').localeCompare(b.sku || '');
+  });
   buildCatChips();
 
   // Update counters — นับจาก allData (หลังกรองเนื้อ) ให้ตรงกับรายการที่แสดง
