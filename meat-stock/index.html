@@ -1604,6 +1604,54 @@ function calcClosePotYield() {
   }
 }
 
+// ════ Duplicate-bag soft-warning (non-blocking) ════
+// ป้องกันกรอกถุงซ้ำ (double-count): เช็คก่อนสร้างถุงใหม่ว่ามีถุง item เดียวกัน +
+// weight_g เท่ากันเป๊ะ ที่ถูกส่ง (🚚 Delivered) ไปแล้วภายใน 7 วันล่าสุดหรือไม่ —
+// ใช้วันส่งจริงจาก stock.deliveries.date (join ผ่าน delivery_lines.catch_weight_id)
+// ไม่ใช้ catch_weight.updated_at เพราะเป็นข้อมูลอิสระ ไม่ผูกกับ trigger ที่เพิ่งแก้
+// (migration_catch_weight_updated_at.sql) — คืน array ของ match, "warn ไม่บล็อก":
+// เจอเมื่อไหร่ผู้เรียกต้องโชว์ confirm() ให้ user ตัดสินใจเอง ไม่ throw/abort เอง
+// เช็คพลาด (network/schema) → คืน [] เงียบๆ ไม่ทำให้ปิดหม้อ/บันทึกล่ม (fail-open by design)
+async function findRecentDeliveredDuplicates(itemId, itemName, weightsG) {
+  const uniqueWeights = [...new Set((weightsG || []).filter(g => g > 0))]
+  if (!itemId || uniqueWeights.length === 0) return []
+  try {
+    const orFilter = uniqueWeights.map(g => `weight_g.eq.${g}`).join(',')
+    const candidates = await get('catch_weight', {
+      item_id: `eq.${itemId}`,
+      status:  'eq.🚚 Delivered',
+      or:      `(${orFilter})`,
+      select:  'id,weight_g'
+    })
+    if (!Array.isArray(candidates) || candidates.length === 0) return []
+
+    const idList = candidates.map(c => c.id).join(',')
+    const linesRes = await fetch(
+      `${SB}/rest/v1/delivery_lines?select=catch_weight_id,deliveries(bill_no,date,branch)&catch_weight_id=in.(${idList})`,
+      { headers: { ...H, 'Accept-Profile': 'stock' } }
+    )
+    if (!linesRes.ok) return []
+    const lines = await linesRes.json()
+    if (!Array.isArray(lines)) return []
+
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7)
+    const byId = {}; candidates.forEach(c => { byId[c.id] = c })
+
+    return lines
+      .filter(l => l.deliveries?.date && new Date(l.deliveries.date) >= cutoff)
+      .map(l => ({
+        item_name: itemName || '',
+        weight_g:  byId[l.catch_weight_id]?.weight_g,
+        bill_no:   l.deliveries.bill_no,
+        date:      l.deliveries.date,
+        branch:    l.deliveries.branch
+      }))
+  } catch (e) {
+    console.warn('[dup-bag-check] skipped (non-blocking):', e)
+    return []
+  }
+}
+
 async function submitClosePot() {
   if (!currentClosePot) return
   const sessionId = currentClosePot.id
@@ -1642,6 +1690,20 @@ async function submitClosePot() {
 
   const bypKg = bypWeights.reduce((s, g) => s + g, 0) / 1000
   const bypMsg = bypWeights.length > 0 ? `\nBy-product: ${bypWeights.length} ถุง / ${bypKg.toFixed(3)} กก.` : ''
+
+  // Duplicate-bag soft-warning — เช็คก่อนยืนยันปิดหม้อ (ไม่บล็อก แค่เตือนถ้าเจอ)
+  const dupMatches = []
+  if (!noOutput && itemId) {
+    const outName = items.find(i => i.id === itemId)?.name || ''
+    dupMatches.push(...await findRecentDeliveredDuplicates(itemId, outName, bagWeights))
+  }
+  if (bypItem?.id && bypWeights.length > 0) {
+    dupMatches.push(...await findRecentDeliveredDuplicates(bypItem.id, bypItem.name || '', bypWeights))
+  }
+  if (dupMatches.length > 0) {
+    const dupLines = dupMatches.map(m => `• ${m.item_name} ${m.weight_g} กรัม — ส่งไปแล้ว ${fmtDate(m.date)} บิล ${m.bill_no} (${m.branch})`).join('\n')
+    if (!confirm(`⚠️ พบถุงน้ำหนักตรงกับที่ส่งไปแล้วภายใน 7 วัน — อาจกรอกซ้ำ?\n\n${dupLines}\n\nกด OK = ยืนยันบันทึกต่อ (ถ้ามั่นใจว่าไม่ซ้ำ) · Cancel = กลับไปตรวจสอบก่อน`)) return
+  }
 
   if (!confirm(`ยืนยันปิดหม้อ?\n\nผลผลิต: ${bagWeights.length} ถุง / ${totalKg.toFixed(3)} กก.${bypMsg}`)) return
 
