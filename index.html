@@ -347,15 +347,18 @@
 const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const sbStock = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'stock' } });
+
+const MEAT_CATS = ['meat','meat_raw','meat_fresh','meat_cooked','meat_portioned','meat_other','meat_trim'];
 
 (async function() {
-  const { data: cs } = await sbStock.from('current_stock')
-    .select('item_id,current_qty,status,par_level');
+  // สต๊อกครัว = Non-Meat Stock — นับเฉพาะ non-meat เหมือน dashboard.html (เนื้อดูที่ระบบ Meat Stock แยกต่างหาก)
+  const { data: cs } = await sb.from('current_stock')
+    .select('item_id,current_qty,status,par_level,category');
 
   if (cs && cs.length > 0) {
+    const nonMeat = cs.filter(r => !MEAT_CATS.includes(r.category));
     let out = 0, order = 0, low = 0, ok = 0;
-    cs.forEach(r => {
+    nonMeat.forEach(r => {
       if (r.status === 'OUT')        out++;
       else if (r.status === 'ORDER_NOW') order++;
       else if (r.status === 'LOW')   low++;
@@ -367,13 +370,14 @@ const sbStock = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema
     document.getElementById('s-ok').textContent    = ok;
     document.getElementById('date-bar').textContent = `อัปเดตจาก Supabase · ${new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
   } else {
-    const { data: items }  = await sb.from('items').select('id,par_level').eq('is_active', true);
+    const { data: items }  = await sb.from('items').select('id,par_level,category').eq('is_active', true);
     const { data: unified } = await sb.from('v_stock_unified').select('item_id,qty_on_hand,last_movement_at');
     if (!items || !unified) { document.getElementById('date-bar').textContent = 'ไม่พบข้อมูลสต๊อก'; return; }
     const qtyMap = {};
     unified.forEach(r => { qtyMap[r.item_id] = r; });
+    const nonMeatItems = items.filter(item => !MEAT_CATS.includes(item.category));
     let out = 0, order = 0, low = 0, ok = 0, lastDate = null;
-    items.forEach(item => {
+    nonMeatItems.forEach(item => {
       const c = qtyMap[item.id];
       const qty = c ? c.qty_on_hand : null;
       const par = item.par_level || 1;

@@ -172,6 +172,39 @@ header { background: linear-gradient(135deg, #1a1a2e 0%, #3a1c4e 100%); }
   border-radius: 10px; letter-spacing: .04em;
   margin-left: auto;
 }
+
+/* ─── Print: 1 หัวข้อ ต่อ 1 หน้า ─── */
+@media print {
+  body { background: white; font-size: 13px; padding-bottom: 0; line-height: 1.4; }
+  .wrap { max-width: 100%; padding: 0; }
+  .toc, .toc-fab, .section-nav { display: none; }
+  .section {
+    box-shadow: none; border: none; border-radius: 0;
+    padding: 8px 4px 6px; margin-bottom: 0;
+    page-break-before: always; break-before: page;
+  }
+  .section#login { page-break-before: avoid; break-before: avoid; }
+  .section:hover { box-shadow: none; }
+  .section-title { font-size: 1.15rem; margin-bottom: 8px; padding-bottom: 6px; scroll-margin-top: 0; }
+  .section-title .num { width: 22px; height: 22px; font-size: 0.72rem; }
+  .progress-chip { font-size: 0.68rem; padding: 2px 7px; }
+  .sub { margin-bottom: 10px; }
+  .sub-title { font-size: 0.95rem; margin-bottom: 6px; }
+  .steps > li { padding: 5px 0; gap: 9px; }
+  .steps > li::before { min-width: 21px; height: 21px; font-size: 0.68rem; }
+  .step-body strong { font-size: 0.9rem; }
+  .step-body p, .field, .box { font-size: 0.83rem; }
+  .field { padding: 3px 0; }
+  .field-label { min-width: 120px; }
+  .box { padding: 6px 10px; margin: 5px 0; }
+  .divider { margin: 8px 0; }
+  .login-box { padding: 10px; margin-bottom: 8px; }
+  .box, .steps > li, .field, .flow, .aim-tbl tr, .login-box { break-inside: avoid; }
+  a[href] { color: inherit !important; text-decoration: none; }
+  .login-box .login-btn { border: 1px solid rgba(255,255,255,0.5); padding: 6px 20px; margin: 6px 0 4px; }
+  .aim-tbl { font-size: 0.76rem; }
+  .aim-tbl th, .aim-tbl td { padding: 5px 7px; }
+}
 </style>
 </head>
 <body>
