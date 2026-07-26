@@ -210,7 +210,7 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
 // หมวดเรียงเหมือน print-recipe.html (เมนูอาหารก่อน → ครัวเตรียม) · emoji บอก type
-const CAT_ORDER = ['ข้าว/จานเดียว','ก๋วยเตี๋ยว/เกาเหลา','กะเพรา','เนื้อจานหลัก','ของทานเล่น','ไข่','เครื่องดื่ม','เซ็ต/ดีล','ซอส/น้ำจิ้ม','น้ำซุป/สต๊อก','หมักเนื้อ','เครื่องปรุง/ผง','กระเทียม-พริกเจียว'];
+const CAT_ORDER = ['ข้าว/จานเดียว','ก๋วยเตี๋ยว/เกาเหลา','กะเพรา','เนื้อจานหลัก','ของทานเล่น','ไข่','เครื่องดื่ม','ซอส/น้ำจิ้ม','น้ำซุป/สต๊อก','หมักเนื้อ','เครื่องปรุง/ผง','กระเทียม-พริกเจียว'];  // 26/07 ตัด 'เซ็ต/ดีล' (filter ที่ fetch ด้วย)
 const TYPE_EMOJI = { menu: '🍽️', prep: '🧪', sub: '📦' };
 const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
@@ -223,7 +223,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function buildBook() {
   // 1. recipes (active)
   const { data: recipes, error } = await sb.schema('cookingbook').from('recipes')
-    .select('id, rcp_code, name, type, category, batch_size_g, unit').eq('is_active', true);
+    .select('id, rcp_code, name, type, category, batch_size_g, unit').eq('is_active', true)
+    .neq('category', 'เซ็ต/ดีล');  // 26/07 TINE: ตัดเซ็ต/ดีลออกจากตำรา (filter ที่ data — forEach สร้างหน้าจาก array นี้)
   if (error || !recipes?.length) {
     document.getElementById('loadingMsg').innerHTML = '<div class="icon">⚠️</div><div>โหลดข้อมูลไม่สำเร็จ</div>';
     return;
