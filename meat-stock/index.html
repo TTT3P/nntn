@@ -723,7 +723,7 @@ async function init() {
   // Process SKU output dropdown — curated list (portion/packed ที่ผลิตจากแปรรูป)
   const PROC_OUTPUT_SKUS = [
     'MT-020','MT-014','MT-043','MT-008',          // พิคานย่า 100G/75G ไทย+ออส
-    'MT-030','MT-007','MT-053','MT-052','MT-040','MT-049',  // 75G กิวด้ง/แดดเดียว(+100G MT-053/150G MT-052)/ตุ๋น/น่องลายตุ๋น (MT-031 คุ้น hard-deleted 20/04)
+    'MT-030','MT-007','MT-053','MT-052','MT-040','MT-049','MT-054',  // 75G กิวด้ง/แดดเดียว(+100G MT-053/150G MT-052)/ตุ๋น/น่องลายตุ๋น/ชายโครงตุ๋น(MT-054 26/07) (MT-031 คุ้น hard-deleted 20/04)
     'MT-011','MT-037','MT-018',                   // 75G บด/แม็กกี้/หมักนุ่ม
     'MT-039','MT-009'                             // 500g ลูกชิ้น/ลูกชิ้นเอ็น
     // MT-044 (โกเบ) · MT-045 (น่องลายตุ๋น เศษ) เป็น CW variable-weight · ไม่อยู่ใน fallback list · เข้าถึงผ่าน REPACK_MAP เท่านั้น
@@ -2045,6 +2045,7 @@ const SCRAP_MAP = {
 const REPACK_MAP = {
   'MT-028': ['MT-040','MT-051'],           // สามชั้นตุ๋น → [75G]เนื้อตุ๋น + [75G]เนื้อตุ๋น(ราดข้าว) (04/07 ผูก MT-051 ตาม SRCP-019 output_item_id)
   'MT-004': ['MT-046','MT-044'],           // ชายโครงตุ๋น (raw) → MT-046 ชายโครงตุ๋น (เนื้อตุ๋น) Lv.2 byproduct + MT-044 เนื้อโกเบ (06/05 DEC-022 mirror MT-035→MT-045)
+  'MT-046': ['MT-054'],                    // ชายโครงตุ๋น (เนื้อตุ๋น) → MT-054 [75G]ชายโครงตุ๋น (26/07 TINE route B: พอร์ชันจากตัวตุ๋นแยกแล้ว ไม่ใช่ MT-004)
   'MT-035': ['MT-035','MT-049','MT-045'],   // เนื้อน่องลายตุ๋น (CW ปัจจุบัน) → MT-035 ชิ้นสวย + MT-049 [75G]น่องลายตุ๋น + MT-045 เศษ (เศษไว้ท้ายสุด)
   'MT-019': ['MT-018'],                    // เนื้อสดหมักนุ่ม → [75G]หมักนุ่ม
   'SP-206': ['MT-043','MT-020'],           // พิคานย่าไทย (ดิบ) → 75G/100G
@@ -2114,7 +2115,7 @@ function addProcInput() {
   procInputCount++
   const n = procInputCount
   // Curated list: SKU หลัก + เศษเนื้อ (category=meat_trim)
-  const MAIN_PROC_SKUS = ['MT-028','MT-004','MT-019','MT-035','SP-206','SP-101','SP-036','SP-037','SP-087','SP-020','SP-031','SP-038']
+  const MAIN_PROC_SKUS = ['MT-028','MT-004','MT-046','MT-019','MT-035','SP-206','SP-101','SP-036','SP-037','SP-087','SP-020','SP-031','SP-038']  // MT-046 เพิ่ม 26/07 (route B input สำหรับ [75G]ชายโครงตุ๋น)
   const mainInStock = [...new Set(
     cwStock.filter(r => MAIN_PROC_SKUS.includes(r.item_sku)).map(r => r.item_name).filter(Boolean)
   )].sort()
