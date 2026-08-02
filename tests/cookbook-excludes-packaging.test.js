@@ -27,8 +27,14 @@ test('offline build shim รองรับ not() ที่ cookbook query เ�
 test('ปก สารบัญ และท้ายหน้าใช้รายการ recipes หลังกรอง ไม่ใช้เลข hardcode', () => {
   assert.match(cookbook, /count-badge">\$\{recipes\.length\} สูตร/);
   assert.match(cookbook, /<div class="page-foot">[\s\S]{0,800}recipes\.length/);
-  assert.match(cookbook, /const items = recipes\.filter\(r => r\.category === cat\)/);
+  assert.match(cookbook, /\.map\(label => \(\{ label, items: recipes\.filter\(r => r\.category === label\) \}\)\)/);
   assert.doesNotMatch(cookbook, />98 สูตร</);
+});
+
+test('สารบัญไม่ทำสูตรหมวดว่างหรือหมวดนอกลิสต์หล่นหาย', () => {
+  assert.match(cookbook, /const unlistedTocItems = recipes\.filter\(r => !CAT_ORDER\.includes\(r\.category\)\)/);
+  assert.match(cookbook, /ไม่ระบุหมวด/);
+  assert.match(cookbook, /tocGroups\.push\(\{ label: 'ไม่ระบุหมวด', items: unlistedTocItems \}\)/);
 });
 
 test('กลไกตัดหน้าสูตรยาวยังวัดหลัง render และใช้ break-here', () => {

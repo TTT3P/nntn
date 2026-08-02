@@ -314,10 +314,13 @@ async function buildBook() {
   const seqMap = {};
   recipes.forEach(r => { seqMap[r.id] = ++seq; });
   let tocBody = '';
-  CAT_ORDER.forEach(cat => {
-    const items = recipes.filter(r => r.category === cat);
-    if (!items.length) return;
-    tocBody += `<div class="toc-cat"><div class="toc-cat-title">${esc(cat)} (${items.length})</div><div class="toc-cat-items">`;
+  const tocGroups = CAT_ORDER
+    .map(label => ({ label, items: recipes.filter(r => r.category === label) }))
+    .filter(group => group.items.length);
+  const unlistedTocItems = recipes.filter(r => !CAT_ORDER.includes(r.category));
+  if (unlistedTocItems.length) tocGroups.push({ label: 'ไม่ระบุหมวด', items: unlistedTocItems });
+  tocGroups.forEach(({ label, items }) => {
+    tocBody += `<div class="toc-cat"><div class="toc-cat-title">${esc(label)} (${items.length})</div><div class="toc-cat-items">`;
     items.forEach(r => {
       tocBody += `<div class="toc-item"><span class="seq">#${seqMap[r.id]}</span><span>${TYPE_EMOJI[r.type] || ''} ${esc(r.name)}</span><span class="code">${esc(r.rcp_code)}</span></div>`;
     });
