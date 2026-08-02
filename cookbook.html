@@ -169,6 +169,17 @@
       .ing-table tr { page-break-inside: avoid; }
       .steps-body { background: white; border-color: #ccc; }
       @page { size: A4 portrait; margin: 0; }
+
+      /* 2026-08-02: สูตรที่เนื้อหายาวเกิน A4 (RCP-019 กิวด้ง · RCP-022 ข้าวผัดพิคานย่า)
+         เดิมเบราว์เซอร์ตัดหน้าตรงกลางบล็อกช่องเซ็น หน้าถัดไปเลยเหลือคำว่า "ลายเซ็น" ลอยบรรทัดเดียว
+         กติกาใหม่: ที่เหลือไม่พอ = ยกทั้งกล่องไปหน้าถัดไป ห้ามตัดกลางกล่อง
+         สูตรที่พอดีหน้าอยู่แล้วไม่ขยับ เพราะไม่มีอะไรต้องตัดตั้งแต่แรก
+         (ไม่ลดขนาดฟอนต์/ระยะบรรทัด — มาตรฐานงานพิมพ์ห้ามไว้) */
+      body:not(.kitchen) .steps-body,
+      body:not(.kitchen) .doc-footer { break-inside: avoid; }
+      body:not(.kitchen) .doc-section-title { break-after: avoid; }   /* หัวข้อไปไหน กล่องไปด้วย */
+      /* จุดตัดของสูตรที่ยาวเกินหน้า — JS ติดคลาสนี้ให้หลังวัดของจริง (ดู markOverflowPages) */
+      body:not(.kitchen) .break-here { break-before: page; }
     }
   </style>
 </head>
@@ -340,6 +351,7 @@ async function buildBook() {
 
   document.getElementById('bookWrap').innerHTML = html;
   document.getElementById('loadingMsg').style.display = 'none';
+  markOverflowPages();
 
   // populate category filter (ทั้งเล่ม + ทีละหมวด)
   const sel = document.getElementById('catFilter');
@@ -353,6 +365,24 @@ async function buildBook() {
   sel.disabled = false;
   document.getElementById('bookStatus').textContent = `✅ พร้อมปริ้น — ${recipes.length} สูตร`;
   document.getElementById('printBtn').disabled = false;
+}
+
+/* สูตรที่เนื้อหายาวเกิน 1 หน้า A4 (ตอนนี้มี RCP-019 กิวด้ง กับ RCP-022 ข้าวผัดพิคานย่า)
+   ถ้าปล่อยไว้ เบราว์เซอร์จะไปตัดตรงไหนก็ได้ ผลคือหน้าถัดไปเหลือแค่ช่องเซ็นลอยๆ ทั้งหน้า
+   เลยสั่งตัดเองตรงหัวข้อ "ขั้นตอนการทำ" → หน้าแรกได้ส่วนผสม หน้าสองได้วิธีทำ+ช่องเซ็น ทั้งสองหน้ามีของจริง
+
+   ต้องวัดหลังเรนเดอร์ ไม่ใช่เดาด้วย CSS เพราะความสูงขึ้นกับจำนวนวัตถุดิบ/ความยาวขั้นตอนของแต่ละสูตร
+   เกณฑ์ = A4 + 4mm เพราะตอนพิมพ์ .page ใช้ขอบ 14/12mm ซึ่งเหลือที่มากกว่าบนจอ (16/14mm) อยู่ 4mm
+   สูตรที่สูง 297-301mm บนจอจึงยังลงได้พอดีตอนพิมพ์ ไม่ต้องตัด */
+function markOverflowPages() {
+  const limitPx = (297 + 4) / 25.4 * 96;
+  document.querySelectorAll('.recipe-page').forEach(sec => {
+    sec.querySelectorAll('.break-here').forEach(el => el.classList.remove('break-here'));
+    if (sec.getBoundingClientRect().height <= limitPx) return;
+    const body = sec.querySelector('.steps-body');
+    const target = (body && body.previousElementSibling) || body;   // หัวข้อ "ขั้นตอนการทำ" ถ้ามี
+    if (target) target.classList.add('break-here');
+  });
 }
 
 // กรองหมวด: __all__ = ทั้งเล่ม (โชว์ปก+สารบัญ) · เลือกหมวด = โชว์เฉพาะสูตรในหมวดนั้น (ซ่อนปก/สารบัญ)
