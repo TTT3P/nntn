@@ -191,6 +191,7 @@
       body:not(.kitchen) .doc-section-title { break-after: avoid; }   /* หัวข้อไปไหน กล่องไปด้วย */
       /* จุดตัดของสูตรที่ยาวเกินหน้า — JS ติดคลาสนี้ให้หลังวัดของจริง (ดู markOverflowPages) */
       body:not(.kitchen) .break-here { break-before: page; }
+      body.kitchen-input .kitchen-break { break-before: page; }
     }
   </style>
 </head>
@@ -432,10 +433,13 @@ function fitKitchenPages(enabled) {
   document.querySelectorAll('.recipe-page').forEach(page => {
     const stepsBody = page.querySelector('.steps-body');
     if (!stepsBody) return;
+    stepsBody.classList.remove('kitchen-break');
     stepsBody.style.minHeight = '';
     if (!enabled || page.style.display === 'none') return;
     const renderedHeightMm = page.getBoundingClientRect().height * 25.4 / 96;
     stepsBody.style.minHeight = `${kitchenStepHeightMm(renderedHeightMm)}mm`;
+    const fittedHeightMm = page.getBoundingClientRect().height * 25.4 / 96;
+    if (fittedHeightMm > 301) stepsBody.classList.add('kitchen-break');
   });
 }
 

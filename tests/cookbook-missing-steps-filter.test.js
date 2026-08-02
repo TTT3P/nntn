@@ -64,4 +64,5 @@ test('ลดเฉพาะพื้นที่เขียนของสู�
   assert.equal(kitchenStepHeightMm(320), 70);
   assert.equal(kitchenStepHeightMm(360), 55);
   assert.match(source, /fitKitchenPages\(steps === '__kitchen__'\)/);
+  assert.match(source, /kitchen-break/);
 });
