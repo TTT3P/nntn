@@ -141,6 +141,17 @@
       font-size: 14px; line-height: 1.9; white-space: pre-wrap;
       background: #FAFAFA; border: 1px solid #e8e8e8; border-radius: 6px; padding: 12px 14px; min-height: 50px;
     }
+    body.kitchen-input .col-steps .steps-body {
+      min-height: 95mm;
+      background-color: #fff;
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent calc(1.9em - 1px),
+        #e4e4e4 calc(1.9em - 1px),
+        #e4e4e4 1.9em
+      );
+    }
 
     .doc-footer {
       margin-top: 20px; border-top: 2px solid var(--green); padding-top: 12px;
@@ -203,6 +214,11 @@
 <div class="print-controls">
   <span class="ctrl-label">เลือกปริ้น:</span>
   <select class="ctrl-select" id="catFilter" onchange="applyFilter()" disabled><option value="__all__">📖 ทั้งเล่ม</option></select>
+  <span class="ctrl-label">ขั้นตอน:</span>
+  <select class="ctrl-select" id="stepFilter" onchange="applyFilter()" disabled>
+    <option value="__all__">ทุกสูตร</option>
+    <option value="__kitchen__">ใบส่งครัว — เฉพาะสูตรที่ต้องให้ครัวเขียน</option>
+  </select>
   <span class="ctrl-label" id="bookStatus">กำลังโหลด...</span>
   <span class="ctrl-hint">💡 เลือกหมวดเพื่อปริ้นทีละส่วน (ไม่ต้องรวดเดียว) → กดปริ้น → "Save as PDF"</span>
   <button class="btn-print" id="printBtn" onclick="window.print()" disabled>🖨️ พิมพ์ / บันทึก PDF</button>
@@ -224,6 +240,22 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 const CAT_ORDER = ['ข้าว/จานเดียว','ก๋วยเตี๋ยว/เกาเหลา','กะเพรา','เนื้อจานหลัก','ของทานเล่น','ไข่','เครื่องดื่ม','ซอส/น้ำจิ้ม','น้ำซุป/สต๊อก','หมักเนื้อ','เครื่องปรุง/ผง','กระเทียม-พริกเจียว'];  // 26/07 ตัด 'เซ็ต/ดีล' (filter ที่ fetch ด้วย)
 const TYPE_EMOJI = { menu: '🍽️', prep: '🧪', sub: '📦' };
 const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+function isMissingSteps(sop) {
+  return !String(sop?.steps_freeform ?? '').trim();
+}
+
+function needsKitchenSteps(rcpCode, missingSteps) {
+  const isPackagingGroupA = /^PKG-(00[1-9]|01[0-6])$/.test(rcpCode);
+  return missingSteps &&
+    !isPackagingGroupA &&
+    !['RCP-022-M', 'RCP-023-M', 'RCP-055-M', 'RCP-069-M'].includes(rcpCode);
+}
+
+function recipeMatchesFilters(category, needsStepsFromKitchen, selectedCategory, selectedSteps) {
+  return (selectedCategory === '__all__' || category === selectedCategory) &&
+    (selectedSteps === '__all__' || needsStepsFromKitchen);
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   const user = window.nntnCurrentUser || null;
@@ -296,6 +328,8 @@ async function buildBook() {
   recipes.forEach(r => {
     const bom = bomByRecipe[r.id] || [];
     const sop = sopByRecipe[r.id] || {};
+    const missingSteps = isMissingSteps(sop);
+    const needsStepsFromKitchen = needsKitchenSteps(r.rcp_code, missingSteps);
     const rows = bom.length
       ? bom.map(b => `<tr>
           <td>${b.line_no}</td>
@@ -304,7 +338,7 @@ async function buildBook() {
         </tr>`).join('')
       : `<tr><td colspan="3" style="text-align:center;color:#999;padding:12px;">ยังไม่ได้กรอก BOM</td></tr>`;
 
-    const steps = sop.steps_freeform || '(ยังไม่ได้กรอกขั้นตอน)';
+    const steps = missingSteps ? '(ยังไม่ได้กรอกขั้นตอน — เว้นพื้นที่ให้ครัวเขียน)' : sop.steps_freeform;
     const st = sop.status || 'draft';
     const cover = sop.cover_photo_url
       ? `<img class="doc-cover-img" src="${esc(sop.cover_photo_url)}" alt="">`
@@ -315,7 +349,7 @@ async function buildBook() {
     const batch = r.batch_size_g ? `batch ${r.batch_size_g} g` : '';
 
     html += `
-    <section class="page recipe-page" data-cat="${esc(r.category || '')}">
+    <section class="page recipe-page" data-cat="${esc(r.category || '')}" data-needs-kitchen-steps="${needsStepsFromKitchen}">
       <div class="doc-header">
         ${cover}
         <div class="doc-title-block">
@@ -334,7 +368,7 @@ async function buildBook() {
       </table>
 
       <div class="doc-section-title">ขั้นตอนการทำ</div>
-      <div class="steps-body">${esc(steps)}</div>
+      <div class="col-steps"><div class="steps-body">${esc(steps)}</div></div>
 
       <div class="doc-footer">
         <div class="footer-item"><div class="footer-label">อนุมัติโดย</div><div class="footer-value">${esc(approvedBy)}</div><div class="footer-sig-line">ลายเซ็น</div></div>
@@ -363,6 +397,7 @@ async function buildBook() {
     sel.appendChild(o);
   });
   sel.disabled = false;
+  document.getElementById('stepFilter').disabled = false;
   document.getElementById('bookStatus').textContent = `✅ พร้อมปริ้น — ${recipes.length} สูตร`;
   document.getElementById('printBtn').disabled = false;
 }
@@ -385,18 +420,27 @@ function markOverflowPages() {
   });
 }
 
-// กรองหมวด: __all__ = ทั้งเล่ม (โชว์ปก+สารบัญ) · เลือกหมวด = โชว์เฉพาะสูตรในหมวดนั้น (ซ่อนปก/สารบัญ)
+// กรองหมวด + สถานะขั้นตอน · ปก/สารบัญแสดงเฉพาะเมื่อเลือกทุกสูตรจริง ๆ
 function applyFilter() {
-  const v = document.getElementById('catFilter').value;
-  const all = v === '__all__';
-  document.querySelectorAll('[data-section]').forEach(el => { el.style.display = all ? '' : 'none'; });
+  const category = document.getElementById('catFilter').value;
+  const steps = document.getElementById('stepFilter').value;
+  document.body.classList.toggle('kitchen-input', steps === '__kitchen__');
+  const wholeBook = category === '__all__' && steps === '__all__';
+  document.querySelectorAll('[data-section]').forEach(el => { el.style.display = wholeBook ? '' : 'none'; });
   let n = 0;
   document.querySelectorAll('.recipe-page').forEach(el => {
-    const show = all || el.dataset.cat === v;
+    const show = recipeMatchesFilters(
+      el.dataset.cat,
+      el.dataset.needsKitchenSteps === 'true',
+      category,
+      steps
+    );
     el.style.display = show ? '' : 'none';
     if (show) n++;
   });
-  document.getElementById('bookStatus').textContent = all ? `✅ ทั้งเล่ม — ${n} สูตร` : `✅ ${v} — ${n} สูตร`;
+  const scope = category === '__all__' ? 'ทุกหมวด' : category;
+  const mode = steps === '__kitchen__' ? ' · ต้องให้ครัวเขียน' : '';
+  document.getElementById('bookStatus').textContent = wholeBook ? `✅ ทั้งเล่ม — ${n} สูตร` : `✅ ${scope}${mode} — ${n} สูตร`;
   window.scrollTo(0, 0);
 }
 </script>
