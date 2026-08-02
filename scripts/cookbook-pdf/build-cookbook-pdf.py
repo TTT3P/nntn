@@ -58,7 +58,7 @@ const __TABLE__ = { recipes: '__recipes', bom_items: '__bom', ingredients: '__in
 function __q(rows) {
   const o = {
     data: rows, error: null,
-    select: () => o, eq: () => o, neq: () => o, in: () => o, order: () => o, limit: () => o,
+    select: () => o, eq: () => o, neq: () => o, not: () => o, in: () => o, order: () => o, limit: () => o,
     then: (res) => res({ data: rows, error: null }),
   };
   return o;

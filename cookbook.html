@@ -267,7 +267,8 @@ async function buildBook() {
   // 1. recipes (active)
   const { data: recipes, error } = await sb.schema('cookingbook').from('recipes')
     .select('id, rcp_code, name, type, category, batch_size_g, unit').eq('is_active', true)
-    .neq('category', 'เซ็ต/ดีล');  // 26/07 TINE: ตัดเซ็ต/ดีลออกจากตำรา (filter ที่ data — forEach สร้างหน้าจาก array นี้)
+    .neq('category', 'เซ็ต/ดีล')
+    .not('rcp_code', 'like', 'PKG-%');  // ตัดงานแบ่งบรรจุที่ data — ห้ามกรอง type=sub เพราะ SRCP เป็นสูตรจริง
   if (error || !recipes?.length) {
     document.getElementById('loadingMsg').innerHTML = '<div class="icon">⚠️</div><div>โหลดข้อมูลไม่สำเร็จ</div>';
     return;

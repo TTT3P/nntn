@@ -5,8 +5,8 @@
 Chrome headless ล็อกอินไม่ได้ เลยดึงข้อมูลด้วย service key ตรงนี้แทน แล้วค่อยเอาไปสวมทอน
 
 คอลัมน์ที่ดึงต้องตรงกับที่ cookbook.html เรียกใช้ ถ้าในไฟล์นั้นเพิ่มคอลัมน์ ต้องมาเพิ่มที่นี่ด้วย
-ส่วนตัวกรอง (is_active · ตัดหมวดเซ็ต/ดีล) และการเรียงลำดับ ต้องทำให้เสร็จตรงนี้
-เพราะตัว shim ฝั่ง build ทำ eq/neq/order ไม่ได้ — มันคืนข้อมูลทั้งก้อนตามที่ได้มา
+ส่วนตัวกรอง (is_active · ตัดหมวดเซ็ต/ดีล · ตัดรหัส PKG-) และการเรียงลำดับ ต้องทำให้เสร็จตรงนี้
+เพราะตัว shim ฝั่ง build ทำ eq/neq/not/order ไม่ได้ — มันคืนข้อมูลทั้งก้อนตามที่ได้มา
 
 คีย์อ่านจาก ~/.config/nntn/.env (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)
 """
@@ -15,6 +15,7 @@ import json, pathlib, sys, urllib.parse, urllib.request
 ENV = pathlib.Path.home() / '.config' / 'nntn' / '.env'
 OUT = pathlib.Path(__file__).parent / 'cookbook-data.json'
 CUT_CATEGORY = 'เซ็ต/ดีล'   # 26/07 TINE: ไม่เอาลงตำรา
+CUT_RCP_PREFIX = 'PKG-'      # 02/08 TINE: งานแบ่งบรรจุอยู่ใน DB แต่ไม่ขึ้นตำรา
 
 cfg = {}
 for line in ENV.read_text().splitlines():
@@ -42,7 +43,8 @@ def get(table, select, extra=''):
 
 recipes = [r for r in get('recipes',
     'id,rcp_code,name,type,category,batch_size_g,unit', '&is_active=eq.true')
-    if r.get('category') != CUT_CATEGORY]
+    if r.get('category') != CUT_CATEGORY
+    and not str(r.get('rcp_code') or '').startswith(CUT_RCP_PREFIX)]
 if not recipes:
     sys.exit('ไม่มีสูตรกลับมาเลย — หยุด ไม่งั้นจะได้เล่มเปล่า')
 ids = {r['id'] for r in recipes}
