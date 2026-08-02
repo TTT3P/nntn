@@ -56,3 +56,12 @@ test('ใบส่งครัวเว้นพื้นที่อย่า�
   assert.ok(rule, 'cookbook.html must define a handwritten-steps area for kitchen input');
   assert.ok(Number(rule[1]) >= 90, `handwritten area is only ${rule[1]}mm`);
 });
+
+test('ลดเฉพาะพื้นที่เขียนของสูตร BOM ยาวเพื่อไม่ให้ช่องเซ็นหลุดไปหน้าว่าง', () => {
+  const kitchenStepHeightMm = loadFunction('kitchenStepHeightMm');
+
+  assert.equal(kitchenStepHeightMm(297), 95);
+  assert.equal(kitchenStepHeightMm(320), 70);
+  assert.equal(kitchenStepHeightMm(360), 55);
+  assert.match(source, /fitKitchenPages\(steps === '__kitchen__'\)/);
+});

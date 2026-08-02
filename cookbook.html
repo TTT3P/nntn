@@ -424,6 +424,21 @@ function markOverflowPages() {
   });
 }
 
+// ใบส่งครัวใช้พื้นที่เขียน 95 มม. เป็นค่าเริ่มต้น แต่ BOM ยาวบางสูตรทำให้ช่องเซ็น
+// หลุดไปอยู่หน้าว่างลำพัง จึงลดเฉพาะพื้นที่เขียนของสูตรที่สูงเกิน A4 โดยไม่ลดฟอนต์/ระยะบรรทัด
+function kitchenStepHeightMm(renderedHeightMm) { const overflowMm = Math.max(0, renderedHeightMm - 297); return overflowMm < 1 ? 95 : Math.max(55, 95 - overflowMm - 2); }
+
+function fitKitchenPages(enabled) {
+  document.querySelectorAll('.recipe-page').forEach(page => {
+    const stepsBody = page.querySelector('.steps-body');
+    if (!stepsBody) return;
+    stepsBody.style.minHeight = '';
+    if (!enabled || page.style.display === 'none') return;
+    const renderedHeightMm = page.getBoundingClientRect().height * 25.4 / 96;
+    stepsBody.style.minHeight = `${kitchenStepHeightMm(renderedHeightMm)}mm`;
+  });
+}
+
 // กรองหมวด + สถานะขั้นตอน · ปก/สารบัญแสดงเฉพาะเมื่อเลือกทุกสูตรจริง ๆ
 function applyFilter() {
   const category = document.getElementById('catFilter').value;
@@ -442,6 +457,7 @@ function applyFilter() {
     el.style.display = show ? '' : 'none';
     if (show) n++;
   });
+  fitKitchenPages(steps === '__kitchen__');
   const scope = category === '__all__' ? 'ทุกหมวด' : category;
   const mode = steps === '__kitchen__' ? ' · ต้องให้ครัวเขียน' : '';
   document.getElementById('bookStatus').textContent = wholeBook ? `✅ ทั้งเล่ม — ${n} สูตร` : `✅ ${scope}${mode} — ${n} สูตร`;
