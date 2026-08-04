@@ -2913,6 +2913,10 @@ body.modal-open {
   font-size: 12px;
 }
 
+.confirm-kitchen-candidate {
+  margin-top: 10px;
+}
+
 .kitchen-readiness {
   padding: 12px;
   display: grid;

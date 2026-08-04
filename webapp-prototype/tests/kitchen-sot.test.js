@@ -72,11 +72,11 @@ test("dependency cycles are named and block printing", () => {
 
 test("editing a spoon value never creates normalized grams", () => {
   const store = createKitchenSotStore(kitchenData);
-  const updated = store.updateItemCandidate(157, "ผัดผัก:น้ำมันปาล์ม", "1 ช้อนชา", "ยืนยันจาก DOCX");
+  const updated = store.updateItemCandidate(157, "ผัดผัก:น้ำมันปาล์ม", "2 ช้อนชา", "ยืนยันจากครัวจริง");
   const palmOil = updated.items.find((item) => item.line_key === "ผัดผัก:น้ำมันปาล์ม");
 
-  assert.equal(palmOil.candidate_text, "1 ช้อนชา");
-  assert.equal(palmOil.decision_note, "ยืนยันจาก DOCX");
+  assert.equal(palmOil.candidate_text, "2 ช้อนชา");
+  assert.equal(palmOil.decision_note, "ยืนยันจากครัวจริง");
   assert.equal(JSON.stringify(updated).includes("normalized_grams"), false);
 });
 
@@ -89,6 +89,22 @@ test("saving an unchanged candidate preserves its source decision", () => {
   assert.equal(before.decision_status, "needs_review");
   assert.equal(after.decision_status, "needs_review");
   assert.equal(after.selected_source, before.selected_source);
+  assert.equal(after.decision_note, before.decision_note);
+});
+
+test("owner can confirm an unchanged kitchen quantity without converting it", () => {
+  const store = createKitchenSotStore(kitchenData);
+  const before = store.getRecipe(159).items.find((item) => item.item_name === "เนื้อพิคานย่า");
+  const updated = store.confirmItemCandidate(159, before.line_key, "ยืนยันเทียบกับครัวจริง");
+  const after = updated.items.find((item) => item.line_key === before.line_key);
+  const messages = store.evaluateRecipe(159).blockers.map((blocker) => blocker.message).join("\n");
+
+  assert.equal(after.candidate_text, "75 กรัม");
+  assert.equal(after.decision_status, "confirmed_by_owner");
+  assert.equal(after.selected_source, "owner_confirmation");
+  assert.equal(after.decision_note, "ยืนยันเทียบกับครัวจริง");
+  assert.doesNotMatch(messages, /เนื้อพิคานย่า ยังมีต้นฉบับขัดแย้งกัน/);
+  assert.equal(JSON.stringify(updated).includes("normalized_grams"), false);
 });
 
 test("saving an unchanged method preserves its source", () => {

@@ -124,6 +124,8 @@
           <input class="kitchen-candidate-input" data-line-key="${escapeHtml(item.line_key)}" value="${escapeHtml(item.candidate_text || "")}" placeholder="ยังไม่สรุป ห้ามเดา" aria-label="ค่าหน้าครัว ${escapeHtml(item.item_name)}">
         </label>
         ${item.serving_note ? `<p class="kitchen-serving-note"><strong>การเสิร์ฟ:</strong> ${escapeHtml(item.serving_note)}</p>` : ""}
+        ${item.candidate_text && ["conflict", "needs_review", "manual_review"].includes(item.decision_status) ? `
+          <button class="button button-small confirm-kitchen-candidate" type="button" data-confirm-line-key="${escapeHtml(item.line_key)}" data-confirm-item-name="${escapeHtml(item.item_name)}">ยืนยันค่าตามนี้</button>` : ""}
       </article>`).join("")}</div>`;
   }
 
@@ -143,6 +145,15 @@
       saveEditor(recipeId);
       noticeText = "บันทึกในหน้าทดลองแล้ว · รีโหลดแล้วข้อมูลจะกลับเป็นต้นฉบับ";
       renderSotDetail(recipeId, selectedRootId);
+    });
+
+    detailContent.querySelectorAll(".confirm-kitchen-candidate").forEach((button) => {
+      button.addEventListener("click", () => {
+        saveEditor(recipeId);
+        store.confirmItemCandidate(recipeId, button.dataset.confirmLineKey, "เจ้าของยืนยันจากหน้าตรวจต้นฉบับ");
+        noticeText = `ยืนยัน ${button.dataset.confirmItemName} แล้ว · ยังเป็นข้อมูลชั่วคราวใน Prototype`;
+        renderSotDetail(recipeId, selectedRootId);
+      });
     });
 
     document.querySelector("#mark-kitchen-print-ready")?.addEventListener("click", () => {
