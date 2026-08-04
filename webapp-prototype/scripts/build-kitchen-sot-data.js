@@ -56,6 +56,19 @@ const methodOverrides = new Map([
   ].join("\n")]
 ]);
 
+const candidateOverrides = new Map([
+  ["159:ผัดผัก", {
+    candidateText: "1 ชุดตามสูตร",
+    selectedSource: "docx",
+    decisionStatus: "confirmed_from_docx",
+    decisionNote: "DOCX ระบุให้ทำผัดผัก 1 ชุดตามสูตรก่อนนำไปจัดเสิร์ฟ"
+  }]
+]);
+
+const unresolvedQuestionOverrides = new Map([
+  ["ข้าวหน้าเนื้อยากินิกุ", "น้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟตรงไหน"]
+]);
+
 function selectedSource(status) {
   if (status === "confirmed_from_handwriting" || status === "removed_by_handwriting") return "handwriting";
   if (status === "confirmed_from_docx") return "docx";
@@ -67,9 +80,10 @@ function componentIdFor(itemName) {
   return componentAliases.get(itemName) ?? null;
 }
 
-function decisionItem(recipeName, decision) {
+function decisionItem(recipeId, recipeName, decision) {
   const componentRecipeId = componentIdFor(decision.item_name);
   const removed = decision.status === "removed_by_handwriting";
+  const override = candidateOverrides.get(`${recipeId}:${decision.item_name}`);
   return {
     line_key: `${recipeName}:${decision.item_name}`,
     item_name: decision.item_name,
@@ -81,10 +95,10 @@ function decisionItem(recipeName, decision) {
       v2: decision.v2 ?? null,
       handwriting: decision.handwriting ?? null
     },
-    candidate_text: removed ? null : decision.candidate ?? null,
-    selected_source: selectedSource(decision.status),
-    decision_status: decision.status,
-    decision_note: removed ? "ตัดออกตามลายมือ" : null
+    candidate_text: removed ? null : override?.candidateText ?? decision.candidate ?? null,
+    selected_source: override?.selectedSource ?? selectedSource(decision.status),
+    decision_status: override?.decisionStatus ?? decision.status,
+    decision_note: removed ? "ตัดออกตามลายมือ" : override?.decisionNote ?? null
   };
 }
 
@@ -127,7 +141,10 @@ function methodCandidate(recipe) {
 function blockersFor(recipe) {
   const blockers = sourceReview.unresolved
     .filter((issue) => issue.recipe_name === recipe.recipe_name)
-    .map((issue) => ({ code: "unresolved_source_conflict", message: issue.question }));
+    .map((issue) => ({
+      code: "unresolved_source_conflict",
+      message: unresolvedQuestionOverrides.get(recipe.recipe_name) ?? issue.question
+    }));
 
   if (!methodCandidate(recipe)) {
     blockers.push({ code: "missing_method", message: recipe.method_note });
@@ -149,7 +166,7 @@ const recipes = sourceReview.manifest.map((manifest) => {
   const items = ensureImportedDependencies(
     recipe.recipe_id,
     recipe.recipe_name,
-    (recipe.decisions || []).map((decision) => decisionItem(recipe.recipe_name, decision))
+    (recipe.decisions || []).map((decision) => decisionItem(recipe.recipe_id, recipe.recipe_name, decision))
   );
   return {
     recipe_id: recipe.recipe_id,

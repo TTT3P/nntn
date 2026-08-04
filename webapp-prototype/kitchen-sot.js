@@ -108,7 +108,13 @@
       if (!recipe) return null;
       const item = (recipe.items || []).find((entry) => entry.line_key === lineKey);
       if (!item) return clone(recipe);
-      item.candidate_text = String(candidateText ?? "").trim() || null;
+      const nextCandidate = String(candidateText ?? "").trim() || null;
+      if (nextCandidate === (String(item.candidate_text ?? "").trim() || null)) {
+        const nextNote = String(decisionNote ?? "").trim() || null;
+        if (nextNote) item.decision_note = nextNote;
+        return clone(recipe);
+      }
+      item.candidate_text = nextCandidate;
       item.decision_note = String(decisionNote ?? "").trim() || null;
       item.decision_status = item.candidate_text ? "manual_review" : "needs_review";
       item.selected_source = item.candidate_text ? "manual_review" : null;
@@ -119,7 +125,9 @@
     function updateMethodCandidate(recipeId, methodText, decisionNote) {
       const recipe = getRecipeInternal(recipeId);
       if (!recipe) return null;
-      recipe.method_candidate_text = String(methodText ?? "").trim() || null;
+      const nextMethod = String(methodText ?? "").trim() || null;
+      if (nextMethod === (String(recipe.method_candidate_text ?? "").trim() || null)) return clone(recipe);
+      recipe.method_candidate_text = nextMethod;
       recipe.method_decision_note = String(decisionNote ?? "").trim() || null;
       recipe.method_selected_source = recipe.method_candidate_text ? "manual_review" : null;
       recipe.review_state = "draft_confirmed";

@@ -80,6 +80,44 @@ test("editing a spoon value never creates normalized grams", () => {
   assert.equal(JSON.stringify(updated).includes("normalized_grams"), false);
 });
 
+test("saving an unchanged candidate preserves its source decision", () => {
+  const store = createKitchenSotStore(kitchenData);
+  const before = store.getRecipe(159).items.find((item) => item.item_name === "เนื้อพิคานย่า");
+  const updated = store.updateItemCandidate(159, before.line_key, before.candidate_text, "แก้ไขใน Prototype v2");
+  const after = updated.items.find((item) => item.line_key === before.line_key);
+
+  assert.equal(before.decision_status, "needs_review");
+  assert.equal(after.decision_status, "needs_review");
+  assert.equal(after.selected_source, before.selected_source);
+});
+
+test("saving an unchanged method preserves its source", () => {
+  const store = createKitchenSotStore(kitchenData);
+  const before = store.getRecipe(157);
+  const after = store.updateMethodCandidate(157, before.method_candidate_text, "แก้ไขใน Prototype v2");
+
+  assert.equal(before.method_selected_source, "docx");
+  assert.equal(after.method_selected_source, "docx");
+  assert.equal(after.method_decision_note, before.method_decision_note);
+});
+
+test("ยากินิกุ uses one prepared batch of ผัดผัก from the DOCX", () => {
+  const yakiniku = kitchenData.recipes.find((recipe) => recipe.recipe_id === 159);
+  const vegetables = yakiniku.items.find((item) => item.component_recipe_id === 157);
+
+  assert.equal(vegetables.candidate_text, "1 ชุดตามสูตร");
+  assert.equal(vegetables.selected_source, "docx");
+  assert.equal(vegetables.decision_status, "confirmed_from_docx");
+});
+
+test("ยากินิกุ keeps only the unresolved seafood-sauce placement question", () => {
+  const evaluation = createKitchenSotStore(kitchenData).evaluateRecipe(159);
+  const messages = evaluation.blockers.map((blocker) => blocker.message).join("\n");
+
+  assert.match(messages, /น้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟตรงไหน/);
+  assert.doesNotMatch(messages, /ผัดผักนับเป็น 1 ชุดหรือ 53 กรัม/);
+});
+
 test("a DOCX-only section stays a named blocked candidate recipe", () => {
   const sourceOnly = structuredClone(kitchenData);
   sourceOnly.recipes.push({

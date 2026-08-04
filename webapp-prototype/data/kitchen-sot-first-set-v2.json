@@ -1019,10 +1019,10 @@
             "v2": "53 g",
             "handwriting": "ไม่มีการแก้"
           },
-          "candidate_text": null,
-          "selected_source": null,
-          "decision_status": "needs_review",
-          "decision_note": null
+          "candidate_text": "1 ชุดตามสูตร",
+          "selected_source": "docx",
+          "decision_status": "confirmed_from_docx",
+          "decision_note": "DOCX ระบุให้ทำผัดผัก 1 ชุดตามสูตรก่อนนำไปจัดเสิร์ฟ"
         },
         {
           "line_key": "ข้าวหน้าเนื้อยากินิกุ:น้ำจิ้มซีฟู้ด",
@@ -1081,7 +1081,7 @@
       "blockers": [
         {
           "code": "unresolved_source_conflict",
-          "message": "น้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟตรงไหน และผัดผักนับเป็น 1 ชุดหรือ 53 กรัม"
+          "message": "น้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟตรงไหน"
         }
       ]
     },
