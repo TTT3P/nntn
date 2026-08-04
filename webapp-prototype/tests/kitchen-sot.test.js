@@ -89,14 +89,14 @@ test("editing a spoon value never creates normalized grams", () => {
   assert.equal(JSON.stringify(updated).includes("normalized_grams"), false);
 });
 
-test("saving an unchanged candidate preserves its source decision", () => {
+test("saving an unchanged owner-confirmed candidate preserves its source decision", () => {
   const store = createKitchenSotStore(kitchenData);
   const before = store.getRecipe(2).items.find((item) => item.item_name === "ซอสลับสำหรับซุป V3");
   const updated = store.updateItemCandidate(2, before.line_key, before.candidate_text, "แก้ไขใน Prototype v2");
   const after = updated.items.find((item) => item.line_key === before.line_key);
 
-  assert.equal(before.decision_status, "needs_review");
-  assert.equal(after.decision_status, "needs_review");
+  assert.equal(before.decision_status, "confirmed_by_owner");
+  assert.equal(after.decision_status, "confirmed_by_owner");
   assert.equal(after.selected_source, before.selected_source);
   assert.equal(after.decision_note, before.decision_note);
 });
@@ -108,7 +108,7 @@ test("owner can confirm an unchanged kitchen quantity without converting it", ()
   const after = updated.items.find((item) => item.line_key === before.line_key);
   const messages = store.evaluateRecipe(2).blockers.map((blocker) => blocker.message).join("\n");
 
-  assert.equal(after.candidate_text, "1400 (DOCX V3 ไม่ระบุหน่วย)");
+  assert.equal(after.candidate_text, "1400 ml");
   assert.equal(after.decision_status, "confirmed_by_owner");
   assert.equal(after.selected_source, "owner_confirmation");
   assert.equal(after.decision_note, "ยืนยันเทียบกับครัวจริง");
@@ -249,11 +249,13 @@ test("second seasoning keeps V1 as comparison evidence under the newer V3 candid
   assert.equal(sauce.item_kind, "prepared_recipe");
   assert.equal(sauce.component_recipe_id, 160);
   assert.equal(sauce.source_values.v1, "250 ml");
-  assert.equal(sauce.candidate_text, "150 (DOCX V3 ไม่ระบุหน่วย)");
-  assert.equal(sauce.decision_status, "needs_review");
+  assert.equal(sauce.candidate_text, "150 ml");
+  assert.equal(sauce.decision_status, "confirmed_by_owner");
   assert.equal(seasoning.items.some((item) => item.item_name === "สูตรทั้งชุด"), false);
   assert.equal(tree.children[0].recipe.recipe_name, "ซอสลับสำหรับซุป V3");
-  assert.match(seasoning.method_candidate_text, /ปั่น.*รวมกัน/);
+  assert.equal(seasoning.method_candidate_text, null);
+  assert.equal(seasoning.method_selected_source, null);
+  assert.match(seasoning.operational_notes.join("\n"), /ปั่น.*รวมกัน/);
 });
 
 test("noodle soup V3 keeps the owner water and pot scope without meat-stage instructions", () => {
@@ -280,26 +282,30 @@ test("noodle soup V3 keeps the owner water and pot scope without meat-stage inst
   ]);
 });
 
-test("noodle soup V3 preserves missing units instead of inventing grams or milliliters", () => {
+test("noodle soup V3 uses the owner-confirmed grams and milliliters without conversion", () => {
   const store = createKitchenSotStore(kitchenData);
   const soup = store.getRecipe(2);
 
   assert.deepEqual(soup.items.slice(0, 12).map((item) => [item.item_name, item.candidate_text]), [
     ["น้ำเปล่า", "ประมาณ 50 ลิตร"],
-    ["ซอสลับสำหรับซุป V3", "1400 (DOCX V3 ไม่ระบุหน่วย)"],
-    ["น้ำตาลมะพร้าว", "350 (DOCX V3 ไม่ระบุหน่วย)"],
-    ["น้ำตาลกรวด", "250 (DOCX V3 ไม่ระบุหน่วย)"],
-    ["รสดีก๋วยเตี๋ยวเข้มข้น", "500 (DOCX V3 ไม่ระบุหน่วย)"],
-    ["รสดี ผงปรุงรสเนื้อ", "100 (DOCX V3 ไม่ระบุหน่วย)"],
-    ["ซีอิ๊วดำ", "170 (DOCX V3 ไม่ระบุหน่วย)"],
+    ["ซอสลับสำหรับซุป V3", "1400 ml"],
+    ["น้ำตาลมะพร้าว", "350 กรัม"],
+    ["น้ำตาลกรวด", "250 กรัม"],
+    ["รสดีก๋วยเตี๋ยวเข้มข้น", "500 กรัม"],
+    ["รสดี ผงปรุงรสเนื้อ", "100 กรัม"],
+    ["ซีอิ๊วดำ", "170 ml"],
     ["กระเทียมดอง", "1 ถ้วย"],
-    ["เกลือ", "10 (DOCX V3 ไม่ระบุหน่วย)"],
+    ["เกลือ", "10 กรัม"],
     ["มะกรูด", "4 ลูก"],
     ["ใบเตย", "10 ใบ"],
     ["หัวไชเท้า", "2 หัว"]
   ]);
   assert.equal(soup.items.find((item) => item.item_name === "ชุดเครื่องเทศสำหรับซุป V3").candidate_text, null);
   assert.equal(soup.items.find((item) => item.item_name === "ชุดปรุงรอบ 2 สำหรับซุป V3").candidate_text, null);
+  assert.ok(soup.items.slice(1, 7).every((item) => item.decision_status === "confirmed_by_owner"));
+  assert.equal(soup.items.find((item) => item.item_name === "เกลือ").decision_status, "confirmed_by_owner");
+  assert.equal(JSON.stringify(soup.items).includes("DOCX V3 ไม่ระบุหน่วย"), false);
+  assert.doesNotMatch(store.evaluateRecipe(2).blockers.map((blocker) => blocker.message).join("\n"), /ไม่ระบุหน่วย/);
 });
 
 test("noodle soup V3 updates all three prepared component formulas", () => {
@@ -310,21 +316,22 @@ test("noodle soup V3 updates all three prepared component formulas", () => {
 
   assert.equal(sauce.recipe_name, "ซอสลับสำหรับซุป V3");
   assert.deepEqual(sauce.items.map((item) => [item.item_name, item.candidate_text]), [
-    ["โชยุ", "2100 (DOCX V3 ไม่ระบุหน่วย)"],
-    ["ซอสฝาเขียว", "1000 (DOCX V3 ไม่ระบุหน่วย)"],
-    ["ซีอิ๊วขาว", "1000 (DOCX V3 ไม่ระบุหน่วย)"],
+    ["โชยุ", "2100 ml"],
+    ["ซอสฝาเขียว", "1000 ml"],
+    ["ซีอิ๊วขาว", "1000 ml"],
     ["ซอสหอยนางรม", "400 ml"]
   ]);
-  assert.equal(sauce.items.find((item) => item.item_name === "ซอสหอยนางรม").decision_status, "confirmed_by_owner");
+  assert.ok(sauce.items.every((item) => item.decision_status === "confirmed_by_owner"));
 
   assert.equal(spices.recipe_name, "ชุดเครื่องเทศสำหรับซุป V3");
   assert.equal(spices.items.length, 11);
   assert.deepEqual(spices.items.map((item) => item.candidate_text), [
-    "20 (DOCX V3 ไม่ระบุหน่วย)", "20 (DOCX V3 ไม่ระบุหน่วย)", "20 (DOCX V3 ไม่ระบุหน่วย)",
-    "100 (DOCX V3 ไม่ระบุหน่วย)", "100 (DOCX V3 ไม่ระบุหน่วย)", "100 (DOCX V3 ไม่ระบุหน่วย)",
-    "7 (DOCX V3 ไม่ระบุหน่วย)", "7 (DOCX V3 ไม่ระบุหน่วย)", "50 (DOCX V3 ไม่ระบุหน่วย)",
-    "15 (DOCX V3 ไม่ระบุหน่วย)", "3 (DOCX V3 ไม่ระบุหน่วย)"
+    "20 กรัม", "20 กรัม", "20 กรัม",
+    "100 กรัม", "100 กรัม", "100 กรัม",
+    "7 กรัม", "7 กรัม", "50 กรัม",
+    "15 กรัม", "3 กรัม"
   ]);
+  assert.ok(spices.items.every((item) => item.decision_status === "confirmed_by_owner"));
 
   assert.equal(roundTwo.recipe_name, "ชุดปรุงรอบ 2 สำหรับซุป V3");
   assert.deepEqual(roundTwo.items.slice(-3).map((item) => [item.item_name, item.candidate_text]), [
@@ -332,7 +339,18 @@ test("noodle soup V3 updates all three prepared component formulas", () => {
     ["ใบเตย", "3 ใบ"],
     ["ข่า", "2 แว่น"]
   ]);
-  assert.match(roundTwo.method_candidate_text, /ปั่น.*ม้ามตุ๋น.*ใบเตย.*ข่า.*รวมกัน/);
+  assert.deepEqual(roundTwo.items.slice(0, 5).map((item) => item.candidate_text), [
+    "20 ml", "150 ml", "100 กรัม", "70 กรัม", "5 กรัม"
+  ]);
+  assert.ok(roundTwo.items.slice(0, 5).every((item) => item.decision_status === "confirmed_by_owner"));
+  assert.equal(roundTwo.method_candidate_text, null);
+  assert.equal(roundTwo.method_selected_source, null);
+  assert.match(roundTwo.operational_notes.join("\n"), /ม้ามตุ๋น.*ใบเตย.*ข่า.*ปั่นรวมกัน/);
+
+  for (const recipe of [sauce, spices, roundTwo]) {
+    assert.equal(JSON.stringify(recipe.items).includes("DOCX V3 ไม่ระบุหน่วย"), false);
+    assert.doesNotMatch(store.evaluateRecipe(recipe.recipe_id).blockers.map((blocker) => blocker.message).join("\n"), /ไม่ระบุหน่วย/);
+  }
 });
 
 test("a DOCX-only section stays a named blocked candidate recipe", () => {

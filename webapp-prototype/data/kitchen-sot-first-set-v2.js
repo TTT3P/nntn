@@ -319,7 +319,8 @@ window.NNTNKitchenSotFirstSetV2 = {
         "DOCX: true-originals/_inbox/ต้นฉบับ ก๋วยเตี๋ยว/เครื่องเทศ+เครื่องปรุง-ห้ามแก้ไข.docx",
         "V2: น้ำซุป",
         "DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx",
-        "Owner confirmation: 2026-08-04 — น้ำเปล่าประมาณ 50 ลิตร ใช้หม้อเบอร์ 70 และสูตรนี้ไม่รวมขั้นตอนลงเนื้อ"
+        "Owner confirmation: 2026-08-04 — น้ำเปล่าประมาณ 50 ลิตร ใช้หม้อเบอร์ 70 และสูตรนี้ไม่รวมขั้นตอนลงเนื้อ",
+        "Owner confirmation: 2026-08-04 — ซอสและซีอิ๊วใช้ ml; น้ำตาล ผงปรุงรส และเกลือใช้กรัม; ไม่ได้แปลงตัวเลขจาก V1/V2"
       ],
       "source_section_mappings": [
         {
@@ -375,12 +376,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "ซอสลับ (v2) 1500 ml",
             "docx": "ซอสลับ 1400 (ไม่ระบุหน่วย)",
             "v2": "ซอสลับ (v2) 1500 ml",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "1400 ml"
           },
-          "candidate_text": "1400 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "1400 ml",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "น้ำซุปก๋วยเตี๋ยว V3:น้ำตาลมะพร้าว",
@@ -391,12 +393,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "350 g",
             "docx": "น้ำตาลมะพร้าว 350 (ไม่ระบุหน่วย)",
             "v2": "350 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "350 กรัม"
           },
-          "candidate_text": "350 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "350 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "น้ำซุปก๋วยเตี๋ยว V3:น้ำตาลกรวด",
@@ -407,12 +410,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "250 g",
             "docx": "น้ำตาลกรวด 250 (ไม่ระบุหน่วย)",
             "v2": "250 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "250 กรัม"
           },
-          "candidate_text": "250 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "250 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "น้ำซุปก๋วยเตี๋ยว V3:รสดีก๋วยเตี๋ยวเข้มข้น",
@@ -423,12 +427,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "500 g",
             "docx": "รสดีก๋วยเตี๋ยวเข้มข้น 500 (ไม่ระบุหน่วย)",
             "v2": "500 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "500 กรัม"
           },
-          "candidate_text": "500 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "500 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "น้ำซุปก๋วยเตี๋ยว V3:รสดี ผงปรุงรสเนื้อ",
@@ -439,12 +444,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "100 g",
             "docx": "รสดีเนื้อ 100 (ไม่ระบุหน่วย)",
             "v2": "100 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "100 กรัม"
           },
-          "candidate_text": "100 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "100 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "น้ำซุปก๋วยเตี๋ยว V3:ซีอิ๊วดำ",
@@ -455,12 +461,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "150 g",
             "docx": "ซีอิ๊วดำ 170 (ไม่ระบุหน่วย)",
             "v2": "150 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "170 ml"
           },
-          "candidate_text": "170 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "170 ml",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "น้ำซุปก๋วยเตี๋ยว V3:กระเทียมดอง",
@@ -487,12 +494,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "10 g",
             "docx": "เกลือ 10 (ไม่ระบุหน่วย)",
             "v2": "10 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "10 กรัม"
           },
-          "candidate_text": "10 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "10 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "น้ำซุปก๋วยเตี๋ยว V3:มะกรูด",
@@ -589,10 +597,6 @@ window.NNTNKitchenSotFirstSetV2 = {
           "message": "DOCX V3 ยังไม่มีลำดับวิธีปรุงน้ำซุป และขอบเขตสูตรนี้ไม่รวมขั้นตอนลงเนื้อ"
         },
         {
-          "code": "missing_unit",
-          "message": "ตัวเลขหลายรายการใน DOCX V3 ไม่ระบุหน่วย จึงคงข้อความต้นฉบับไว้และห้ามเดาเป็นกรัมหรือมิลลิลิตร"
-        },
-        {
           "code": "missing_quantity",
           "message": "ยังไม่ระบุจำนวนชุดเครื่องเทศและชุดปรุงรอบ 2 ที่ใช้ต่อหม้อเบอร์ 70"
         }
@@ -613,7 +617,7 @@ window.NNTNKitchenSotFirstSetV2 = {
         "DOCX: สูตรก๋วยเตี๋ยววัดหนัง-ห้ามแก้ไข.docx / ผสมซอสปรุงน้ำ",
         "V2: ซอสลับ (v2)",
         "DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx / สูตรผสมซอสลับ",
-        "Owner confirmation: 2026-08-04 — ซอสหอยนางรม 400 ml"
+        "Owner confirmation: 2026-08-04 — โชยุ ซอสฝาเขียว ซีอิ๊วขาว และซอสหอยนางรมใช้หน่วย ml"
       ],
       "source_section_mappings": [
         {
@@ -637,12 +641,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "1100 g",
             "docx": "โชยุ 2100 (ไม่ระบุหน่วย)",
             "v2": "1100 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "2100 ml"
           },
-          "candidate_text": "2100 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "2100 ml",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ซอสลับสำหรับซุป V3:ซอสฝาเขียว",
@@ -653,12 +658,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "1000 g",
             "docx": "ฝาเขียว 1000 (ไม่ระบุหน่วย)",
             "v2": "1000 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "1000 ml"
           },
-          "candidate_text": "1000 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "1000 ml",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ซอสลับสำหรับซุป V3:ซีอิ๊วขาว",
@@ -669,12 +675,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "1000 g",
             "docx": "ซีอิ๊วขาว 1000 (ไม่ระบุหน่วย)",
             "v2": "1000 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "1000 ml"
           },
-          "candidate_text": "1000 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "1000 ml",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ซอสลับสำหรับซุป V3:ซอสหอยนางรม",
@@ -703,10 +710,6 @@ window.NNTNKitchenSotFirstSetV2 = {
         {
           "code": "missing_method",
           "message": "ยังไม่มีวิธีผสมซอสลับ V3"
-        },
-        {
-          "code": "missing_unit",
-          "message": "DOCX V3 ไม่ระบุหน่วยของโชยุ ซอสฝาเขียว และซีอิ๊วขาว"
         }
       ]
     },
@@ -723,7 +726,8 @@ window.NNTNKitchenSotFirstSetV2 = {
       "source_locators": [
         "DOCX: เครื่องเทศ+เครื่องปรุง-ห้ามแก้ไข.docx",
         "V2: กระปุกเครื่องเทศ [70g]",
-        "DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx / ชุดเครื่องเทศ"
+        "DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx / ชุดเครื่องเทศ",
+        "Owner confirmation: 2026-08-04 — ตัวเลขเครื่องเทศทั้ง 11 รายการใช้หน่วยกรัม"
       ],
       "source_section_mappings": [
         {
@@ -747,12 +751,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "20 g",
             "docx": "อบเชย 20 (ไม่ระบุหน่วย)",
             "v2": "20 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "20 กรัม"
           },
-          "candidate_text": "20 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "20 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ชุดเครื่องเทศสำหรับซุป V3:โป๊ยกั๊ก",
@@ -763,12 +768,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "20 g",
             "docx": "โป๊ยกั๊ก 20 (ไม่ระบุหน่วย)",
             "v2": "20 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "20 กรัม"
           },
-          "candidate_text": "20 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "20 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ชุดเครื่องเทศสำหรับซุป V3:พริกไทยดำ",
@@ -779,12 +785,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "20 g",
             "docx": "พริกไทยดำ 20 (ไม่ระบุหน่วย)",
             "v2": "20 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "20 กรัม"
           },
-          "candidate_text": "20 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "20 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ชุดเครื่องเทศสำหรับซุป V3:กระเทียมจีน",
@@ -795,12 +802,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "100 g",
             "docx": "กระเทียมจีน 100 (ไม่ระบุหน่วย)",
             "v2": "100 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "100 กรัม"
           },
-          "candidate_text": "100 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "100 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ชุดเครื่องเทศสำหรับซุป V3:รากผักชี",
@@ -811,12 +819,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "100 g",
             "docx": "รากผักชี 100 (ไม่ระบุหน่วย)",
             "v2": "100 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "100 กรัม"
           },
-          "candidate_text": "100 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "100 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ชุดเครื่องเทศสำหรับซุป V3:ข่าเหลือง",
@@ -827,12 +836,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "70 g",
             "docx": "ข่าเหลือง 100 (ไม่ระบุหน่วย)",
             "v2": "70 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "100 กรัม"
           },
-          "candidate_text": "100 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "100 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ชุดเครื่องเทศสำหรับซุป V3:ซวงเจีย",
@@ -843,12 +853,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "7 g · V1 ไม่พบชื่อวัตถุดิบ",
             "docx": "ซวงเจีย 7 (ไม่ระบุหน่วย)",
             "v2": "7 g · V1 ไม่พบชื่อวัตถุดิบ",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "7 กรัม"
           },
-          "candidate_text": "7 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "7 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ชุดเครื่องเทศสำหรับซุป V3:ลูกเฉาก๋วย",
@@ -859,12 +870,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "7 g",
             "docx": "ลูกเฉาก๋วย 7 (ไม่ระบุหน่วย)",
             "v2": "7 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "7 กรัม"
           },
-          "candidate_text": "7 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "7 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ชุดเครื่องเทศสำหรับซุป V3:ฮ่วยซัว",
@@ -875,12 +887,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "50 g",
             "docx": "ฮ่วยซัว 50 (ไม่ระบุหน่วย)",
             "v2": "50 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "50 กรัม"
           },
-          "candidate_text": "50 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "50 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ชุดเครื่องเทศสำหรับซุป V3:เก๋ากี้",
@@ -891,12 +904,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "15 g",
             "docx": "เก๋ากี้ 15 (ไม่ระบุหน่วย)",
             "v2": "15 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "15 กรัม"
           },
-          "candidate_text": "15 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "15 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ชุดเครื่องเทศสำหรับซุป V3:หญ้าหอม",
@@ -907,12 +921,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "3 g",
             "docx": "หญ้าหอม 3 (ไม่ระบุหน่วย)",
             "v2": "3 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "3 กรัม"
           },
-          "candidate_text": "3 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "3 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         }
       ],
       "method_candidate_text": null,
@@ -924,10 +939,6 @@ window.NNTNKitchenSotFirstSetV2 = {
         {
           "code": "missing_method",
           "message": "ยังไม่มีวิธีเตรียมชุดเครื่องเทศ V3"
-        },
-        {
-          "code": "missing_unit",
-          "message": "DOCX V3 ไม่ระบุหน่วยของเครื่องเทศทั้ง 11 รายการ"
         }
       ]
     },
@@ -943,7 +954,8 @@ window.NNTNKitchenSotFirstSetV2 = {
       "review_state": "reviewed_candidate",
       "source_locators": [
         "V2: เครื่องปรุงชุดสอง",
-        "DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx / ชุดปรุงรอบ 2"
+        "DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx / ชุดปรุงรอบ 2",
+        "Owner confirmation: 2026-08-04 — คิคโคแมนและซอสลับใช้ ml; น้ำตาลกรวด รสดีเนื้อ และเกลือใช้กรัม; ลำดับวิธีทำรอเติมภายหลัง"
       ],
       "source_section_mappings": [
         {
@@ -967,12 +979,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "20 g",
             "docx": "Kikoman 20 (ไม่ระบุหน่วย)",
             "v2": "20 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "20 ml"
           },
-          "candidate_text": "20 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "20 ml",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ชุดปรุงรอบ 2 สำหรับซุป V3:ซอสลับสำหรับซุป V3",
@@ -983,12 +996,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "250 ml",
             "docx": "ซอสลับ 150 (ไม่ระบุหน่วย)",
             "v2": "250 ml",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "150 ml"
           },
-          "candidate_text": "150 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "150 ml",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ชุดปรุงรอบ 2 สำหรับซุป V3:น้ำตาลกรวด",
@@ -999,12 +1013,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "120 g",
             "docx": "น้ำตาลกรวด 100 (ไม่ระบุหน่วย)",
             "v2": "120 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "100 กรัม"
           },
-          "candidate_text": "100 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "100 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ชุดปรุงรอบ 2 สำหรับซุป V3:รสดี ผงปรุงรสเนื้อ",
@@ -1015,12 +1030,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "50 g",
             "docx": "รสดีเนื้อ 70 (ไม่ระบุหน่วย)",
             "v2": "50 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "70 กรัม"
           },
-          "candidate_text": "70 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "70 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ชุดปรุงรอบ 2 สำหรับซุป V3:เกลือ",
@@ -1031,12 +1047,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v1": "3 g",
             "docx": "เกลือ 5 (ไม่ระบุหน่วย)",
             "v2": "3 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "5 กรัม"
           },
-          "candidate_text": "5 (DOCX V3 ไม่ระบุหน่วย)",
-          "selected_source": "docx",
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "5 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "ชุดปรุงรอบ 2 สำหรับซุป V3:ม้ามตุ๋น",
@@ -1087,19 +1104,17 @@ window.NNTNKitchenSotFirstSetV2 = {
           "decision_note": "ใช้ค่าตาม DOCX V3 โดยไม่แปลงหน่วย"
         }
       ],
-      "method_candidate_text": "1. ปั่นม้ามตุ๋น 50 กรัม ใบเตย 3 ใบ และข่า 2 แว่นรวมกัน",
-      "method_selected_source": "docx",
-      "method_decision_note": "DOCX V3 ระบุเพียงให้ปั่นม้ามตุ๋น ใบเตย และข่ารวมกัน; ยังไม่มีลำดับการใส่เครื่องปรุงรอบ 2 ลงหม้อ",
+      "method_candidate_text": null,
+      "method_selected_source": null,
+      "method_decision_note": "คงข้อความ ‘ปั่นรวมกัน’ เป็นหมายเหตุจากต้นฉบับเท่านั้น; ลำดับวิธีทำชุดปรุงรอบ 2 เว้นว่างไว้รอเจ้าของเติมภายหลัง",
       "yield_candidate_text": null,
-      "operational_notes": [],
+      "operational_notes": [
+        "ต้นฉบับ V3 ระบุ: ม้ามตุ๋น 50 กรัม ใบเตย 3 ใบ และข่า 2 แว่น ปั่นรวมกัน"
+      ],
       "blockers": [
         {
           "code": "missing_method",
-          "message": "ยังไม่มีลำดับการใส่ชุดปรุงรอบ 2 ลงหม้อ"
-        },
-        {
-          "code": "missing_unit",
-          "message": "DOCX V3 ไม่ระบุหน่วยของคิคโคแมน ซอสลับ น้ำตาลกรวด รสดีเนื้อ และเกลือ"
+          "message": "ลำดับวิธีทำชุดปรุงรอบ 2 เว้นว่างไว้รอเจ้าของเติมภายหลัง"
         }
       ]
     },
