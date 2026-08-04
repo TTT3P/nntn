@@ -23,7 +23,10 @@ const reviewStateOverrides = new Map([
 
 const sourceLocatorAdditions = new Map([
   [165, [
-    "Owner confirmation: 2026-08-04 — ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ ไม่ใช่ข้าวญี่ปุ่น; น้ำหนักข้าวหอมมะลิหุงสุกต่อจานยังรอยืนยัน"
+    "Owner confirmation: 2026-08-04 — ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ ไม่ใช่ข้าวญี่ปุ่น; เมนูข้าวตักข้าวหุงสุก 180 กรัมต่อจาน"
+  ]],
+  [37, [
+    "Owner confirmation: 2026-08-04 — เมนูข้าวตักข้าวหุงสุก 180 กรัมต่อจาน; 72 กรัมคงไว้เฉพาะฐานต้นทุนข้าวสารดิบ"
   ]],
   [2, [
     "DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx",
@@ -102,12 +105,24 @@ const candidateOverrides = new Map([
   ["165:ข้าวญี่ปุ่น", {
     itemName: "ข้าวหอมมะลิหุงสุก",
     componentRecipeId: "candidate:prepared:ข้าวหอมมะลิหุงสุก",
-    candidateText: null,
+    candidateText: "180 กรัม",
     selectedSource: "owner_confirmation",
-    decisionStatus: "needs_review",
-    decisionNote: "เจ้าของยืนยันชนิดข้าวเป็นข้าวหอมมะลิ; ยังไม่ยืนยันน้ำหนักข้าวหอมมะลิหุงสุกต่อจาน",
-    ownerConfirmation: "ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ",
-    costBasisText: "ข้าวหอมมะลิดิบ 72 กรัม"
+    decisionStatus: "confirmed_by_owner",
+    decisionNote: "เจ้าของยืนยันวันที่ 2026-08-04 ว่าเมนูข้าวตักข้าวหุงสุก 180 กรัมต่อจาน",
+    ownerConfirmation: "ข้าวหอมมะลิหุงสุก 180 กรัมต่อจาน",
+    costBasisText: "ข้าวหอมมะลิดิบ 72 กรัม",
+    servingNote: "ตักข้าวหุงสุก 180 กรัม"
+  }],
+  ["37:ข้าวหอมมะลิ", {
+    itemName: "ข้าวหอมมะลิหุงสุก",
+    componentRecipeId: "candidate:prepared:ข้าวหอมมะลิหุงสุก",
+    candidateText: "180 กรัม",
+    selectedSource: "owner_confirmation",
+    decisionStatus: "confirmed_by_owner",
+    decisionNote: "เจ้าของยืนยันวันที่ 2026-08-04 ว่าเมนูข้าวตักข้าวหุงสุก 180 กรัมต่อจาน",
+    ownerConfirmation: "ข้าวหอมมะลิหุงสุก 180 กรัมต่อจาน",
+    costBasisText: "ข้าวหอมมะลิดิบ 72 กรัม",
+    servingNote: "ตักข้าวหุงสุก 180 กรัม"
   }],
   ["159:ผัดผัก", {
     candidateText: "1 ชุดตามสูตร",
@@ -564,11 +579,11 @@ recipes.push({
   recipe_version_id: "kitchen-v2-candidate-cooked-jasmine-rice-draft-001",
   recipe_name: "ข้าวหอมมะลิหุงสุก",
   recipe_type: "prepared_recipe",
-  parent_recipe_ids: [165],
+  parent_recipe_ids: [165, 37],
   review_state: "missing_source",
   source_locators: [
     "Owner confirmation: 2026-08-04 — ข้าว 8 ถ้วย (350 ml) + น้ำ 2000 ml; ซาว 2 รอบโดยใช้น้ำให้ท่วมข้าว",
-    "Owner confirmation: 2026-08-04 — ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ; น้ำหนักข้าวหุงสุกต่อจานยังรอยืนยัน"
+    "Owner confirmation: 2026-08-04 — ข้าวหน้าเนื้อตุ๋นและข้าวขยำเนื้อแดดเดียวใช้ข้าวหอมมะลิหุงสุก 180 กรัมต่อจาน"
   ],
   items: [
     {
@@ -601,7 +616,11 @@ recipes.push({
   method_selected_source: "owner_confirmation",
   method_decision_note: "เรียบเรียงจากคำบอกของครัวเท่าที่ได้รับ โดยไม่เติมเวลา โปรแกรมหม้อ หรือวิธีพักข้าว",
   yield_candidate_text: null,
-  operational_notes: ["สูตรแบตช์: ข้าวหอมมะลิ 8 ถ้วย (350 ml) + น้ำ 2000 ml"],
+  operational_notes: [
+    "สูตรแบตช์: ข้าวหอมมะลิ 8 ถ้วย (350 ml) + น้ำ 2000 ml",
+    "เมนูหน้าครัวตักข้าวหุงสุก 180 กรัมต่อจาน",
+    "ฐานต้นทุนต่อจาน: ข้าวหอมมะลิดิบ 72 กรัม"
+  ],
   blockers: [{
     code: "missing_source",
     message: "ยังขาดข้อมูล: โปรแกรมหม้อ เวลา การพักข้าว และน้ำหนักข้าวสุกต่อแบตช์"

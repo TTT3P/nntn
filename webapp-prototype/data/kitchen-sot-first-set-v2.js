@@ -21,7 +21,7 @@ window.NNTNKitchenSotFirstSetV2 = {
         "DOCX: true-originals/_inbox/ข้าวหน้าเนื้อตุ๋น.docx",
         "V2: ข้าวหน้าเนื้อตุ๋น",
         "ลายมือ: หน้า 1",
-        "Owner confirmation: 2026-08-04 — ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ ไม่ใช่ข้าวญี่ปุ่น; น้ำหนักข้าวหอมมะลิหุงสุกต่อจานยังรอยืนยัน"
+        "Owner confirmation: 2026-08-04 — ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ ไม่ใช่ข้าวญี่ปุ่น; เมนูข้าวตักข้าวหุงสุก 180 กรัมต่อจาน"
       ],
       "source_section_mappings": [],
       "items": [
@@ -51,12 +51,13 @@ window.NNTNKitchenSotFirstSetV2 = {
             "docx": "กล่าวถึงข้าว แต่ไม่ระบุปริมาณ",
             "v2": "72 g",
             "handwriting": "72 g",
-            "owner_confirmation": "ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ"
+            "owner_confirmation": "ข้าวหอมมะลิหุงสุก 180 กรัมต่อจาน"
           },
-          "candidate_text": null,
+          "candidate_text": "180 กรัม",
           "selected_source": "owner_confirmation",
-          "decision_status": "needs_review",
-          "decision_note": "เจ้าของยืนยันชนิดข้าวเป็นข้าวหอมมะลิ; ยังไม่ยืนยันน้ำหนักข้าวหอมมะลิหุงสุกต่อจาน",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันวันที่ 2026-08-04 ว่าเมนูข้าวตักข้าวหุงสุก 180 กรัมต่อจาน",
+          "serving_note": "ตักข้าวหุงสุก 180 กรัม",
           "cost_basis_text": "ข้าวหอมมะลิดิบ 72 กรัม"
         },
         {
@@ -1893,7 +1894,8 @@ window.NNTNKitchenSotFirstSetV2 = {
       "source_locators": [
         "DOCX: true-originals/_inbox/ข้าวขยำเนื้อแดดเดียว.docx",
         "V2: ข้าวขยำเนื้อแดดเดียว",
-        "ลายมือ: หน้า 9"
+        "ลายมือ: หน้า 9",
+        "Owner confirmation: 2026-08-04 — เมนูข้าวตักข้าวหุงสุก 180 กรัมต่อจาน; 72 กรัมคงไว้เฉพาะฐานต้นทุนข้าวสารดิบ"
       ],
       "source_section_mappings": [],
       "items": [
@@ -1915,19 +1917,22 @@ window.NNTNKitchenSotFirstSetV2 = {
         },
         {
           "line_key": "ข้าวขยำเนื้อแดดเดียว:ข้าวหอมมะลิ",
-          "item_name": "ข้าวหอมมะลิ",
-          "item_kind": "direct_ingredient",
-          "component_recipe_id": null,
+          "item_name": "ข้าวหอมมะลิหุงสุก",
+          "item_kind": "prepared_recipe",
+          "component_recipe_id": "candidate:prepared:ข้าวหอมมะลิหุงสุก",
           "source_values": {
             "v1": "72 g",
             "docx": "กล่าวถึงข้าว แต่ไม่ระบุปริมาณ",
             "v2": "72 g",
-            "handwriting": "72 g"
+            "handwriting": "72 g",
+            "owner_confirmation": "ข้าวหอมมะลิหุงสุก 180 กรัมต่อจาน"
           },
-          "candidate_text": "72 กรัม",
-          "selected_source": "matching_sources",
-          "decision_status": "confirmed",
-          "decision_note": null
+          "candidate_text": "180 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันวันที่ 2026-08-04 ว่าเมนูข้าวตักข้าวหุงสุก 180 กรัมต่อจาน",
+          "serving_note": "ตักข้าวหุงสุก 180 กรัม",
+          "cost_basis_text": "ข้าวหอมมะลิดิบ 72 กรัม"
         },
         {
           "line_key": "ข้าวขยำเนื้อแดดเดียว:หอมอินเดีย",
@@ -2580,12 +2585,13 @@ window.NNTNKitchenSotFirstSetV2 = {
       "recipe_name": "ข้าวหอมมะลิหุงสุก",
       "recipe_type": "prepared_recipe",
       "parent_recipe_ids": [
-        165
+        165,
+        37
       ],
       "review_state": "missing_source",
       "source_locators": [
         "Owner confirmation: 2026-08-04 — ข้าว 8 ถ้วย (350 ml) + น้ำ 2000 ml; ซาว 2 รอบโดยใช้น้ำให้ท่วมข้าว",
-        "Owner confirmation: 2026-08-04 — ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ; น้ำหนักข้าวหุงสุกต่อจานยังรอยืนยัน"
+        "Owner confirmation: 2026-08-04 — ข้าวหน้าเนื้อตุ๋นและข้าวขยำเนื้อแดดเดียวใช้ข้าวหอมมะลิหุงสุก 180 กรัมต่อจาน"
       ],
       "items": [
         {
@@ -2620,7 +2626,9 @@ window.NNTNKitchenSotFirstSetV2 = {
       "method_decision_note": "เรียบเรียงจากคำบอกของครัวเท่าที่ได้รับ โดยไม่เติมเวลา โปรแกรมหม้อ หรือวิธีพักข้าว",
       "yield_candidate_text": null,
       "operational_notes": [
-        "สูตรแบตช์: ข้าวหอมมะลิ 8 ถ้วย (350 ml) + น้ำ 2000 ml"
+        "สูตรแบตช์: ข้าวหอมมะลิ 8 ถ้วย (350 ml) + น้ำ 2000 ml",
+        "เมนูหน้าครัวตักข้าวหุงสุก 180 กรัมต่อจาน",
+        "ฐานต้นทุนต่อจาน: ข้าวหอมมะลิดิบ 72 กรัม"
       ],
       "blockers": [
         {

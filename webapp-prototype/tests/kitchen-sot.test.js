@@ -209,7 +209,7 @@ test("jasmine rice batch preserves the owner's cup and ml units verbatim", () =>
   const blockers = createKitchenSotStore(kitchenData).evaluateRecipe(165).blockers.map((blocker) => blocker.message).join("\n");
 
   assert.equal(jasmineRice.recipe_name, "ข้าวหอมมะลิหุงสุก");
-  assert.deepEqual(jasmineRice.parent_recipe_ids, [165]);
+  assert.deepEqual(jasmineRice.parent_recipe_ids, [165, 37]);
   assert.deepEqual(jasmineRice.items.map((item) => [item.item_name, item.candidate_text]), [
     ["ข้าวหอมมะลิดิบ", "8 ถ้วย (350 ml)"],
     ["น้ำ", "2000 ml"]
@@ -219,15 +219,34 @@ test("jasmine rice batch preserves the owner's cup and ml units verbatim", () =>
   assert.doesNotMatch(jasmineRice.method_candidate_text, /น้ำมันรำข้าว/);
   assert.equal(jasmineRice.yield_candidate_text, null);
   assert.equal(menuRice.item_name, "ข้าวหอมมะลิหุงสุก");
-  assert.equal(menuRice.candidate_text, null);
+  assert.equal(menuRice.candidate_text, "180 กรัม");
   assert.equal(menuRice.cost_basis_text, "ข้าวหอมมะลิดิบ 72 กรัม");
-  assert.equal(menuRice.source_values.owner_confirmation, "ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ");
-  assert.equal(menuRice.decision_status, "needs_review");
-  assert.match(blockers, /ข้าวหอมมะลิหุงสุก ยังไม่มีค่าหน้าครัวที่ยืนยัน/);
+  assert.equal(menuRice.source_values.owner_confirmation, "ข้าวหอมมะลิหุงสุก 180 กรัมต่อจาน");
+  assert.equal(menuRice.decision_status, "confirmed_by_owner");
+  assert.doesNotMatch(blockers, /ข้าวหอมมะลิหุงสุก.*ยังไม่มีค่าหน้าครัวที่ยืนยัน/);
 
   const treeNames = createKitchenSotStore(kitchenData).recipeTreeRows(165).map((row) => row.name);
   assert.ok(treeNames.includes("ข้าวหอมมะลิหุงสุก"));
   assert.equal(treeNames.includes("ข้าวญี่ปุ่นหุงสุก"), false);
+});
+
+test("every first-set rice menu serves 180 grams of cooked rice", () => {
+  const expected = new Map([
+    [165, ["candidate:prepared:ข้าวหอมมะลิหุงสุก", "ข้าวหอมมะลิดิบ 72 กรัม"]],
+    [159, ["candidate:prepared:ข้าวญี่ปุ่นหุงสุก", "ข้าวสารญี่ปุ่นดิบ 72 กรัม"]],
+    [37, ["candidate:prepared:ข้าวหอมมะลิหุงสุก", "ข้าวหอมมะลิดิบ 72 กรัม"]]
+  ]);
+
+  for (const [recipeId, [componentId, costBasis]] of expected) {
+    const recipe = kitchenData.recipes.find((entry) => entry.recipe_id === recipeId);
+    const rice = recipe.items.find((item) => item.component_recipe_id === componentId);
+
+    assert.ok(rice, `${recipe.recipe_name} ต้องเชื่อมสูตรข้าวหุงสุก`);
+    assert.equal(rice.candidate_text, "180 กรัม");
+    assert.equal(rice.cost_basis_text, costBasis);
+    assert.equal(rice.serving_note, "ตักข้าวหุงสุก 180 กรัม");
+    assert.equal(rice.decision_status, "confirmed_by_owner");
+  }
 });
 
 test("sun-dried beef exposes the seven V1/V2 marinade ingredients for kitchen review", () => {
