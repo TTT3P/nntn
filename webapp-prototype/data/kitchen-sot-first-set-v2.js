@@ -20,7 +20,8 @@ window.NNTNKitchenSotFirstSetV2 = {
       "source_locators": [
         "DOCX: true-originals/_inbox/ข้าวหน้าเนื้อตุ๋น.docx",
         "V2: ข้าวหน้าเนื้อตุ๋น",
-        "ลายมือ: หน้า 1"
+        "ลายมือ: หน้า 1",
+        "Owner confirmation: 2026-08-04 — ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ ไม่ใช่ข้าวญี่ปุ่น; น้ำหนักข้าวหอมมะลิหุงสุกต่อจานยังรอยืนยัน"
       ],
       "source_section_mappings": [],
       "items": [
@@ -42,21 +43,21 @@ window.NNTNKitchenSotFirstSetV2 = {
         },
         {
           "line_key": "ข้าวหน้าเนื้อตุ๋น:ข้าวญี่ปุ่น",
-          "item_name": "ข้าวญี่ปุ่นหุงสุก",
+          "item_name": "ข้าวหอมมะลิหุงสุก",
           "item_kind": "prepared_recipe",
-          "component_recipe_id": "candidate:prepared:ข้าวญี่ปุ่นหุงสุก",
+          "component_recipe_id": "candidate:prepared:ข้าวหอมมะลิหุงสุก",
           "source_values": {
             "v1": "72 g",
             "docx": "กล่าวถึงข้าว แต่ไม่ระบุปริมาณ",
             "v2": "72 g",
-            "handwriting": "72 g"
+            "handwriting": "72 g",
+            "owner_confirmation": "ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ"
           },
-          "candidate_text": "180 กรัม",
+          "candidate_text": null,
           "selected_source": "owner_confirmation",
-          "decision_status": "confirmed_by_owner",
-          "decision_note": "72 กรัมคือข้าวสารดิบ; เจ้าของเมนูยืนยันให้ตักข้าวหุงสุก 180 กรัมต่อที่",
-          "serving_note": "ตักข้าวหุงสุก 180 กรัม",
-          "cost_basis_text": "ข้าวสารญี่ปุ่นดิบ 72 กรัม"
+          "decision_status": "needs_review",
+          "decision_note": "เจ้าของยืนยันชนิดข้าวเป็นข้าวหอมมะลิ; ยังไม่ยืนยันน้ำหนักข้าวหอมมะลิหุงสุกต่อจาน",
+          "cost_basis_text": "ข้าวหอมมะลิดิบ 72 กรัม"
         },
         {
           "line_key": "ข้าวหน้าเนื้อตุ๋น:น้ำจิ้มซีฟู้ด",
@@ -2502,13 +2503,13 @@ window.NNTNKitchenSotFirstSetV2 = {
       "recipe_name": "ข้าวญี่ปุ่นหุงสุก",
       "recipe_type": "prepared_recipe",
       "parent_recipe_ids": [
-        165,
         159
       ],
       "review_state": "missing_source",
       "source_locators": [
         "V1 import note: 72g ดิบ → 180g สุก (×2.5)",
-        "Owner confirmation: 2026-08-04 — ข้าว 1500 ml + น้ำ 2100 ml + น้ำมันรำข้าว 1 ช้อนโต๊ะ; ซาว 2 รอบโดยใช้น้ำให้ท่วมข้าว"
+        "Owner confirmation: 2026-08-04 — ข้าว 1500 ml + น้ำ 2100 ml + น้ำมันรำข้าว 1 ช้อนโต๊ะ; ซาว 2 รอบโดยใช้น้ำให้ท่วมข้าว",
+        "Owner confirmation: 2026-08-04 — ใช้ข้าวญี่ปุ่นเฉพาะข้าวหน้าเนื้อกิวด้งและข้าวหน้าเนื้อยากินิกุ"
       ],
       "items": [
         {
@@ -2562,7 +2563,8 @@ window.NNTNKitchenSotFirstSetV2 = {
       "operational_notes": [
         "สูตรแบตช์: ข้าวสารญี่ปุ่นดิบ 1500 ml + น้ำ 2100 ml + น้ำมันรำข้าว 1 ช้อนโต๊ะ",
         "ฐานต้นทุนต่อที่: ข้าวสารญี่ปุ่นดิบ 72 กรัม",
-        "เมนูหน้าครัวตักข้าวหุงสุก 180 กรัมต่อที่"
+        "เมนูหน้าครัวตักข้าวหุงสุก 180 กรัมต่อที่",
+        "ใช้เฉพาะเมนูข้าวหน้าเนื้อกิวด้งและข้าวหน้าเนื้อยากินิกุ"
       ],
       "blockers": [
         {
@@ -2577,10 +2579,13 @@ window.NNTNKitchenSotFirstSetV2 = {
       "recipe_version_id": "kitchen-v2-candidate-cooked-jasmine-rice-draft-001",
       "recipe_name": "ข้าวหอมมะลิหุงสุก",
       "recipe_type": "prepared_recipe",
-      "parent_recipe_ids": [],
+      "parent_recipe_ids": [
+        165
+      ],
       "review_state": "missing_source",
       "source_locators": [
-        "Owner confirmation: 2026-08-04 — ข้าว 8 ถ้วย (350 ml) + น้ำ 2000 ml; ซาว 2 รอบโดยใช้น้ำให้ท่วมข้าว"
+        "Owner confirmation: 2026-08-04 — ข้าว 8 ถ้วย (350 ml) + น้ำ 2000 ml; ซาว 2 รอบโดยใช้น้ำให้ท่วมข้าว",
+        "Owner confirmation: 2026-08-04 — ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ; น้ำหนักข้าวหุงสุกต่อจานยังรอยืนยัน"
       ],
       "items": [
         {

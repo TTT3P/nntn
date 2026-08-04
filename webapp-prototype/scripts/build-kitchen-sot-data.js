@@ -22,6 +22,9 @@ const reviewStateOverrides = new Map([
 ]);
 
 const sourceLocatorAdditions = new Map([
+  [165, [
+    "Owner confirmation: 2026-08-04 — ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ ไม่ใช่ข้าวญี่ปุ่น; น้ำหนักข้าวหอมมะลิหุงสุกต่อจานยังรอยืนยัน"
+  ]],
   [2, [
     "DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx",
     "Owner confirmation: 2026-08-04 — น้ำเปล่าประมาณ 50 ลิตร ใช้หม้อเบอร์ 70 และสูตรนี้ไม่รวมขั้นตอนลงเนื้อ",
@@ -97,14 +100,14 @@ const methodOverrides = new Map([
 
 const candidateOverrides = new Map([
   ["165:ข้าวญี่ปุ่น", {
-    itemName: "ข้าวญี่ปุ่นหุงสุก",
-    componentRecipeId: "candidate:prepared:ข้าวญี่ปุ่นหุงสุก",
-    candidateText: "180 กรัม",
+    itemName: "ข้าวหอมมะลิหุงสุก",
+    componentRecipeId: "candidate:prepared:ข้าวหอมมะลิหุงสุก",
+    candidateText: null,
     selectedSource: "owner_confirmation",
-    decisionStatus: "confirmed_by_owner",
-    decisionNote: "72 กรัมคือข้าวสารดิบ; เจ้าของเมนูยืนยันให้ตักข้าวหุงสุก 180 กรัมต่อที่",
-    costBasisText: "ข้าวสารญี่ปุ่นดิบ 72 กรัม",
-    servingNote: "ตักข้าวหุงสุก 180 กรัม"
+    decisionStatus: "needs_review",
+    decisionNote: "เจ้าของยืนยันชนิดข้าวเป็นข้าวหอมมะลิ; ยังไม่ยืนยันน้ำหนักข้าวหอมมะลิหุงสุกต่อจาน",
+    ownerConfirmation: "ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ",
+    costBasisText: "ข้าวหอมมะลิดิบ 72 กรัม"
   }],
   ["159:ผัดผัก", {
     candidateText: "1 ชุดตามสูตร",
@@ -332,9 +335,14 @@ function decisionItem(recipeId, recipeName, decision) {
       v1: decision.v1 ?? null,
       docx: decision.docx ?? null,
       v2: decision.v2 ?? null,
-      handwriting: decision.handwriting ?? null
+      handwriting: decision.handwriting ?? null,
+      ...(override?.ownerConfirmation ? { owner_confirmation: override.ownerConfirmation } : {})
     },
-    candidate_text: removed ? null : override?.candidateText ?? decision.candidate ?? null,
+    candidate_text: removed
+      ? null
+      : override && Object.hasOwn(override, "candidateText")
+        ? override.candidateText
+        : decision.candidate ?? null,
     selected_source: override?.selectedSource ?? selectedSource(decision.status),
     decision_status: override?.decisionStatus ?? decision.status,
     decision_note: removed ? "ตัดออกตามลายมือ" : override?.decisionNote ?? null,
@@ -483,11 +491,12 @@ recipes.push({
   recipe_version_id: "kitchen-v2-candidate-cooked-japanese-rice-draft-001",
   recipe_name: "ข้าวญี่ปุ่นหุงสุก",
   recipe_type: "prepared_recipe",
-  parent_recipe_ids: [165, 159],
+  parent_recipe_ids: [159],
   review_state: "missing_source",
   source_locators: [
     "V1 import note: 72g ดิบ → 180g สุก (×2.5)",
-    "Owner confirmation: 2026-08-04 — ข้าว 1500 ml + น้ำ 2100 ml + น้ำมันรำข้าว 1 ช้อนโต๊ะ; ซาว 2 รอบโดยใช้น้ำให้ท่วมข้าว"
+    "Owner confirmation: 2026-08-04 — ข้าว 1500 ml + น้ำ 2100 ml + น้ำมันรำข้าว 1 ช้อนโต๊ะ; ซาว 2 รอบโดยใช้น้ำให้ท่วมข้าว",
+    "Owner confirmation: 2026-08-04 — ใช้ข้าวญี่ปุ่นเฉพาะข้าวหน้าเนื้อกิวด้งและข้าวหน้าเนื้อยากินิกุ"
   ],
   items: [
     {
@@ -540,7 +549,8 @@ recipes.push({
   operational_notes: [
     "สูตรแบตช์: ข้าวสารญี่ปุ่นดิบ 1500 ml + น้ำ 2100 ml + น้ำมันรำข้าว 1 ช้อนโต๊ะ",
     "ฐานต้นทุนต่อที่: ข้าวสารญี่ปุ่นดิบ 72 กรัม",
-    "เมนูหน้าครัวตักข้าวหุงสุก 180 กรัมต่อที่"
+    "เมนูหน้าครัวตักข้าวหุงสุก 180 กรัมต่อที่",
+    "ใช้เฉพาะเมนูข้าวหน้าเนื้อกิวด้งและข้าวหน้าเนื้อยากินิกุ"
   ],
   blockers: [{
     code: "missing_source",
@@ -554,10 +564,11 @@ recipes.push({
   recipe_version_id: "kitchen-v2-candidate-cooked-jasmine-rice-draft-001",
   recipe_name: "ข้าวหอมมะลิหุงสุก",
   recipe_type: "prepared_recipe",
-  parent_recipe_ids: [],
+  parent_recipe_ids: [165],
   review_state: "missing_source",
   source_locators: [
-    "Owner confirmation: 2026-08-04 — ข้าว 8 ถ้วย (350 ml) + น้ำ 2000 ml; ซาว 2 รอบโดยใช้น้ำให้ท่วมข้าว"
+    "Owner confirmation: 2026-08-04 — ข้าว 8 ถ้วย (350 ml) + น้ำ 2000 ml; ซาว 2 รอบโดยใช้น้ำให้ท่วมข้าว",
+    "Owner confirmation: 2026-08-04 — ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ; น้ำหนักข้าวหุงสุกต่อจานยังรอยืนยัน"
   ],
   items: [
     {

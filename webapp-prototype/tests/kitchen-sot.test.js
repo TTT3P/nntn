@@ -168,12 +168,12 @@ test("ยากินิกุ serves 20 grams of seafood sauce separately in a 
   assert.doesNotMatch(yakiniku.method_decision_note, /ยังต้องยืนยันน้ำจิ้มซีฟู้ด|ปริมาณผัดผัก/);
 });
 
-test("Japanese rice is a cooked-rice dependency with separate raw cost basis", () => {
+test("Japanese rice is reserved for yakiniku within the first set", () => {
   const cookedRiceId = "candidate:prepared:ข้าวญี่ปุ่นหุงสุก";
   const cookedRice = kitchenData.recipes.find((recipe) => recipe.recipe_id === cookedRiceId);
-  const menuRiceLines = [165, 159].map((recipeId) => kitchenData.recipes
-    .find((recipe) => recipe.recipe_id === recipeId).items
-    .find((item) => item.component_recipe_id === cookedRiceId));
+  const menuRiceLines = kitchenData.recipes.flatMap((recipe) => recipe.items
+    .filter((item) => item.component_recipe_id === cookedRiceId)
+    .map((item) => ({ recipeId: recipe.recipe_id, item })));
 
   assert.equal(cookedRice.recipe_name, "ข้าวญี่ปุ่นหุงสุก");
   assert.equal(cookedRice.recipe_type, "prepared_recipe");
@@ -188,7 +188,11 @@ test("Japanese rice is a cooked-rice dependency with separate raw cost basis", (
   assert.match(cookedRice.method_candidate_text, /ซาวข้าว.*น้ำให้ท่วมข้าว.*2 รอบ/s);
   assert.match(cookedRice.method_candidate_text, /น้ำมันรำข้าว 1 ช้อนโต๊ะ/);
 
-  for (const rice of menuRiceLines) {
+  assert.deepEqual(menuRiceLines.map(({ recipeId }) => recipeId), [159]);
+  assert.deepEqual(cookedRice.parent_recipe_ids, [159]);
+  assert.match(cookedRice.operational_notes.join("\n"), /ข้าวหน้าเนื้อกิวด้ง.*ข้าวหน้าเนื้อยากินิกุ/);
+
+  for (const { item: rice } of menuRiceLines) {
     assert.equal(rice.item_name, "ข้าวญี่ปุ่นหุงสุก");
     assert.equal(rice.item_kind, "prepared_recipe");
     assert.equal(rice.candidate_text, "180 กรัม");
@@ -200,8 +204,12 @@ test("Japanese rice is a cooked-rice dependency with separate raw cost basis", (
 
 test("jasmine rice batch preserves the owner's cup and ml units verbatim", () => {
   const jasmineRice = kitchenData.recipes.find((recipe) => recipe.recipe_id === "candidate:prepared:ข้าวหอมมะลิหุงสุก");
+  const stewedBeefRice = kitchenData.recipes.find((recipe) => recipe.recipe_id === 165);
+  const menuRice = stewedBeefRice.items.find((item) => item.component_recipe_id === jasmineRice.recipe_id);
+  const blockers = createKitchenSotStore(kitchenData).evaluateRecipe(165).blockers.map((blocker) => blocker.message).join("\n");
 
   assert.equal(jasmineRice.recipe_name, "ข้าวหอมมะลิหุงสุก");
+  assert.deepEqual(jasmineRice.parent_recipe_ids, [165]);
   assert.deepEqual(jasmineRice.items.map((item) => [item.item_name, item.candidate_text]), [
     ["ข้าวหอมมะลิดิบ", "8 ถ้วย (350 ml)"],
     ["น้ำ", "2000 ml"]
@@ -210,6 +218,16 @@ test("jasmine rice batch preserves the owner's cup and ml units verbatim", () =>
   assert.match(jasmineRice.method_candidate_text, /ซาวข้าว.*น้ำให้ท่วมข้าว.*2 รอบ/s);
   assert.doesNotMatch(jasmineRice.method_candidate_text, /น้ำมันรำข้าว/);
   assert.equal(jasmineRice.yield_candidate_text, null);
+  assert.equal(menuRice.item_name, "ข้าวหอมมะลิหุงสุก");
+  assert.equal(menuRice.candidate_text, null);
+  assert.equal(menuRice.cost_basis_text, "ข้าวหอมมะลิดิบ 72 กรัม");
+  assert.equal(menuRice.source_values.owner_confirmation, "ข้าวหน้าเนื้อตุ๋นใช้ข้าวหอมมะลิ");
+  assert.equal(menuRice.decision_status, "needs_review");
+  assert.match(blockers, /ข้าวหอมมะลิหุงสุก ยังไม่มีค่าหน้าครัวที่ยืนยัน/);
+
+  const treeNames = createKitchenSotStore(kitchenData).recipeTreeRows(165).map((row) => row.name);
+  assert.ok(treeNames.includes("ข้าวหอมมะลิหุงสุก"));
+  assert.equal(treeNames.includes("ข้าวญี่ปุ่นหุงสุก"), false);
 });
 
 test("sun-dried beef exposes the seven V1/V2 marinade ingredients for kitchen review", () => {
