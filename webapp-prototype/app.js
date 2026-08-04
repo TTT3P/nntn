@@ -2,6 +2,7 @@
   "use strict";
 
   const { normalizeVariants, buildVariantRecipes, suggestSku } = window.RecipeVariants;
+  const printCenterApi = window.NNTNPrintCenter;
 
   const historyEntries = [
     { version: "v1.3", date: "2 ส.ค. 2026", editor: "ครัวกลาง", note: "ปรับสัดส่วนเครื่องเทศ" },
@@ -181,8 +182,9 @@
   const menuSetLabels = { full: "Full Menu", express: "Express", delivery: "Delivery Only" };
 
   const templateNames = {
+    station: "A5 แนวนอนสำหรับจุดงาน",
+    "two-up": "2 ใบ A5 บน A4",
     master: "A4 Master Recipe",
-    kitchen: "A5 Kitchen Guide",
     booklet: "Cookbook Booklet",
     routing: "SKU & Routing Sheet"
   };
@@ -216,6 +218,8 @@
   const printPreviewLabel = document.querySelector("#print-preview-label");
   const printPageCount = document.querySelector("#print-page-count");
   const printStatusSelect = document.querySelector("#print-status");
+  const printWorkStageSelect = document.querySelector("#print-work-stage");
+  const printDocumentButton = document.querySelector("#print-document-button");
   const selectedRecipeIds = new Set(["current", ...sampleRecipes.map((recipe) => recipe.id)]);
   const kitchenPrintRecipes = new Map();
   const menuCatalog = document.querySelector("#menu-catalog");
@@ -805,10 +809,30 @@
     return allRecipes().filter((recipe) => selectedRecipeIds.has(recipe.id));
   }
 
+  function recipeWithWorkDocuments(recipe) {
+    if (recipe.workDocuments && Object.keys(recipe.workDocuments).length > 0) return recipe;
+    const stage = recipe.category === "สูตรเตรียม" ? "prep" : "cook";
+    return {
+      ...recipe,
+      workDocuments: {
+        [stage]: {
+          stage,
+          scalable: stage === "prep",
+          ingredients: recipe.ingredients || [],
+          steps: recipe.steps || []
+        }
+      }
+    };
+  }
+
   function printSettings() {
     const hasBlockedKitchenRecipe = selectedRecipes().some((recipe) => recipe.id.startsWith("kitchen:") && recipe.kitchenStatus !== "print_ready");
+    const workStage = printWorkStageSelect.value;
+    const requestedTemplate = document.querySelector('input[name="print-template"]:checked').value;
     return {
-      template: document.querySelector('input[name="print-template"]:checked').value,
+      requestedTemplate,
+      template: printCenterApi.resolveTemplate(requestedTemplate, workStage),
+      workStage,
       multiplier: Math.max(0.1, Number.parseFloat(document.querySelector("#print-multiplier").value) || 1),
       status: hasBlockedKitchenRecipe ? "DRAFT — ข้อมูลไม่ครบ" : printStatusSelect.value,
       includeHistory: document.querySelector("#print-include-history").checked
@@ -830,11 +854,11 @@
   }
 
   function ingredientTable(recipe, multiplier) {
-    const rows = recipe.ingredients.map((ingredient) => `
+    const rows = recipe.ingredients.length ? recipe.ingredients.map((ingredient) => `
       <tr>
         <td>${escapeHtml(ingredient.name)}${ingredient.servingNote ? `<small class="print-serving-note">${escapeHtml(ingredient.servingNote)}</small>` : ""}</td>
         <td>${formatAmount(ingredient.amount, multiplier)} ${escapeHtml(ingredient.unit)}</td>
-      </tr>`).join("");
+      </tr>`).join("") : '<tr><td colspan="2">ยังไม่มีรายการสำหรับจุดงานนี้</td></tr>';
 
     return `
       <table class="print-ingredient-table">
@@ -844,6 +868,7 @@
   }
 
   function methodList(recipe) {
+    if (!recipe.steps.length) return '<p class="print-empty-copy">ยังไม่มีลำดับวิธีทำสำหรับจุดงานนี้</p>';
     return `<ol class="print-method-list">${recipe.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol>`;
   }
 
@@ -945,6 +970,49 @@
       </article>`;
   }
 
+  function workDocumentBlockerSummary(document) {
+    if (!document.blockers?.length) return "";
+    return `<section class="print-blocker-summary"><strong>ข้อมูลที่ต้องตรวจให้ครบก่อนใช้จริง</strong><ul>${document.blockers.map((blocker) => `<li>${escapeHtml(blocker.itemName ? `${blocker.itemName}: ${blocker.message}` : blocker.message)}</li>`).join("")}</ul></section>`;
+  }
+
+  function workstationCardBody(document, settings, pageNumber, totalPages) {
+    const partLabel = document.totalParts > 1 ? ` · ${document.continuation ? "หน้าต่อ" : "หน้าแรก"} ${document.partNumber}/${document.totalParts}` : "";
+    const multiplierLabel = document.scalable ? `รอบผลิต ×${document.multiplier}` : "ปริมาณตามหน้างาน";
+    return `
+      ${watermark(settings.status)}
+      <header class="workstation-header">
+        <div><span class="print-doc-type">${escapeHtml(document.stageLabel)}</span><h1>${escapeHtml(document.recipeName)}</h1></div>
+        <span class="workstation-stage-badge">${escapeHtml(document.stageLabel)}</span>
+      </header>
+      <section class="workstation-meta">
+        <span>${escapeHtml(document.recipeVersion || "ฉบับร่าง")}${escapeHtml(partLabel)}</span>
+        <strong>${escapeHtml(multiplierLabel)}</strong>
+        <span>${escapeHtml(settings.status)}</span>
+      </section>
+      <div class="workstation-grid">
+        <section class="print-section"><h2>${document.stage === "service" ? "ส่วนประกอบต่อจาน" : "ส่วนผสมและของที่ต้องใช้"}</h2>${ingredientTable(document, document.multiplier)}</section>
+        <section class="print-section"><h2>${document.stage === "service" ? "อุ่น · ประกอบ · จัดเสิร์ฟ" : "ลำดับการทำงาน"}</h2>${methodList(document)}</section>
+      </div>
+      ${operationalNoteSummary(document)}
+      ${workDocumentBlockerSummary(document)}
+      <footer class="workstation-footer"><span>NNTN · Prototype v2</span><span>${pageNumber} / ${totalPages}</span></footer>`;
+  }
+
+  function workstationCard(document, settings, pageNumber, totalPages) {
+    return `<article class="print-sheet workstation-sheet stage-${escapeHtml(document.stage)}" data-recipe-id="${escapeHtml(document.recipeId)}" data-work-stage="${escapeHtml(document.stage)}">
+      ${workstationCardBody(document, settings, pageNumber, totalPages)}
+    </article>`;
+  }
+
+  function twoUpSheet(page, settings, pageNumber, totalPages) {
+    return `<article class="print-sheet two-up-sheet">
+      ${page.slots.map((document, slotIndex) => `<section class="two-up-slot stage-${escapeHtml(document.stage)}" data-recipe-id="${escapeHtml(document.recipeId)}" data-work-stage="${escapeHtml(document.stage)}">
+        ${workstationCardBody(document, settings, `${pageNumber}.${slotIndex + 1}`, totalPages)}
+      </section>`).join("")}
+      <span class="two-up-cutline" aria-hidden="true">ตัดตามเส้น</span>
+    </article>`;
+  }
+
   function bookletCover(recipes, settings) {
     return `
       <article class="print-sheet booklet-sheet booklet-cover">
@@ -1020,34 +1088,50 @@
   function renderPrintPreview() {
     const settings = printSettings();
     const recipes = selectedRecipes();
+    const plannedRecipes = recipes.map(recipeWithWorkDocuments);
     let pages = [];
+    let documentCount = recipes.length;
 
     if (recipes.length === 0) {
       printDocument.className = `print-document print-${settings.template}`;
       printDocument.innerHTML = '<div class="print-empty"><strong>ยังไม่ได้เลือกสูตร</strong><br>เลือกอย่างน้อยหนึ่งสูตรเพื่อสร้างตัวอย่างก่อนพิมพ์</div>';
       printPreviewLabel.textContent = `ตัวอย่าง ${templateNames[settings.template]}`;
       printPageCount.textContent = "0 หน้า";
+      printDocumentButton.disabled = true;
       return;
     }
 
-    if (settings.template === "master") {
+    if (["station", "two-up"].includes(settings.template)) {
+      const pagePlan = printCenterApi.buildPagePlan(plannedRecipes, settings);
+      documentCount = printCenterApi.workDocuments(plannedRecipes, settings.workStage).length;
+      if (pagePlan.length === 0) {
+        printDocument.className = `print-document print-${settings.template}`;
+        printDocument.innerHTML = '<div class="print-empty"><strong>ไม่มีเอกสารสำหรับจุดงานที่เลือก</strong><br>เลือกจุดงานอื่นหรือกลับไปตรวจการแบ่งขั้นตอนของสูตร</div>';
+        printPreviewLabel.textContent = `ตัวอย่าง ${templateNames[settings.template]}`;
+        printPageCount.textContent = "0 หน้า · 0 เอกสาร";
+        printDocumentButton.disabled = true;
+        return;
+      }
+      pages = settings.template === "station"
+        ? pagePlan.map((page, index) => workstationCard(page.document, settings, index + 1, pagePlan.length))
+        : pagePlan.map((page, index) => twoUpSheet(page, settings, index + 1, pagePlan.length));
+    } else if (settings.template === "master") {
       pages = recipes.map((recipe, index) => masterSheet(recipe, settings, index + 1, recipes.length));
-    } else if (settings.template === "kitchen") {
-      pages = recipes.map((recipe, index) => kitchenSheet(recipe, settings, index + 1, recipes.length));
     } else if (settings.template === "booklet") {
       pages = [
         bookletCover(recipes, settings),
         bookletToc(recipes),
         ...recipes.map((recipe, index) => bookletRecipeSheet(recipe, settings, index + 3))
       ];
-    } else {
+    } else if (settings.template === "routing") {
       pages = recipes.map((recipe, index) => routingSheet(recipe, settings, index + 1, recipes.length));
     }
 
     printDocument.className = `print-document print-${settings.template}`;
     printDocument.innerHTML = pages.join("");
-    printPreviewLabel.textContent = `ตัวอย่าง ${templateNames[settings.template]}`;
-    printPageCount.textContent = `${pages.length} หน้า`;
+    printPreviewLabel.textContent = `ตัวอย่าง ${templateNames[settings.template]}${settings.requestedTemplate === "auto" ? " · แนะนำอัตโนมัติ" : ""}`;
+    printPageCount.textContent = `${pages.length} หน้า · ${documentCount} เอกสาร`;
+    printDocumentButton.disabled = pages.length === 0;
   }
 
   function openPrintCenter() {
@@ -1215,13 +1299,13 @@
     renderPrintPreview();
   });
 
-  document.querySelectorAll('input[name="print-template"], #print-status, #print-include-history')
+  document.querySelectorAll('input[name="print-template"], #print-work-stage, #print-status, #print-include-history')
     .forEach((control) => control.addEventListener("change", renderPrintPreview));
   document.querySelector("#print-multiplier").addEventListener("input", renderPrintPreview);
 
   document.querySelector("#print-document-button").addEventListener("click", () => {
-    if (selectedRecipes().length === 0) {
-      showToast("เลือกสูตรอย่างน้อยหนึ่งรายการก่อนพิมพ์");
+    if (printDocumentButton.disabled || selectedRecipes().length === 0) {
+      showToast("ยังไม่มีเอกสารที่พร้อมส่งไปหน้าพิมพ์");
       return;
     }
     renderPrintPreview();

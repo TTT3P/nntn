@@ -556,15 +556,36 @@
 
       <div class="print-center-grid">
         <aside class="print-controls" aria-label="ตัวเลือกการพิมพ์">
+          <fieldset class="control-group">
+            <legend>1. จุดงาน</legend>
+            <label class="field">
+              <span>ชุดเอกสารที่ต้องการ</span>
+              <select id="print-work-stage">
+                <option value="all">ครบทั้งชุด</option>
+                <option value="prep">ผลิตซอสและของเตรียม</option>
+                <option value="cook">ครัวปรุง / BOM</option>
+                <option value="service">จัดเสิร์ฟหน้าร้าน</option>
+              </select>
+            </label>
+          </fieldset>
+
           <fieldset class="control-group template-options">
-            <legend>1. รูปแบบ</legend>
+            <legend>2. รูปแบบ</legend>
             <label class="template-option">
-              <input type="radio" name="print-template" value="master" checked>
-              <span><strong>A4 Master Recipe</strong><small>สูตรมาตรฐานฉบับเต็ม</small></span>
+              <input id="print-template-auto" type="radio" name="print-template" value="auto" checked>
+              <span><strong>เลือกให้อัตโนมัติ · แนะนำ</strong><small>ระบบเลือกตามจุดงานและชนิดสูตร</small></span>
             </label>
             <label class="template-option">
-              <input type="radio" name="print-template" value="kitchen">
-              <span><strong>A5 Kitchen Guide</strong><small>ตัวใหญ่ อ่านง่ายหน้าครัว</small></span>
+              <input type="radio" name="print-template" value="station">
+              <span><strong>A5 แนวนอน</strong><small>การ์ดหน้างาน ครึ่ง A4 อ่านง่าย</small></span>
+            </label>
+            <label class="template-option">
+              <input type="radio" name="print-template" value="two-up">
+              <span><strong>2 ใบ A5 บน A4</strong><small>พิมพ์ครั้งเดียวแล้วตัดครึ่ง</small></span>
+            </label>
+            <label class="template-option">
+              <input type="radio" name="print-template" value="master">
+              <span><strong>A4 Master Recipe</strong><small>สูตรมาตรฐานฉบับเต็ม</small></span>
             </label>
             <label class="template-option">
               <input type="radio" name="print-template" value="booklet">
@@ -577,7 +598,7 @@
           </fieldset>
 
           <fieldset class="control-group">
-            <legend>2. สูตรที่จะพิมพ์</legend>
+            <legend>3. สูตรที่จะพิมพ์</legend>
             <div class="recipe-picker" id="print-recipe-picker"></div>
             <div class="picker-actions">
               <button class="text-button" id="select-all-recipes" type="button">เลือกทั้งหมด</button>
@@ -712,11 +733,12 @@
   </template>
 
   <script src="data/cookbook-import-v1.js"></script>
-  <script src="data/kitchen-sot-first-set-v2.js?v=20260804-16"></script>
-  <script src="import-review.js?v=20260804-16"></script>
-  <script src="kitchen-sot.js?v=20260804-16"></script>
-  <script src="import-review-ui.js?v=20260804-16"></script>
+  <script src="data/kitchen-sot-first-set-v2.js?v=20260804-17"></script>
+  <script src="import-review.js?v=20260804-17"></script>
+  <script src="kitchen-sot.js?v=20260804-17"></script>
+  <script src="import-review-ui.js?v=20260804-17"></script>
   <script src="recipe-variants.js"></script>
-  <script src="app.js?v=20260804-16"></script>
+  <script src="print-center.js?v=20260804-17"></script>
+  <script src="app.js?v=20260804-17"></script>
 </body>
 </html>
