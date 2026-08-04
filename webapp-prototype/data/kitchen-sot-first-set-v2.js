@@ -1,6 +1,6 @@
 window.NNTNKitchenSotFirstSetV2 = {
   "schema_version": "2.0.0-prototype",
-  "generated_at": "2026-08-04T17:12:00+07:00",
+  "generated_at": "2026-08-04T17:18:00+07:00",
   "source_policy": "ลายมือแก้ไขล่าสุด > DOCX true original > V2 coverage; preserve kitchen units; never convert",
   "root_recipe_ids": [
     165,
@@ -2109,7 +2109,7 @@ window.NNTNKitchenSotFirstSetV2 = {
       "review_state": "missing_source",
       "source_locators": [
         "V1 import note: 72g ดิบ → 180g สุก (×2.5)",
-        "Owner confirmation: 2026-08-04 — ข้าว 1500 ml + น้ำ 2100 ml"
+        "Owner confirmation: 2026-08-04 — ข้าว 1500 ml + น้ำ 2100 ml + น้ำมันรำข้าว 1 ช้อนโต๊ะ; ซาว 2 รอบโดยใช้น้ำให้ท่วมข้าว"
       ],
       "items": [
         {
@@ -2141,21 +2141,34 @@ window.NNTNKitchenSotFirstSetV2 = {
           "selected_source": "owner_confirmation",
           "decision_status": "confirmed_by_owner",
           "decision_note": "ปริมาณน้ำสำหรับหุงหนึ่งแบตช์ตามที่เจ้าของยืนยัน"
+        },
+        {
+          "line_key": "ข้าวญี่ปุ่นหุงสุก:น้ำมันรำข้าว",
+          "item_name": "น้ำมันรำข้าว",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "owner_confirmation": "1 ช้อนโต๊ะ"
+          },
+          "candidate_text": "1 ช้อนโต๊ะ",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "ใส่ในข้าวญี่ปุ่นก่อนนำไปหุงตามที่เจ้าของยืนยัน"
         }
       ],
-      "method_candidate_text": null,
-      "method_selected_source": null,
-      "method_decision_note": "มีสัดส่วนข้าวและน้ำแล้ว แต่ยังต้องเก็บขั้นตอนหุงจริงจากครัว",
+      "method_candidate_text": "1. ซาวข้าวโดยเติมน้ำให้ท่วมข้าว แล้วเทน้ำซาวออก ทำซ้ำรวม 2 รอบ\n2. เติมน้ำตามปริมาณที่ระบุในสูตร ใส่น้ำมันรำข้าว 1 ช้อนโต๊ะ แล้วนำไปหุง",
+      "method_selected_source": "owner_confirmation",
+      "method_decision_note": "เรียบเรียงจากคำบอกของครัวเท่าที่ได้รับ โดยไม่เติมเวลา โปรแกรมหม้อ หรือวิธีพักข้าว",
       "yield_candidate_text": "ข้าวหุงสุก 180 กรัม ต่อข้าวสารดิบ 72 กรัม",
       "operational_notes": [
-        "สูตรแบตช์: ข้าวสารญี่ปุ่นดิบ 1500 ml + น้ำ 2100 ml",
+        "สูตรแบตช์: ข้าวสารญี่ปุ่นดิบ 1500 ml + น้ำ 2100 ml + น้ำมันรำข้าว 1 ช้อนโต๊ะ",
         "ฐานต้นทุนต่อที่: ข้าวสารญี่ปุ่นดิบ 72 กรัม",
         "เมนูหน้าครัวตักข้าวหุงสุก 180 กรัมต่อที่"
       ],
       "blockers": [
         {
           "code": "missing_source",
-          "message": "ยังขาดขั้นตอนหุงจริง: วิธีซาว/แช่ โปรแกรมหม้อ เวลา การพักข้าว และผลผลิตข้าวสุกต่อแบตช์"
+          "message": "ยังขาดข้อมูล: โปรแกรมหม้อ เวลา การพักข้าว และผลผลิตข้าวสุกต่อแบตช์"
         }
       ]
     },
@@ -2168,7 +2181,7 @@ window.NNTNKitchenSotFirstSetV2 = {
       "parent_recipe_ids": [],
       "review_state": "missing_source",
       "source_locators": [
-        "Owner confirmation: 2026-08-04 — ข้าว 8 ถ้วย (350 ml) + น้ำ 2000 ml"
+        "Owner confirmation: 2026-08-04 — ข้าว 8 ถ้วย (350 ml) + น้ำ 2000 ml; ซาว 2 รอบโดยใช้น้ำให้ท่วมข้าว"
       ],
       "items": [
         {
@@ -2198,9 +2211,9 @@ window.NNTNKitchenSotFirstSetV2 = {
           "decision_note": "ปริมาณน้ำสำหรับหุงหนึ่งแบตช์ตามที่เจ้าของยืนยัน"
         }
       ],
-      "method_candidate_text": null,
-      "method_selected_source": null,
-      "method_decision_note": "มีสัดส่วนข้าวและน้ำแล้ว แต่ยังต้องเก็บขั้นตอนหุงจริงจากครัว",
+      "method_candidate_text": "1. ซาวข้าวโดยเติมน้ำให้ท่วมข้าว แล้วเทน้ำซาวออก ทำซ้ำรวม 2 รอบ\n2. เติมน้ำตามปริมาณที่ระบุในสูตร แล้วนำไปหุง",
+      "method_selected_source": "owner_confirmation",
+      "method_decision_note": "เรียบเรียงจากคำบอกของครัวเท่าที่ได้รับ โดยไม่เติมเวลา โปรแกรมหม้อ หรือวิธีพักข้าว",
       "yield_candidate_text": null,
       "operational_notes": [
         "สูตรแบตช์: ข้าวหอมมะลิ 8 ถ้วย (350 ml) + น้ำ 2000 ml"
@@ -2208,7 +2221,7 @@ window.NNTNKitchenSotFirstSetV2 = {
       "blockers": [
         {
           "code": "missing_source",
-          "message": "ยังขาดขั้นตอนหุงจริงและผลผลิต: วิธีซาว/แช่ โปรแกรมหม้อ เวลา การพักข้าว และน้ำหนักข้าวสุกต่อแบตช์"
+          "message": "ยังขาดข้อมูล: โปรแกรมหม้อ เวลา การพักข้าว และน้ำหนักข้าวสุกต่อแบตช์"
         }
       ]
     }

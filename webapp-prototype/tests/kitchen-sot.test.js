@@ -159,7 +159,11 @@ test("Japanese rice is a cooked-rice dependency with separate raw cost basis", (
   assert.equal(cookedRice.items[0].candidate_text, "1500 ml");
   assert.equal(cookedRice.items[1].item_name, "น้ำ");
   assert.equal(cookedRice.items[1].candidate_text, "2100 ml");
-  assert.equal(cookedRice.method_candidate_text, null);
+  const riceBranOil = cookedRice.items.find((item) => item.item_name === "น้ำมันรำข้าว");
+  assert.equal(riceBranOil?.candidate_text, "1 ช้อนโต๊ะ");
+  assert.equal(typeof cookedRice.method_candidate_text, "string");
+  assert.match(cookedRice.method_candidate_text, /ซาวข้าว.*น้ำให้ท่วมข้าว.*2 รอบ/s);
+  assert.match(cookedRice.method_candidate_text, /น้ำมันรำข้าว 1 ช้อนโต๊ะ/);
 
   for (const rice of menuRiceLines) {
     assert.equal(rice.item_name, "ข้าวญี่ปุ่นหุงสุก");
@@ -179,7 +183,9 @@ test("jasmine rice batch preserves the owner's cup and ml units verbatim", () =>
     ["ข้าวหอมมะลิดิบ", "8 ถ้วย (350 ml)"],
     ["น้ำ", "2000 ml"]
   ]);
-  assert.equal(jasmineRice.method_candidate_text, null);
+  assert.equal(typeof jasmineRice.method_candidate_text, "string");
+  assert.match(jasmineRice.method_candidate_text, /ซาวข้าว.*น้ำให้ท่วมข้าว.*2 รอบ/s);
+  assert.doesNotMatch(jasmineRice.method_candidate_text, /น้ำมันรำข้าว/);
   assert.equal(jasmineRice.yield_candidate_text, null);
 });
 
