@@ -14,7 +14,7 @@
       "legacy_recipe_id": 165,
       "recipe_version_id": "kitchen-v2-165-draft-001",
       "recipe_name": "ข้าวหน้าเนื้อตุ๋น",
-      "recipe_type": "prepared_recipe",
+      "recipe_type": "sellable_menu",
       "parent_recipe_ids": [],
       "review_state": "reviewed_candidate",
       "source_locators": [
@@ -984,7 +984,7 @@
       "legacy_recipe_id": 159,
       "recipe_version_id": "kitchen-v2-159-draft-001",
       "recipe_name": "ข้าวหน้าเนื้อยากินิกุ",
-      "recipe_type": "prepared_recipe",
+      "recipe_type": "sellable_menu",
       "parent_recipe_ids": [],
       "review_state": "conflict",
       "source_locators": [
@@ -1586,7 +1586,7 @@
       "legacy_recipe_id": 37,
       "recipe_version_id": "kitchen-v2-37-draft-001",
       "recipe_name": "ข้าวขยำเนื้อแดดเดียว",
-      "recipe_type": "prepared_recipe",
+      "recipe_type": "sellable_menu",
       "parent_recipe_ids": [],
       "review_state": "reviewed_candidate",
       "source_locators": [
@@ -1887,7 +1887,7 @@
       "legacy_recipe_id": 163,
       "recipe_version_id": "kitchen-v2-163-draft-001",
       "recipe_name": "เนื้อตุ๋นคั่วพริกเกลือ",
-      "recipe_type": "prepared_recipe",
+      "recipe_type": "sellable_menu",
       "parent_recipe_ids": [],
       "review_state": "reviewed_candidate",
       "source_locators": [

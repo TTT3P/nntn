@@ -1999,6 +1999,28 @@ body.modal-open {
   color: var(--green-700);
 }
 
+.print-blocker-summary {
+  margin-top: 5mm;
+  padding: 3mm;
+  color: var(--danger-600);
+  background: var(--danger-50);
+  border: 1px solid #efc7b9;
+  border-radius: 2.5mm;
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.print-blocker-summary strong {
+  display: block;
+  margin-bottom: 1.5mm;
+  font-size: 9px;
+}
+
+.print-blocker-summary ul {
+  margin: 0;
+  padding-left: 4mm;
+}
+
 .print-revision {
   margin-top: 6mm;
 }

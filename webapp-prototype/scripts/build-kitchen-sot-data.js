@@ -156,7 +156,7 @@ const recipes = sourceReview.manifest.map((manifest) => {
     legacy_recipe_id: recipe.recipe_id,
     recipe_version_id: `kitchen-v2-${recipe.recipe_id}-draft-001`,
     recipe_name: recipe.recipe_name,
-    recipe_type: manifest.recipe_kind === "menu" ? "sellable_menu" : "prepared_recipe",
+    recipe_type: manifest.role === "root_menu" ? "sellable_menu" : "prepared_recipe",
     parent_recipe_ids: parentRecipeIds(recipe.recipe_id),
     review_state: recipe.review_state,
     source_locators: recipe.source_locators,

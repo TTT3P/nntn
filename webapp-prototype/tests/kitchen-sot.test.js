@@ -16,6 +16,12 @@ test("first-set v2 contains 16 versioned recipes and no derived quantities", () 
   }
 });
 
+test("the four root recipes are sellable menus", () => {
+  const rootRecipes = kitchenData.root_recipe_ids.map((recipeId) => kitchenData.recipes.find((recipe) => recipe.recipe_id === recipeId));
+
+  assert.ok(rootRecipes.every((recipe) => recipe.recipe_type === "sellable_menu"));
+});
+
 test("ผัดผัก keeps the DOCX method and source kitchen units", () => {
   const stirFry = kitchenData.recipes.find((recipe) => recipe.recipe_id === 157);
 
@@ -114,4 +120,22 @@ test("recipeTreeRows shows each prepared recipe once even when V1 has duplicate 
   const secretSauceRows = rows.filter((row) => row.name === "ซอสลับ (v2)");
 
   assert.equal(secretSauceRows.length, 1);
+});
+
+test("blocked recipes become draft print models with blocker text", () => {
+  const bundle = createKitchenSotStore(kitchenData).buildPrintBundle([159]);
+
+  assert.equal(bundle.allowedFinal, false);
+  assert.ok(bundle.recipes.every((recipe) => recipe.id.startsWith("kitchen:")));
+  assert.ok(bundle.blockers.some((blocker) => blocker.recipeName === "ข้าวหน้าเนื้อยากินิกุ"));
+  assert.ok(bundle.recipes.find((recipe) => recipe.recipe_id === 159).blockers.length > 0);
+});
+
+test("print ingredients use candidate text without unit conversion", () => {
+  const bundle = createKitchenSotStore(kitchenData).buildPrintBundle([159]);
+  const vegetables = bundle.recipes.find((recipe) => recipe.name === "ผัดผัก");
+
+  assert.ok(vegetables.ingredients.some((item) => item.amount === "1" && item.unit === "ช้อนชา"));
+  assert.ok(vegetables.ingredients.some((item) => item.sourceAmountText === "1 ช้อนชา"));
+  assert.equal(JSON.stringify(bundle).includes("normalized"), false);
 });

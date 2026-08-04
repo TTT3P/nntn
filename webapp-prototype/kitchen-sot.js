@@ -24,6 +24,14 @@
     });
   }
 
+  function splitCandidateText(candidateText) {
+    const sourceAmountText = String(candidateText ?? "").trim();
+    if (!sourceAmountText) return { amount: "—", unit: "", sourceAmountText: "" };
+    const match = sourceAmountText.match(/^(\d+(?:[.,]\d+)?(?:½|¼|¾)?|½|¼|¾)\s*(.*)$/u);
+    if (!match) return { amount: sourceAmountText, unit: "", sourceAmountText };
+    return { amount: match[1], unit: match[2].trim(), sourceAmountText };
+  }
+
   function createKitchenSotStore(dataset) {
     const source = clone(dataset || { recipes: [], root_recipe_ids: [] });
     const drafts = new Map((source.recipes || []).map((recipe) => [recipeKey(recipe.recipe_id), recipe]));
@@ -184,6 +192,28 @@
       return evaluateRecipe(recipeId);
     }
 
+    function printRecipe(recipe) {
+      const evaluation = evaluateRecipe(recipe.recipe_id);
+      return {
+        id: `kitchen:${recipe.recipe_version_id}`,
+        recipe_id: recipe.recipe_id,
+        recipeVersionId: recipe.recipe_version_id,
+        name: recipe.recipe_name,
+        category: recipe.recipe_type === "sellable_menu" ? "เมนูขาย" : "สูตรเตรียม",
+        yield: recipe.yield_candidate_text || "ยังไม่ระบุผลผลิต",
+        version: recipe.recipe_version_id,
+        ingredients: (recipe.items || [])
+          .filter((item) => item.decision_status !== "removed_by_handwriting")
+          .map((item) => ({ name: item.item_name, ...splitCandidateText(item.candidate_text) })),
+        steps: String(recipe.method_candidate_text || "")
+          .split("\n")
+          .map((step) => step.replace(/^\s*(?:\d+[.)]|[-•])\s*/, "").trim())
+          .filter(Boolean),
+        kitchenStatus: evaluation.status,
+        blockers: evaluation.blockers
+      };
+    }
+
     function buildPrintBundle(rootRecipeIds) {
       const ordered = [];
       const visited = new Set();
@@ -219,7 +249,7 @@
 
       for (const recipeId of rootRecipeIds || []) visit(recipeId);
       const finalBlockers = uniqueBlockers(blockers);
-      return { recipes: ordered, blockers: finalBlockers, allowedFinal: finalBlockers.length === 0 };
+      return { recipes: ordered.map(printRecipe), blockers: finalBlockers, allowedFinal: finalBlockers.length === 0 };
     }
 
     return {

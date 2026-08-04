@@ -215,7 +215,9 @@
   const recipePicker = document.querySelector("#print-recipe-picker");
   const printPreviewLabel = document.querySelector("#print-preview-label");
   const printPageCount = document.querySelector("#print-page-count");
+  const printStatusSelect = document.querySelector("#print-status");
   const selectedRecipeIds = new Set(["current", ...sampleRecipes.map((recipe) => recipe.id)]);
+  const kitchenPrintRecipes = new Map();
   const menuCatalog = document.querySelector("#menu-catalog");
   const dependencyGroups = document.querySelector("#dependency-groups");
   let selectedBranchMenuIds = new Set(branchMenuSets.express);
@@ -757,7 +759,8 @@
   function allRecipes() {
     return [
       ...buildVariantRecipes(currentRecipe(), variantRowsFromForm(), { mode: recipeMode() }),
-      ...sampleRecipes
+      ...sampleRecipes,
+      ...kitchenPrintRecipes.values()
     ];
   }
 
@@ -775,6 +778,7 @@
       checkbox.addEventListener("change", () => {
         if (checkbox.checked) selectedRecipeIds.add(recipe.id);
         else selectedRecipeIds.delete(recipe.id);
+        syncKitchenPrintStatus();
         renderPrintPreview();
       });
 
@@ -782,7 +786,9 @@
       const name = document.createElement("strong");
       const meta = document.createElement("small");
       name.textContent = recipe.name;
-      meta.textContent = recipe.id === "current" || recipe.id.startsWith("current--")
+      meta.textContent = recipe.id.startsWith("kitchen:")
+        ? `${recipe.category} · ${recipe.kitchenStatus === "print_ready" ? "พร้อมทดลองพิมพ์" : "ฉบับร่างหน้าครัว"}`
+        : recipe.id === "current" || recipe.id.startsWith("current--")
         ? recipe.variant
           ? `SKU ${recipe.variant.sku || "ยังไม่กำหนด"} · ฿${recipe.price || "—"}`
           : `SKU ${recipe.sellable?.sku || "ยังไม่กำหนด"} · เมนูเดี่ยว`
@@ -800,12 +806,20 @@
   }
 
   function printSettings() {
+    const hasBlockedKitchenRecipe = selectedRecipes().some((recipe) => recipe.id.startsWith("kitchen:") && recipe.kitchenStatus !== "print_ready");
     return {
       template: document.querySelector('input[name="print-template"]:checked').value,
       multiplier: Math.max(0.1, Number.parseFloat(document.querySelector("#print-multiplier").value) || 1),
-      status: document.querySelector("#print-status").value,
+      status: hasBlockedKitchenRecipe ? "DRAFT — ข้อมูลไม่ครบ" : printStatusSelect.value,
       includeHistory: document.querySelector("#print-include-history").checked
     };
+  }
+
+  function syncKitchenPrintStatus() {
+    const approvedOption = [...printStatusSelect.options].find((option) => option.value === "อนุมัติแล้ว");
+    const hasBlockedKitchenRecipe = selectedRecipes().some((recipe) => recipe.id.startsWith("kitchen:") && recipe.kitchenStatus !== "print_ready");
+    if (approvedOption) approvedOption.disabled = hasBlockedKitchenRecipe;
+    if (hasBlockedKitchenRecipe && printStatusSelect.value === "อนุมัติแล้ว") printStatusSelect.value = "DRAFT";
   }
 
   function formatAmount(value, multiplier) {
@@ -845,6 +859,11 @@
 
   function watermark(status) {
     return `<div class="print-watermark" aria-hidden="true">${escapeHtml(status)}</div>`;
+  }
+
+  function kitchenBlockerSummary(recipe) {
+    if (!recipe.id.startsWith("kitchen:") || !recipe.blockers?.length) return "";
+    return `<section class="print-blocker-summary"><strong>ข้อมูลที่ต้องตรวจให้ครบก่อนใช้จริง</strong><ul>${recipe.blockers.map((blocker) => `<li>${escapeHtml(blocker.itemName ? `${blocker.itemName}: ${blocker.message}` : blocker.message)}</li>`).join("")}</ul></section>`;
   }
 
   function sellableMetadata(recipe) {
@@ -889,6 +908,7 @@
           <div class="print-note-box"><strong>จุดควบคุมคุณภาพ</strong>ตรวจรสชาติ อุณหภูมิ และน้ำหนักผลผลิตก่อนส่งต่อ</div>
           <div class="print-note-box"><strong>หมายเหตุ</strong>พื้นที่สำหรับบันทึกเพิ่มเติม</div>
         </div>
+        ${kitchenBlockerSummary(recipe)}
         ${settings.includeHistory ? revisionTable() : ""}
         <footer class="print-footer"><span>Mock document · ไม่ใช่เอกสารควบคุมจริง</span><span>${pageNumber} / ${totalPages}</span></footer>
       </article>`;
@@ -905,6 +925,7 @@
           <section class="print-section"><h2>ลงมือทำ</h2>${methodList(recipe)}</section>
         </div>
         <div class="kitchen-checkline"><span>ผู้ทำ ____________________</span><span>ตรวจโดย ____________________</span></div>
+        ${kitchenBlockerSummary(recipe)}
         <footer class="print-footer"><span>${escapeHtml(settings.status)} · ${settings.includeHistory ? `Revision ${escapeHtml(recipe.version)}` : ""}</span><span>${pageNumber} / ${totalPages}</span></footer>
       </article>`;
   }
@@ -940,6 +961,7 @@
           <section class="print-section"><h2>ส่วนผสม</h2>${ingredientTable(recipe, settings.multiplier)}</section>
           <section class="print-section"><h2>วิธีทำ</h2>${methodList(recipe)}</section>
         </div>
+        ${kitchenBlockerSummary(recipe)}
         ${settings.includeHistory ? `<div class="print-revision"><h2>Revision</h2><table><tbody><tr><td>${escapeHtml(recipe.version)}</td><td>ฉบับตัวอย่างสำหรับจัดวางตำรา</td></tr></tbody></table></div>` : ""}
         <footer class="print-footer"><span>${escapeHtml(settings.status)}</span><span>${pageNumber}</span></footer>
       </article>`;
@@ -1014,6 +1036,7 @@
 
   function openPrintCenter() {
     lastFocusedElement = document.activeElement;
+    syncKitchenPrintStatus();
     renderRecipePicker();
     renderPrintPreview();
     printModal.hidden = false;
@@ -1141,6 +1164,19 @@
       : "จำลองเผยแพร่ Menu Assignment ให้สาขาแล้ว");
   });
 
+  window.addEventListener("nntn:kitchen-print-request", (event) => {
+    const bundle = event.detail?.bundle;
+    if (!bundle || !Array.isArray(bundle.recipes)) return;
+    kitchenPrintRecipes.clear();
+    selectedRecipeIds.clear();
+    bundle.recipes.forEach((recipe) => {
+      kitchenPrintRecipes.set(recipe.id, recipe);
+      selectedRecipeIds.add(recipe.id);
+    });
+    syncKitchenPrintStatus();
+    openPrintCenter();
+  });
+
   document.querySelector("#open-print-center").addEventListener("click", openPrintCenter);
   document.querySelector("#close-print-center").addEventListener("click", closePrintCenter);
   document.querySelector("#refresh-print-preview").addEventListener("click", () => {
@@ -1151,12 +1187,14 @@
 
   document.querySelector("#select-all-recipes").addEventListener("click", () => {
     allRecipes().forEach((recipe) => selectedRecipeIds.add(recipe.id));
+    syncKitchenPrintStatus();
     renderRecipePicker();
     renderPrintPreview();
   });
 
   document.querySelector("#clear-recipe-selection").addEventListener("click", () => {
     selectedRecipeIds.clear();
+    syncKitchenPrintStatus();
     renderRecipePicker();
     renderPrintPreview();
   });
