@@ -72,8 +72,10 @@
     </dl>`;
   }
 
-  function sectionMappingsHtml(recipeId) {
-    const mappings = reviewApi.getSourceSectionMappings(legacyData, recipeId);
+  function sectionMappingsHtml(recipe) {
+    const mappings = recipe.source_section_mappings?.length
+      ? recipe.source_section_mappings
+      : reviewApi.getSourceSectionMappings(legacyData, recipe.recipe_id);
     if (mappings.length === 0) return "";
     return `<section class="import-detail-section source-section-map">
       <div class="import-detail-section-title"><h5>ส่วนที่พบในไฟล์ DOCX</h5><span>${mappings.reduce((count, document) => count + document.sections.length, 0)} ส่วน</span></div>
@@ -200,8 +202,9 @@
         <span class="source-review-badge review-state-${escapeHtml(recipe.review_state)}">${escapeHtml(reviewStateLabels[recipe.review_state] || "ฉบับร่าง")}</span>
       </header>
       ${recipe.yield_candidate_text ? `<p class="kitchen-yield-line"><strong>ผลผลิต:</strong> ${escapeHtml(recipe.yield_candidate_text)}</p>` : ""}
+      ${recipe.operational_notes?.length ? `<section class="import-detail-section kitchen-operational-notes"><div class="import-detail-section-title"><h5>หมายเหตุหน้างาน</h5><span>${recipe.operational_notes.length} ข้อ</span></div><ul>${recipe.operational_notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("")}</ul></section>` : ""}
       ${noticeText ? `<p class="kitchen-save-notice" role="status">${escapeHtml(noticeText)}</p>` : ""}
-      ${sectionMappingsHtml(recipe.recipe_id)}
+      ${sectionMappingsHtml(recipe)}
       <section class="import-detail-section" id="kitchen-draft-editor">
         <div class="import-detail-section-title"><h5>เทียบต้นฉบับและแก้ค่าหน้าครัว</h5><span>${recipe.items.length} รายการ</span></div>
         ${editorItemsHtml(recipe)}

@@ -1,7 +1,7 @@
 window.NNTNKitchenSotFirstSetV2 = {
   "schema_version": "2.0.0-prototype",
-  "generated_at": "2026-08-04T17:18:00+07:00",
-  "source_policy": "ลายมือแก้ไขล่าสุด > DOCX true original > V2 coverage; preserve kitchen units; never convert",
+  "generated_at": "2026-08-04T18:35:00+07:00",
+  "source_policy": "latest owner-designated source > handwriting corrections > other DOCX true originals > V2 coverage; preserve kitchen units; never convert",
   "root_recipe_ids": [
     165,
     159,
@@ -22,6 +22,7 @@ window.NNTNKitchenSotFirstSetV2 = {
         "V2: ข้าวหน้าเนื้อตุ๋น",
         "ลายมือ: หน้า 1"
       ],
+      "source_section_mappings": [],
       "items": [
         {
           "line_key": "ข้าวหน้าเนื้อตุ๋น:เนื้อตุ๋น (ราดข้าว)",
@@ -112,6 +113,7 @@ window.NNTNKitchenSotFirstSetV2 = {
         "V2: เนื้อตุ๋น (ราดข้าว)",
         "ลายมือ: หน้า 1"
       ],
+      "source_section_mappings": [],
       "items": [
         {
           "line_key": "เนื้อตุ๋น (ราดข้าว):เนื้อตุ๋น",
@@ -306,220 +308,293 @@ window.NNTNKitchenSotFirstSetV2 = {
       "recipe_id": 2,
       "legacy_recipe_id": 2,
       "recipe_version_id": "kitchen-v2-2-draft-001",
-      "recipe_name": "น้ำซุป",
+      "recipe_name": "น้ำซุปก๋วยเตี๋ยว V3",
       "recipe_type": "prepared_recipe",
       "parent_recipe_ids": [
         164
       ],
-      "review_state": "conflict",
+      "review_state": "reviewed_candidate",
       "source_locators": [
         "DOCX: true-originals/_inbox/ต้นฉบับ ก๋วยเตี๋ยว/สูตรก๋วยเตี๋ยววัดหนัง-ห้ามแก้ไข.docx",
         "DOCX: true-originals/_inbox/ต้นฉบับ ก๋วยเตี๋ยว/เครื่องเทศ+เครื่องปรุง-ห้ามแก้ไข.docx",
-        "V2: น้ำซุป"
+        "V2: น้ำซุป",
+        "DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx",
+        "Owner confirmation: 2026-08-04 — น้ำเปล่าประมาณ 50 ลิตร ใช้หม้อเบอร์ 70 และสูตรนี้ไม่รวมขั้นตอนลงเนื้อ"
+      ],
+      "source_section_mappings": [
+        {
+          "source_document": "ซุปก๋วยเตี๋ยว V3.docx",
+          "sections": [
+            {
+              "section_name": "วิธีปรุงซุป (รายการส่วนผสม; ยังไม่มีลำดับวิธีทำ)",
+              "maps_to_recipe_id": 2,
+              "maps_to_recipe_name": "น้ำซุปก๋วยเตี๋ยว V3"
+            },
+            {
+              "section_name": "สูตรผสมซอสลับ",
+              "maps_to_recipe_id": 160,
+              "maps_to_recipe_name": "ซอสลับสำหรับซุป V3"
+            },
+            {
+              "section_name": "ชุดเครื่องเทศ",
+              "maps_to_recipe_id": 9,
+              "maps_to_recipe_name": "ชุดเครื่องเทศสำหรับซุป V3"
+            },
+            {
+              "section_name": "ชุดปรุงรอบ 2",
+              "maps_to_recipe_id": 161,
+              "maps_to_recipe_name": "ชุดปรุงรอบ 2 สำหรับซุป V3"
+            }
+          ]
+        }
       ],
       "items": [
         {
-          "line_key": "น้ำซุป:น้ำตาลมะพร้าว",
+          "line_key": "น้ำซุปก๋วยเตี๋ยว V3:น้ำเปล่า",
+          "item_name": "น้ำเปล่า",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": null,
+            "docx": "ไม่มีใน DOCX V3",
+            "v2": null,
+            "handwriting": null,
+            "owner_confirmation": "ประมาณ 50 ลิตร · หม้อเบอร์ 70"
+          },
+          "candidate_text": "ประมาณ 50 ลิตร",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันวันที่ 2026-08-04; คงคำว่า ‘ประมาณ’ ไว้ตามหน้างาน"
+        },
+        {
+          "line_key": "น้ำซุปก๋วยเตี๋ยว V3:ซอสลับสำหรับซุป V3",
+          "item_name": "ซอสลับสำหรับซุป V3",
+          "item_kind": "prepared_recipe",
+          "component_recipe_id": 160,
+          "source_values": {
+            "v1": "ซอสลับ (v2) 1500 ml",
+            "docx": "ซอสลับ 1400 (ไม่ระบุหน่วย)",
+            "v2": "ซอสลับ (v2) 1500 ml",
+            "handwriting": null
+          },
+          "candidate_text": "1400 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+        },
+        {
+          "line_key": "น้ำซุปก๋วยเตี๋ยว V3:น้ำตาลมะพร้าว",
           "item_name": "น้ำตาลมะพร้าว",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "350 g",
-            "docx": "500 g",
+            "docx": "น้ำตาลมะพร้าว 350 (ไม่ระบุหน่วย)",
             "v2": "350 g",
-            "handwriting": "ไม่มี"
+            "handwriting": null
           },
-          "candidate_text": "500 กรัม",
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
+          "candidate_text": "350 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         },
         {
-          "line_key": "น้ำซุป:น้ำตาลกรวด",
+          "line_key": "น้ำซุปก๋วยเตี๋ยว V3:น้ำตาลกรวด",
           "item_name": "น้ำตาลกรวด",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "250 g",
-            "docx": "300 g",
+            "docx": "น้ำตาลกรวด 250 (ไม่ระบุหน่วย)",
             "v2": "250 g",
-            "handwriting": "ไม่มี"
+            "handwriting": null
           },
-          "candidate_text": "300 กรัม",
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
-        },
-        {
-          "line_key": "น้ำซุป:ซอสฝาเขียว",
-          "item_name": "ซอสฝาเขียว",
-          "item_kind": "direct_ingredient",
-          "component_recipe_id": null,
-          "source_values": {
-            "v1": "รวมอยู่ในซอสลับ",
-            "docx": "1 กระบวย / 250 ml",
-            "v2": "รวมอยู่ในซอสลับ",
-            "handwriting": "ไม่มี"
-          },
-          "candidate_text": "1 กระบวย",
-          "selected_source": null,
+          "candidate_text": "250 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
           "decision_status": "needs_review",
-          "decision_note": null
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         },
         {
-          "line_key": "น้ำซุป:โชยุ ARO",
-          "item_name": "โชยุ ARO",
-          "item_kind": "direct_ingredient",
-          "component_recipe_id": null,
-          "source_values": {
-            "v1": "รวมอยู่ในซอสลับ",
-            "docx": "2 กระบวย / 250 ml",
-            "v2": "รวมอยู่ในซอสลับ",
-            "handwriting": "ไม่มี"
-          },
-          "candidate_text": "2 กระบวย",
-          "selected_source": null,
-          "decision_status": "needs_review",
-          "decision_note": null
-        },
-        {
-          "line_key": "น้ำซุป:รสดีก๋วยเตี๋ยว",
-          "item_name": "รสดีก๋วยเตี๋ยว",
+          "line_key": "น้ำซุปก๋วยเตี๋ยว V3:รสดีก๋วยเตี๋ยวเข้มข้น",
+          "item_name": "รสดีก๋วยเตี๋ยวเข้มข้น",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "500 g",
-            "docx": "2 กระบวยครึ่ง",
+            "docx": "รสดีก๋วยเตี๋ยวเข้มข้น 500 (ไม่ระบุหน่วย)",
             "v2": "500 g",
-            "handwriting": "ไม่มี"
+            "handwriting": null
           },
-          "candidate_text": "2½ กระบวย",
-          "selected_source": null,
+          "candidate_text": "500 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
           "decision_status": "needs_review",
-          "decision_note": null
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         },
         {
-          "line_key": "น้ำซุป:กระเทียมดองพร้อมน้ำ",
-          "item_name": "กระเทียมดองพร้อมน้ำ",
+          "line_key": "น้ำซุปก๋วยเตี๋ยว V3:รสดี ผงปรุงรสเนื้อ",
+          "item_name": "รสดี ผงปรุงรสเนื้อ",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
-            "v1": "200 g",
-            "docx": "2 แก้ว",
-            "v2": "200 g",
-            "handwriting": "ไม่มี"
+            "v1": "100 g",
+            "docx": "รสดีเนื้อ 100 (ไม่ระบุหน่วย)",
+            "v2": "100 g",
+            "handwriting": null
           },
-          "candidate_text": "2 แก้ว",
-          "selected_source": null,
+          "candidate_text": "100 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
           "decision_status": "needs_review",
-          "decision_note": null
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         },
         {
-          "line_key": "น้ำซุป:ถุงเครื่องเทศ",
-          "item_name": "ถุงเครื่องเทศ",
-          "item_kind": "prepared_recipe",
-          "component_recipe_id": 9,
-          "source_values": {
-            "v1": "กระปุกเครื่องเทศ 50 ลิตร",
-            "docx": "1 ถุง ต่อหม้อเบอร์ 50",
-            "v2": "กระปุกเครื่องเทศ 50 ลิตร",
-            "handwriting": "ไม่มี"
-          },
-          "candidate_text": "1 ถุง",
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
-        },
-        {
-          "line_key": "น้ำซุป:ลูกมะกรูด",
-          "item_name": "ลูกมะกรูด",
+          "line_key": "น้ำซุปก๋วยเตี๋ยว V3:ซีอิ๊วดำ",
+          "item_name": "ซีอิ๊วดำ",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "150 g",
-            "docx": "4 ลูก หั่นครึ่ง",
+            "docx": "ซีอิ๊วดำ 170 (ไม่ระบุหน่วย)",
             "v2": "150 g",
-            "handwriting": "ไม่มี"
+            "handwriting": null
+          },
+          "candidate_text": "170 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+        },
+        {
+          "line_key": "น้ำซุปก๋วยเตี๋ยว V3:กระเทียมดอง",
+          "item_name": "กระเทียมดอง",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "200 g",
+            "docx": "กระเทียมดอง 1 ถ้วย",
+            "v2": "200 g",
+            "handwriting": null
+          },
+          "candidate_text": "1 ถ้วย",
+          "selected_source": "docx",
+          "decision_status": "confirmed_from_docx",
+          "decision_note": "ใช้ค่าตาม DOCX V3 โดยไม่แปลงหน่วย"
+        },
+        {
+          "line_key": "น้ำซุปก๋วยเตี๋ยว V3:เกลือ",
+          "item_name": "เกลือ",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "10 g",
+            "docx": "เกลือ 10 (ไม่ระบุหน่วย)",
+            "v2": "10 g",
+            "handwriting": null
+          },
+          "candidate_text": "10 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+        },
+        {
+          "line_key": "น้ำซุปก๋วยเตี๋ยว V3:มะกรูด",
+          "item_name": "มะกรูด",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "150 g",
+            "docx": "มะกรูด 4 ลูก",
+            "v2": "150 g",
+            "handwriting": null
           },
           "candidate_text": "4 ลูก",
           "selected_source": "docx",
           "decision_status": "confirmed_from_docx",
-          "decision_note": null
+          "decision_note": "ใช้ค่าตาม DOCX V3 โดยไม่แปลงหน่วย"
         },
         {
-          "line_key": "น้ำซุป:หัวไชเท้า",
-          "item_name": "หัวไชเท้า",
-          "item_kind": "direct_ingredient",
-          "component_recipe_id": null,
-          "source_values": {
-            "v1": "1500 g",
-            "docx": "1 หัว",
-            "v2": "1500 g",
-            "handwriting": "ไม่มี"
-          },
-          "candidate_text": "1 หัว",
-          "selected_source": "docx",
-          "decision_status": "confirmed_from_docx",
-          "decision_note": null
-        },
-        {
-          "line_key": "น้ำซุป:ใบเตย",
+          "line_key": "น้ำซุปก๋วยเตี๋ยว V3:ใบเตย",
           "item_name": "ใบเตย",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "100 g",
-            "docx": "1 กำ",
+            "docx": "ใบเตย 10 ใบ",
             "v2": "100 g",
-            "handwriting": "ไม่มี"
+            "handwriting": null
           },
-          "candidate_text": "1 กำ",
+          "candidate_text": "10 ใบ",
           "selected_source": "docx",
           "decision_status": "confirmed_from_docx",
-          "decision_note": null
+          "decision_note": "ใช้ค่าตาม DOCX V3 โดยไม่แปลงหน่วย"
         },
         {
-          "line_key": "น้ำซุป:เครื่องปรุงชุดสอง",
-          "item_name": "เครื่องปรุงชุดสอง",
-          "item_kind": "prepared_recipe",
-          "component_recipe_id": 161,
+          "line_key": "น้ำซุปก๋วยเตี๋ยว V3:หัวไชเท้า",
+          "item_name": "หัวไชเท้า",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
           "source_values": {
-            "v1": "643 g",
-            "docx": "ไม่พบชื่อชุดนี้",
-            "v2": "643 g",
-            "handwriting": "ไม่มี"
+            "v1": "1500 g",
+            "docx": "หัวไชเท้า 2 หัว",
+            "v2": "1500 g",
+            "handwriting": null
           },
-          "candidate_text": null,
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
+          "candidate_text": "2 หัว",
+          "selected_source": "docx",
+          "decision_status": "confirmed_from_docx",
+          "decision_note": "ใช้ค่าตาม DOCX V3 โดยไม่แปลงหน่วย"
         },
         {
-          "line_key": "น้ำซุป:ซอสลับ (v2)",
-          "item_name": "ซอสลับ (v2)",
+          "line_key": "น้ำซุปก๋วยเตี๋ยว V3:ชุดเครื่องเทศสำหรับซุป V3",
+          "item_name": "ชุดเครื่องเทศสำหรับซุป V3",
           "item_kind": "prepared_recipe",
-          "component_recipe_id": 160,
+          "component_recipe_id": 9,
           "source_values": {
-            "v1": "1500 ml",
-            "docx": null,
-            "v2": null,
+            "v1": "กระปุกเครื่องเทศ [70g] 50 ลิตร",
+            "docx": "มีสูตรแยกหัวข้อ ‘ชุดเครื่องเทศ’ แต่ไม่ระบุจำนวนชุดที่ใส่ต่อหม้อ",
+            "v2": "กระปุกเครื่องเทศ [70g] 50 ลิตร",
             "handwriting": null
           },
           "candidate_text": null,
           "selected_source": null,
           "decision_status": "needs_review",
-          "decision_note": "พบเป็นสูตรประกอบใน V1 แต่ยังไม่มีค่าหน้าครัวที่ยืนยัน"
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+        },
+        {
+          "line_key": "น้ำซุปก๋วยเตี๋ยว V3:ชุดปรุงรอบ 2 สำหรับซุป V3",
+          "item_name": "ชุดปรุงรอบ 2 สำหรับซุป V3",
+          "item_kind": "prepared_recipe",
+          "component_recipe_id": 161,
+          "source_values": {
+            "v1": "เครื่องปรุงชุดสอง 643 g",
+            "docx": "มีสูตรแยกหัวข้อ ‘ชุดปรุงรอบ 2’ แต่ไม่ระบุจำนวนชุดที่ใส่ต่อหม้อ",
+            "v2": "เครื่องปรุงชุดสอง 643 g",
+            "handwriting": null
+          },
+          "candidate_text": null,
+          "selected_source": null,
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         }
       ],
-      "method_candidate_text": "1. ใส่กระดูกวัวลงในน้ำร้อน แล้วละลายน้ำตาลมะพร้าว 500 กรัมผ่านกระชอน\n2. ใส่น้ำตาลกรวด 300 กรัม ซอสฝาเขียว 1 กระบวย โชยุ ARO 2 กระบวย และรสดีก๋วยเตี๋ยว 2½ กระบวย\n3. ใส่กระเทียมดองพร้อมน้ำ 2 แก้ว ถุงเครื่องเทศ 1 ถุง และลูกมะกรูดผ่าครึ่ง 4 ลูก แล้วปิดฝา\n4. ใส่เนื้อตามลำดับ เติมน้ำที่ตักออกให้ท่วมเนื้อ ใส่หัวไชเท้า 1 หัว ใบเตย 1 กำ และซีอิ๊วดำ ¾ กระบวย\n5. ตุ๋นและตรวจความสุกตามชนิดเนื้อ ตักฟองและไขมันออกตามขั้นตอนในต้นฉบับ\n6. หลังใช้งาน กรองเศษ ต้มน้ำซุปที่เหลือจนเดือด ปิดฝา และเก็บเป็นหัวเชื้อวันถัดไป",
-      "method_selected_source": "docx",
-      "method_decision_note": "DOCX มีลำดับปรุง การลงเนื้อ และการเก็บน้ำซุปครบ แต่สูตรกับ V1/V2 ต่างกันมาก จึงยังไม่พร้อมพิมพ์",
+      "method_candidate_text": null,
+      "method_selected_source": null,
+      "method_decision_note": "DOCX V3 ระบุรายการส่วนผสมแต่ไม่มีลำดับวิธีปรุงน้ำซุป; ตัดวิธีเก่าที่มีขั้นตอนลงเนื้อออกตามขอบเขตที่เจ้าของยืนยัน",
       "yield_candidate_text": null,
-      "operational_notes": [],
+      "operational_notes": [
+        "ใช้น้ำเปล่าประมาณ 50 ลิตร ต่อหม้อเบอร์ 70",
+        "ขอบเขตสูตรนี้เป็นน้ำซุปเท่านั้น ไม่รวมขั้นตอนลงเนื้อ"
+      ],
       "blockers": [
         {
-          "code": "unresolved_source_conflict",
-          "message": "สูตร DOCX ใช้กระบวย แก้ว ถุง หัว และกำ แต่สูตรเว็บเป็นกรัมหลายค่าที่ไม่ตรงกัน ต้องยืนยันว่าใช้ฉบับใด"
+          "code": "missing_method",
+          "message": "DOCX V3 ยังไม่มีลำดับวิธีปรุงน้ำซุป และขอบเขตสูตรนี้ไม่รวมขั้นตอนลงเนื้อ"
+        },
+        {
+          "code": "missing_unit",
+          "message": "ตัวเลขหลายรายการใน DOCX V3 ไม่ระบุหน่วย จึงคงข้อความต้นฉบับไว้และห้ามเดาเป็นกรัมหรือมิลลิลิตร"
+        },
+        {
+          "code": "missing_quantity",
+          "message": "ยังไม่ระบุจำนวนชุดเครื่องเทศและชุดปรุงรอบ 2 ที่ใช้ต่อหม้อเบอร์ 70"
         }
       ]
     },
@@ -527,92 +602,111 @@ window.NNTNKitchenSotFirstSetV2 = {
       "recipe_id": 160,
       "legacy_recipe_id": 160,
       "recipe_version_id": "kitchen-v2-160-draft-001",
-      "recipe_name": "ซอสลับ (v2)",
+      "recipe_name": "ซอสลับสำหรับซุป V3",
       "recipe_type": "prepared_recipe",
       "parent_recipe_ids": [
         2,
         161
       ],
-      "review_state": "conflict",
+      "review_state": "reviewed_candidate",
       "source_locators": [
         "DOCX: สูตรก๋วยเตี๋ยววัดหนัง-ห้ามแก้ไข.docx / ผสมซอสปรุงน้ำ",
-        "V2: ซอสลับ (v2)"
+        "V2: ซอสลับ (v2)",
+        "DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx / สูตรผสมซอสลับ",
+        "Owner confirmation: 2026-08-04 — ซอสหอยนางรม 400 ml"
+      ],
+      "source_section_mappings": [
+        {
+          "source_document": "ซุปก๋วยเตี๋ยว V3.docx",
+          "sections": [
+            {
+              "section_name": "สูตรผสมซอสลับ",
+              "maps_to_recipe_id": 160,
+              "maps_to_recipe_name": "ซอสลับสำหรับซุป V3"
+            }
+          ]
+        }
       ],
       "items": [
         {
-          "line_key": "ซอสลับ (v2):โชยุ ARO",
-          "item_name": "โชยุ ARO",
+          "line_key": "ซอสลับสำหรับซุป V3:โชยุ",
+          "item_name": "โชยุ",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "1100 g",
-            "docx": "2500 ml",
+            "docx": "โชยุ 2100 (ไม่ระบุหน่วย)",
             "v2": "1100 g",
-            "handwriting": "ไม่มี"
+            "handwriting": null
           },
-          "candidate_text": null,
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
+          "candidate_text": "2100 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         },
         {
-          "line_key": "ซอสลับ (v2):ซอสฝาเขียว",
+          "line_key": "ซอสลับสำหรับซุป V3:ซอสฝาเขียว",
           "item_name": "ซอสฝาเขียว",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "1000 g",
-            "docx": "2000 ml",
+            "docx": "ฝาเขียว 1000 (ไม่ระบุหน่วย)",
             "v2": "1000 g",
-            "handwriting": "ไม่มี"
+            "handwriting": null
           },
-          "candidate_text": null,
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
+          "candidate_text": "1000 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         },
         {
-          "line_key": "ซอสลับ (v2):ซอสหอยนางรม",
-          "item_name": "ซอสหอยนางรม",
-          "item_kind": "direct_ingredient",
-          "component_recipe_id": null,
-          "source_values": {
-            "v1": "400 g",
-            "docx": "2 กระบวย / 500 ml",
-            "v2": "400 g",
-            "handwriting": "ไม่มี"
-          },
-          "candidate_text": "2 กระบวย",
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
-        },
-        {
-          "line_key": "ซอสลับ (v2):ซีอิ๊วขาว",
+          "line_key": "ซอสลับสำหรับซุป V3:ซีอิ๊วขาว",
           "item_name": "ซีอิ๊วขาว",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "1000 g",
-            "docx": "ไม่มีในสูตรผสมซอสปรุงน้ำ",
+            "docx": "ซีอิ๊วขาว 1000 (ไม่ระบุหน่วย)",
             "v2": "1000 g",
-            "handwriting": "ไม่มี"
+            "handwriting": null
           },
-          "candidate_text": null,
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
+          "candidate_text": "1000 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+        },
+        {
+          "line_key": "ซอสลับสำหรับซุป V3:ซอสหอยนางรม",
+          "item_name": "ซอสหอยนางรม",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "400 g",
+            "docx": "ซอสหอยนางรม (ไม่ระบุปริมาณ)",
+            "v2": "400 g",
+            "handwriting": null,
+            "owner_confirmation": "400 ml"
+          },
+          "candidate_text": "400 ml",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันวันที่ 2026-08-04; เป็นค่าหน้าครัว ไม่ใช่การแปลงจาก V1 400 g"
         }
       ],
-      "method_candidate_text": "1. ผสมโชยุ 2,500 มิลลิลิตร ซอสฝาเขียว 2,000 มิลลิลิตร และซอสหอยนางรม 2 กระบวย (500 มิลลิลิตร) รวมกันในแกลอน 5 ลิตร",
-      "method_selected_source": "docx",
-      "method_decision_note": "DOCX ระบุให้ผสมรวมในแกลอน 5 ลิตร แต่ยังยืนยันไม่ได้ว่าเป็นสูตรเดียวกับซอสลับ v2 บนเว็บ",
+      "method_candidate_text": null,
+      "method_selected_source": null,
+      "method_decision_note": "DOCX V3 ระบุรายการสูตรผสมซอสลับเท่านั้น ยังไม่มีวิธีผสม; เจ้าของยืนยันซอสหอยนางรม 400 ml",
       "yield_candidate_text": null,
       "operational_notes": [],
       "blockers": [
         {
-          "code": "unresolved_source_conflict",
-          "message": "สูตรผสมซอสปรุงน้ำ 5 ลิตรใน DOCX เป็นสูตรเดียวกับซอสลับ v2 หรือไม่"
+          "code": "missing_method",
+          "message": "ยังไม่มีวิธีผสมซอสลับ V3"
+        },
+        {
+          "code": "missing_unit",
+          "message": "DOCX V3 ไม่ระบุหน่วยของโชยุ ซอสฝาเขียว และซีอิ๊วขาว"
         }
       ]
     },
@@ -620,139 +714,220 @@ window.NNTNKitchenSotFirstSetV2 = {
       "recipe_id": 9,
       "legacy_recipe_id": 9,
       "recipe_version_id": "kitchen-v2-9-draft-001",
-      "recipe_name": "กระปุกเครื่องเทศ [70g]",
+      "recipe_name": "ชุดเครื่องเทศสำหรับซุป V3",
       "recipe_type": "prepared_recipe",
       "parent_recipe_ids": [
         2
       ],
-      "review_state": "conflict",
+      "review_state": "reviewed_candidate",
       "source_locators": [
         "DOCX: เครื่องเทศ+เครื่องปรุง-ห้ามแก้ไข.docx",
-        "V2: กระปุกเครื่องเทศ [70g]"
+        "V2: กระปุกเครื่องเทศ [70g]",
+        "DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx / ชุดเครื่องเทศ"
+      ],
+      "source_section_mappings": [
+        {
+          "source_document": "ซุปก๋วยเตี๋ยว V3.docx",
+          "sections": [
+            {
+              "section_name": "ชุดเครื่องเทศ",
+              "maps_to_recipe_id": 9,
+              "maps_to_recipe_name": "ชุดเครื่องเทศสำหรับซุป V3"
+            }
+          ]
+        }
       ],
       "items": [
         {
-          "line_key": "กระปุกเครื่องเทศ [70g]:ข่าเหลือง",
-          "item_name": "ข่าเหลือง",
-          "item_kind": "direct_ingredient",
-          "component_recipe_id": null,
-          "source_values": {
-            "v1": "70 g",
-            "docx": "100 g",
-            "v2": "70 g",
-            "handwriting": "ไม่มี"
-          },
-          "candidate_text": "100 กรัม",
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
-        },
-        {
-          "line_key": "กระปุกเครื่องเทศ [70g]:อบเชย",
+          "line_key": "ชุดเครื่องเทศสำหรับซุป V3:อบเชย",
           "item_name": "อบเชย",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "20 g",
-            "docx": "50 g",
+            "docx": "อบเชย 20 (ไม่ระบุหน่วย)",
             "v2": "20 g",
-            "handwriting": "ไม่มี"
+            "handwriting": null
           },
-          "candidate_text": "50 กรัม",
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
+          "candidate_text": "20 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         },
         {
-          "line_key": "กระปุกเครื่องเทศ [70g]:โป๊ยกั๊ก",
+          "line_key": "ชุดเครื่องเทศสำหรับซุป V3:โป๊ยกั๊ก",
           "item_name": "โป๊ยกั๊ก",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "20 g",
-            "docx": "50 g",
+            "docx": "โป๊ยกั๊ก 20 (ไม่ระบุหน่วย)",
             "v2": "20 g",
-            "handwriting": "ไม่มี"
+            "handwriting": null
           },
-          "candidate_text": "50 กรัม",
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
+          "candidate_text": "20 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         },
         {
-          "line_key": "กระปุกเครื่องเทศ [70g]:พริกไทยดำเม็ด",
-          "item_name": "พริกไทยดำเม็ด",
+          "line_key": "ชุดเครื่องเทศสำหรับซุป V3:พริกไทยดำ",
+          "item_name": "พริกไทยดำ",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "20 g",
-            "docx": "50 g",
+            "docx": "พริกไทยดำ 20 (ไม่ระบุหน่วย)",
             "v2": "20 g",
-            "handwriting": "ไม่มี"
+            "handwriting": null
           },
-          "candidate_text": "50 กรัม",
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
+          "candidate_text": "20 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         },
         {
-          "line_key": "กระปุกเครื่องเทศ [70g]:กระเทียมจีน",
+          "line_key": "ชุดเครื่องเทศสำหรับซุป V3:กระเทียมจีน",
           "item_name": "กระเทียมจีน",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "100 g",
-            "docx": "150 g",
+            "docx": "กระเทียมจีน 100 (ไม่ระบุหน่วย)",
             "v2": "100 g",
-            "handwriting": "ไม่มี"
+            "handwriting": null
           },
-          "candidate_text": "150 กรัม",
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
+          "candidate_text": "100 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         },
         {
-          "line_key": "กระปุกเครื่องเทศ [70g]:รากผักชี",
+          "line_key": "ชุดเครื่องเทศสำหรับซุป V3:รากผักชี",
           "item_name": "รากผักชี",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "100 g",
-            "docx": "50 g",
+            "docx": "รากผักชี 100 (ไม่ระบุหน่วย)",
             "v2": "100 g",
-            "handwriting": "ไม่มี"
+            "handwriting": null
           },
-          "candidate_text": "50 กรัม",
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
+          "candidate_text": "100 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         },
         {
-          "line_key": "กระปุกเครื่องเทศ [70g]:สมุนไพรจีนอีก 5 รายการ",
-          "item_name": "สมุนไพรจีนอีก 5 รายการ",
+          "line_key": "ชุดเครื่องเทศสำหรับซุป V3:ข่าเหลือง",
+          "item_name": "ข่าเหลือง",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
-            "v1": "มีใน V1/V2",
-            "docx": "ไม่พบในถุงเครื่องเทศต้นฉบับนี้",
-            "v2": "ซวงเจีย ลูกเฉาก๋วย ฮ่วยซัว เก๋ากี้ หญ้าหอม",
-            "handwriting": "ไม่มี"
+            "v1": "70 g",
+            "docx": "ข่าเหลือง 100 (ไม่ระบุหน่วย)",
+            "v2": "70 g",
+            "handwriting": null
           },
-          "candidate_text": null,
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
+          "candidate_text": "100 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+        },
+        {
+          "line_key": "ชุดเครื่องเทศสำหรับซุป V3:ซวงเจีย",
+          "item_name": "ซวงเจีย",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "7 g · V1 ไม่พบชื่อวัตถุดิบ",
+            "docx": "ซวงเจีย 7 (ไม่ระบุหน่วย)",
+            "v2": "7 g · V1 ไม่พบชื่อวัตถุดิบ",
+            "handwriting": null
+          },
+          "candidate_text": "7 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+        },
+        {
+          "line_key": "ชุดเครื่องเทศสำหรับซุป V3:ลูกเฉาก๋วย",
+          "item_name": "ลูกเฉาก๋วย",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "7 g",
+            "docx": "ลูกเฉาก๋วย 7 (ไม่ระบุหน่วย)",
+            "v2": "7 g",
+            "handwriting": null
+          },
+          "candidate_text": "7 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+        },
+        {
+          "line_key": "ชุดเครื่องเทศสำหรับซุป V3:ฮ่วยซัว",
+          "item_name": "ฮ่วยซัว",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "50 g",
+            "docx": "ฮ่วยซัว 50 (ไม่ระบุหน่วย)",
+            "v2": "50 g",
+            "handwriting": null
+          },
+          "candidate_text": "50 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+        },
+        {
+          "line_key": "ชุดเครื่องเทศสำหรับซุป V3:เก๋ากี้",
+          "item_name": "เก๋ากี้",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "15 g",
+            "docx": "เก๋ากี้ 15 (ไม่ระบุหน่วย)",
+            "v2": "15 g",
+            "handwriting": null
+          },
+          "candidate_text": "15 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+        },
+        {
+          "line_key": "ชุดเครื่องเทศสำหรับซุป V3:หญ้าหอม",
+          "item_name": "หญ้าหอม",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "3 g",
+            "docx": "หญ้าหอม 3 (ไม่ระบุหน่วย)",
+            "v2": "3 g",
+            "handwriting": null
+          },
+          "candidate_text": "3 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         }
       ],
-      "method_candidate_text": "1. โขลกข่าเหลืองหยาบแล้วคั่วจนแห้ง\n2. บุบอบเชยแล้วคั่วจนหอมโดยไม่ให้ไหม้ จากนั้นคั่วโป๊ยกั๊กและพริกไทยดำแยกกัน\n3. โขลกกระเทียมจีน 150 กรัมและรากผักชี 50 กรัมแบบหยาบ\n4. รวมกับพริกไทยดำ 50 กรัม โป๊ยกั๊ก 50 กรัม อบเชย 50 กรัม และข่า 100 กรัม แบ่งเป็นถุงและเก็บในช่องแช่แข็ง\n5. ใช้ 1 ถุงต่อหม้อเบอร์ 50",
-      "method_selected_source": "docx",
-      "method_decision_note": "DOCX มีวิธีคั่ว โขลก แพ็คถุง และเก็บฟรีซ แต่สัดส่วนไม่ใช่ batch 70 กรัมบนเว็บ จึงต้องยืนยันว่าเป็นคนละสูตรหรือไม่",
+      "method_candidate_text": null,
+      "method_selected_source": null,
+      "method_decision_note": "DOCX V3 ระบุรายการชุดเครื่องเทศเท่านั้น ยังไม่มีวิธีเตรียม คั่ว บด แบ่งชุด หรือวิธีเก็บ",
       "yield_candidate_text": null,
       "operational_notes": [],
       "blockers": [
         {
-          "code": "unresolved_source_conflict",
-          "message": "ถุงเครื่องเทศต้นฉบับมีสัดส่วนต่างจากสูตร 70 กรัมและไม่มีสมุนไพรจีน 5 รายการ ต้องแยกว่าเป็นคนละสูตรหรือไม่"
+          "code": "missing_method",
+          "message": "ยังไม่มีวิธีเตรียมชุดเครื่องเทศ V3"
+        },
+        {
+          "code": "missing_unit",
+          "message": "DOCX V3 ไม่ระบุหน่วยของเครื่องเทศทั้ง 11 รายการ"
         }
       ]
     },
@@ -760,130 +935,171 @@ window.NNTNKitchenSotFirstSetV2 = {
       "recipe_id": 161,
       "legacy_recipe_id": 161,
       "recipe_version_id": "kitchen-v2-161-draft-001",
-      "recipe_name": "เครื่องปรุงชุดสอง",
+      "recipe_name": "ชุดปรุงรอบ 2 สำหรับซุป V3",
       "recipe_type": "prepared_recipe",
       "parent_recipe_ids": [
         2
       ],
-      "review_state": "missing_source",
+      "review_state": "reviewed_candidate",
       "source_locators": [
-        "V2: เครื่องปรุงชุดสอง"
+        "V2: เครื่องปรุงชุดสอง",
+        "DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx / ชุดปรุงรอบ 2"
+      ],
+      "source_section_mappings": [
+        {
+          "source_document": "ซุปก๋วยเตี๋ยว V3.docx",
+          "sections": [
+            {
+              "section_name": "ชุดปรุงรอบ 2",
+              "maps_to_recipe_id": 161,
+              "maps_to_recipe_name": "ชุดปรุงรอบ 2 สำหรับซุป V3"
+            }
+          ]
+        }
       ],
       "items": [
         {
-          "line_key": "เครื่องปรุงชุดสอง:ซอสลับ (v2)",
-          "item_name": "ซอสลับ (v2)",
-          "item_kind": "prepared_recipe",
-          "component_recipe_id": 160,
-          "source_values": {
-            "v1": "250 ml",
-            "docx": "ยังไม่พบต้นฉบับ",
-            "v2": "เหมือน V1: 250 ml",
-            "handwriting": "ไม่มีการแก้สูตรนี้"
-          },
-          "candidate_text": "250 ml",
-          "selected_source": "matching_sources",
-          "decision_status": "needs_review",
-          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
-        },
-        {
-          "line_key": "เครื่องปรุงชุดสอง:น้ำตาลกรวด (ต.โชคลิขิต)",
-          "item_name": "น้ำตาลกรวด (ต.โชคลิขิต)",
-          "item_kind": "direct_ingredient",
-          "component_recipe_id": null,
-          "source_values": {
-            "v1": "120 g",
-            "docx": "ยังไม่พบต้นฉบับ",
-            "v2": "เหมือน V1: 120 g",
-            "handwriting": "ไม่มีการแก้สูตรนี้"
-          },
-          "candidate_text": "120 กรัม",
-          "selected_source": "matching_sources",
-          "decision_status": "needs_review",
-          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
-        },
-        {
-          "line_key": "เครื่องปรุงชุดสอง:ซอสถั่วเหลือง (คิคโคแมน)",
-          "item_name": "ซอสถั่วเหลือง (คิคโคแมน)",
+          "line_key": "ชุดปรุงรอบ 2 สำหรับซุป V3:ซอสถั่วเหลืองคิคโคแมน",
+          "item_name": "ซอสถั่วเหลืองคิคโคแมน",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "20 g",
-            "docx": "ยังไม่พบต้นฉบับ",
-            "v2": "เหมือน V1: 20 g",
-            "handwriting": "ไม่มีการแก้สูตรนี้"
+            "docx": "Kikoman 20 (ไม่ระบุหน่วย)",
+            "v2": "20 g",
+            "handwriting": null
           },
-          "candidate_text": "20 กรัม",
-          "selected_source": "matching_sources",
+          "candidate_text": "20 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
           "decision_status": "needs_review",
-          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         },
         {
-          "line_key": "เครื่องปรุงชุดสอง:รสดี ผงปรุงรสเนื้อ",
+          "line_key": "ชุดปรุงรอบ 2 สำหรับซุป V3:ซอสลับสำหรับซุป V3",
+          "item_name": "ซอสลับสำหรับซุป V3",
+          "item_kind": "prepared_recipe",
+          "component_recipe_id": 160,
+          "source_values": {
+            "v1": "250 ml",
+            "docx": "ซอสลับ 150 (ไม่ระบุหน่วย)",
+            "v2": "250 ml",
+            "handwriting": null
+          },
+          "candidate_text": "150 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+        },
+        {
+          "line_key": "ชุดปรุงรอบ 2 สำหรับซุป V3:น้ำตาลกรวด",
+          "item_name": "น้ำตาลกรวด",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "120 g",
+            "docx": "น้ำตาลกรวด 100 (ไม่ระบุหน่วย)",
+            "v2": "120 g",
+            "handwriting": null
+          },
+          "candidate_text": "100 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
+          "decision_status": "needs_review",
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+        },
+        {
+          "line_key": "ชุดปรุงรอบ 2 สำหรับซุป V3:รสดี ผงปรุงรสเนื้อ",
           "item_name": "รสดี ผงปรุงรสเนื้อ",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "50 g",
-            "docx": "ยังไม่พบต้นฉบับ",
-            "v2": "เหมือน V1: 50 g",
-            "handwriting": "ไม่มีการแก้สูตรนี้"
+            "docx": "รสดีเนื้อ 70 (ไม่ระบุหน่วย)",
+            "v2": "50 g",
+            "handwriting": null
           },
-          "candidate_text": "50 กรัม",
-          "selected_source": "matching_sources",
+          "candidate_text": "70 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
           "decision_status": "needs_review",
-          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         },
         {
-          "line_key": "เครื่องปรุงชุดสอง:เกลือสมุทร",
-          "item_name": "เกลือสมุทร",
+          "line_key": "ชุดปรุงรอบ 2 สำหรับซุป V3:เกลือ",
+          "item_name": "เกลือ",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "3 g",
-            "docx": "ยังไม่พบต้นฉบับ",
-            "v2": "เหมือน V1: 3 g",
-            "handwriting": "ไม่มีการแก้สูตรนี้"
+            "docx": "เกลือ 5 (ไม่ระบุหน่วย)",
+            "v2": "3 g",
+            "handwriting": null
           },
-          "candidate_text": "3 กรัม",
-          "selected_source": "matching_sources",
+          "candidate_text": "5 (DOCX V3 ไม่ระบุหน่วย)",
+          "selected_source": "docx",
           "decision_status": "needs_review",
-          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
+          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
         },
         {
-          "line_key": "เครื่องปรุงชุดสอง:ม้ามตุ๋น",
+          "line_key": "ชุดปรุงรอบ 2 สำหรับซุป V3:ม้ามตุ๋น",
           "item_name": "ม้ามตุ๋น",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
             "v1": "200 g",
-            "docx": "ยังไม่พบต้นฉบับ",
-            "v2": "เหมือน V1: 200 g",
-            "handwriting": "ไม่มีการแก้สูตรนี้"
+            "docx": "ม้ามตุ๋น 50 กรัม",
+            "v2": "200 g",
+            "handwriting": null
           },
-          "candidate_text": "200 กรัม",
-          "selected_source": "matching_sources",
-          "decision_status": "needs_review",
-          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
+          "candidate_text": "50 กรัม",
+          "selected_source": "docx",
+          "decision_status": "confirmed_from_docx",
+          "decision_note": "ใช้ค่าตาม DOCX V3 โดยไม่แปลงหน่วย"
+        },
+        {
+          "line_key": "ชุดปรุงรอบ 2 สำหรับซุป V3:ใบเตย",
+          "item_name": "ใบเตย",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": null,
+            "docx": "ใบเตย 3 ใบ",
+            "v2": null,
+            "handwriting": null
+          },
+          "candidate_text": "3 ใบ",
+          "selected_source": "docx",
+          "decision_status": "confirmed_from_docx",
+          "decision_note": "ใช้ค่าตาม DOCX V3 โดยไม่แปลงหน่วย"
+        },
+        {
+          "line_key": "ชุดปรุงรอบ 2 สำหรับซุป V3:ข่า",
+          "item_name": "ข่า",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": null,
+            "docx": "ข่า 2 แว่น",
+            "v2": null,
+            "handwriting": null
+          },
+          "candidate_text": "2 แว่น",
+          "selected_source": "docx",
+          "decision_status": "confirmed_from_docx",
+          "decision_note": "ใช้ค่าตาม DOCX V3 โดยไม่แปลงหน่วย"
         }
       ],
-      "method_candidate_text": null,
-      "method_selected_source": null,
-      "method_decision_note": "มีเฉพาะข้อมูลบนเว็บ/V2 ยังไม่พบเอกสารต้นฉบับหรือขั้นตอนการทำ",
+      "method_candidate_text": "1. ปั่นม้ามตุ๋น 50 กรัม ใบเตย 3 ใบ และข่า 2 แว่นรวมกัน",
+      "method_selected_source": "docx",
+      "method_decision_note": "DOCX V3 ระบุเพียงให้ปั่นม้ามตุ๋น ใบเตย และข่ารวมกัน; ยังไม่มีลำดับการใส่เครื่องปรุงรอบ 2 ลงหม้อ",
       "yield_candidate_text": null,
       "operational_notes": [],
       "blockers": [
         {
-          "code": "unresolved_source_conflict",
-          "message": "ยังไม่พบต้นฉบับและวิธีทำ พบเฉพาะ BOM บนเว็บ/V2"
-        },
-        {
           "code": "missing_method",
-          "message": "มีเฉพาะข้อมูลบนเว็บ/V2 ยังไม่พบเอกสารต้นฉบับหรือขั้นตอนการทำ"
+          "message": "ยังไม่มีลำดับการใส่ชุดปรุงรอบ 2 ลงหม้อ"
         },
         {
-          "code": "missing_source",
-          "message": "มีเฉพาะข้อมูลบนเว็บ/V2 ยังไม่พบเอกสารต้นฉบับหรือขั้นตอนการทำ"
+          "code": "missing_unit",
+          "message": "DOCX V3 ไม่ระบุหน่วยของคิคโคแมน ซอสลับ น้ำตาลกรวด รสดีเนื้อ และเกลือ"
         }
       ]
     },
@@ -903,6 +1119,7 @@ window.NNTNKitchenSotFirstSetV2 = {
         "V2: น้ำจิ้มซีฟู๊ด",
         "ลายมือ: หน้า 3"
       ],
+      "source_section_mappings": [],
       "items": [
         {
           "line_key": "น้ำจิ้มซีฟู๊ด:น้ำมะนาว ARO",
@@ -1058,6 +1275,7 @@ window.NNTNKitchenSotFirstSetV2 = {
         "V2: ข้าวหน้าเนื้อยากินิกุ",
         "PDF: true-originals/_inbox/scan จากเล่ม หน้างานจริงพนักงาน/ข้าวหน้าเนื้อยากินิกุ.pdf"
       ],
+      "source_section_mappings": [],
       "items": [
         {
           "line_key": "ข้าวหน้าเนื้อยากินิกุ:ซอสยากินิกุ",
@@ -1165,6 +1383,7 @@ window.NNTNKitchenSotFirstSetV2 = {
         "V2: ซอสยากินิกุ",
         "ลายมือ: หน้า 23"
       ],
+      "source_section_mappings": [],
       "items": [
         {
           "line_key": "ซอสยากินิกุ:โชยุ",
@@ -1385,6 +1604,7 @@ window.NNTNKitchenSotFirstSetV2 = {
         "DOCX: true-originals/_inbox/ข้าวหน้าเนื้อยากินิกุ.docx",
         "V2: ผัดผัก"
       ],
+      "source_section_mappings": [],
       "items": [
         {
           "line_key": "ผัดผัก:กะหล่ำปลี",
@@ -1520,6 +1740,7 @@ window.NNTNKitchenSotFirstSetV2 = {
         "DOCX: สูตรอาหาร ครัวเนื้อในตำนาน.docx / SOP ซอสอเนกประสงค์",
         "V2: ซอสอเนกประสงค์"
       ],
+      "source_section_mappings": [],
       "items": [
         {
           "line_key": "ซอสอเนกประสงค์:น้ำมันหอย",
@@ -1659,6 +1880,7 @@ window.NNTNKitchenSotFirstSetV2 = {
         "V2: ข้าวขยำเนื้อแดดเดียว",
         "ลายมือ: หน้า 9"
       ],
+      "source_section_mappings": [],
       "items": [
         {
           "line_key": "ข้าวขยำเนื้อแดดเดียว:เนื้อแดดเดียว",
@@ -1828,6 +2050,7 @@ window.NNTNKitchenSotFirstSetV2 = {
         "PDF: true-originals/_inbox/scan จากเล่ม หน้างานจริงพนักงาน/ข้าวขยำเนื้อแดดเดียว.pdf",
         "Owner confirmation: 2026-08-04 — หมัก 1 ชั่วโมง; แดดแรง 1 ชั่วโมง กลับด้านแล้วตากต่อ 30 นาที; แดดไม่แรง 3 ชั่วโมงไม่ต้องกลับด้าน"
       ],
+      "source_section_mappings": [],
       "items": [
         {
           "line_key": "เนื้อแดด (ข้าวขยำ):สันนอก (ดิบ)",
@@ -1968,6 +2191,7 @@ window.NNTNKitchenSotFirstSetV2 = {
         "V2: น้ำยำ",
         "ลายมือ: หน้า 21"
       ],
+      "source_section_mappings": [],
       "items": [
         {
           "line_key": "น้ำยำ:น้ำตาลทรายไม่ขัดสี",
@@ -2054,6 +2278,7 @@ window.NNTNKitchenSotFirstSetV2 = {
         "V2: เนื้อตุ๋นคั่วพริกเกลือ",
         "ลายมือ: หน้า 19"
       ],
+      "source_section_mappings": [],
       "items": [
         {
           "line_key": "เนื้อตุ๋นคั่วพริกเกลือ:พริกแดงจินดา",
@@ -2173,6 +2398,7 @@ window.NNTNKitchenSotFirstSetV2 = {
         "DOCX: true-originals/_inbox/เนื้อตุ๋นคั่วพริกเกลือ.docx",
         "V2: ผงคั่วพริกเกลือ"
       ],
+      "source_section_mappings": [],
       "items": [
         {
           "line_key": "ผงคั่วพริกเกลือ:น้ำตาลทรายไม่ขัดสี",

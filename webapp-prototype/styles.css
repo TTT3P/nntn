@@ -2028,6 +2028,29 @@ body.modal-open {
   padding-left: 4mm;
 }
 
+.print-operational-notes {
+  margin-top: 5mm;
+  padding: 3mm;
+  color: var(--green-900);
+  background: #f3f7f1;
+  border: 1px solid rgba(32, 72, 43, 0.22);
+  border-radius: 2.5mm;
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.print-operational-notes strong {
+  display: block;
+  margin-bottom: 1.5mm;
+  font-size: 9px;
+}
+
+.print-operational-notes ul,
+.kitchen-operational-notes ul {
+  margin: 0;
+  padding-left: 4mm;
+}
+
 .print-revision {
   margin-top: 6mm;
 }

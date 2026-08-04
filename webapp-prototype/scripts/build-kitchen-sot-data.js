@@ -13,11 +13,25 @@ const stepsById = new Map(imported.recipe_steps.map((row) => [row.recipe_id, row
 const recipesById = new Map(sourceReview.recipes.map((row) => [row.recipe_id, row]));
 
 const reviewStateOverrides = new Map([
+  [2, "reviewed_candidate"],
+  [9, "reviewed_candidate"],
+  [160, "reviewed_candidate"],
+  [161, "reviewed_candidate"],
   [159, "reviewed_candidate"],
   [28, "reviewed_candidate"]
 ]);
 
 const sourceLocatorAdditions = new Map([
+  [2, [
+    "DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx",
+    "Owner confirmation: 2026-08-04 — น้ำเปล่าประมาณ 50 ลิตร ใช้หม้อเบอร์ 70 และสูตรนี้ไม่รวมขั้นตอนลงเนื้อ"
+  ]],
+  [9, ["DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx / ชุดเครื่องเทศ"]],
+  [160, [
+    "DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx / สูตรผสมซอสลับ",
+    "Owner confirmation: 2026-08-04 — ซอสหอยนางรม 400 ml"
+  ]],
+  [161, ["DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx / ชุดปรุงรอบ 2"]],
   [159, ["PDF: true-originals/_inbox/scan จากเล่ม หน้างานจริงพนักงาน/ข้าวหน้าเนื้อยากินิกุ.pdf"]],
   [28, [
     "PDF: true-originals/_inbox/scan จากเล่ม หน้างานจริงพนักงาน/ข้าวขยำเนื้อแดดเดียว.pdf",
@@ -25,7 +39,16 @@ const sourceLocatorAdditions = new Map([
   ]]
 ]);
 
-const importedCandidateRecipeIds = new Set([28, 161]);
+const importedCandidateRecipeIds = new Set([28]);
+
+const soupV3RecipeIds = new Set([2, 9, 160, 161]);
+
+const recipeNameOverrides = new Map([
+  [2, "น้ำซุปก๋วยเตี๋ยว V3"],
+  [9, "ชุดเครื่องเทศสำหรับซุป V3"],
+  [160, "ซอสลับสำหรับซุป V3"],
+  [161, "ชุดปรุงรอบ 2 สำหรับซุป V3"]
+]);
 
 const componentAliases = new Map([
   ["เนื้อตุ๋น (ราดข้าว)", 164],
@@ -58,22 +81,10 @@ const methodOverrides = new Map([
     "2. นำเนื้อพิคานย่าที่ย่างไว้หั่นและเรียงบนข้าวข้างผัดผัก",
     "3. ราดซอสยากินิกุ 3 ช้อนโต๊ะลงบนเนื้อพิคานย่าและผัดผักให้ทั่ว"
   ].join("\n")],
-  [2, [
-    "1. ใส่กระดูกวัวลงในน้ำร้อน แล้วละลายน้ำตาลมะพร้าว 500 กรัมผ่านกระชอน",
-    "2. ใส่น้ำตาลกรวด 300 กรัม ซอสฝาเขียว 1 กระบวย โชยุ ARO 2 กระบวย และรสดีก๋วยเตี๋ยว 2½ กระบวย",
-    "3. ใส่กระเทียมดองพร้อมน้ำ 2 แก้ว ถุงเครื่องเทศ 1 ถุง และลูกมะกรูดผ่าครึ่ง 4 ลูก แล้วปิดฝา",
-    "4. ใส่เนื้อตามลำดับ เติมน้ำที่ตักออกให้ท่วมเนื้อ ใส่หัวไชเท้า 1 หัว ใบเตย 1 กำ และซีอิ๊วดำ ¾ กระบวย",
-    "5. ตุ๋นและตรวจความสุกตามชนิดเนื้อ ตักฟองและไขมันออกตามขั้นตอนในต้นฉบับ",
-    "6. หลังใช้งาน กรองเศษ ต้มน้ำซุปที่เหลือจนเดือด ปิดฝา และเก็บเป็นหัวเชื้อวันถัดไป"
-  ].join("\n")],
-  [160, "1. ผสมโชยุ 2,500 มิลลิลิตร ซอสฝาเขียว 2,000 มิลลิลิตร และซอสหอยนางรม 2 กระบวย (500 มิลลิลิตร) รวมกันในแกลอน 5 ลิตร"],
-  [9, [
-    "1. โขลกข่าเหลืองหยาบแล้วคั่วจนแห้ง",
-    "2. บุบอบเชยแล้วคั่วจนหอมโดยไม่ให้ไหม้ จากนั้นคั่วโป๊ยกั๊กและพริกไทยดำแยกกัน",
-    "3. โขลกกระเทียมจีน 150 กรัมและรากผักชี 50 กรัมแบบหยาบ",
-    "4. รวมกับพริกไทยดำ 50 กรัม โป๊ยกั๊ก 50 กรัม อบเชย 50 กรัม และข่า 100 กรัม แบ่งเป็นถุงและเก็บในช่องแช่แข็ง",
-    "5. ใช้ 1 ถุงต่อหม้อเบอร์ 50"
-  ].join("\n")]
+  [2, null],
+  [160, null],
+  [9, null],
+  [161, "1. ปั่นม้ามตุ๋น 50 กรัม ใบเตย 3 ใบ และข่า 2 แว่นรวมกัน"]
 ]);
 
 const candidateOverrides = new Map([
@@ -118,22 +129,166 @@ const candidateOverrides = new Map([
   }]
 ]);
 
+function soupV3Item(recipeName, itemName, candidateText, docxText, options = {}) {
+  const decisionStatus = options.decisionStatus ?? "needs_review";
+  const selectedSource = decisionStatus === "confirmed_by_owner"
+    ? "owner_confirmation"
+    : decisionStatus === "confirmed_from_docx"
+      ? "docx"
+      : candidateText
+        ? "docx"
+        : null;
+  return {
+    line_key: `${recipeName}:${itemName}`,
+    item_name: itemName,
+    item_kind: options.componentRecipeId == null ? "direct_ingredient" : "prepared_recipe",
+    component_recipe_id: options.componentRecipeId ?? null,
+    source_values: {
+      v1: options.v1 ?? null,
+      docx: docxText,
+      v2: options.v2 ?? options.v1 ?? null,
+      handwriting: null,
+      ...(options.ownerConfirmation ? { owner_confirmation: options.ownerConfirmation } : {})
+    },
+    candidate_text: candidateText,
+    selected_source: selectedSource,
+    decision_status: decisionStatus,
+    decision_note: options.decisionNote ?? (
+      decisionStatus === "needs_review"
+        ? "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+        : "ใช้ค่าตาม DOCX V3 โดยไม่แปลงหน่วย"
+    )
+  };
+}
+
+const soupV3ItemOverrides = new Map([
+  [2, [
+    soupV3Item("น้ำซุปก๋วยเตี๋ยว V3", "น้ำเปล่า", "ประมาณ 50 ลิตร", "ไม่มีใน DOCX V3", {
+      ownerConfirmation: "ประมาณ 50 ลิตร · หม้อเบอร์ 70",
+      decisionStatus: "confirmed_by_owner",
+      decisionNote: "เจ้าของยืนยันวันที่ 2026-08-04; คงคำว่า ‘ประมาณ’ ไว้ตามหน้างาน"
+    }),
+    soupV3Item("น้ำซุปก๋วยเตี๋ยว V3", "ซอสลับสำหรับซุป V3", "1400 (DOCX V3 ไม่ระบุหน่วย)", "ซอสลับ 1400 (ไม่ระบุหน่วย)", {
+      componentRecipeId: 160,
+      v1: "ซอสลับ (v2) 1500 ml"
+    }),
+    soupV3Item("น้ำซุปก๋วยเตี๋ยว V3", "น้ำตาลมะพร้าว", "350 (DOCX V3 ไม่ระบุหน่วย)", "น้ำตาลมะพร้าว 350 (ไม่ระบุหน่วย)", { v1: "350 g" }),
+    soupV3Item("น้ำซุปก๋วยเตี๋ยว V3", "น้ำตาลกรวด", "250 (DOCX V3 ไม่ระบุหน่วย)", "น้ำตาลกรวด 250 (ไม่ระบุหน่วย)", { v1: "250 g" }),
+    soupV3Item("น้ำซุปก๋วยเตี๋ยว V3", "รสดีก๋วยเตี๋ยวเข้มข้น", "500 (DOCX V3 ไม่ระบุหน่วย)", "รสดีก๋วยเตี๋ยวเข้มข้น 500 (ไม่ระบุหน่วย)", { v1: "500 g" }),
+    soupV3Item("น้ำซุปก๋วยเตี๋ยว V3", "รสดี ผงปรุงรสเนื้อ", "100 (DOCX V3 ไม่ระบุหน่วย)", "รสดีเนื้อ 100 (ไม่ระบุหน่วย)", { v1: "100 g" }),
+    soupV3Item("น้ำซุปก๋วยเตี๋ยว V3", "ซีอิ๊วดำ", "170 (DOCX V3 ไม่ระบุหน่วย)", "ซีอิ๊วดำ 170 (ไม่ระบุหน่วย)", { v1: "150 g" }),
+    soupV3Item("น้ำซุปก๋วยเตี๋ยว V3", "กระเทียมดอง", "1 ถ้วย", "กระเทียมดอง 1 ถ้วย", { v1: "200 g", decisionStatus: "confirmed_from_docx" }),
+    soupV3Item("น้ำซุปก๋วยเตี๋ยว V3", "เกลือ", "10 (DOCX V3 ไม่ระบุหน่วย)", "เกลือ 10 (ไม่ระบุหน่วย)", { v1: "10 g" }),
+    soupV3Item("น้ำซุปก๋วยเตี๋ยว V3", "มะกรูด", "4 ลูก", "มะกรูด 4 ลูก", { v1: "150 g", decisionStatus: "confirmed_from_docx" }),
+    soupV3Item("น้ำซุปก๋วยเตี๋ยว V3", "ใบเตย", "10 ใบ", "ใบเตย 10 ใบ", { v1: "100 g", decisionStatus: "confirmed_from_docx" }),
+    soupV3Item("น้ำซุปก๋วยเตี๋ยว V3", "หัวไชเท้า", "2 หัว", "หัวไชเท้า 2 หัว", { v1: "1500 g", decisionStatus: "confirmed_from_docx" }),
+    soupV3Item("น้ำซุปก๋วยเตี๋ยว V3", "ชุดเครื่องเทศสำหรับซุป V3", null, "มีสูตรแยกหัวข้อ ‘ชุดเครื่องเทศ’ แต่ไม่ระบุจำนวนชุดที่ใส่ต่อหม้อ", {
+      componentRecipeId: 9,
+      v1: "กระปุกเครื่องเทศ [70g] 50 ลิตร"
+    }),
+    soupV3Item("น้ำซุปก๋วยเตี๋ยว V3", "ชุดปรุงรอบ 2 สำหรับซุป V3", null, "มีสูตรแยกหัวข้อ ‘ชุดปรุงรอบ 2’ แต่ไม่ระบุจำนวนชุดที่ใส่ต่อหม้อ", {
+      componentRecipeId: 161,
+      v1: "เครื่องปรุงชุดสอง 643 g"
+    })
+  ]],
+  [160, [
+    soupV3Item("ซอสลับสำหรับซุป V3", "โชยุ", "2100 (DOCX V3 ไม่ระบุหน่วย)", "โชยุ 2100 (ไม่ระบุหน่วย)", { v1: "1100 g" }),
+    soupV3Item("ซอสลับสำหรับซุป V3", "ซอสฝาเขียว", "1000 (DOCX V3 ไม่ระบุหน่วย)", "ฝาเขียว 1000 (ไม่ระบุหน่วย)", { v1: "1000 g" }),
+    soupV3Item("ซอสลับสำหรับซุป V3", "ซีอิ๊วขาว", "1000 (DOCX V3 ไม่ระบุหน่วย)", "ซีอิ๊วขาว 1000 (ไม่ระบุหน่วย)", { v1: "1000 g" }),
+    soupV3Item("ซอสลับสำหรับซุป V3", "ซอสหอยนางรม", "400 ml", "ซอสหอยนางรม (ไม่ระบุปริมาณ)", {
+      v1: "400 g",
+      ownerConfirmation: "400 ml",
+      decisionStatus: "confirmed_by_owner",
+      decisionNote: "เจ้าของยืนยันวันที่ 2026-08-04; เป็นค่าหน้าครัว ไม่ใช่การแปลงจาก V1 400 g"
+    })
+  ]],
+  [9, [
+    soupV3Item("ชุดเครื่องเทศสำหรับซุป V3", "อบเชย", "20 (DOCX V3 ไม่ระบุหน่วย)", "อบเชย 20 (ไม่ระบุหน่วย)", { v1: "20 g" }),
+    soupV3Item("ชุดเครื่องเทศสำหรับซุป V3", "โป๊ยกั๊ก", "20 (DOCX V3 ไม่ระบุหน่วย)", "โป๊ยกั๊ก 20 (ไม่ระบุหน่วย)", { v1: "20 g" }),
+    soupV3Item("ชุดเครื่องเทศสำหรับซุป V3", "พริกไทยดำ", "20 (DOCX V3 ไม่ระบุหน่วย)", "พริกไทยดำ 20 (ไม่ระบุหน่วย)", { v1: "20 g" }),
+    soupV3Item("ชุดเครื่องเทศสำหรับซุป V3", "กระเทียมจีน", "100 (DOCX V3 ไม่ระบุหน่วย)", "กระเทียมจีน 100 (ไม่ระบุหน่วย)", { v1: "100 g" }),
+    soupV3Item("ชุดเครื่องเทศสำหรับซุป V3", "รากผักชี", "100 (DOCX V3 ไม่ระบุหน่วย)", "รากผักชี 100 (ไม่ระบุหน่วย)", { v1: "100 g" }),
+    soupV3Item("ชุดเครื่องเทศสำหรับซุป V3", "ข่าเหลือง", "100 (DOCX V3 ไม่ระบุหน่วย)", "ข่าเหลือง 100 (ไม่ระบุหน่วย)", { v1: "70 g" }),
+    soupV3Item("ชุดเครื่องเทศสำหรับซุป V3", "ซวงเจีย", "7 (DOCX V3 ไม่ระบุหน่วย)", "ซวงเจีย 7 (ไม่ระบุหน่วย)", { v1: "7 g · V1 ไม่พบชื่อวัตถุดิบ" }),
+    soupV3Item("ชุดเครื่องเทศสำหรับซุป V3", "ลูกเฉาก๋วย", "7 (DOCX V3 ไม่ระบุหน่วย)", "ลูกเฉาก๋วย 7 (ไม่ระบุหน่วย)", { v1: "7 g" }),
+    soupV3Item("ชุดเครื่องเทศสำหรับซุป V3", "ฮ่วยซัว", "50 (DOCX V3 ไม่ระบุหน่วย)", "ฮ่วยซัว 50 (ไม่ระบุหน่วย)", { v1: "50 g" }),
+    soupV3Item("ชุดเครื่องเทศสำหรับซุป V3", "เก๋ากี้", "15 (DOCX V3 ไม่ระบุหน่วย)", "เก๋ากี้ 15 (ไม่ระบุหน่วย)", { v1: "15 g" }),
+    soupV3Item("ชุดเครื่องเทศสำหรับซุป V3", "หญ้าหอม", "3 (DOCX V3 ไม่ระบุหน่วย)", "หญ้าหอม 3 (ไม่ระบุหน่วย)", { v1: "3 g" })
+  ]],
+  [161, [
+    soupV3Item("ชุดปรุงรอบ 2 สำหรับซุป V3", "ซอสถั่วเหลืองคิคโคแมน", "20 (DOCX V3 ไม่ระบุหน่วย)", "Kikoman 20 (ไม่ระบุหน่วย)", { v1: "20 g" }),
+    soupV3Item("ชุดปรุงรอบ 2 สำหรับซุป V3", "ซอสลับสำหรับซุป V3", "150 (DOCX V3 ไม่ระบุหน่วย)", "ซอสลับ 150 (ไม่ระบุหน่วย)", { componentRecipeId: 160, v1: "250 ml" }),
+    soupV3Item("ชุดปรุงรอบ 2 สำหรับซุป V3", "น้ำตาลกรวด", "100 (DOCX V3 ไม่ระบุหน่วย)", "น้ำตาลกรวด 100 (ไม่ระบุหน่วย)", { v1: "120 g" }),
+    soupV3Item("ชุดปรุงรอบ 2 สำหรับซุป V3", "รสดี ผงปรุงรสเนื้อ", "70 (DOCX V3 ไม่ระบุหน่วย)", "รสดีเนื้อ 70 (ไม่ระบุหน่วย)", { v1: "50 g" }),
+    soupV3Item("ชุดปรุงรอบ 2 สำหรับซุป V3", "เกลือ", "5 (DOCX V3 ไม่ระบุหน่วย)", "เกลือ 5 (ไม่ระบุหน่วย)", { v1: "3 g" }),
+    soupV3Item("ชุดปรุงรอบ 2 สำหรับซุป V3", "ม้ามตุ๋น", "50 กรัม", "ม้ามตุ๋น 50 กรัม", { v1: "200 g", decisionStatus: "confirmed_from_docx" }),
+    soupV3Item("ชุดปรุงรอบ 2 สำหรับซุป V3", "ใบเตย", "3 ใบ", "ใบเตย 3 ใบ", { decisionStatus: "confirmed_from_docx" }),
+    soupV3Item("ชุดปรุงรอบ 2 สำหรับซุป V3", "ข่า", "2 แว่น", "ข่า 2 แว่น", { decisionStatus: "confirmed_from_docx" })
+  ]]
+]);
+
 const resolvedUnresolvedQuestions = new Set([
   "ข้าวหน้าเนื้อยากินิกุ:น้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟตรงไหน และผัดผักนับเป็น 1 ชุดหรือ 53 กรัม",
   "เนื้อแดด (ข้าวขยำ):ยังไม่พบขั้นตอนหมัก ตาก/อบ การเก็บ และผลผลิตจากต้นฉบับ"
 ]);
 
 const methodDecisionNoteOverrides = new Map([
+  [2, "DOCX V3 ระบุรายการส่วนผสมแต่ไม่มีลำดับวิธีปรุงน้ำซุป; ตัดวิธีเก่าที่มีขั้นตอนลงเนื้อออกตามขอบเขตที่เจ้าของยืนยัน"],
+  [9, "DOCX V3 ระบุรายการชุดเครื่องเทศเท่านั้น ยังไม่มีวิธีเตรียม คั่ว บด แบ่งชุด หรือวิธีเก็บ"],
+  [160, "DOCX V3 ระบุรายการสูตรผสมซอสลับเท่านั้น ยังไม่มีวิธีผสม; เจ้าของยืนยันซอสหอยนางรม 400 ml"],
+  [161, "DOCX V3 ระบุเพียงให้ปั่นม้ามตุ๋น ใบเตย และข่ารวมกัน; ยังไม่มีลำดับการใส่เครื่องปรุงรอบ 2 ลงหม้อ"],
   [159, "DOCX ระบุขั้นตอนจัดเสิร์ฟ; เจ้าของเมนูยืนยันน้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟแยกในถ้วย 1 oz และใช้ผัดผัก 1 ชุดตามสูตร"],
   [28, "เรียบเรียงจากคำบอกของครัวเท่าที่ได้รับ โดยไม่เติมวิธีเตรียมชิ้นเนื้อ การเก็บ หรือผลผลิตหลังตาก"]
 ]);
 
 const methodSelectedSourceOverrides = new Map([
+  [161, "docx"],
   [28, "owner_confirmation"]
 ]);
 
 const blockerAdditions = new Map([
+  [2, [
+    { code: "missing_method", message: "DOCX V3 ยังไม่มีลำดับวิธีปรุงน้ำซุป และขอบเขตสูตรนี้ไม่รวมขั้นตอนลงเนื้อ" },
+    { code: "missing_unit", message: "ตัวเลขหลายรายการใน DOCX V3 ไม่ระบุหน่วย จึงคงข้อความต้นฉบับไว้และห้ามเดาเป็นกรัมหรือมิลลิลิตร" },
+    { code: "missing_quantity", message: "ยังไม่ระบุจำนวนชุดเครื่องเทศและชุดปรุงรอบ 2 ที่ใช้ต่อหม้อเบอร์ 70" }
+  ]],
+  [9, [
+    { code: "missing_method", message: "ยังไม่มีวิธีเตรียมชุดเครื่องเทศ V3" },
+    { code: "missing_unit", message: "DOCX V3 ไม่ระบุหน่วยของเครื่องเทศทั้ง 11 รายการ" }
+  ]],
+  [160, [
+    { code: "missing_method", message: "ยังไม่มีวิธีผสมซอสลับ V3" },
+    { code: "missing_unit", message: "DOCX V3 ไม่ระบุหน่วยของโชยุ ซอสฝาเขียว และซีอิ๊วขาว" }
+  ]],
+  [161, [
+    { code: "missing_method", message: "ยังไม่มีลำดับการใส่ชุดปรุงรอบ 2 ลงหม้อ" },
+    { code: "missing_unit", message: "DOCX V3 ไม่ระบุหน่วยของคิคโคแมน ซอสลับ น้ำตาลกรวด รสดีเนื้อ และเกลือ" }
+  ]],
   [28, [{ code: "missing_source", message: "ยังขาดข้อมูล: วิธีเตรียมชิ้นเนื้อก่อนหมัก การเก็บ และผลผลิตหลังตาก" }]]
+]);
+
+const operationalNoteOverrides = new Map([
+  [2, [
+    "ใช้น้ำเปล่าประมาณ 50 ลิตร ต่อหม้อเบอร์ 70",
+    "ขอบเขตสูตรนี้เป็นน้ำซุปเท่านั้น ไม่รวมขั้นตอนลงเนื้อ"
+  ]]
+]);
+
+const soupV3SourceSections = {
+  source_document: "ซุปก๋วยเตี๋ยว V3.docx",
+  sections: [
+    { section_name: "วิธีปรุงซุป (รายการส่วนผสม; ยังไม่มีลำดับวิธีทำ)", maps_to_recipe_id: 2, maps_to_recipe_name: "น้ำซุปก๋วยเตี๋ยว V3" },
+    { section_name: "สูตรผสมซอสลับ", maps_to_recipe_id: 160, maps_to_recipe_name: "ซอสลับสำหรับซุป V3" },
+    { section_name: "ชุดเครื่องเทศ", maps_to_recipe_id: 9, maps_to_recipe_name: "ชุดเครื่องเทศสำหรับซุป V3" },
+    { section_name: "ชุดปรุงรอบ 2", maps_to_recipe_id: 161, maps_to_recipe_name: "ชุดปรุงรอบ 2 สำหรับซุป V3" }
+  ]
+};
+
+const sourceSectionMappingOverrides = new Map([
+  [2, [soupV3SourceSections]],
+  [9, [{ ...soupV3SourceSections, sections: [soupV3SourceSections.sections[2]] }]],
+  [160, [{ ...soupV3SourceSections, sections: [soupV3SourceSections.sections[1]] }]],
+  [161, [{ ...soupV3SourceSections, sections: [soupV3SourceSections.sections[3]] }]]
 ]);
 
 function selectedSource(status) {
@@ -199,6 +354,9 @@ function importedCandidateItems(recipe) {
 }
 
 function reviewItems(recipe) {
+  if (soupV3ItemOverrides.has(recipe.recipe_id)) {
+    return structuredClone(soupV3ItemOverrides.get(recipe.recipe_id));
+  }
   if (importedCandidateRecipeIds.has(recipe.recipe_id)) return importedCandidateItems(recipe);
   return (recipe.decisions || []).map((decision) => decisionItem(recipe.recipe_id, recipe.recipe_name, decision));
 }
@@ -239,13 +397,24 @@ function methodCandidate(recipe) {
   return stepsById.get(recipe.recipe_id) ?? null;
 }
 
-function blockersFor(recipe) {
-  const blockers = sourceReview.unresolved
-    .filter((issue) => issue.recipe_name === recipe.recipe_name)
-    .filter((issue) => !resolvedUnresolvedQuestions.has(`${issue.recipe_name}:${issue.question}`))
-    .map((issue) => ({ code: "unresolved_source_conflict", message: issue.question }));
+function methodSource(recipe) {
+  if (!methodCandidate(recipe)) return null;
+  if (methodSelectedSourceOverrides.has(recipe.recipe_id)) return methodSelectedSourceOverrides.get(recipe.recipe_id);
+  if (recipe.method_status.includes("handwriting")) return "handwriting";
+  if (recipe.method_status.includes("docx") || recipe.method_status === "candidate_from_docx") return "docx";
+  return "matching_sources";
+}
 
-  if (!methodCandidate(recipe)) {
+function blockersFor(recipe) {
+  const blockers = soupV3RecipeIds.has(recipe.recipe_id)
+    ? []
+    : sourceReview.unresolved
+      .filter((issue) => issue.recipe_name === recipe.recipe_name)
+      .filter((issue) => !resolvedUnresolvedQuestions.has(`${issue.recipe_name}:${issue.question}`))
+      .map((issue) => ({ code: "unresolved_source_conflict", message: issue.question }));
+
+  const additions = blockerAdditions.get(recipe.recipe_id) || [];
+  if (!methodCandidate(recipe) && !additions.some((blocker) => blocker.code === "missing_method")) {
     blockers.push({ code: "missing_method", message: recipe.method_note });
   }
 
@@ -259,33 +428,35 @@ function blockersFor(recipe) {
     blockers.push({ code: "missing_source", message: recipe.method_note });
   }
 
-  blockers.push(...(blockerAdditions.get(recipe.recipe_id) || []));
+  blockers.push(...additions);
 
   return blockers;
 }
 
 const recipes = sourceReview.manifest.map((manifest) => {
   const recipe = recipesById.get(manifest.recipe_id);
+  const recipeName = recipeNameOverrides.get(recipe.recipe_id) ?? recipe.recipe_name;
   const items = ensureImportedDependencies(
     recipe.recipe_id,
-    recipe.recipe_name,
+    recipeName,
     reviewItems(recipe)
   );
   return {
     recipe_id: recipe.recipe_id,
     legacy_recipe_id: recipe.recipe_id,
     recipe_version_id: `kitchen-v2-${recipe.recipe_id}-draft-001`,
-    recipe_name: recipe.recipe_name,
+    recipe_name: recipeName,
     recipe_type: manifest.role === "root_menu" ? "sellable_menu" : "prepared_recipe",
     parent_recipe_ids: parentRecipeIds(recipe.recipe_id),
     review_state: reviewStateOverrides.get(recipe.recipe_id) ?? recipe.review_state,
     source_locators: [...recipe.source_locators, ...(sourceLocatorAdditions.get(recipe.recipe_id) || [])],
+    source_section_mappings: structuredClone(sourceSectionMappingOverrides.get(recipe.recipe_id) ?? []),
     items,
     method_candidate_text: methodCandidate(recipe),
-    method_selected_source: methodSelectedSourceOverrides.get(recipe.recipe_id) ?? (recipe.method_status.includes("handwriting") ? "handwriting" : recipe.method_status.includes("docx") || recipe.method_status === "candidate_from_docx" ? "docx" : methodCandidate(recipe) ? "matching_sources" : null),
+    method_selected_source: methodSource(recipe),
     method_decision_note: methodDecisionNoteOverrides.get(recipe.recipe_id) ?? recipe.method_note,
     yield_candidate_text: null,
-    operational_notes: [],
+    operational_notes: operationalNoteOverrides.get(recipe.recipe_id) ?? [],
     blockers: blockersFor(recipe)
   };
 });
@@ -412,8 +583,8 @@ recipes.push({
 
 const data = {
   schema_version: "2.0.0-prototype",
-  generated_at: "2026-08-04T17:18:00+07:00",
-  source_policy: "ลายมือแก้ไขล่าสุด > DOCX true original > V2 coverage; preserve kitchen units; never convert",
+  generated_at: "2026-08-04T18:35:00+07:00",
+  source_policy: "latest owner-designated source > handwriting corrections > other DOCX true originals > V2 coverage; preserve kitchen units; never convert",
   root_recipe_ids: rootRecipeIds,
   recipes
 };

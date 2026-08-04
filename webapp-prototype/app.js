@@ -874,6 +874,11 @@
     return `<section class="print-blocker-summary"><strong>ข้อมูลที่ต้องตรวจให้ครบก่อนใช้จริง</strong><ul>${recipe.blockers.map((blocker) => `<li>${escapeHtml(blocker.itemName ? `${blocker.itemName}: ${blocker.message}` : blocker.message)}</li>`).join("")}</ul></section>`;
   }
 
+  function operationalNoteSummary(recipe) {
+    if (!recipe.operationalNotes?.length) return "";
+    return `<section class="print-operational-notes"><strong>หมายเหตุหน้างาน</strong><ul>${recipe.operationalNotes.map((note) => `<li>${escapeHtml(note)}</li>`).join("")}</ul></section>`;
+  }
+
   function sellableMetadata(recipe) {
     return recipe.variant || recipe.sellable || {
       status: "draft",
@@ -916,6 +921,7 @@
           <div class="print-note-box"><strong>จุดควบคุมคุณภาพ</strong>ตรวจรสชาติ อุณหภูมิ และน้ำหนักผลผลิตก่อนส่งต่อ</div>
           <div class="print-note-box"><strong>หมายเหตุ</strong>พื้นที่สำหรับบันทึกเพิ่มเติม</div>
         </div>
+        ${operationalNoteSummary(recipe)}
         ${kitchenBlockerSummary(recipe)}
         ${settings.includeHistory ? revisionTable(recipe) : ""}
         <footer class="print-footer"><span>Mock document · ไม่ใช่เอกสารควบคุมจริง</span><span>${pageNumber} / ${totalPages}</span></footer>
@@ -933,6 +939,7 @@
           <section class="print-section"><h2>ลงมือทำ</h2>${methodList(recipe)}</section>
         </div>
         <div class="kitchen-checkline"><span>ผู้ทำ ____________________</span><span>ตรวจโดย ____________________</span></div>
+        ${operationalNoteSummary(recipe)}
         ${kitchenBlockerSummary(recipe)}
         <footer class="print-footer"><span>${escapeHtml(settings.status)} · ${settings.includeHistory ? `Revision ${escapeHtml(recipe.version)}` : ""}</span><span>${pageNumber} / ${totalPages}</span></footer>
       </article>`;
@@ -969,6 +976,7 @@
           <section class="print-section"><h2>ส่วนผสม</h2>${ingredientTable(recipe, settings.multiplier)}</section>
           <section class="print-section"><h2>วิธีทำ</h2>${methodList(recipe)}</section>
         </div>
+        ${operationalNoteSummary(recipe)}
         ${kitchenBlockerSummary(recipe)}
         ${settings.includeHistory ? `<div class="print-revision"><h2>Revision</h2><table><tbody><tr><td>${escapeHtml(recipe.version)}</td><td>ฉบับตัวอย่างสำหรับจัดวางตำรา</td></tr></tbody></table></div>` : ""}
         <footer class="print-footer"><span>${escapeHtml(settings.status)}</span><span>${pageNumber}</span></footer>
