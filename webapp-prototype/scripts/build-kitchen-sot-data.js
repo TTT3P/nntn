@@ -308,6 +308,22 @@ const operationalNoteOverrides = new Map([
   ]]
 ]);
 
+const sellableWorkDocumentSpecs = new Map([
+  [165, {
+    service: { ingredientNames: "all", stepIndexes: "all" }
+  }],
+  [159, {
+    service: { ingredientNames: "all", stepIndexes: "all" }
+  }],
+  [37, {
+    cook: { ingredientNames: ["เนื้อแดดเดียว"], stepIndexes: [0, 1] },
+    service: { ingredientNames: "all", stepIndexes: [2, 3, 4, 5, 6] }
+  }],
+  [163, {
+    cook: { ingredientNames: "all", stepIndexes: "all" }
+  }]
+]);
+
 const soupV3SourceSections = {
   source_document: "ซุปก๋วยเตี๋ยว V3.docx",
   sections: [
@@ -442,6 +458,49 @@ function methodSource(recipe) {
   if (recipe.method_status.includes("handwriting")) return "handwriting";
   if (recipe.method_status.includes("docx") || recipe.method_status === "candidate_from_docx") return "docx";
   return "matching_sources";
+}
+
+function splitMethodSteps(methodText) {
+  return String(methodText || "")
+    .split("\n")
+    .map((step) => step.replace(/^\s*(?:\d+[.)]|[-•])\s*/, "").trim())
+    .filter(Boolean);
+}
+
+function workDocumentsFor(recipe) {
+  const steps = splitMethodSteps(recipe.method_candidate_text);
+  const allLineKeys = recipe.items
+    .filter((item) => item.decision_status !== "removed_by_handwriting")
+    .map((item) => item.line_key);
+
+  if (recipe.recipe_type !== "sellable_menu") {
+    return {
+      prep: {
+        stage: "prep",
+        scalable: true,
+        ingredient_line_keys: allLineKeys,
+        steps
+      }
+    };
+  }
+
+  const specs = sellableWorkDocumentSpecs.get(recipe.recipe_id) || {};
+  return Object.fromEntries(Object.entries(specs).map(([stage, spec]) => {
+    const ingredientLineKeys = spec.ingredientNames === "all"
+      ? allLineKeys
+      : recipe.items
+        .filter((item) => spec.ingredientNames.includes(item.item_name))
+        .map((item) => item.line_key);
+    const documentSteps = spec.stepIndexes === "all"
+      ? steps
+      : spec.stepIndexes.map((index) => steps[index]).filter(Boolean);
+    return [stage, {
+      stage,
+      scalable: false,
+      ingredient_line_keys: ingredientLineKeys,
+      steps: documentSteps
+    }];
+  }));
 }
 
 function blockersFor(recipe) {
@@ -626,6 +685,10 @@ recipes.push({
     message: "ยังขาดข้อมูล: โปรแกรมหม้อ เวลา การพักข้าว และน้ำหนักข้าวสุกต่อแบตช์"
   }]
 });
+
+for (const recipe of recipes) {
+  recipe.work_documents = workDocumentsFor(recipe);
+}
 
 const data = {
   schema_version: "2.0.0-prototype",

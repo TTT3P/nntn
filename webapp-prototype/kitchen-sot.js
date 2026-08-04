@@ -217,6 +217,18 @@
 
     function printRecipe(recipe) {
       const evaluation = evaluateRecipe(recipe.recipe_id);
+      const visibleItems = (recipe.items || []).filter((item) => item.decision_status !== "removed_by_handwriting");
+      const ingredientsByLineKey = new Map(visibleItems.map((item) => [item.line_key, {
+        name: item.item_name,
+        ...splitCandidateText(item.candidate_text),
+        servingNote: item.serving_note || ""
+      }]));
+      const workDocuments = Object.fromEntries(Object.entries(recipe.work_documents || {}).map(([stage, document]) => [stage, {
+        ...clone(document),
+        ingredients: (document.ingredient_line_keys || [])
+          .map((lineKey) => ingredientsByLineKey.get(lineKey))
+          .filter(Boolean)
+      }]));
       return {
         id: `kitchen:${recipe.recipe_version_id}`,
         recipe_id: recipe.recipe_id,
@@ -225,17 +237,12 @@
         category: recipe.recipe_type === "sellable_menu" ? "เมนูขาย" : "สูตรเตรียม",
         yield: recipe.yield_candidate_text || "ยังไม่ระบุผลผลิต",
         version: recipe.recipe_version_id,
-        ingredients: (recipe.items || [])
-          .filter((item) => item.decision_status !== "removed_by_handwriting")
-          .map((item) => ({
-            name: item.item_name,
-            ...splitCandidateText(item.candidate_text),
-            servingNote: item.serving_note || ""
-          })),
+        ingredients: [...ingredientsByLineKey.values()],
         steps: String(recipe.method_candidate_text || "")
           .split("\n")
           .map((step) => step.replace(/^\s*(?:\d+[.)]|[-•])\s*/, "").trim())
           .filter(Boolean),
+        workDocuments,
         operationalNotes: clone(recipe.operational_notes || []),
         revisions: [],
         kitchenStatus: evaluation.status,

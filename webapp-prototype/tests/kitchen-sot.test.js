@@ -50,6 +50,38 @@ test("print bundle is dependency-first and de-duplicates prepared recipes", () =
   assert.ok(recipeIds.indexOf(158) < recipeIds.indexOf(159));
 });
 
+test("prepared recipes project to prep production documents", () => {
+  const sauce = kitchenData.recipes.find((recipe) => recipe.recipe_id === 156);
+
+  assert.equal(sauce.work_documents.prep.stage, "prep");
+  assert.equal(sauce.work_documents.prep.scalable, true);
+  assert.deepEqual(
+    sauce.work_documents.prep.ingredient_line_keys,
+    sauce.items.filter((item) => item.decision_status !== "removed_by_handwriting").map((item) => item.line_key)
+  );
+});
+
+test("mixed menu methods are split into cooking and service documents", () => {
+  const menu = kitchenData.recipes.find((recipe) => recipe.recipe_id === 37);
+  const cookingSteps = menu.work_documents.cook.steps.join("\n");
+  const serviceSteps = menu.work_documents.service.steps.join("\n");
+
+  assert.match(cookingSteps, /ทอดเนื้อแดดเดียว/);
+  assert.doesNotMatch(cookingSteps, /ตักข้าวใส่กล่อง/);
+  assert.match(serviceSteps, /ตักข้าวใส่กล่อง/);
+  assert.equal(menu.work_documents.cook.scalable, false);
+  assert.equal(menu.work_documents.service.scalable, false);
+});
+
+test("print projection resolves work-document line keys to ingredients", () => {
+  const printMenu = createKitchenSotStore(kitchenData).buildPrintBundle([37]).recipes
+    .find((recipe) => recipe.recipe_id === 37);
+
+  assert.equal(printMenu.workDocuments.service.stage, "service");
+  assert.ok(printMenu.workDocuments.service.ingredients.some((item) => item.name === "ข้าวหอมมะลิหุงสุก"));
+  assert.ok(printMenu.workDocuments.cook.ingredients.some((item) => item.name === "เนื้อแดดเดียว"));
+});
+
 test("kitchen print recipes never inherit the prototype revision history", () => {
   const store = createKitchenSotStore(kitchenData);
   const bundle = store.buildPrintBundle([37]);
