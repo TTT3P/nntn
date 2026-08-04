@@ -236,6 +236,7 @@
           .split("\n")
           .map((step) => step.replace(/^\s*(?:\d+[.)]|[-•])\s*/, "").trim())
           .filter(Boolean),
+        revisions: [],
         kitchenStatus: evaluation.status,
         blockers: evaluation.blockers
       };

@@ -847,11 +847,19 @@
     return `<ol class="print-method-list">${recipe.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol>`;
   }
 
-  function revisionTable() {
+  function revisionTable(recipe) {
+    const entries = Array.isArray(recipe.revisions) ? recipe.revisions : historyEntries;
+    if (entries.length === 0) {
+      return `
+        <section class="print-revision">
+          <h2>Revision history</h2>
+          <p>ยังไม่มีประวัติการแก้ไขที่ยืนยันแล้ว</p>
+        </section>`;
+    }
     return `
       <section class="print-revision">
         <h2>Revision history</h2>
-        <table><tbody>${historyEntries.map((entry) => `
+        <table><tbody>${entries.map((entry) => `
           <tr><td><strong>${escapeHtml(entry.version)}</strong></td><td>${escapeHtml(entry.date)}</td><td>${escapeHtml(entry.editor)}</td><td>${escapeHtml(entry.note)}</td></tr>`).join("")}
         </tbody></table>
       </section>`;
@@ -909,7 +917,7 @@
           <div class="print-note-box"><strong>หมายเหตุ</strong>พื้นที่สำหรับบันทึกเพิ่มเติม</div>
         </div>
         ${kitchenBlockerSummary(recipe)}
-        ${settings.includeHistory ? revisionTable() : ""}
+        ${settings.includeHistory ? revisionTable(recipe) : ""}
         <footer class="print-footer"><span>Mock document · ไม่ใช่เอกสารควบคุมจริง</span><span>${pageNumber} / ${totalPages}</span></footer>
       </article>`;
   }

@@ -50,6 +50,15 @@ test("print bundle is dependency-first and de-duplicates prepared recipes", () =
   assert.ok(recipeIds.indexOf(158) < recipeIds.indexOf(159));
 });
 
+test("kitchen print recipes never inherit the prototype revision history", () => {
+  const store = createKitchenSotStore(kitchenData);
+  const bundle = store.buildPrintBundle([37]);
+
+  assert.ok(bundle.recipes.length > 0);
+  assert.ok(bundle.recipes.every((recipe) => Array.isArray(recipe.revisions)));
+  assert.ok(bundle.recipes.every((recipe) => recipe.revisions.length === 0));
+});
+
 test("dependency cycles are named and block printing", () => {
   const cyclic = structuredClone(kitchenData);
   cyclic.recipes.find((recipe) => recipe.recipe_id === 156).items.push({
