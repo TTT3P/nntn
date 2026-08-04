@@ -221,4 +221,22 @@ Fresh automated verification on 4 August 2026:
 - the loopback server returns the new work-stage and template controls; and
 - no production, Supabase, or Google Sheets mutation was introduced.
 
-Browser-control verification is still pending. Chrome is running, but diagnostics found that the ChatGPT browser extension is not installed in the selected Chrome profile, so the session cannot inspect the tab, console, network, or print preview. Do not reuse older screenshot or console evidence as proof of this Print Center revision; rerun visual, print-preview, console, network, and overflow checks after the browser extension is available.
+Fresh Playwright verification on 4 August 2026:
+
+- local page title is `NNTN Recipe Studio | Prototype` at `http://127.0.0.1:4182/index.html`;
+- auto-template selects `A5 แนวนอนสำหรับจุดงาน`;
+- service filtering produces one service document for `ข้าวหน้าเนื้อตุ๋น`;
+- the service card is 794 × 559 CSS pixels, matching A5 landscape at browser print density;
+- the card shows `ข้าวหอมมะลิหุงสุก 180 กรัม` and does not show raw-rice `72 กรัม` as a service portion;
+- the complete two-up pack produces five A4 sheets from nine card pages, with two slots and a cut line on the first sheet;
+- the preview has no horizontal overflow;
+- current-page console errors and warnings are zero; and
+- all ten network requests are local static GET requests with 200 or 304 responses.
+
+Playwright evidence names:
+
+- `nntn-print-service-a5-landscape.png`
+- `nntn-print-two-up-a4.png`
+- `nntn-print-console-errors.txt`
+
+The separate Chrome Browser-plugin connection remains unavailable because the ChatGPT browser extension is not installed in the selected Chrome profile. This does not affect the fresh isolated Playwright evidence above.
