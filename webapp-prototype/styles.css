@@ -65,7 +65,7 @@ button {
 
 .site-header {
   min-height: 76px;
-  padding: 14px max(24px, calc((100vw - 1320px) / 2));
+  padding: 14px max(24px, calc((100vw - 1680px) / 2));
   display: flex;
   align-items: center;
   gap: 14px;
@@ -128,7 +128,7 @@ button {
 }
 
 .page-shell {
-  width: min(1320px, calc(100% - 40px));
+  width: min(1680px, calc(100% - 40px));
   margin: 0 auto;
   padding: 38px 0 64px;
 }
@@ -2592,7 +2592,7 @@ body.modal-open {
 .import-filter-grid {
   margin-bottom: 16px;
   display: grid;
-  grid-template-columns: minmax(190px, 1fr) 145px 135px 170px;
+  grid-template-columns: minmax(170px, 1fr) 130px 120px 150px;
   gap: 10px;
 }
 
@@ -2600,7 +2600,7 @@ body.modal-open {
   min-width: 0;
 }
 
-@container import-queue (max-width: 680px) {
+@container import-queue (max-width: 620px) {
   .import-filter-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
