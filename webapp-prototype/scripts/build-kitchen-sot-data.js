@@ -13,12 +13,16 @@ const stepsById = new Map(imported.recipe_steps.map((row) => [row.recipe_id, row
 const recipesById = new Map(sourceReview.recipes.map((row) => [row.recipe_id, row]));
 
 const reviewStateOverrides = new Map([
-  [159, "reviewed_candidate"]
+  [159, "reviewed_candidate"],
+  [28, "reviewed_candidate"]
 ]);
 
 const sourceLocatorAdditions = new Map([
   [159, ["PDF: true-originals/_inbox/scan จากเล่ม หน้างานจริงพนักงาน/ข้าวหน้าเนื้อยากินิกุ.pdf"]],
-  [28, ["PDF: true-originals/_inbox/scan จากเล่ม หน้างานจริงพนักงาน/ข้าวขยำเนื้อแดดเดียว.pdf"]]
+  [28, [
+    "PDF: true-originals/_inbox/scan จากเล่ม หน้างานจริงพนักงาน/ข้าวขยำเนื้อแดดเดียว.pdf",
+    "Owner confirmation: 2026-08-04 — หมัก 1 ชั่วโมง; แดดแรง 1 ชั่วโมง กลับด้านแล้วตากต่อ 30 นาที; แดดไม่แรง 3 ชั่วโมงไม่ต้องกลับด้าน"
+  ]]
 ]);
 
 const importedDirectCandidateRecipeIds = new Set([28]);
@@ -40,6 +44,11 @@ const componentAliases = new Map([
 ]);
 
 const methodOverrides = new Map([
+  [28, [
+    "1. หมักเนื้อตามสูตร 1 ชั่วโมง",
+    "2. หากแดดแรง ตาก 1 ชั่วโมง จากนั้นกลับด้านและตากต่ออีก 30 นาที",
+    "3. หากแดดไม่แรง ตากต่อเนื่อง 3 ชั่วโมงโดยไม่ต้องกลับด้าน"
+  ].join("\n")],
   [157, [
     "1. นำแครอทและกะหล่ำปลี อย่างละ 25 กรัม ใส่ในถ้วยและเติมน้ำเปล่าให้พอท่วมผัก จากนั้นนำเข้าไมโครเวฟไฟสูง 2 นาที",
     "2. เทน้ำออก สะเด็ดน้ำ ตั้งกระทะ เปิดไฟกลาง ใส่น้ำมัน 1 ช้อนชา ใส่ผักลงไปผัด ตามด้วยซอสอเนกประสงค์ 1 ช้อนชา โชยุ 1 กรัม น้ำมันงา 1 กรัม และงาขาวคั่ว 1 กรัม"
@@ -110,11 +119,21 @@ const candidateOverrides = new Map([
 ]);
 
 const resolvedUnresolvedQuestions = new Set([
-  "ข้าวหน้าเนื้อยากินิกุ:น้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟตรงไหน และผัดผักนับเป็น 1 ชุดหรือ 53 กรัม"
+  "ข้าวหน้าเนื้อยากินิกุ:น้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟตรงไหน และผัดผักนับเป็น 1 ชุดหรือ 53 กรัม",
+  "เนื้อแดด (ข้าวขยำ):ยังไม่พบขั้นตอนหมัก ตาก/อบ การเก็บ และผลผลิตจากต้นฉบับ"
 ]);
 
 const methodDecisionNoteOverrides = new Map([
-  [159, "DOCX ระบุขั้นตอนจัดเสิร์ฟ; เจ้าของเมนูยืนยันน้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟแยกในถ้วย 1 oz และใช้ผัดผัก 1 ชุดตามสูตร"]
+  [159, "DOCX ระบุขั้นตอนจัดเสิร์ฟ; เจ้าของเมนูยืนยันน้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟแยกในถ้วย 1 oz และใช้ผัดผัก 1 ชุดตามสูตร"],
+  [28, "เรียบเรียงจากคำบอกของครัวเท่าที่ได้รับ โดยไม่เติมวิธีเตรียมชิ้นเนื้อ การเก็บ หรือผลผลิตหลังตาก"]
+]);
+
+const methodSelectedSourceOverrides = new Map([
+  [28, "owner_confirmation"]
+]);
+
+const blockerAdditions = new Map([
+  [28, [{ code: "missing_source", message: "ยังขาดข้อมูล: วิธีเตรียมชิ้นเนื้อก่อนหมัก การเก็บ และผลผลิตหลังตาก" }]]
 ]);
 
 function selectedSource(status) {
@@ -231,13 +250,16 @@ function blockersFor(recipe) {
   }
 
   const hasItemConflict = (recipe.decisions || []).some((decision) => ["conflict", "needs_review"].includes(decision.status));
-  if (recipe.review_state === "conflict" && blockers.length === 0 && !hasItemConflict) {
+  const reviewState = reviewStateOverrides.get(recipe.recipe_id) ?? recipe.review_state;
+  if (reviewState === "conflict" && blockers.length === 0 && !hasItemConflict) {
     blockers.push({ code: "unresolved_source_conflict", message: recipe.method_note });
   }
 
-  if (recipe.review_state === "missing_source") {
+  if (reviewState === "missing_source") {
     blockers.push({ code: "missing_source", message: recipe.method_note });
   }
+
+  blockers.push(...(blockerAdditions.get(recipe.recipe_id) || []));
 
   return blockers;
 }
@@ -260,7 +282,7 @@ const recipes = sourceReview.manifest.map((manifest) => {
     source_locators: [...recipe.source_locators, ...(sourceLocatorAdditions.get(recipe.recipe_id) || [])],
     items,
     method_candidate_text: methodCandidate(recipe),
-    method_selected_source: recipe.method_status.includes("handwriting") ? "handwriting" : recipe.method_status.includes("docx") || recipe.method_status === "candidate_from_docx" ? "docx" : methodCandidate(recipe) ? "matching_sources" : null,
+    method_selected_source: methodSelectedSourceOverrides.get(recipe.recipe_id) ?? (recipe.method_status.includes("handwriting") ? "handwriting" : recipe.method_status.includes("docx") || recipe.method_status === "candidate_from_docx" ? "docx" : methodCandidate(recipe) ? "matching_sources" : null),
     method_decision_note: methodDecisionNoteOverrides.get(recipe.recipe_id) ?? recipe.method_note,
     yield_candidate_text: null,
     operational_notes: [],

@@ -219,9 +219,15 @@ test("sun-dried beef exposes the seven V1/V2 marinade ingredients for kitchen re
   ]);
   assert.ok(marinade.items.every((item) => item.decision_status === "needs_review"));
   assert.equal(marinade.items.some((item) => item.item_name === "สูตรหมักทั้งชุด"), false);
-  assert.equal(marinade.method_candidate_text, null);
+  assert.equal(marinade.method_selected_source, "owner_confirmation");
+  assert.equal(typeof marinade.method_candidate_text, "string");
+  assert.match(marinade.method_candidate_text, /หมักเนื้อตามสูตร 1 ชั่วโมง/);
+  assert.match(marinade.method_candidate_text, /แดดแรง.*ตาก 1 ชั่วโมง.*กลับด้าน.*30 นาที/s);
+  assert.match(marinade.method_candidate_text, /แดดไม่แรง.*ตากต่อเนื่อง 3 ชั่วโมง.*ไม่ต้องกลับด้าน/s);
   assert.match(messages, /สันนอก \(ดิบ\) ยังรอครัวยืนยันค่าหน้าครัว/);
   assert.doesNotMatch(messages, /สันนอก \(ดิบ\) ยังมีต้นฉบับขัดแย้งกัน/);
+  assert.doesNotMatch(messages, /ยังไม่มีวิธีทำ|ยังไม่พบขั้นตอนหมัก ตาก\/อบ/);
+  assert.match(messages, /ยังขาดข้อมูล: วิธีเตรียมชิ้นเนื้อก่อนหมัก การเก็บ และผลผลิตหลังตาก/);
 });
 
 test("a DOCX-only section stays a named blocked candidate recipe", () => {

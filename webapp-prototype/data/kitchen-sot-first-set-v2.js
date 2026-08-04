@@ -1757,11 +1757,12 @@ window.NNTNKitchenSotFirstSetV2 = {
       "parent_recipe_ids": [
         37
       ],
-      "review_state": "missing_method",
+      "review_state": "reviewed_candidate",
       "source_locators": [
         "DOCX: ข้าวขยำเนื้อแดดเดียว.docx / ใช้เนื้อแดดเดียว 75 กรัม",
         "V2: เนื้อแดด (ข้าวขยำ)",
-        "PDF: true-originals/_inbox/scan จากเล่ม หน้างานจริงพนักงาน/ข้าวขยำเนื้อแดดเดียว.pdf"
+        "PDF: true-originals/_inbox/scan จากเล่ม หน้างานจริงพนักงาน/ข้าวขยำเนื้อแดดเดียว.pdf",
+        "Owner confirmation: 2026-08-04 — หมัก 1 ชั่วโมง; แดดแรง 1 ชั่วโมง กลับด้านแล้วตากต่อ 30 นาที; แดดไม่แรง 3 ชั่วโมงไม่ต้องกลับด้าน"
       ],
       "items": [
         {
@@ -1877,19 +1878,15 @@ window.NNTNKitchenSotFirstSetV2 = {
           "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
         }
       ],
-      "method_candidate_text": null,
-      "method_selected_source": null,
-      "method_decision_note": "เว็บมี BOM หมักแต่ไม่มีขั้นตอนหมัก ตาก/อบ การเก็บ และผลผลิต จึงยังทำตำราหน้าครัวไม่ได้",
+      "method_candidate_text": "1. หมักเนื้อตามสูตร 1 ชั่วโมง\n2. หากแดดแรง ตาก 1 ชั่วโมง จากนั้นกลับด้านและตากต่ออีก 30 นาที\n3. หากแดดไม่แรง ตากต่อเนื่อง 3 ชั่วโมงโดยไม่ต้องกลับด้าน",
+      "method_selected_source": "owner_confirmation",
+      "method_decision_note": "เรียบเรียงจากคำบอกของครัวเท่าที่ได้รับ โดยไม่เติมวิธีเตรียมชิ้นเนื้อ การเก็บ หรือผลผลิตหลังตาก",
       "yield_candidate_text": null,
       "operational_notes": [],
       "blockers": [
         {
-          "code": "unresolved_source_conflict",
-          "message": "ยังไม่พบขั้นตอนหมัก ตาก/อบ การเก็บ และผลผลิตจากต้นฉบับ"
-        },
-        {
-          "code": "missing_method",
-          "message": "เว็บมี BOM หมักแต่ไม่มีขั้นตอนหมัก ตาก/อบ การเก็บ และผลผลิต จึงยังทำตำราหน้าครัวไม่ได้"
+          "code": "missing_source",
+          "message": "ยังขาดข้อมูล: วิธีเตรียมชิ้นเนื้อก่อนหมัก การเก็บ และผลผลิตหลังตาก"
         }
       ]
     },
