@@ -230,6 +230,27 @@ test("sun-dried beef exposes the seven V1/V2 marinade ingredients for kitchen re
   assert.match(messages, /ยังขาดข้อมูล: วิธีเตรียมชิ้นเนื้อก่อนหมัก การเก็บ และผลผลิตหลังตาก/);
 });
 
+test("second seasoning exposes its six V1/V2 items and secret-sauce dependency", () => {
+  const store = createKitchenSotStore(kitchenData);
+  const seasoning = store.getRecipe(161);
+  const tree = store.getRecipeTree(161);
+
+  assert.deepEqual(seasoning.items.map((item) => [item.item_name, item.candidate_text]), [
+    ["ซอสลับ (v2)", "250 ml"],
+    ["น้ำตาลกรวด (ต.โชคลิขิต)", "120 กรัม"],
+    ["ซอสถั่วเหลือง (คิคโคแมน)", "20 กรัม"],
+    ["รสดี ผงปรุงรสเนื้อ", "50 กรัม"],
+    ["เกลือสมุทร", "3 กรัม"],
+    ["ม้ามตุ๋น", "200 กรัม"]
+  ]);
+  assert.equal(seasoning.items[0].item_kind, "prepared_recipe");
+  assert.equal(seasoning.items[0].component_recipe_id, 160);
+  assert.ok(seasoning.items.every((item) => item.decision_status === "needs_review"));
+  assert.equal(seasoning.items.some((item) => item.item_name === "สูตรทั้งชุด"), false);
+  assert.equal(tree.children[0].recipe.recipe_name, "ซอสลับ (v2)");
+  assert.equal(seasoning.method_candidate_text, null);
+});
+
 test("a DOCX-only section stays a named blocked candidate recipe", () => {
   const sourceOnly = structuredClone(kitchenData);
   sourceOnly.recipes.push({

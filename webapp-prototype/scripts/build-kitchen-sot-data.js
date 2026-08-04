@@ -25,7 +25,7 @@ const sourceLocatorAdditions = new Map([
   ]]
 ]);
 
-const importedDirectCandidateRecipeIds = new Set([28]);
+const importedCandidateRecipeIds = new Set([28, 161]);
 
 const componentAliases = new Map([
   ["เนื้อตุ๋น (ราดข้าว)", 164],
@@ -172,9 +172,9 @@ function decisionItem(recipeId, recipeName, decision) {
   };
 }
 
-function importedDirectCandidateItems(recipe) {
+function importedCandidateItems(recipe) {
   return imported.recipe_items
-    .filter((item) => item.recipe_id === recipe.recipe_id && item.item_kind === "direct_ingredient")
+    .filter((item) => item.recipe_id === recipe.recipe_id)
     .sort((a, b) => a.line_no - b.line_no)
     .map((item) => {
       const sourceText = `${item.v1_quantity_value} ${item.v1_unit}`;
@@ -182,24 +182,24 @@ function importedDirectCandidateItems(recipe) {
       return {
         line_key: `${recipe.recipe_name}:${item.item_name}`,
         item_name: item.item_name,
-        item_kind: "direct_ingredient",
-        component_recipe_id: null,
+        item_kind: item.item_kind,
+        component_recipe_id: item.component_recipe_id,
         source_values: {
           v1: sourceText,
-          docx: "ไม่พบสูตรหมัก",
+          docx: recipe.recipe_id === 28 ? "ไม่พบสูตรหมัก" : "ยังไม่พบต้นฉบับ",
           v2: `เหมือน V1: ${sourceText}`,
           handwriting: "ไม่มีการแก้สูตรนี้"
         },
         candidate_text: `${item.v1_quantity_value} ${kitchenUnit}`,
         selected_source: "matching_sources",
         decision_status: "needs_review",
-        decision_note: "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
+        decision_note: "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
       };
     });
 }
 
 function reviewItems(recipe) {
-  if (importedDirectCandidateRecipeIds.has(recipe.recipe_id)) return importedDirectCandidateItems(recipe);
+  if (importedCandidateRecipeIds.has(recipe.recipe_id)) return importedCandidateItems(recipe);
   return (recipe.decisions || []).map((decision) => decisionItem(recipe.recipe_id, recipe.recipe_name, decision));
 }
 

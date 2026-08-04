@@ -771,36 +771,100 @@
       ],
       "items": [
         {
-          "line_key": "เครื่องปรุงชุดสอง:สูตรทั้งชุด",
-          "item_name": "สูตรทั้งชุด",
-          "item_kind": "direct_ingredient",
-          "component_recipe_id": null,
-          "source_values": {
-            "v1": "ซอสลับ 250 ml + น้ำตาลกรวด 120 g + โชยุ 20 g + รสดีเนื้อ 50 g + เกลือ 3 g + ม้ามตุ๋น 200 g",
-            "docx": "ยังไม่พบต้นฉบับ",
-            "v2": "เหมือน V1",
-            "handwriting": "ไม่มี"
-          },
-          "candidate_text": null,
-          "selected_source": null,
-          "decision_status": "needs_review",
-          "decision_note": null
-        },
-        {
           "line_key": "เครื่องปรุงชุดสอง:ซอสลับ (v2)",
           "item_name": "ซอสลับ (v2)",
           "item_kind": "prepared_recipe",
           "component_recipe_id": 160,
           "source_values": {
             "v1": "250 ml",
-            "docx": null,
-            "v2": null,
-            "handwriting": null
+            "docx": "ยังไม่พบต้นฉบับ",
+            "v2": "เหมือน V1: 250 ml",
+            "handwriting": "ไม่มีการแก้สูตรนี้"
           },
-          "candidate_text": null,
-          "selected_source": null,
+          "candidate_text": "250 ml",
+          "selected_source": "matching_sources",
           "decision_status": "needs_review",
-          "decision_note": "พบเป็นสูตรประกอบใน V1 แต่ยังไม่มีค่าหน้าครัวที่ยืนยัน"
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
+        },
+        {
+          "line_key": "เครื่องปรุงชุดสอง:น้ำตาลกรวด (ต.โชคลิขิต)",
+          "item_name": "น้ำตาลกรวด (ต.โชคลิขิต)",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "120 g",
+            "docx": "ยังไม่พบต้นฉบับ",
+            "v2": "เหมือน V1: 120 g",
+            "handwriting": "ไม่มีการแก้สูตรนี้"
+          },
+          "candidate_text": "120 กรัม",
+          "selected_source": "matching_sources",
+          "decision_status": "needs_review",
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
+        },
+        {
+          "line_key": "เครื่องปรุงชุดสอง:ซอสถั่วเหลือง (คิคโคแมน)",
+          "item_name": "ซอสถั่วเหลือง (คิคโคแมน)",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "20 g",
+            "docx": "ยังไม่พบต้นฉบับ",
+            "v2": "เหมือน V1: 20 g",
+            "handwriting": "ไม่มีการแก้สูตรนี้"
+          },
+          "candidate_text": "20 กรัม",
+          "selected_source": "matching_sources",
+          "decision_status": "needs_review",
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
+        },
+        {
+          "line_key": "เครื่องปรุงชุดสอง:รสดี ผงปรุงรสเนื้อ",
+          "item_name": "รสดี ผงปรุงรสเนื้อ",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "50 g",
+            "docx": "ยังไม่พบต้นฉบับ",
+            "v2": "เหมือน V1: 50 g",
+            "handwriting": "ไม่มีการแก้สูตรนี้"
+          },
+          "candidate_text": "50 กรัม",
+          "selected_source": "matching_sources",
+          "decision_status": "needs_review",
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
+        },
+        {
+          "line_key": "เครื่องปรุงชุดสอง:เกลือสมุทร",
+          "item_name": "เกลือสมุทร",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "3 g",
+            "docx": "ยังไม่พบต้นฉบับ",
+            "v2": "เหมือน V1: 3 g",
+            "handwriting": "ไม่มีการแก้สูตรนี้"
+          },
+          "candidate_text": "3 กรัม",
+          "selected_source": "matching_sources",
+          "decision_status": "needs_review",
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
+        },
+        {
+          "line_key": "เครื่องปรุงชุดสอง:ม้ามตุ๋น",
+          "item_name": "ม้ามตุ๋น",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "200 g",
+            "docx": "ยังไม่พบต้นฉบับ",
+            "v2": "เหมือน V1: 200 g",
+            "handwriting": "ไม่มีการแก้สูตรนี้"
+          },
+          "candidate_text": "200 กรัม",
+          "selected_source": "matching_sources",
+          "decision_status": "needs_review",
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
         }
       ],
       "method_candidate_text": null,
@@ -1779,7 +1843,7 @@
           "candidate_text": "1000 กรัม",
           "selected_source": "matching_sources",
           "decision_status": "needs_review",
-          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
         },
         {
           "line_key": "เนื้อแดด (ข้าวขยำ):รสดีก๋วยเตี๋ยวเข้มข้น",
@@ -1795,7 +1859,7 @@
           "candidate_text": "10 กรัม",
           "selected_source": "matching_sources",
           "decision_status": "needs_review",
-          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
         },
         {
           "line_key": "เนื้อแดด (ข้าวขยำ):น้ำตาลทรายไม่ขัดสี",
@@ -1811,7 +1875,7 @@
           "candidate_text": "20 กรัม",
           "selected_source": "matching_sources",
           "decision_status": "needs_review",
-          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
         },
         {
           "line_key": "เนื้อแดด (ข้าวขยำ):ผงชูรส (อายิโนะโมะโต๊ะ)",
@@ -1827,7 +1891,7 @@
           "candidate_text": "20 กรัม",
           "selected_source": "matching_sources",
           "decision_status": "needs_review",
-          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
         },
         {
           "line_key": "เนื้อแดด (ข้าวขยำ):ซอสหอยนางรม (ไฮนซ์)",
@@ -1843,7 +1907,7 @@
           "candidate_text": "80 กรัม",
           "selected_source": "matching_sources",
           "decision_status": "needs_review",
-          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
         },
         {
           "line_key": "เนื้อแดด (ข้าวขยำ):เกลือสมุทร",
@@ -1859,7 +1923,7 @@
           "candidate_text": "4 กรัม",
           "selected_source": "matching_sources",
           "decision_status": "needs_review",
-          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
         },
         {
           "line_key": "เนื้อแดด (ข้าวขยำ):พริกไทยดำเม็ด (ง่วนสูน)",
@@ -1875,7 +1939,7 @@
           "candidate_text": "4 กรัม",
           "selected_source": "matching_sources",
           "decision_status": "needs_review",
-          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตร"
         }
       ],
       "method_candidate_text": "1. หมักเนื้อตามสูตร 1 ชั่วโมง\n2. หากแดดแรง ตาก 1 ชั่วโมง จากนั้นกลับด้านและตากต่ออีก 30 นาที\n3. หากแดดไม่แรง ตากต่อเนื่อง 3 ชั่วโมงโดยไม่ต้องกลับด้าน",
