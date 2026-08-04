@@ -1760,24 +1760,121 @@ window.NNTNKitchenSotFirstSetV2 = {
       "review_state": "missing_method",
       "source_locators": [
         "DOCX: ข้าวขยำเนื้อแดดเดียว.docx / ใช้เนื้อแดดเดียว 75 กรัม",
-        "V2: เนื้อแดด (ข้าวขยำ)"
+        "V2: เนื้อแดด (ข้าวขยำ)",
+        "PDF: true-originals/_inbox/scan จากเล่ม หน้างานจริงพนักงาน/ข้าวขยำเนื้อแดดเดียว.pdf"
       ],
       "items": [
         {
-          "line_key": "เนื้อแดด (ข้าวขยำ):สูตรหมักทั้งชุด",
-          "item_name": "สูตรหมักทั้งชุด",
+          "line_key": "เนื้อแดด (ข้าวขยำ):สันนอก (ดิบ)",
+          "item_name": "สันนอก (ดิบ)",
           "item_kind": "direct_ingredient",
           "component_recipe_id": null,
           "source_values": {
-            "v1": "สันนอก 1000 g + เครื่องปรุง 6 รายการ",
-            "docx": "พบเฉพาะปริมาณใช้งาน 75 กรัม ไม่พบสูตรหมัก",
-            "v2": "เหมือน V1",
-            "handwriting": "ไม่มี"
+            "v1": "1000 g",
+            "docx": "ไม่พบสูตรหมัก",
+            "v2": "เหมือน V1: 1000 g",
+            "handwriting": "ไม่มีการแก้สูตรนี้"
           },
-          "candidate_text": null,
-          "selected_source": null,
+          "candidate_text": "1000 กรัม",
+          "selected_source": "matching_sources",
           "decision_status": "needs_review",
-          "decision_note": null
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
+        },
+        {
+          "line_key": "เนื้อแดด (ข้าวขยำ):รสดีก๋วยเตี๋ยวเข้มข้น",
+          "item_name": "รสดีก๋วยเตี๋ยวเข้มข้น",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "10 g",
+            "docx": "ไม่พบสูตรหมัก",
+            "v2": "เหมือน V1: 10 g",
+            "handwriting": "ไม่มีการแก้สูตรนี้"
+          },
+          "candidate_text": "10 กรัม",
+          "selected_source": "matching_sources",
+          "decision_status": "needs_review",
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
+        },
+        {
+          "line_key": "เนื้อแดด (ข้าวขยำ):น้ำตาลทรายไม่ขัดสี",
+          "item_name": "น้ำตาลทรายไม่ขัดสี",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "20 g",
+            "docx": "ไม่พบสูตรหมัก",
+            "v2": "เหมือน V1: 20 g",
+            "handwriting": "ไม่มีการแก้สูตรนี้"
+          },
+          "candidate_text": "20 กรัม",
+          "selected_source": "matching_sources",
+          "decision_status": "needs_review",
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
+        },
+        {
+          "line_key": "เนื้อแดด (ข้าวขยำ):ผงชูรส (อายิโนะโมะโต๊ะ)",
+          "item_name": "ผงชูรส (อายิโนะโมะโต๊ะ)",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "20 g",
+            "docx": "ไม่พบสูตรหมัก",
+            "v2": "เหมือน V1: 20 g",
+            "handwriting": "ไม่มีการแก้สูตรนี้"
+          },
+          "candidate_text": "20 กรัม",
+          "selected_source": "matching_sources",
+          "decision_status": "needs_review",
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
+        },
+        {
+          "line_key": "เนื้อแดด (ข้าวขยำ):ซอสหอยนางรม (ไฮนซ์)",
+          "item_name": "ซอสหอยนางรม (ไฮนซ์)",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "80 g",
+            "docx": "ไม่พบสูตรหมัก",
+            "v2": "เหมือน V1: 80 g",
+            "handwriting": "ไม่มีการแก้สูตรนี้"
+          },
+          "candidate_text": "80 กรัม",
+          "selected_source": "matching_sources",
+          "decision_status": "needs_review",
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
+        },
+        {
+          "line_key": "เนื้อแดด (ข้าวขยำ):เกลือสมุทร",
+          "item_name": "เกลือสมุทร",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "4 g",
+            "docx": "ไม่พบสูตรหมัก",
+            "v2": "เหมือน V1: 4 g",
+            "handwriting": "ไม่มีการแก้สูตรนี้"
+          },
+          "candidate_text": "4 กรัม",
+          "selected_source": "matching_sources",
+          "decision_status": "needs_review",
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
+        },
+        {
+          "line_key": "เนื้อแดด (ข้าวขยำ):พริกไทยดำเม็ด (ง่วนสูน)",
+          "item_name": "พริกไทยดำเม็ด (ง่วนสูน)",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "4 g",
+            "docx": "ไม่พบสูตรหมัก",
+            "v2": "เหมือน V1: 4 g",
+            "handwriting": "ไม่มีการแก้สูตรนี้"
+          },
+          "candidate_text": "4 กรัม",
+          "selected_source": "matching_sources",
+          "decision_status": "needs_review",
+          "decision_note": "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
         }
       ],
       "method_candidate_text": null,

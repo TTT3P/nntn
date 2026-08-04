@@ -170,12 +170,19 @@
             itemName: item.item_name,
             message: `${item.item_name} ยังไม่มีค่าหน้าครัวที่ยืนยัน`
           });
-        } else if (["conflict", "needs_review"].includes(item.decision_status)) {
+        } else if (item.decision_status === "conflict") {
           blockers.push({
             code: "unresolved_source_conflict",
             recipeName: recipe.recipe_name,
             itemName: item.item_name,
             message: `${item.item_name} ยังมีต้นฉบับขัดแย้งกัน`
+          });
+        } else if (item.decision_status === "needs_review") {
+          blockers.push({
+            code: "needs_kitchen_confirmation",
+            recipeName: recipe.recipe_name,
+            itemName: item.item_name,
+            message: `${item.item_name} ยังรอครัวยืนยันค่าหน้าครัว`
           });
         }
 

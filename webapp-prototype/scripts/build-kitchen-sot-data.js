@@ -17,8 +17,11 @@ const reviewStateOverrides = new Map([
 ]);
 
 const sourceLocatorAdditions = new Map([
-  [159, ["PDF: true-originals/_inbox/scan จากเล่ม หน้างานจริงพนักงาน/ข้าวหน้าเนื้อยากินิกุ.pdf"]]
+  [159, ["PDF: true-originals/_inbox/scan จากเล่ม หน้างานจริงพนักงาน/ข้าวหน้าเนื้อยากินิกุ.pdf"]],
+  [28, ["PDF: true-originals/_inbox/scan จากเล่ม หน้างานจริงพนักงาน/ข้าวขยำเนื้อแดดเดียว.pdf"]]
 ]);
+
+const importedDirectCandidateRecipeIds = new Set([28]);
 
 const componentAliases = new Map([
   ["เนื้อตุ๋น (ราดข้าว)", 164],
@@ -150,6 +153,37 @@ function decisionItem(recipeId, recipeName, decision) {
   };
 }
 
+function importedDirectCandidateItems(recipe) {
+  return imported.recipe_items
+    .filter((item) => item.recipe_id === recipe.recipe_id && item.item_kind === "direct_ingredient")
+    .sort((a, b) => a.line_no - b.line_no)
+    .map((item) => {
+      const sourceText = `${item.v1_quantity_value} ${item.v1_unit}`;
+      const kitchenUnit = item.v1_unit === "g" ? "กรัม" : item.v1_unit;
+      return {
+        line_key: `${recipe.recipe_name}:${item.item_name}`,
+        item_name: item.item_name,
+        item_kind: "direct_ingredient",
+        component_recipe_id: null,
+        source_values: {
+          v1: sourceText,
+          docx: "ไม่พบสูตรหมัก",
+          v2: `เหมือน V1: ${sourceText}`,
+          handwriting: "ไม่มีการแก้สูตรนี้"
+        },
+        candidate_text: `${item.v1_quantity_value} ${kitchenUnit}`,
+        selected_source: "matching_sources",
+        decision_status: "needs_review",
+        decision_note: "ย้ายรายการเดิมจาก V1/V2 มาให้ครัวตรวจทีละรายการ; ยังไม่ถือว่าอนุมัติสูตรหมัก"
+      };
+    });
+}
+
+function reviewItems(recipe) {
+  if (importedDirectCandidateRecipeIds.has(recipe.recipe_id)) return importedDirectCandidateItems(recipe);
+  return (recipe.decisions || []).map((decision) => decisionItem(recipe.recipe_id, recipe.recipe_name, decision));
+}
+
 function importedDependencies(recipeId) {
   return imported.recipe_items.filter((item) => item.recipe_id === recipeId && item.item_kind === "prepared_recipe");
 }
@@ -213,7 +247,7 @@ const recipes = sourceReview.manifest.map((manifest) => {
   const items = ensureImportedDependencies(
     recipe.recipe_id,
     recipe.recipe_name,
-    (recipe.decisions || []).map((decision) => decisionItem(recipe.recipe_id, recipe.recipe_name, decision))
+    reviewItems(recipe)
   );
   return {
     recipe_id: recipe.recipe_id,

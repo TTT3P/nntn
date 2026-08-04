@@ -203,6 +203,27 @@ test("jasmine rice batch preserves the owner's cup and ml units verbatim", () =>
   assert.equal(jasmineRice.yield_candidate_text, null);
 });
 
+test("sun-dried beef exposes the seven V1/V2 marinade ingredients for kitchen review", () => {
+  const marinade = kitchenData.recipes.find((recipe) => recipe.recipe_id === 28);
+  const evaluation = createKitchenSotStore(kitchenData).evaluateRecipe(28);
+  const messages = evaluation.blockers.map((blocker) => blocker.message).join("\n");
+
+  assert.deepEqual(marinade.items.map((item) => [item.item_name, item.candidate_text]), [
+    ["สันนอก (ดิบ)", "1000 กรัม"],
+    ["รสดีก๋วยเตี๋ยวเข้มข้น", "10 กรัม"],
+    ["น้ำตาลทรายไม่ขัดสี", "20 กรัม"],
+    ["ผงชูรส (อายิโนะโมะโต๊ะ)", "20 กรัม"],
+    ["ซอสหอยนางรม (ไฮนซ์)", "80 กรัม"],
+    ["เกลือสมุทร", "4 กรัม"],
+    ["พริกไทยดำเม็ด (ง่วนสูน)", "4 กรัม"]
+  ]);
+  assert.ok(marinade.items.every((item) => item.decision_status === "needs_review"));
+  assert.equal(marinade.items.some((item) => item.item_name === "สูตรหมักทั้งชุด"), false);
+  assert.equal(marinade.method_candidate_text, null);
+  assert.match(messages, /สันนอก \(ดิบ\) ยังรอครัวยืนยันค่าหน้าครัว/);
+  assert.doesNotMatch(messages, /สันนอก \(ดิบ\) ยังมีต้นฉบับขัดแย้งกัน/);
+});
+
 test("a DOCX-only section stays a named blocked candidate recipe", () => {
   const sourceOnly = structuredClone(kitchenData);
   sourceOnly.recipes.push({
