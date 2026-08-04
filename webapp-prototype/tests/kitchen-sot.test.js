@@ -82,8 +82,8 @@ test("editing a spoon value never creates normalized grams", () => {
 
 test("saving an unchanged candidate preserves its source decision", () => {
   const store = createKitchenSotStore(kitchenData);
-  const before = store.getRecipe(159).items.find((item) => item.item_name === "เนื้อพิคานย่า");
-  const updated = store.updateItemCandidate(159, before.line_key, before.candidate_text, "แก้ไขใน Prototype v2");
+  const before = store.getRecipe(2).items.find((item) => item.item_name === "ซอสฝาเขียว");
+  const updated = store.updateItemCandidate(2, before.line_key, before.candidate_text, "แก้ไขใน Prototype v2");
   const after = updated.items.find((item) => item.line_key === before.line_key);
 
   assert.equal(before.decision_status, "needs_review");
@@ -94,17 +94,31 @@ test("saving an unchanged candidate preserves its source decision", () => {
 
 test("owner can confirm an unchanged kitchen quantity without converting it", () => {
   const store = createKitchenSotStore(kitchenData);
-  const before = store.getRecipe(159).items.find((item) => item.item_name === "เนื้อพิคานย่า");
-  const updated = store.confirmItemCandidate(159, before.line_key, "ยืนยันเทียบกับครัวจริง");
+  const before = store.getRecipe(2).items.find((item) => item.item_name === "ซอสฝาเขียว");
+  const updated = store.confirmItemCandidate(2, before.line_key, "ยืนยันเทียบกับครัวจริง");
   const after = updated.items.find((item) => item.line_key === before.line_key);
-  const messages = store.evaluateRecipe(159).blockers.map((blocker) => blocker.message).join("\n");
+  const messages = store.evaluateRecipe(2).blockers.map((blocker) => blocker.message).join("\n");
 
-  assert.equal(after.candidate_text, "75 กรัม");
+  assert.equal(after.candidate_text, "1 กระบวย");
   assert.equal(after.decision_status, "confirmed_by_owner");
   assert.equal(after.selected_source, "owner_confirmation");
   assert.equal(after.decision_note, "ยืนยันเทียบกับครัวจริง");
-  assert.doesNotMatch(messages, /เนื้อพิคานย่า ยังมีต้นฉบับขัดแย้งกัน/);
+  assert.doesNotMatch(messages, /ซอสฝาเขียว ยังมีต้นฉบับขัดแย้งกัน/);
   assert.equal(JSON.stringify(updated).includes("normalized_grams"), false);
+});
+
+test("matching V1 and V2 confirm the 75 gram yakiniku beef portion", () => {
+  const store = createKitchenSotStore(kitchenData);
+  const yakiniku = store.getRecipe(159);
+  const beef = yakiniku.items.find((item) => item.item_name === "เนื้อพิคานย่า");
+  const messages = store.evaluateRecipe(159).blockers.map((blocker) => blocker.message).join("\n");
+
+  assert.equal(beef.candidate_text, "75 กรัม");
+  assert.equal(beef.decision_status, "confirmed");
+  assert.equal(beef.selected_source, "matching_sources");
+  assert.match(beef.decision_note, /V1 และ V2 ตรงกัน/);
+  assert.equal(yakiniku.review_state, "reviewed_candidate");
+  assert.doesNotMatch(messages, /เนื้อพิคานย่า/);
 });
 
 test("saving an unchanged method preserves its source", () => {
@@ -237,8 +251,8 @@ test("blocked recipes become draft print models with blocker text", () => {
 
   assert.equal(bundle.allowedFinal, false);
   assert.ok(bundle.recipes.every((recipe) => recipe.id.startsWith("kitchen:")));
-  assert.ok(bundle.blockers.some((blocker) => blocker.recipeName === "ข้าวหน้าเนื้อยากินิกุ"));
-  assert.ok(bundle.recipes.find((recipe) => recipe.recipe_id === 159).blockers.length > 0);
+  assert.ok(bundle.blockers.some((blocker) => blocker.recipeName === "ซอสยากินิกุ"));
+  assert.ok(bundle.recipes.find((recipe) => recipe.recipe_id === 156).blockers.length > 0);
 });
 
 test("print ingredients use candidate text without unit conversion", () => {

@@ -988,10 +988,11 @@ window.NNTNKitchenSotFirstSetV2 = {
       "recipe_name": "ข้าวหน้าเนื้อยากินิกุ",
       "recipe_type": "sellable_menu",
       "parent_recipe_ids": [],
-      "review_state": "conflict",
+      "review_state": "reviewed_candidate",
       "source_locators": [
         "DOCX: true-originals/_inbox/ข้าวหน้าเนื้อยากินิกุ.docx",
-        "V2: ข้าวหน้าเนื้อยากินิกุ"
+        "V2: ข้าวหน้าเนื้อยากินิกุ",
+        "PDF: true-originals/_inbox/scan จากเล่ม หน้างานจริงพนักงาน/ข้าวหน้าเนื้อยากินิกุ.pdf"
       ],
       "items": [
         {
@@ -1055,9 +1056,9 @@ window.NNTNKitchenSotFirstSetV2 = {
             "handwriting": "ไม่มีการแก้"
           },
           "candidate_text": "75 กรัม",
-          "selected_source": null,
-          "decision_status": "needs_review",
-          "decision_note": null
+          "selected_source": "matching_sources",
+          "decision_status": "confirmed",
+          "decision_note": "V1 และ V2 ตรงกันที่ 75 กรัม; DOCX/สแกนกล่าวถึงเนื้อแต่ไม่ระบุน้ำหนัก และลายมือไม่มีการแก้รายการนี้"
         },
         {
           "line_key": "ข้าวหน้าเนื้อยากินิกุ:ข้าวญี่ปุ่น",

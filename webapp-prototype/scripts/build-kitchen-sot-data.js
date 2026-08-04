@@ -12,6 +12,14 @@ const manifestById = new Map(sourceReview.manifest.map((row) => [row.recipe_id, 
 const stepsById = new Map(imported.recipe_steps.map((row) => [row.recipe_id, row.v1_steps_text]));
 const recipesById = new Map(sourceReview.recipes.map((row) => [row.recipe_id, row]));
 
+const reviewStateOverrides = new Map([
+  [159, "reviewed_candidate"]
+]);
+
+const sourceLocatorAdditions = new Map([
+  [159, ["PDF: true-originals/_inbox/scan จากเล่ม หน้างานจริงพนักงาน/ข้าวหน้าเนื้อยากินิกุ.pdf"]]
+]);
+
 const componentAliases = new Map([
   ["เนื้อตุ๋น (ราดข้าว)", 164],
   ["น้ำซุปในหม้อหุงข้าว", 2],
@@ -79,6 +87,12 @@ const candidateOverrides = new Map([
     decisionStatus: "confirmed_by_owner",
     decisionNote: "เจ้าของเมนูยืนยันวันที่ 2026-08-04",
     servingNote: "เสิร์ฟแยกในถ้วย 1 oz"
+  }],
+  ["159:เนื้อพิคานย่า", {
+    candidateText: "75 กรัม",
+    selectedSource: "matching_sources",
+    decisionStatus: "confirmed",
+    decisionNote: "V1 และ V2 ตรงกันที่ 75 กรัม; DOCX/สแกนกล่าวถึงเนื้อแต่ไม่ระบุน้ำหนัก และลายมือไม่มีการแก้รายการนี้"
   }],
   ["159:ข้าวญี่ปุ่น", {
     itemName: "ข้าวญี่ปุ่นหุงสุก",
@@ -208,8 +222,8 @@ const recipes = sourceReview.manifest.map((manifest) => {
     recipe_name: recipe.recipe_name,
     recipe_type: manifest.role === "root_menu" ? "sellable_menu" : "prepared_recipe",
     parent_recipe_ids: parentRecipeIds(recipe.recipe_id),
-    review_state: recipe.review_state,
-    source_locators: recipe.source_locators,
+    review_state: reviewStateOverrides.get(recipe.recipe_id) ?? recipe.review_state,
+    source_locators: [...recipe.source_locators, ...(sourceLocatorAdditions.get(recipe.recipe_id) || [])],
     items,
     method_candidate_text: methodCandidate(recipe),
     method_selected_source: recipe.method_status.includes("handwriting") ? "handwriting" : recipe.method_status.includes("docx") || recipe.method_status === "candidate_from_docx" ? "docx" : methodCandidate(recipe) ? "matching_sources" : null,
