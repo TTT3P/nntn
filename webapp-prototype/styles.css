@@ -2579,6 +2579,11 @@ body.modal-open {
   min-width: 0;
 }
 
+.import-queue-panel {
+  container-name: import-queue;
+  container-type: inline-size;
+}
+
 .import-detail-panel {
   position: sticky;
   top: 18px;
@@ -2589,6 +2594,22 @@ body.modal-open {
   display: grid;
   grid-template-columns: minmax(190px, 1fr) 145px 135px 170px;
   gap: 10px;
+}
+
+.import-filter-grid > .field {
+  min-width: 0;
+}
+
+@container import-queue (max-width: 680px) {
+  .import-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container import-queue (max-width: 420px) {
+  .import-filter-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .import-table-wrap {
