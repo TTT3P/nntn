@@ -182,3 +182,43 @@ Screenshots:
 - `preview-kitchen-sot-mobile.png`
 
 Google Sheets, Apps Script, authentication, production approval, and production mutation remain outside this branch. The next milestone should persist versioned records only after TINE accepts this static workflow.
+
+## Prototype v2 Workstation Print Templates
+
+TINE opened this Prototype v2 expansion on 4 August 2026 after confirming that operational documents have three distinct points of work:
+
+1. `ครัวปรุง / BOM` — boil, stir-fry, curry, and fry;
+2. `ผลิตซอสและของเตรียม` — batch sauces, stock, rice, and prepared components; and
+3. `จัดเสิร์ฟหน้าร้าน` — reheat, portion, assemble, plate, pack, and hand off.
+
+The recipe graph remains shared. Generated `work_documents` contain references to ingredient lines and stage-specific steps; they are print projections, not copied recipes.
+
+Print Center v2 adds:
+
+- work-stage selection for prep, cooking, service, or a complete pack;
+- automatic template recommendation with manual override;
+- A5 landscape workstation cards;
+- two A5 landscape cards on one A4 portrait sheet with a cut line;
+- prep → cook → service ordering;
+- dependency and document deduplication;
+- deterministic continuation cards instead of clipping long content;
+- batch multipliers only for scalable prep documents; and
+- draft blockers and watermarks preserved on every affected workstation card.
+
+First-set rice invariant:
+
+- `ข้าวหน้าเนื้อตุ๋น` — ข้าวหอมมะลิหุงสุก 180 กรัม;
+- `ข้าวหน้าเนื้อยากินิกุ` — ข้าวญี่ปุ่นหุงสุก 180 กรัม; and
+- `ข้าวขยำเนื้อแดดเดียว` — ข้าวหอมมะลิหุงสุก 180 กรัม.
+
+The 72-gram values remain raw-rice cost bases only and are not service portions.
+
+Fresh automated verification on 4 August 2026:
+
+- 56 Node tests pass;
+- all JavaScript syntax checks pass;
+- `git diff --check` passes;
+- the loopback server returns the new work-stage and template controls; and
+- no production, Supabase, or Google Sheets mutation was introduced.
+
+Browser-control verification is still pending. Chrome is running, but diagnostics found that the ChatGPT browser extension is not installed in the selected Chrome profile, so the session cannot inspect the tab, console, network, or print preview. Do not reuse older screenshot or console evidence as proof of this Print Center revision; rerun visual, print-preview, console, network, and overflow checks after the browser extension is available.
