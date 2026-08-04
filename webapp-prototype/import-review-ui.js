@@ -123,6 +123,7 @@
           <span>ค่าหน้าครัว</span>
           <input class="kitchen-candidate-input" data-line-key="${escapeHtml(item.line_key)}" value="${escapeHtml(item.candidate_text || "")}" placeholder="ยังไม่สรุป ห้ามเดา" aria-label="ค่าหน้าครัว ${escapeHtml(item.item_name)}">
         </label>
+        ${item.cost_basis_text ? `<p class="kitchen-cost-basis"><strong>ฐานต้นทุน:</strong> ${escapeHtml(item.cost_basis_text)}</p>` : ""}
         ${item.serving_note ? `<p class="kitchen-serving-note"><strong>การเสิร์ฟ:</strong> ${escapeHtml(item.serving_note)}</p>` : ""}
         ${item.candidate_text && ["conflict", "needs_review", "manual_review"].includes(item.decision_status) ? `
           <button class="button button-small confirm-kitchen-candidate" type="button" data-confirm-line-key="${escapeHtml(item.line_key)}" data-confirm-item-name="${escapeHtml(item.item_name)}">ยืนยันค่าตามนี้</button>` : ""}
@@ -198,6 +199,7 @@
         <div><p>${escapeHtml(kindLabels[recipe.recipe_type] || recipe.recipe_type)}</p><h4>${escapeHtml(recipe.recipe_name)}</h4><small>${escapeHtml(recipe.recipe_version_id)}</small></div>
         <span class="source-review-badge review-state-${escapeHtml(recipe.review_state)}">${escapeHtml(reviewStateLabels[recipe.review_state] || "ฉบับร่าง")}</span>
       </header>
+      ${recipe.yield_candidate_text ? `<p class="kitchen-yield-line"><strong>ผลผลิต:</strong> ${escapeHtml(recipe.yield_candidate_text)}</p>` : ""}
       ${noticeText ? `<p class="kitchen-save-notice" role="status">${escapeHtml(noticeText)}</p>` : ""}
       ${sectionMappingsHtml(recipe.recipe_id)}
       <section class="import-detail-section" id="kitchen-draft-editor">
@@ -244,7 +246,11 @@
     const manifest = legacyData.first_set_review?.manifest || [];
     const manifestById = new Map(manifest.map((row) => [Number(row.recipe_id), row]));
     const firstSetOrder = new Map(manifest.map((row, index) => [Number(row.recipe_id), index]));
-    let rows = reviewApi.filterReviewQueue(legacyData.review_queue, {
+    const candidateRecipes = (sotData?.recipes || []).filter((recipe) => recipe.legacy_recipe_id == null);
+    const candidateIds = new Set(candidateRecipes.map((recipe) => String(recipe.recipe_id)));
+    const candidateOrder = new Map(candidateRecipes.map((recipe, index) => [String(recipe.recipe_id), manifest.length + index]));
+    const reviewRows = reviewApi.mergeReviewQueueWithCandidates(legacyData.review_queue, candidateRecipes);
+    let rows = reviewApi.filterReviewQueue(reviewRows, {
       query: search.value,
       recipeKind: kindFilter.value,
       methodStatus: methodFilter.value
@@ -252,8 +258,12 @@
 
     if (scopeFilter.value === "first-set") {
       rows = rows
-        .filter((row) => manifestById.has(Number(row.recipe_id)))
-        .sort((a, b) => firstSetOrder.get(Number(a.recipe_id)) - firstSetOrder.get(Number(b.recipe_id)));
+        .filter((row) => manifestById.has(Number(row.recipe_id)) || candidateIds.has(String(row.recipe_id)))
+        .sort((a, b) => {
+          const aOrder = firstSetOrder.get(Number(a.recipe_id)) ?? candidateOrder.get(String(a.recipe_id));
+          const bOrder = firstSetOrder.get(Number(b.recipe_id)) ?? candidateOrder.get(String(b.recipe_id));
+          return aOrder - bOrder;
+        });
     }
 
     empty.hidden = rows.length > 0;

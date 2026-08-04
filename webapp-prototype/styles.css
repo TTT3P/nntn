@@ -2886,6 +2886,15 @@ body.modal-open {
   font-size: 12px;
 }
 
+.kitchen-yield-line {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  color: var(--green-700);
+  background: var(--green-50);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
 .kitchen-candidate-list {
   display: grid;
   gap: 12px;
@@ -2907,10 +2916,15 @@ body.modal-open {
   font-weight: 700;
 }
 
+.kitchen-cost-basis,
 .kitchen-serving-note {
   margin: 8px 0 0;
   color: var(--green-700);
   font-size: 12px;
+}
+
+.kitchen-cost-basis {
+  color: var(--ink-600);
 }
 
 .confirm-kitchen-candidate {

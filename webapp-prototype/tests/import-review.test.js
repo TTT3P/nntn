@@ -7,6 +7,7 @@ const {
   getFirstSetReview,
   getRecipeReviewDetail,
   getSourceSectionMappings,
+  mergeReviewQueueWithCandidates,
   summarizeImport
 } = require("../import-review.js");
 
@@ -71,6 +72,24 @@ test("filterReviewQueue searches by Thai menu name and filters missing methods",
       .map((row) => row.recipe_name),
     ["ซอสยากินิกุ"]
   );
+});
+
+test("candidate prepared recipes are added to the review queue by menu name", () => {
+  const rows = mergeReviewQueueWithCandidates(fixture.review_queue, [{
+    recipe_id: "candidate:prepared:ข้าวหอมมะลิหุงสุก",
+    recipe_name: "ข้าวหอมมะลิหุงสุก",
+    recipe_type: "prepared_recipe",
+    items: [
+      { item_kind: "direct_ingredient" },
+      { item_kind: "direct_ingredient" }
+    ],
+    method_candidate_text: null
+  }]);
+  const candidate = rows.find((row) => row.recipe_name === "ข้าวหอมมะลิหุงสุก");
+
+  assert.equal(candidate.recipe_kind, "prep");
+  assert.equal(candidate.v1_bom_line_count, 2);
+  assert.equal(candidate.v1_method_status, "missing");
 });
 
 test("getRecipeReviewDetail separates direct ingredients from prepared recipes", () => {

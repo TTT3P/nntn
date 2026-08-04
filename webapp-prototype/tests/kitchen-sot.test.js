@@ -5,8 +5,8 @@ const assert = require("node:assert/strict");
 const kitchenData = require("../data/kitchen-sot-first-set-v2.json");
 const { createKitchenSotStore } = require("../kitchen-sot.js");
 
-test("first-set v2 contains 16 versioned recipes and no derived quantities", () => {
-  assert.equal(kitchenData.recipes.length, 16);
+test("first-set v2 contains 18 versioned recipes and no derived quantities", () => {
+  assert.equal(kitchenData.recipes.length, 18);
   assert.deepEqual(kitchenData.root_recipe_ids, [165, 159, 37, 163]);
 
   for (const recipe of kitchenData.recipes) {
@@ -37,7 +37,7 @@ test("recipe tree separates menu, prepared recipes, and direct ingredients", () 
   const tree = store.getRecipeTree(159);
 
   assert.equal(tree.recipe.recipe_name, "ข้าวหน้าเนื้อยากินิกุ");
-  assert.deepEqual(tree.children.map((child) => child.recipe.recipe_name), ["ซอสยากินิกุ", "ผัดผัก", "น้ำจิ้มซีฟู๊ด"]);
+  assert.deepEqual(tree.children.map((child) => child.recipe.recipe_name), ["ซอสยากินิกุ", "ผัดผัก", "น้ำจิ้มซีฟู๊ด", "ข้าวญี่ปุ่นหุงสุก"]);
   assert.ok(tree.directIngredients.some((item) => item.item_name.includes("พิคานย่า")));
 });
 
@@ -145,6 +145,44 @@ test("ยากินิกุ serves 20 grams of seafood sauce separately in a 
   assert.doesNotMatch(yakiniku.method_decision_note, /ยังต้องยืนยันน้ำจิ้มซีฟู้ด|ปริมาณผัดผัก/);
 });
 
+test("Japanese rice is a cooked-rice dependency with separate raw cost basis", () => {
+  const cookedRiceId = "candidate:prepared:ข้าวญี่ปุ่นหุงสุก";
+  const cookedRice = kitchenData.recipes.find((recipe) => recipe.recipe_id === cookedRiceId);
+  const menuRiceLines = [165, 159].map((recipeId) => kitchenData.recipes
+    .find((recipe) => recipe.recipe_id === recipeId).items
+    .find((item) => item.component_recipe_id === cookedRiceId));
+
+  assert.equal(cookedRice.recipe_name, "ข้าวญี่ปุ่นหุงสุก");
+  assert.equal(cookedRice.recipe_type, "prepared_recipe");
+  assert.equal(cookedRice.yield_candidate_text, "ข้าวหุงสุก 180 กรัม ต่อข้าวสารดิบ 72 กรัม");
+  assert.equal(cookedRice.items[0].item_name, "ข้าวสารญี่ปุ่นดิบ");
+  assert.equal(cookedRice.items[0].candidate_text, "1500 ml");
+  assert.equal(cookedRice.items[1].item_name, "น้ำ");
+  assert.equal(cookedRice.items[1].candidate_text, "2100 ml");
+  assert.equal(cookedRice.method_candidate_text, null);
+
+  for (const rice of menuRiceLines) {
+    assert.equal(rice.item_name, "ข้าวญี่ปุ่นหุงสุก");
+    assert.equal(rice.item_kind, "prepared_recipe");
+    assert.equal(rice.candidate_text, "180 กรัม");
+    assert.equal(rice.cost_basis_text, "ข้าวสารญี่ปุ่นดิบ 72 กรัม");
+    assert.equal(rice.serving_note, "ตักข้าวหุงสุก 180 กรัม");
+    assert.equal(rice.decision_status, "confirmed_by_owner");
+  }
+});
+
+test("jasmine rice batch preserves the owner's cup and ml units verbatim", () => {
+  const jasmineRice = kitchenData.recipes.find((recipe) => recipe.recipe_id === "candidate:prepared:ข้าวหอมมะลิหุงสุก");
+
+  assert.equal(jasmineRice.recipe_name, "ข้าวหอมมะลิหุงสุก");
+  assert.deepEqual(jasmineRice.items.map((item) => [item.item_name, item.candidate_text]), [
+    ["ข้าวหอมมะลิดิบ", "8 ถ้วย (350 ml)"],
+    ["น้ำ", "2000 ml"]
+  ]);
+  assert.equal(jasmineRice.method_candidate_text, null);
+  assert.equal(jasmineRice.yield_candidate_text, null);
+});
+
 test("a DOCX-only section stays a named blocked candidate recipe", () => {
   const sourceOnly = structuredClone(kitchenData);
   sourceOnly.recipes.push({
@@ -175,7 +213,8 @@ test("recipeTreeRows uses names and depth instead of requiring recipe codes", ()
     { name: "ซอสยากินิกุ", depth: 1 },
     { name: "ผัดผัก", depth: 1 },
     { name: "ซอสอเนกประสงค์", depth: 2 },
-    { name: "น้ำจิ้มซีฟู๊ด", depth: 1 }
+    { name: "น้ำจิ้มซีฟู๊ด", depth: 1 },
+    { name: "ข้าวญี่ปุ่นหุงสุก", depth: 1 }
   ]);
   assert.equal(rows.some((row) => /^RCP-|^SRCP-/.test(row.name)), false);
 });

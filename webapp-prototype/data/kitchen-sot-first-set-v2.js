@@ -1,6 +1,6 @@
 window.NNTNKitchenSotFirstSetV2 = {
   "schema_version": "2.0.0-prototype",
-  "generated_at": "2026-08-04T15:30:00+07:00",
+  "generated_at": "2026-08-04T17:12:00+07:00",
   "source_policy": "ลายมือแก้ไขล่าสุด > DOCX true original > V2 coverage; preserve kitchen units; never convert",
   "root_recipe_ids": [
     165,
@@ -41,19 +41,21 @@ window.NNTNKitchenSotFirstSetV2 = {
         },
         {
           "line_key": "ข้าวหน้าเนื้อตุ๋น:ข้าวญี่ปุ่น",
-          "item_name": "ข้าวญี่ปุ่น",
-          "item_kind": "direct_ingredient",
-          "component_recipe_id": null,
+          "item_name": "ข้าวญี่ปุ่นหุงสุก",
+          "item_kind": "prepared_recipe",
+          "component_recipe_id": "candidate:prepared:ข้าวญี่ปุ่นหุงสุก",
           "source_values": {
             "v1": "72 g",
             "docx": "กล่าวถึงข้าว แต่ไม่ระบุปริมาณ",
             "v2": "72 g",
             "handwriting": "72 g"
           },
-          "candidate_text": "72 กรัม",
-          "selected_source": "matching_sources",
-          "decision_status": "confirmed",
-          "decision_note": null
+          "candidate_text": "180 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "72 กรัมคือข้าวสารดิบ; เจ้าของเมนูยืนยันให้ตักข้าวหุงสุก 180 กรัมต่อที่",
+          "serving_note": "ตักข้าวหุงสุก 180 กรัม",
+          "cost_basis_text": "ข้าวสารญี่ปุ่นดิบ 72 กรัม"
         },
         {
           "line_key": "ข้าวหน้าเนื้อตุ๋น:น้ำจิ้มซีฟู้ด",
@@ -1059,19 +1061,21 @@ window.NNTNKitchenSotFirstSetV2 = {
         },
         {
           "line_key": "ข้าวหน้าเนื้อยากินิกุ:ข้าวญี่ปุ่น",
-          "item_name": "ข้าวญี่ปุ่น",
-          "item_kind": "direct_ingredient",
-          "component_recipe_id": null,
+          "item_name": "ข้าวญี่ปุ่นหุงสุก",
+          "item_kind": "prepared_recipe",
+          "component_recipe_id": "candidate:prepared:ข้าวญี่ปุ่นหุงสุก",
           "source_values": {
             "v1": "72 g",
             "docx": "ไม่ระบุปริมาณ",
             "v2": "72 g",
             "handwriting": "ไม่มีการแก้"
           },
-          "candidate_text": "72 กรัม",
-          "selected_source": null,
-          "decision_status": "needs_review",
-          "decision_note": null
+          "candidate_text": "180 กรัม",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "72 กรัมคือข้าวสารดิบ; เจ้าของเมนูยืนยันให้ตักข้าวหุงสุก 180 กรัมต่อที่",
+          "serving_note": "ตักข้าวหุงสุก 180 กรัม",
+          "cost_basis_text": "ข้าวสารญี่ปุ่นดิบ 72 กรัม"
         }
       ],
       "method_candidate_text": "1. เตรียมข้าวเปล่าจัดใส่กล่อง จากนั้นนำผัดผักที่เตรียมไว้จัดใส่บนข้าวข้างกล่อง\n2. นำเนื้อพิคานย่าที่ย่างไว้หั่นและเรียงบนข้าวข้างผัดผัก\n3. ราดซอสยากินิกุ 3 ช้อนโต๊ะลงบนเนื้อพิคานย่าและผัดผักให้ทั่ว",
@@ -2089,6 +2093,122 @@ window.NNTNKitchenSotFirstSetV2 = {
         {
           "code": "missing_method",
           "message": "มีสัดส่วนผสมครบ แต่ยังไม่มีขั้นตอนคลุก/เก็บ/ผลผลิต จึงพิมพ์ได้เฉพาะฉบับร่าง"
+        }
+      ]
+    },
+    {
+      "recipe_id": "candidate:prepared:ข้าวญี่ปุ่นหุงสุก",
+      "legacy_recipe_id": null,
+      "recipe_version_id": "kitchen-v2-candidate-cooked-japanese-rice-draft-001",
+      "recipe_name": "ข้าวญี่ปุ่นหุงสุก",
+      "recipe_type": "prepared_recipe",
+      "parent_recipe_ids": [
+        165,
+        159
+      ],
+      "review_state": "missing_source",
+      "source_locators": [
+        "V1 import note: 72g ดิบ → 180g สุก (×2.5)",
+        "Owner confirmation: 2026-08-04 — ข้าว 1500 ml + น้ำ 2100 ml"
+      ],
+      "items": [
+        {
+          "line_key": "ข้าวญี่ปุ่นหุงสุก:ข้าวสารญี่ปุ่นดิบ",
+          "item_name": "ข้าวสารญี่ปุ่นดิบ",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "v1": "72 g ดิบ → 180 g สุก (×2.5)",
+            "docx": null,
+            "v2": "72 g",
+            "handwriting": null,
+            "owner_confirmation": "1500 ml"
+          },
+          "candidate_text": "1500 ml",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "ปริมาณข้าวสารดิบสำหรับหุงหนึ่งแบตช์ตามที่เจ้าของยืนยัน"
+        },
+        {
+          "line_key": "ข้าวญี่ปุ่นหุงสุก:น้ำ",
+          "item_name": "น้ำ",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "owner_confirmation": "2100 ml"
+          },
+          "candidate_text": "2100 ml",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "ปริมาณน้ำสำหรับหุงหนึ่งแบตช์ตามที่เจ้าของยืนยัน"
+        }
+      ],
+      "method_candidate_text": null,
+      "method_selected_source": null,
+      "method_decision_note": "มีสัดส่วนข้าวและน้ำแล้ว แต่ยังต้องเก็บขั้นตอนหุงจริงจากครัว",
+      "yield_candidate_text": "ข้าวหุงสุก 180 กรัม ต่อข้าวสารดิบ 72 กรัม",
+      "operational_notes": [
+        "สูตรแบตช์: ข้าวสารญี่ปุ่นดิบ 1500 ml + น้ำ 2100 ml",
+        "ฐานต้นทุนต่อที่: ข้าวสารญี่ปุ่นดิบ 72 กรัม",
+        "เมนูหน้าครัวตักข้าวหุงสุก 180 กรัมต่อที่"
+      ],
+      "blockers": [
+        {
+          "code": "missing_source",
+          "message": "ยังขาดขั้นตอนหุงจริง: วิธีซาว/แช่ โปรแกรมหม้อ เวลา การพักข้าว และผลผลิตข้าวสุกต่อแบตช์"
+        }
+      ]
+    },
+    {
+      "recipe_id": "candidate:prepared:ข้าวหอมมะลิหุงสุก",
+      "legacy_recipe_id": null,
+      "recipe_version_id": "kitchen-v2-candidate-cooked-jasmine-rice-draft-001",
+      "recipe_name": "ข้าวหอมมะลิหุงสุก",
+      "recipe_type": "prepared_recipe",
+      "parent_recipe_ids": [],
+      "review_state": "missing_source",
+      "source_locators": [
+        "Owner confirmation: 2026-08-04 — ข้าว 8 ถ้วย (350 ml) + น้ำ 2000 ml"
+      ],
+      "items": [
+        {
+          "line_key": "ข้าวหอมมะลิหุงสุก:ข้าวหอมมะลิดิบ",
+          "item_name": "ข้าวหอมมะลิดิบ",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "owner_confirmation": "8 ถ้วย (350 ml)"
+          },
+          "candidate_text": "8 ถ้วย (350 ml)",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "ปริมาณข้าวสารดิบสำหรับหุงหนึ่งแบตช์ตามที่เจ้าของยืนยัน"
+        },
+        {
+          "line_key": "ข้าวหอมมะลิหุงสุก:น้ำ",
+          "item_name": "น้ำ",
+          "item_kind": "direct_ingredient",
+          "component_recipe_id": null,
+          "source_values": {
+            "owner_confirmation": "2000 ml"
+          },
+          "candidate_text": "2000 ml",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "ปริมาณน้ำสำหรับหุงหนึ่งแบตช์ตามที่เจ้าของยืนยัน"
+        }
+      ],
+      "method_candidate_text": null,
+      "method_selected_source": null,
+      "method_decision_note": "มีสัดส่วนข้าวและน้ำแล้ว แต่ยังต้องเก็บขั้นตอนหุงจริงจากครัว",
+      "yield_candidate_text": null,
+      "operational_notes": [
+        "สูตรแบตช์: ข้าวหอมมะลิ 8 ถ้วย (350 ml) + น้ำ 2000 ml"
+      ],
+      "blockers": [
+        {
+          "code": "missing_source",
+          "message": "ยังขาดขั้นตอนหุงจริงและผลผลิต: วิธีซาว/แช่ โปรแกรมหม้อ เวลา การพักข้าว และน้ำหนักข้าวสุกต่อแบตช์"
         }
       ]
     }

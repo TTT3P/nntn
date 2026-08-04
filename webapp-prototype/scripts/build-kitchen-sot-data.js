@@ -57,6 +57,16 @@ const methodOverrides = new Map([
 ]);
 
 const candidateOverrides = new Map([
+  ["165:ข้าวญี่ปุ่น", {
+    itemName: "ข้าวญี่ปุ่นหุงสุก",
+    componentRecipeId: "candidate:prepared:ข้าวญี่ปุ่นหุงสุก",
+    candidateText: "180 กรัม",
+    selectedSource: "owner_confirmation",
+    decisionStatus: "confirmed_by_owner",
+    decisionNote: "72 กรัมคือข้าวสารดิบ; เจ้าของเมนูยืนยันให้ตักข้าวหุงสุก 180 กรัมต่อที่",
+    costBasisText: "ข้าวสารญี่ปุ่นดิบ 72 กรัม",
+    servingNote: "ตักข้าวหุงสุก 180 กรัม"
+  }],
   ["159:ผัดผัก", {
     candidateText: "1 ชุดตามสูตร",
     selectedSource: "docx",
@@ -69,6 +79,16 @@ const candidateOverrides = new Map([
     decisionStatus: "confirmed_by_owner",
     decisionNote: "เจ้าของเมนูยืนยันวันที่ 2026-08-04",
     servingNote: "เสิร์ฟแยกในถ้วย 1 oz"
+  }],
+  ["159:ข้าวญี่ปุ่น", {
+    itemName: "ข้าวญี่ปุ่นหุงสุก",
+    componentRecipeId: "candidate:prepared:ข้าวญี่ปุ่นหุงสุก",
+    candidateText: "180 กรัม",
+    selectedSource: "owner_confirmation",
+    decisionStatus: "confirmed_by_owner",
+    decisionNote: "72 กรัมคือข้าวสารดิบ; เจ้าของเมนูยืนยันให้ตักข้าวหุงสุก 180 กรัมต่อที่",
+    costBasisText: "ข้าวสารญี่ปุ่นดิบ 72 กรัม",
+    servingNote: "ตักข้าวหุงสุก 180 กรัม"
   }]
 ]);
 
@@ -92,12 +112,13 @@ function componentIdFor(itemName) {
 }
 
 function decisionItem(recipeId, recipeName, decision) {
-  const componentRecipeId = componentIdFor(decision.item_name);
   const removed = decision.status === "removed_by_handwriting";
   const override = candidateOverrides.get(`${recipeId}:${decision.item_name}`);
+  const itemName = override?.itemName ?? decision.item_name;
+  const componentRecipeId = override?.componentRecipeId ?? componentIdFor(itemName);
   return {
     line_key: `${recipeName}:${decision.item_name}`,
-    item_name: decision.item_name,
+    item_name: itemName,
     item_kind: componentRecipeId === null ? "direct_ingredient" : "prepared_recipe",
     component_recipe_id: componentRecipeId,
     source_values: {
@@ -110,7 +131,8 @@ function decisionItem(recipeId, recipeName, decision) {
     selected_source: override?.selectedSource ?? selectedSource(decision.status),
     decision_status: override?.decisionStatus ?? decision.status,
     decision_note: removed ? "ตัดออกตามลายมือ" : override?.decisionNote ?? null,
-    ...(override?.servingNote ? { serving_note: override.servingNote } : {})
+    ...(override?.servingNote ? { serving_note: override.servingNote } : {}),
+    ...(override?.costBasisText ? { cost_basis_text: override.costBasisText } : {})
   };
 }
 
@@ -198,9 +220,112 @@ const recipes = sourceReview.manifest.map((manifest) => {
   };
 });
 
+recipes.push({
+  recipe_id: "candidate:prepared:ข้าวญี่ปุ่นหุงสุก",
+  legacy_recipe_id: null,
+  recipe_version_id: "kitchen-v2-candidate-cooked-japanese-rice-draft-001",
+  recipe_name: "ข้าวญี่ปุ่นหุงสุก",
+  recipe_type: "prepared_recipe",
+  parent_recipe_ids: [165, 159],
+  review_state: "missing_source",
+  source_locators: [
+    "V1 import note: 72g ดิบ → 180g สุก (×2.5)",
+    "Owner confirmation: 2026-08-04 — ข้าว 1500 ml + น้ำ 2100 ml"
+  ],
+  items: [
+    {
+      line_key: "ข้าวญี่ปุ่นหุงสุก:ข้าวสารญี่ปุ่นดิบ",
+      item_name: "ข้าวสารญี่ปุ่นดิบ",
+      item_kind: "direct_ingredient",
+      component_recipe_id: null,
+      source_values: {
+        v1: "72 g ดิบ → 180 g สุก (×2.5)",
+        docx: null,
+        v2: "72 g",
+        handwriting: null,
+        owner_confirmation: "1500 ml"
+      },
+      candidate_text: "1500 ml",
+      selected_source: "owner_confirmation",
+      decision_status: "confirmed_by_owner",
+      decision_note: "ปริมาณข้าวสารดิบสำหรับหุงหนึ่งแบตช์ตามที่เจ้าของยืนยัน"
+    },
+    {
+      line_key: "ข้าวญี่ปุ่นหุงสุก:น้ำ",
+      item_name: "น้ำ",
+      item_kind: "direct_ingredient",
+      component_recipe_id: null,
+      source_values: { owner_confirmation: "2100 ml" },
+      candidate_text: "2100 ml",
+      selected_source: "owner_confirmation",
+      decision_status: "confirmed_by_owner",
+      decision_note: "ปริมาณน้ำสำหรับหุงหนึ่งแบตช์ตามที่เจ้าของยืนยัน"
+    }
+  ],
+  method_candidate_text: null,
+  method_selected_source: null,
+  method_decision_note: "มีสัดส่วนข้าวและน้ำแล้ว แต่ยังต้องเก็บขั้นตอนหุงจริงจากครัว",
+  yield_candidate_text: "ข้าวหุงสุก 180 กรัม ต่อข้าวสารดิบ 72 กรัม",
+  operational_notes: [
+    "สูตรแบตช์: ข้าวสารญี่ปุ่นดิบ 1500 ml + น้ำ 2100 ml",
+    "ฐานต้นทุนต่อที่: ข้าวสารญี่ปุ่นดิบ 72 กรัม",
+    "เมนูหน้าครัวตักข้าวหุงสุก 180 กรัมต่อที่"
+  ],
+  blockers: [{
+    code: "missing_source",
+    message: "ยังขาดขั้นตอนหุงจริง: วิธีซาว/แช่ โปรแกรมหม้อ เวลา การพักข้าว และผลผลิตข้าวสุกต่อแบตช์"
+  }]
+});
+
+recipes.push({
+  recipe_id: "candidate:prepared:ข้าวหอมมะลิหุงสุก",
+  legacy_recipe_id: null,
+  recipe_version_id: "kitchen-v2-candidate-cooked-jasmine-rice-draft-001",
+  recipe_name: "ข้าวหอมมะลิหุงสุก",
+  recipe_type: "prepared_recipe",
+  parent_recipe_ids: [],
+  review_state: "missing_source",
+  source_locators: [
+    "Owner confirmation: 2026-08-04 — ข้าว 8 ถ้วย (350 ml) + น้ำ 2000 ml"
+  ],
+  items: [
+    {
+      line_key: "ข้าวหอมมะลิหุงสุก:ข้าวหอมมะลิดิบ",
+      item_name: "ข้าวหอมมะลิดิบ",
+      item_kind: "direct_ingredient",
+      component_recipe_id: null,
+      source_values: { owner_confirmation: "8 ถ้วย (350 ml)" },
+      candidate_text: "8 ถ้วย (350 ml)",
+      selected_source: "owner_confirmation",
+      decision_status: "confirmed_by_owner",
+      decision_note: "ปริมาณข้าวสารดิบสำหรับหุงหนึ่งแบตช์ตามที่เจ้าของยืนยัน"
+    },
+    {
+      line_key: "ข้าวหอมมะลิหุงสุก:น้ำ",
+      item_name: "น้ำ",
+      item_kind: "direct_ingredient",
+      component_recipe_id: null,
+      source_values: { owner_confirmation: "2000 ml" },
+      candidate_text: "2000 ml",
+      selected_source: "owner_confirmation",
+      decision_status: "confirmed_by_owner",
+      decision_note: "ปริมาณน้ำสำหรับหุงหนึ่งแบตช์ตามที่เจ้าของยืนยัน"
+    }
+  ],
+  method_candidate_text: null,
+  method_selected_source: null,
+  method_decision_note: "มีสัดส่วนข้าวและน้ำแล้ว แต่ยังต้องเก็บขั้นตอนหุงจริงจากครัว",
+  yield_candidate_text: null,
+  operational_notes: ["สูตรแบตช์: ข้าวหอมมะลิ 8 ถ้วย (350 ml) + น้ำ 2000 ml"],
+  blockers: [{
+    code: "missing_source",
+    message: "ยังขาดขั้นตอนหุงจริงและผลผลิต: วิธีซาว/แช่ โปรแกรมหม้อ เวลา การพักข้าว และน้ำหนักข้าวสุกต่อแบตช์"
+  }]
+});
+
 const data = {
   schema_version: "2.0.0-prototype",
-  generated_at: "2026-08-04T15:30:00+07:00",
+  generated_at: "2026-08-04T17:12:00+07:00",
   source_policy: "ลายมือแก้ไขล่าสุด > DOCX true original > V2 coverage; preserve kitchen units; never convert",
   root_recipe_ids: rootRecipeIds,
   recipes

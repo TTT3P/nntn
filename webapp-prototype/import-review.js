@@ -26,6 +26,28 @@
     });
   }
 
+  function mergeReviewQueueWithCandidates(rows, recipes) {
+    const merged = [...(Array.isArray(rows) ? rows : [])];
+    const knownIds = new Set(merged.map((row) => String(row.recipe_id)));
+
+    for (const recipe of Array.isArray(recipes) ? recipes : []) {
+      if (knownIds.has(String(recipe.recipe_id))) continue;
+      const items = Array.isArray(recipe.items) ? recipe.items : [];
+      merged.push({
+        recipe_id: recipe.recipe_id,
+        recipe_name: recipe.recipe_name,
+        recipe_kind: recipe.recipe_type === "sellable_menu" ? "menu" : "prep",
+        v1_bom_line_count: items.length,
+        v1_dependency_count: items.filter((item) => item.item_kind === "prepared_recipe").length,
+        v1_method_status: recipe.method_candidate_text ? "draft" : "missing",
+        review_status: "candidate"
+      });
+      knownIds.add(String(recipe.recipe_id));
+    }
+
+    return merged;
+  }
+
   function getRecipeReviewDetail(data, recipeId) {
     const numericId = Number(recipeId);
     const recipe = (data?.recipes || []).find((row) => Number(row.recipe_id) === numericId) || null;
@@ -66,6 +88,7 @@
     getFirstSetReview,
     getRecipeReviewDetail,
     getSourceSectionMappings,
+    mergeReviewQueueWithCandidates,
     summarizeImport
   };
 });
