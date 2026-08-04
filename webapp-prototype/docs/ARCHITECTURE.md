@@ -194,3 +194,45 @@ PrintViewModelBuilder
 ```
 
 อย่าเชื่อม production database เข้ากับไฟล์ prototype โดยตรง
+
+## Prototype v2 — Kitchen SOT Boundary
+
+Prototype v2 adds a source-review path without changing the production boundary:
+
+```text
+first-set-review-v1.json + V1 import snapshot
+                    │
+                    ▼
+scripts/build-kitchen-sot-data.js
+                    │
+                    ├── data/kitchen-sot-first-set-v2.json
+                    └── data/kitchen-sot-first-set-v2.js
+                                  │
+                                  ▼
+                         kitchen-sot.js
+                 draft / tree / readiness / print bundle
+                         │                    │
+                         ▼                    ▼
+               import-review-ui.js         app.js
+               DOM + in-memory edits       guarded Print Center
+```
+
+### Ownership
+
+- `scripts/build-kitchen-sot-data.js` assembles the reviewed first set from the source-review evidence. It preserves source text and operational units and emits no normalized weight.
+- `kitchen-sot.js` is the pure domain boundary. It owns recipe identity, prepared-recipe traversal, dependency-cycle detection, in-memory draft updates, readiness blockers, de-duplication, and print view models.
+- `import-review-ui.js` owns DOM rendering and interaction only. It does not convert quantities or persist data.
+- `app.js` consumes the `nntn:kitchen-print-request` browser event and keeps the existing Print Center as the only print surface.
+
+### Kitchen SOT Representations
+
+The prototype keeps four representations separate:
+
+1. raw evidence in the vault;
+2. source transcription in the import/review artifacts;
+3. kitchen candidate values in `kitchen-sot-first-set-v2` and the in-memory store; and
+4. normalized costing data, which is intentionally absent from this workflow.
+
+`print_ready` is a mock workflow state for testing layout and readiness. It is not a production approval. A blocked kitchen recipe forces the whole selected kitchen bundle to `DRAFT — ข้อมูลไม่ครบ`, disables the approved status, and prints named blockers.
+
+All edits reset on reload. Google Sheets persistence is a later milestone and must use version-pinned recipe records rather than overwriting evidence or an approved version.

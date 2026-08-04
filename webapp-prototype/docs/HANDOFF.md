@@ -135,3 +135,50 @@ Variant change รอบล่าสุดตรวจด้วย unit/static c
 ## Repository Warning
 
 Parent repository มี tracked/untracked work อื่นอยู่ก่อนเริ่มงานนี้ ห้าม cleanup, reset หรือ commit งานที่ไม่เกี่ยวข้อง การแก้ไขของ prototype รอบนี้ควรอยู่ใต้ `webapp-prototype/` เท่านั้น
+
+## Prototype v2 Kitchen SOT Update
+
+**Branch:** `feature/kitchen-sot-prototype-v2`
+
+**Worktree:** `/Users/trirongyinwichapoon/tt3p/product-hub/nntn/.worktrees/kitchen-sot-prototype-v2`
+
+The Source Review workspace is now the default landing screen. The first set contains four sellable menus and twelve prepared recipes. Users navigate by Thai recipe name, select nested prepared recipes, compare V1/DOCX/V2/handwriting, edit a kitchen candidate, and save an in-memory draft.
+
+Important behavior:
+
+- A DOCX can map multiple sections to separate recipes.
+- Sellable menus, prepared recipes, and direct ingredients are separate types.
+- The first 16 recipes use version IDs such as `kitchen-v2-157-draft-001`.
+- Spoon, gram, millilitre, ladle, glass, bag, head, bunch, and other source units remain unchanged.
+- Duplicate prepared-recipe dependencies appear once in the visible tree and print bundle.
+- Missing quantities, source conflicts, missing methods, missing dependencies, and cycles block final output by name.
+- `บันทึกฉบับร่าง` updates only the page's in-memory store; reload restores the generated candidate data.
+- `เพิ่มเมนูและสูตรเตรียมลงชุดพิมพ์` expands dependencies recursively and opens the existing Print Center.
+- A bundle with any blocker is forced to `DRAFT — ข้อมูลไม่ครบ`; the `อนุมัติแล้ว` option is disabled and each affected sheet prints its blockers.
+- `print_ready` is prototype terminology only, not production approval or Kitchen SOT designation.
+
+Generated data:
+
+- `data/kitchen-sot-first-set-v2.json` — inspectable first-set candidate artifact.
+- `data/kitchen-sot-first-set-v2.js` — direct-browser asset.
+- `scripts/build-kitchen-sot-data.js` — deterministic generator.
+
+Fresh verification on 4 August 2026:
+
+- all Node tests pass;
+- Source Review is the default workspace;
+- `ข้าวหน้าเนื้อยากินิกุ` expands to `ซอสยากินิกุ`, `ผัดผัก`, `ซอสอเนกประสงค์`, and `น้ำจิ้มซีฟู๊ด` without duplicates;
+- `ผัดผัก` shows seven candidate lines and the two DOCX method steps;
+- A kitchen bundle opens five print pages and retains `1 ช้อนชา` values;
+- blocked kitchen output disables the approved status and shows the draft watermark;
+- Recipe Editor add-ingredient regression passes in browser;
+- Branch Menu Express still resolves 3 menu items and 6 dependencies;
+- desktop and 390 px views have no body overflow; and
+- the browser console reports zero local application errors.
+
+Screenshots:
+
+- `preview-kitchen-sot-desktop.png`
+- `preview-kitchen-sot-mobile.png`
+
+Google Sheets, Apps Script, authentication, production approval, and production mutation remain outside this branch. The next milestone should persist versioned records only after TINE accepts this static workflow.
