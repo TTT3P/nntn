@@ -1942,6 +1942,13 @@ body.modal-open {
   text-align: right;
 }
 
+.print-serving-note {
+  display: block;
+  margin-top: 1mm;
+  color: var(--ink-500);
+  font-size: 8.5px;
+}
+
 .print-method-list {
   margin: 0;
   padding: 0;
@@ -2877,6 +2884,12 @@ body.modal-open {
 .kitchen-candidate-field input {
   color: var(--green-700);
   font-weight: 700;
+}
+
+.kitchen-serving-note {
+  margin: 8px 0 0;
+  color: var(--green-700);
+  font-size: 12px;
 }
 
 .kitchen-readiness {

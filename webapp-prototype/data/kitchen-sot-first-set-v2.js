@@ -1035,10 +1035,11 @@ window.NNTNKitchenSotFirstSetV2 = {
             "v2": "20 g",
             "handwriting": "ไม่มีการแก้"
           },
-          "candidate_text": null,
-          "selected_source": null,
-          "decision_status": "conflict",
-          "decision_note": null
+          "candidate_text": "20 กรัม",
+          "selected_source": "matching_sources",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของเมนูยืนยันวันที่ 2026-08-04",
+          "serving_note": "เสิร์ฟแยกในถ้วย 1 oz"
         },
         {
           "line_key": "ข้าวหน้าเนื้อยากินิกุ:เนื้อพิคานย่า",
@@ -1075,15 +1076,10 @@ window.NNTNKitchenSotFirstSetV2 = {
       ],
       "method_candidate_text": "1. เตรียมข้าวเปล่าจัดใส่กล่อง จากนั้นนำผัดผักที่เตรียมไว้จัดใส่บนข้าวข้างกล่อง\n2. นำเนื้อพิคานย่าที่ย่างไว้หั่นและเรียงบนข้าวข้างผัดผัก\n3. ราดซอสยากินิกุ 3 ช้อนโต๊ะลงบนเนื้อพิคานย่าและผัดผักให้ทั่ว",
       "method_selected_source": "docx",
-      "method_decision_note": "ขั้นตอนจัดเสิร์ฟครบ แต่ยังต้องยืนยันน้ำจิ้มซีฟู้ดและปริมาณผัดผัก",
+      "method_decision_note": "DOCX ระบุขั้นตอนจัดเสิร์ฟ; เจ้าของเมนูยืนยันน้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟแยกในถ้วย 1 oz และใช้ผัดผัก 1 ชุดตามสูตร",
       "yield_candidate_text": null,
       "operational_notes": [],
-      "blockers": [
-        {
-          "code": "unresolved_source_conflict",
-          "message": "น้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟตรงไหน"
-        }
-      ]
+      "blockers": []
     },
     {
       "recipe_id": 156,

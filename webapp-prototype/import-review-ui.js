@@ -33,6 +33,7 @@
     confirmed: "ตรงกัน",
     confirmed_from_docx: "ใช้ตาม DOCX",
     confirmed_from_handwriting: "ใช้ตามลายมือ",
+    confirmed_by_owner: "เจ้าของยืนยัน",
     removed_by_handwriting: "ตัดออกตามลายมือ",
     manual_review: "แก้ในหน้าทดลอง",
     needs_review: "รอตรวจ",
@@ -122,6 +123,7 @@
           <span>ค่าหน้าครัว</span>
           <input class="kitchen-candidate-input" data-line-key="${escapeHtml(item.line_key)}" value="${escapeHtml(item.candidate_text || "")}" placeholder="ยังไม่สรุป ห้ามเดา" aria-label="ค่าหน้าครัว ${escapeHtml(item.item_name)}">
         </label>
+        ${item.serving_note ? `<p class="kitchen-serving-note"><strong>การเสิร์ฟ:</strong> ${escapeHtml(item.serving_note)}</p>` : ""}
       </article>`).join("")}</div>`;
   }
 

@@ -110,12 +110,23 @@ test("ยากินิกุ uses one prepared batch of ผัดผัก fro
   assert.equal(vegetables.decision_status, "confirmed_from_docx");
 });
 
-test("ยากินิกุ keeps only the unresolved seafood-sauce placement question", () => {
-  const evaluation = createKitchenSotStore(kitchenData).evaluateRecipe(159);
-  const messages = evaluation.blockers.map((blocker) => blocker.message).join("\n");
+test("ยากินิกุ serves 20 grams of seafood sauce separately in a 1 oz cup", () => {
+  const store = createKitchenSotStore(kitchenData);
+  const yakiniku = store.getRecipe(159);
+  const seafood = yakiniku.items.find((item) => item.component_recipe_id === 158);
+  const messages = store.evaluateRecipe(159).blockers.map((blocker) => blocker.message).join("\n");
+  const printSeafood = store.buildPrintBundle([159]).recipes
+    .find((recipe) => recipe.recipe_id === 159).ingredients
+    .find((item) => item.name === "น้ำจิ้มซีฟู้ด");
 
-  assert.match(messages, /น้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟตรงไหน/);
-  assert.doesNotMatch(messages, /ผัดผักนับเป็น 1 ชุดหรือ 53 กรัม/);
+  assert.equal(seafood.candidate_text, "20 กรัม");
+  assert.equal(seafood.selected_source, "matching_sources");
+  assert.equal(seafood.decision_status, "confirmed_by_owner");
+  assert.equal(seafood.serving_note, "เสิร์ฟแยกในถ้วย 1 oz");
+  assert.equal(printSeafood.servingNote, "เสิร์ฟแยกในถ้วย 1 oz");
+  assert.doesNotMatch(messages, /น้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟตรงไหน/);
+  assert.doesNotMatch(messages, /ยังต้องยืนยันน้ำจิ้มซีฟู้ด|ปริมาณผัดผัก/);
+  assert.doesNotMatch(yakiniku.method_decision_note, /ยังต้องยืนยันน้ำจิ้มซีฟู้ด|ปริมาณผัดผัก/);
 });
 
 test("a DOCX-only section stays a named blocked candidate recipe", () => {

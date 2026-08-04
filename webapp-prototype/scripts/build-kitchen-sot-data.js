@@ -62,11 +62,22 @@ const candidateOverrides = new Map([
     selectedSource: "docx",
     decisionStatus: "confirmed_from_docx",
     decisionNote: "DOCX ระบุให้ทำผัดผัก 1 ชุดตามสูตรก่อนนำไปจัดเสิร์ฟ"
+  }],
+  ["159:น้ำจิ้มซีฟู้ด", {
+    candidateText: "20 กรัม",
+    selectedSource: "matching_sources",
+    decisionStatus: "confirmed_by_owner",
+    decisionNote: "เจ้าของเมนูยืนยันวันที่ 2026-08-04",
+    servingNote: "เสิร์ฟแยกในถ้วย 1 oz"
   }]
 ]);
 
-const unresolvedQuestionOverrides = new Map([
-  ["ข้าวหน้าเนื้อยากินิกุ", "น้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟตรงไหน"]
+const resolvedUnresolvedQuestions = new Set([
+  "ข้าวหน้าเนื้อยากินิกุ:น้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟตรงไหน และผัดผักนับเป็น 1 ชุดหรือ 53 กรัม"
+]);
+
+const methodDecisionNoteOverrides = new Map([
+  [159, "DOCX ระบุขั้นตอนจัดเสิร์ฟ; เจ้าของเมนูยืนยันน้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟแยกในถ้วย 1 oz และใช้ผัดผัก 1 ชุดตามสูตร"]
 ]);
 
 function selectedSource(status) {
@@ -98,7 +109,8 @@ function decisionItem(recipeId, recipeName, decision) {
     candidate_text: removed ? null : override?.candidateText ?? decision.candidate ?? null,
     selected_source: override?.selectedSource ?? selectedSource(decision.status),
     decision_status: override?.decisionStatus ?? decision.status,
-    decision_note: removed ? "ตัดออกตามลายมือ" : override?.decisionNote ?? null
+    decision_note: removed ? "ตัดออกตามลายมือ" : override?.decisionNote ?? null,
+    ...(override?.servingNote ? { serving_note: override.servingNote } : {})
   };
 }
 
@@ -141,16 +153,15 @@ function methodCandidate(recipe) {
 function blockersFor(recipe) {
   const blockers = sourceReview.unresolved
     .filter((issue) => issue.recipe_name === recipe.recipe_name)
-    .map((issue) => ({
-      code: "unresolved_source_conflict",
-      message: unresolvedQuestionOverrides.get(recipe.recipe_name) ?? issue.question
-    }));
+    .filter((issue) => !resolvedUnresolvedQuestions.has(`${issue.recipe_name}:${issue.question}`))
+    .map((issue) => ({ code: "unresolved_source_conflict", message: issue.question }));
 
   if (!methodCandidate(recipe)) {
     blockers.push({ code: "missing_method", message: recipe.method_note });
   }
 
-  if (recipe.review_state === "conflict" && blockers.length === 0) {
+  const hasItemConflict = (recipe.decisions || []).some((decision) => ["conflict", "needs_review"].includes(decision.status));
+  if (recipe.review_state === "conflict" && blockers.length === 0 && !hasItemConflict) {
     blockers.push({ code: "unresolved_source_conflict", message: recipe.method_note });
   }
 
@@ -180,7 +191,7 @@ const recipes = sourceReview.manifest.map((manifest) => {
     items,
     method_candidate_text: methodCandidate(recipe),
     method_selected_source: recipe.method_status.includes("handwriting") ? "handwriting" : recipe.method_status.includes("docx") || recipe.method_status === "candidate_from_docx" ? "docx" : methodCandidate(recipe) ? "matching_sources" : null,
-    method_decision_note: recipe.method_note,
+    method_decision_note: methodDecisionNoteOverrides.get(recipe.recipe_id) ?? recipe.method_note,
     yield_candidate_text: null,
     operational_notes: [],
     blockers: blockersFor(recipe)

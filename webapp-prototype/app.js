@@ -832,7 +832,7 @@
   function ingredientTable(recipe, multiplier) {
     const rows = recipe.ingredients.map((ingredient) => `
       <tr>
-        <td>${escapeHtml(ingredient.name)}</td>
+        <td>${escapeHtml(ingredient.name)}${ingredient.servingNote ? `<small class="print-serving-note">${escapeHtml(ingredient.servingNote)}</small>` : ""}</td>
         <td>${formatAmount(ingredient.amount, multiplier)} ${escapeHtml(ingredient.unit)}</td>
       </tr>`).join("");
 

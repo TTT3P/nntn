@@ -212,7 +212,11 @@
         version: recipe.recipe_version_id,
         ingredients: (recipe.items || [])
           .filter((item) => item.decision_status !== "removed_by_handwriting")
-          .map((item) => ({ name: item.item_name, ...splitCandidateText(item.candidate_text) })),
+          .map((item) => ({
+            name: item.item_name,
+            ...splitCandidateText(item.candidate_text),
+            servingNote: item.serving_note || ""
+          })),
         steps: String(recipe.method_candidate_text || "")
           .split("\n")
           .map((step) => step.replace(/^\s*(?:\d+[.)]|[-•])\s*/, "").trim())
