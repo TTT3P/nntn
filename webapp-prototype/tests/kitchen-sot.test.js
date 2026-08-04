@@ -300,12 +300,34 @@ test("noodle soup V3 uses the owner-confirmed grams and milliliters without conv
     ["ใบเตย", "10 ใบ"],
     ["หัวไชเท้า", "2 หัว"]
   ]);
-  assert.equal(soup.items.find((item) => item.item_name === "ชุดเครื่องเทศสำหรับซุป V3").candidate_text, null);
-  assert.equal(soup.items.find((item) => item.item_name === "ชุดปรุงรอบ 2 สำหรับซุป V3").candidate_text, null);
   assert.ok(soup.items.slice(1, 7).every((item) => item.decision_status === "confirmed_by_owner"));
   assert.equal(soup.items.find((item) => item.item_name === "เกลือ").decision_status, "confirmed_by_owner");
   assert.equal(JSON.stringify(soup.items).includes("DOCX V3 ไม่ระบุหน่วย"), false);
   assert.doesNotMatch(store.evaluateRecipe(2).blockers.map((blocker) => blocker.message).join("\n"), /ไม่ระบุหน่วย/);
+});
+
+test("one full DOCX batch of each prepared soup component is used per pot", () => {
+  const store = createKitchenSotStore(kitchenData);
+  const soup = store.getRecipe(2);
+  const preparedComponents = soup.items.filter((item) => [9, 161].includes(item.component_recipe_id));
+  const blockers = store.evaluateRecipe(2).blockers.map((blocker) => blocker.message).join("\n");
+  const printSoup = store.buildPrintBundle([2]).recipes.find((recipe) => recipe.recipe_id === 2);
+
+  assert.deepEqual(preparedComponents.map((item) => [item.item_name, item.candidate_text]), [
+    ["ชุดเครื่องเทศสำหรับซุป V3", "1 ชุดตามสูตร"],
+    ["ชุดปรุงรอบ 2 สำหรับซุป V3", "1 ชุดตามสูตร"]
+  ]);
+  assert.ok(preparedComponents.every((item) => item.decision_status === "confirmed_by_owner"));
+  assert.ok(preparedComponents.every((item) => item.selected_source === "owner_confirmation"));
+  assert.doesNotMatch(blockers, /ยังไม่ระบุจำนวนชุด|ยังไม่มีค่าหน้าครัวที่ยืนยัน/);
+  assert.deepEqual(
+    printSoup.ingredients.filter((item) => ["ชุดเครื่องเทศสำหรับซุป V3", "ชุดปรุงรอบ 2 สำหรับซุป V3"].includes(item.name))
+      .map((item) => [item.name, item.amount, item.unit]),
+    [
+      ["ชุดเครื่องเทศสำหรับซุป V3", "1", "ชุดตามสูตร"],
+      ["ชุดปรุงรอบ 2 สำหรับซุป V3", "1", "ชุดตามสูตร"]
+    ]
+  );
 });
 
 test("noodle soup V3 updates all three prepared component formulas", () => {

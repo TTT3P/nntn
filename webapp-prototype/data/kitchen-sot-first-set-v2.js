@@ -320,7 +320,8 @@ window.NNTNKitchenSotFirstSetV2 = {
         "V2: น้ำซุป",
         "DOCX: true-originals/_inbox/ซุปก๋วยเตี๋ยว V3.docx",
         "Owner confirmation: 2026-08-04 — น้ำเปล่าประมาณ 50 ลิตร ใช้หม้อเบอร์ 70 และสูตรนี้ไม่รวมขั้นตอนลงเนื้อ",
-        "Owner confirmation: 2026-08-04 — ซอสและซีอิ๊วใช้ ml; น้ำตาล ผงปรุงรส และเกลือใช้กรัม; ไม่ได้แปลงตัวเลขจาก V1/V2"
+        "Owner confirmation: 2026-08-04 — ซอสและซีอิ๊วใช้ ml; น้ำตาล ผงปรุงรส และเกลือใช้กรัม; ไม่ได้แปลงตัวเลขจาก V1/V2",
+        "Owner confirmation: 2026-08-04 — สูตรชุดเครื่องเทศและชุดปรุงรอบ 2 ใน DOCX เป็นปริมาณเต็มชุดสำหรับซุป 1 หม้อ"
       ],
       "source_section_mappings": [
         {
@@ -557,14 +558,15 @@ window.NNTNKitchenSotFirstSetV2 = {
           "component_recipe_id": 9,
           "source_values": {
             "v1": "กระปุกเครื่องเทศ [70g] 50 ลิตร",
-            "docx": "มีสูตรแยกหัวข้อ ‘ชุดเครื่องเทศ’ แต่ไม่ระบุจำนวนชุดที่ใส่ต่อหม้อ",
+            "docx": "มีสูตรแยกหัวข้อ ‘ชุดเครื่องเทศ’",
             "v2": "กระปุกเครื่องเทศ [70g] 50 ลิตร",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "1 ชุดตามสูตร ต่อซุป 1 หม้อ"
           },
-          "candidate_text": null,
-          "selected_source": null,
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "1 ชุดตามสูตร",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         },
         {
           "line_key": "น้ำซุปก๋วยเตี๋ยว V3:ชุดปรุงรอบ 2 สำหรับซุป V3",
@@ -573,14 +575,15 @@ window.NNTNKitchenSotFirstSetV2 = {
           "component_recipe_id": 161,
           "source_values": {
             "v1": "เครื่องปรุงชุดสอง 643 g",
-            "docx": "มีสูตรแยกหัวข้อ ‘ชุดปรุงรอบ 2’ แต่ไม่ระบุจำนวนชุดที่ใส่ต่อหม้อ",
+            "docx": "มีสูตรแยกหัวข้อ ‘ชุดปรุงรอบ 2’",
             "v2": "เครื่องปรุงชุดสอง 643 g",
-            "handwriting": null
+            "handwriting": null,
+            "owner_confirmation": "1 ชุดตามสูตร ต่อซุป 1 หม้อ"
           },
-          "candidate_text": null,
-          "selected_source": null,
-          "decision_status": "needs_review",
-          "decision_note": "DOCX V3 เป็นหลักฐานล่าสุด แต่ยังไม่อนุมัติค่าที่ไม่ระบุหน่วยหรือปริมาณ"
+          "candidate_text": "1 ชุดตามสูตร",
+          "selected_source": "owner_confirmation",
+          "decision_status": "confirmed_by_owner",
+          "decision_note": "เจ้าของยืนยันหน่วยวันที่ 2026-08-04; คงตัวเลขจาก DOCX V3 และไม่ได้แปลงค่าจาก V1/V2"
         }
       ],
       "method_candidate_text": null,
@@ -595,10 +598,6 @@ window.NNTNKitchenSotFirstSetV2 = {
         {
           "code": "missing_method",
           "message": "DOCX V3 ยังไม่มีลำดับวิธีปรุงน้ำซุป และขอบเขตสูตรนี้ไม่รวมขั้นตอนลงเนื้อ"
-        },
-        {
-          "code": "missing_quantity",
-          "message": "ยังไม่ระบุจำนวนชุดเครื่องเทศและชุดปรุงรอบ 2 ที่ใช้ต่อหม้อเบอร์ 70"
         }
       ]
     },
