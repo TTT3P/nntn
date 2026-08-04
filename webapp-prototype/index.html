@@ -22,12 +22,12 @@
 
   <main class="page-shell">
     <nav class="workspace-tabs" aria-label="ส่วนงานหลัก">
-      <button class="workspace-tab is-active" id="recipe-workspace-tab" type="button" data-workspace-target="recipe-workspace" aria-selected="true">Recipe Editor</button>
-      <button class="workspace-tab" id="import-workspace-tab" type="button" data-workspace-target="import-workspace" aria-selected="false">ตรวจต้นฉบับ</button>
+      <button class="workspace-tab" id="recipe-workspace-tab" type="button" data-workspace-target="recipe-workspace" aria-selected="false">Recipe Editor</button>
+      <button class="workspace-tab is-active" id="import-workspace-tab" type="button" data-workspace-target="import-workspace" aria-selected="true">ตรวจต้นฉบับ</button>
       <button class="workspace-tab" id="branch-workspace-tab" type="button" data-workspace-target="branch-workspace" aria-selected="false">สาขาและเมนู</button>
     </nav>
 
-    <div id="recipe-workspace">
+    <div id="recipe-workspace" hidden>
       <section class="intro" aria-labelledby="page-title">
       <div>
         <p class="eyebrow">แบบฟอร์มต้นแบบ</p>
@@ -446,14 +446,14 @@
       </div>
     </section>
 
-    <section class="import-workspace" id="import-workspace" aria-labelledby="import-page-title" hidden>
+    <section class="import-workspace" id="import-workspace" aria-labelledby="import-page-title">
       <section class="intro import-intro">
         <div>
           <p class="eyebrow">SOURCE REVIEW · NO CONVERSION</p>
           <h2 id="import-page-title">ตรวจสูตรจากชื่อเมนู</h2>
           <p>ย้ายข้อมูลจากเว็บ V1 มาเป็นคิวตรวจ โดยยังไม่รับรองค่า g/ml และไม่แปลงช้อนชา ช้อนโต๊ะ กรัม หรือมิลลิลิตร</p>
         </div>
-        <span class="branch-draft-badge">ข้อมูลตั้งต้น · อ่านอย่างเดียว</span>
+        <span class="branch-draft-badge">Prototype v2 · บันทึกชั่วคราว</span>
       </section>
 
       <section class="import-policy" aria-label="กติกาต้นฉบับ">
@@ -471,6 +471,12 @@
       <section class="first-set-strip" aria-label="ชุดเมนูแรก">
         <div><strong>ชุดแรก: 4 เมนูหลัก + 12 สูตรประกอบ</strong><span>ระบบไล่ dependency ลงไปถึงซอส น้ำซุป เครื่องปรุง และของเตรียม</span></div>
         <span>ตรวจเทียบครบ 16 · มี candidate 5 · ต้องยืนยัน 11</span>
+      </section>
+
+      <section class="kitchen-level-legend" aria-label="โครงสร้างสูตร">
+        <span><b>เมนูขาย</b> ของที่ลูกค้าสั่ง</span>
+        <span><b>สูตรเตรียม</b> ซอส น้ำซุป หรือของที่ครัวทำไว้</span>
+        <span><b>วัตถุดิบ</b> ของที่หยิบมาใช้โดยตรง</span>
       </section>
 
       <div class="import-review-grid">
@@ -527,8 +533,8 @@
           <div class="panel-heading">
             <span class="step-number">02</span>
             <div>
-              <h3 id="import-detail-title">รายละเอียดที่ต้องเทียบ</h3>
-              <p>ค่า V1 อยู่ฝั่งซ้าย ส่วนค่าหน้าครัวยังว่างจนกว่าจะยืนยันต้นฉบับ</p>
+              <h3 id="import-detail-title">ตรวจและแก้ฉบับหน้าครัว</h3>
+              <p>แก้ได้ในหน้าทดลองนี้เท่านั้น รีโหลดแล้วข้อมูลจะกลับเป็นต้นฉบับ</p>
             </div>
           </div>
           <div id="import-detail-content" class="import-detail-empty">เลือกชื่อเมนูจากตารางด้านซ้าย</div>
@@ -706,7 +712,9 @@
   </template>
 
   <script src="data/cookbook-import-v1.js"></script>
+  <script src="data/kitchen-sot-first-set-v2.js"></script>
   <script src="import-review.js"></script>
+  <script src="kitchen-sot.js"></script>
   <script src="import-review-ui.js"></script>
   <script src="recipe-variants.js"></script>
   <script src="app.js"></script>

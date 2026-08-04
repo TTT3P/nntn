@@ -46,7 +46,8 @@
       if (!recipe) return null;
       const key = recipeKey(recipeId);
       const nextAncestry = [...ancestry, key];
-      const children = preparedItems(recipe).map((item) => {
+      const uniquePreparedItems = [...new Map(preparedItems(recipe).map((item) => [recipeKey(item.component_recipe_id), item])).values()];
+      const children = uniquePreparedItems.map((item) => {
         const childKey = recipeKey(item.component_recipe_id);
         if (nextAncestry.includes(childKey)) {
           return { recipe: getRecipe(item.component_recipe_id), directIngredients: [], children: [], cycle: true };
@@ -65,6 +66,33 @@
         directIngredients: clone((recipe.items || []).filter((item) => item.item_kind === "direct_ingredient" && item.decision_status !== "removed_by_handwriting")),
         children
       };
+    }
+
+    function recipeTreeRows(recipeId) {
+      const tree = getRecipeTree(recipeId);
+      const rows = [];
+      const seen = new Set();
+
+      function append(node, depth) {
+        if (!node?.recipe) return;
+        const key = recipeKey(node.recipe.recipe_id);
+        if (seen.has(key)) return;
+        seen.add(key);
+        const evaluation = evaluateRecipe(node.recipe.recipe_id);
+        rows.push({
+          recipeId: node.recipe.recipe_id,
+          name: node.recipe.recipe_name,
+          type: node.recipe.recipe_type,
+          depth,
+          status: evaluation.status,
+          blockerCount: evaluation.blockers.length
+        });
+        if (node.cycle) return;
+        for (const child of node.children || []) append(child, depth + 1);
+      }
+
+      append(tree, 0);
+      return rows;
     }
 
     function updateItemCandidate(recipeId, lineKey, candidateText, decisionNote) {
@@ -200,6 +228,7 @@
       getRecipe,
       getRecipeTree,
       markPrintReady,
+      recipeTreeRows,
       saveDraft,
       updateItemCandidate,
       updateMethodCandidate

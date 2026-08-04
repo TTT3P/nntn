@@ -2515,9 +2515,32 @@ body.modal-open {
   font-size: 12px;
 }
 
+.kitchen-level-legend {
+  margin-bottom: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.kitchen-level-legend span {
+  padding: 12px 16px;
+  display: grid;
+  gap: 4px;
+  color: var(--ink-600);
+  background: var(--surface);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.kitchen-level-legend b {
+  color: var(--ink-900);
+  font-size: 14px;
+}
+
 .import-review-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.9fr);
+  grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.25fr);
   gap: 18px;
   align-items: start;
 }
@@ -2745,6 +2768,132 @@ body.modal-open {
   margin-top: 4px;
 }
 
+.kitchen-tree-panel {
+  margin: -4px -4px 16px;
+  padding: 12px;
+  background: var(--ink-50);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-sm);
+}
+
+.kitchen-recipe-tree {
+  display: grid;
+  gap: 4px;
+}
+
+.kitchen-tree-row {
+  width: 100%;
+  padding: 8px 10px 8px calc(10px + (var(--tree-depth) * 20px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink-700);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  text-align: left;
+}
+
+.kitchen-tree-row:hover,
+.kitchen-tree-row.is-active {
+  color: var(--green-700);
+  background: var(--surface);
+  border-color: var(--green-100);
+}
+
+.kitchen-tree-row span,
+.kitchen-tree-row b,
+.kitchen-tree-row small {
+  display: block;
+}
+
+.kitchen-tree-row small,
+.kitchen-tree-row em {
+  color: var(--ink-500);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.kitchen-tree-row em {
+  flex: 0 0 auto;
+}
+
+.kitchen-editor-header small {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-500);
+  font-size: 11px;
+}
+
+.kitchen-save-notice {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  color: var(--green-700);
+  background: var(--green-50);
+  border-left: 4px solid var(--green-700);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.kitchen-candidate-list {
+  display: grid;
+  gap: 12px;
+}
+
+.kitchen-candidate-card header > div small {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-500);
+  font-size: 11px;
+}
+
+.kitchen-candidate-field {
+  margin-top: 10px;
+}
+
+.kitchen-candidate-field input {
+  color: var(--green-700);
+  font-weight: 700;
+}
+
+.kitchen-readiness {
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.kitchen-readiness.is-ready {
+  color: var(--green-700);
+  background: var(--green-50);
+  border-color: var(--green-100);
+}
+
+.kitchen-readiness.is-blocked {
+  color: var(--danger-600);
+  background: var(--danger-50);
+  border-color: #efc7b9;
+}
+
+.kitchen-readiness ul {
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
+
+.kitchen-editor-actions {
+  padding-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kitchen-editor-actions .button-primary {
+  flex: 1 1 240px;
+}
+
 .source-document-card {
   padding: 11px;
   background: var(--green-50);
@@ -2887,6 +3036,10 @@ body.modal-open {
   .import-filter-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .kitchen-level-legend {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 680px) {
@@ -2901,6 +3054,16 @@ body.modal-open {
   .first-set-strip {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .kitchen-editor-actions {
+    display: grid;
+  }
+
+  .kitchen-tree-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
 
   .import-table th:nth-child(3),

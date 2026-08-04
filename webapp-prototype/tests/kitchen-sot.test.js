@@ -95,3 +95,23 @@ test("a DOCX-only section stays a named blocked candidate recipe", () => {
   assert.equal(candidate.recipe_name, "ซอสใหม่");
   assert.equal(store.evaluateRecipe(candidate.recipe_id).status, "blocked");
 });
+
+test("recipeTreeRows uses names and depth instead of requiring recipe codes", () => {
+  const rows = createKitchenSotStore(kitchenData).recipeTreeRows(159);
+
+  assert.deepEqual(rows.map(({ name, depth }) => ({ name, depth })), [
+    { name: "ข้าวหน้าเนื้อยากินิกุ", depth: 0 },
+    { name: "ซอสยากินิกุ", depth: 1 },
+    { name: "ผัดผัก", depth: 1 },
+    { name: "ซอสอเนกประสงค์", depth: 2 },
+    { name: "น้ำจิ้มซีฟู๊ด", depth: 1 }
+  ]);
+  assert.equal(rows.some((row) => /^RCP-|^SRCP-/.test(row.name)), false);
+});
+
+test("recipeTreeRows shows each prepared recipe once even when V1 has duplicate lines", () => {
+  const rows = createKitchenSotStore(kitchenData).recipeTreeRows(165);
+  const secretSauceRows = rows.filter((row) => row.name === "ซอสลับ (v2)");
+
+  assert.equal(secretSauceRows.length, 1);
+});
