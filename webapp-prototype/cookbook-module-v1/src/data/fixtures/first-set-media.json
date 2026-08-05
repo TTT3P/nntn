@@ -1,0 +1,51 @@
+{
+  "media": [
+    {
+      "mediaId": "demo-prep-cut-size",
+      "url": "/sample-media/prep-cut-size.svg",
+      "caption": "DEMO — ขนาดชิ้นเนื้อ / cut-size reference",
+      "altText": "ภาพตัวอย่าง DEMO แสดงขนาดชิ้นเนื้อสำหรับขั้นตอนเตรียม",
+      "source": "NNTN cookbook demo",
+      "capturedAt": null,
+      "author": null,
+      "reviewState": "sample",
+      "localSessionOnly": true,
+      "crop": { "x": 0, "y": 0, "width": 1200, "height": 800 },
+      "focalPoint": { "x": 600, "y": 400 },
+      "measurementAnnotation": "10 g per cut"
+    },
+    {
+      "mediaId": "demo-cook-doneness",
+      "url": "/sample-media/cook-doneness.svg",
+      "caption": "DEMO — สีและความสุก / doneness and color",
+      "altText": "ภาพตัวอย่าง DEMO แสดงสีและความสุกหลังทอด",
+      "source": "NNTN cookbook demo",
+      "capturedAt": null,
+      "author": null,
+      "reviewState": "sample",
+      "localSessionOnly": true,
+      "crop": null,
+      "focalPoint": { "x": 600, "y": 400 },
+      "measurementAnnotation": null
+    },
+    {
+      "mediaId": "demo-service-delivery-layout",
+      "url": "/sample-media/service-delivery-layout.svg",
+      "caption": "DEMO — การจัดวางในกล่องเดลิเวอรี / delivery placement",
+      "altText": "ภาพตัวอย่าง DEMO แสดงตำแหน่งอาหารในกล่องเดลิเวอรี",
+      "source": "NNTN cookbook demo",
+      "capturedAt": null,
+      "author": null,
+      "reviewState": "sample",
+      "localSessionOnly": true,
+      "crop": null,
+      "focalPoint": { "x": 600, "y": 400 },
+      "measurementAnnotation": null
+    }
+  ],
+  "stepMedia": [
+    { "stepId": "kitchen-v2-164-draft-001:prep:1", "mediaId": "demo-prep-cut-size", "order": 1, "role": "checkpoint", "vessel": "plate", "reviewNeeded": false },
+    { "stepId": "kitchen-v2-37-draft-001:cook:2", "mediaId": "demo-cook-doneness", "order": 1, "role": "final", "vessel": "plate", "reviewNeeded": false },
+    { "stepId": "kitchen-v2-165-draft-001:service:2", "mediaId": "demo-service-delivery-layout", "order": 1, "role": "final", "vessel": "delivery_box", "reviewNeeded": false }
+  ]
+}

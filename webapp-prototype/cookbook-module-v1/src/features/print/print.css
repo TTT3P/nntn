@@ -1,0 +1,305 @@
+@page workstation { size: A5 landscape; margin: 0; }
+@page two-up { size: A4 portrait; margin: 0; }
+
+.print-center-page {
+  width: min(82rem, 100%);
+  min-width: 0;
+}
+
+.print-center-header,
+.print-controls,
+.print-error {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid #d8cbb9;
+  border-radius: 0.75rem;
+  background: #fffdf8;
+}
+
+.print-center-header h2,
+.print-center-header p,
+.print-error h3,
+.print-error p {
+  margin: 0;
+}
+
+.print-center-header p,
+.print-error p {
+  margin-top: 0.5rem;
+}
+
+.print-recipe-selection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.45rem 1rem;
+}
+
+.print-recipe-selection legend {
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.print-recipe-selection label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.print-control-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.print-control-grid label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.print-control-grid input,
+.print-control-grid select,
+.print-actions button {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+}
+
+.print-actions {
+  margin-top: 1rem;
+}
+
+.print-preview {
+  display: grid;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 0.25rem 0 1rem;
+}
+
+.workstation-sheet {
+  page: workstation;
+  width: 210mm;
+  height: 148mm;
+  break-after: page;
+  overflow: hidden;
+}
+
+.two-up-sheet {
+  page: two-up;
+  width: 210mm;
+  height: 297mm;
+  break-after: page;
+}
+
+.workstation-sheet,
+.two-up-sheet {
+  flex: none;
+  margin-inline: auto;
+  background: #fffdf8;
+  box-shadow: 0 0.2rem 1.25rem rgb(39 35 31 / 18%);
+}
+
+.two-up-sheet {
+  display: grid;
+  grid-template-rows: repeat(2, 148mm);
+  gap: 1mm;
+}
+
+.two-up-slot {
+  min-height: 0;
+}
+
+.workstation-card {
+  height: 100%;
+  min-width: 0;
+  padding: 8mm;
+  border: 0.35mm solid #7b674e;
+  background: #fffdf8;
+  color: #27231f;
+  font-size: 10pt;
+}
+
+.workstation-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 6mm;
+  padding-bottom: 3mm;
+  border-bottom: 0.35mm solid #b8a384;
+}
+
+.workstation-card__header > div,
+.workstation-card__header h3,
+.workstation-card__status {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.workstation-card__header h3,
+.workstation-card__header p,
+.workstation-card__warnings p,
+.workstation-step__instruction {
+  margin: 0;
+}
+
+.workstation-card__stage {
+  font-weight: 700;
+  color: #735b3d;
+}
+
+.workstation-card__status {
+  flex: none;
+  text-align: right;
+  font-size: 8.5pt;
+}
+
+.workstation-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.8fr);
+  gap: 5mm;
+  min-width: 0;
+  padding-top: 4mm;
+}
+
+.workstation-ingredients {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 8.5pt;
+}
+
+.workstation-ingredients th,
+.workstation-ingredients td {
+  padding: 1.2mm;
+  border-bottom: 0.2mm solid #d8cbb9;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.workstation-steps {
+  min-width: 0;
+  margin: 0;
+  padding-left: 6mm;
+}
+
+.workstation-step {
+  min-width: 0;
+  margin-bottom: 2.5mm;
+  padding-left: 1mm;
+}
+
+.workstation-step--with-media {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: 3mm;
+}
+
+.workstation-media {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2mm;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.workstation-media__item,
+.workstation-media__meta,
+.workstation-step__instruction,
+.workstation-card__warnings {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.workstation-media__item img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 23mm;
+  border-radius: 1mm;
+  object-fit: cover;
+}
+
+.workstation-media__meta {
+  display: grid;
+  gap: 0.4mm;
+  margin-top: 1mm;
+  font-size: 7.5pt;
+}
+
+.workstation-card__warnings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1mm 4mm;
+  margin-top: 3mm;
+  padding-top: 2mm;
+  border-top: 0.25mm solid #d8cbb9;
+  color: #7d392e;
+  font-size: 7.5pt;
+}
+
+@media (max-width: 900px) {
+  .print-center-page {
+    width: 100%;
+  }
+
+  .workstation-sheet,
+  .two-up-sheet {
+    margin-inline: 0;
+  }
+}
+
+@media print {
+  body {
+    min-width: 0;
+    background: #fff;
+  }
+
+  .app-shell {
+    display: block;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .app-header,
+  .print-center-header,
+  .print-controls,
+  .print-error,
+  .print-center-page > [role="status"] {
+    display: none !important;
+  }
+
+  .print-center-page,
+  .print-preview {
+    display: block;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .workstation-sheet,
+  .two-up-sheet {
+    margin: 0;
+    box-shadow: none;
+  }
+
+  .workstation-card,
+  .workstation-sheet,
+  .two-up-sheet {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

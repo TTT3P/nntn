@@ -1,0 +1,121 @@
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.app-header {
+  text-align: center;
+}
+
+.app-header h1,
+.app-header p {
+  margin: 0;
+}
+
+.app-organization {
+  color: #735b3d;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.app-header h1 {
+  margin-top: 0.5rem;
+  color: #27231f;
+  font-size: clamp(2.25rem, 8vw, 4rem);
+}
+
+.app-prototype-label {
+  margin-top: 0.75rem;
+  color: #6c655d;
+  font-size: 0.875rem;
+}
+
+.app-session-notice {
+  margin-top: 0.5rem;
+  color: #6c655d;
+  font-size: 0.875rem;
+}
+
+.route-placeholder {
+  max-width: 36rem;
+  padding: 1.5rem;
+  border: 1px solid #d8cbb9;
+  border-radius: 0.75rem;
+  text-align: center;
+}
+
+.route-placeholder h2,
+.route-placeholder p {
+  margin: 0;
+}
+
+.recipe-page {
+  width: min(68rem, calc(100vw - 2rem));
+  padding: 1.5rem;
+  border: 1px solid #d8cbb9;
+  border-radius: 0.75rem;
+  background: #fffdf8;
+}
+
+.recipe-page h2 {
+  margin-top: 0;
+}
+
+.recipe-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.recipe-filters label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.recipe-filters input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+
+.recipe-list,
+.recipe-graph-status {
+  padding-left: 1.25rem;
+}
+
+.recipe-list li,
+.recipe-graph-status li {
+  margin-block: 0.75rem;
+}
+
+.recipe-list h3 {
+  margin: 0 0 0.35rem;
+}
+
+.recipe-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.recipe-badges span,
+.recipe-graph-status span:not(:first-child) {
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: #eee3d2;
+  font-size: 0.8rem;
+}
+
+.recipe-error {
+  border-color: #a84535;
+}
+
+.route-placeholder p {
+  margin-top: 0.5rem;
+  color: #6c655d;
+}
