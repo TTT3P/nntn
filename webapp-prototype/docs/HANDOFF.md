@@ -3,6 +3,20 @@
 **Prepared:** 4 สิงหาคม 2026  
 **Target reader:** agent/developer ที่ไม่มี transcript ของ session นี้
 
+## 5 August 2026 Consolidated Bundle
+
+TINE สั่งให้รวบรวม brief, verified prototype และ evidence ที่เกี่ยวกับ CookingBook V1 ไว้ใน worktree นี้เพื่อส่งต่อ agent/session ใหม่
+
+Entry points:
+
+1. `COOKBOOK-V1-BUNDLE-MANIFEST.md`
+2. `COOKBOOK-V1-CONTINUE-BRIEF.md`
+3. `COOKBOOK-V1-VERIFICATION.md`
+4. `../cookbook-module-v1/AGENTS.md`
+5. `../cookbook-module-v1/docs/HANDOFF.md`
+
+`../cookbook-module-v1/` เป็น tracked-file snapshot จาก standalone source commit `fb86ca6e7630da7fd1ca88b6b1eece31c107c3ae` และมี provenance/checksum ในตัว Snapshot นี้ไม่ทับ static prototype เดิมและไม่เปิด production/Supabase scope
+
 ## Spec Lock
 
 **Prototype Spec v1 ถูกล็อกโดย TINE เมื่อ 4 สิงหาคม 2026**
@@ -18,13 +32,13 @@
 Absolute folder:
 
 ```text
-/Users/trirongyinwichapoon/tt3p/product-hub/nntn/webapp-prototype
+~/tt3p/product-hub/nntn/.worktrees/kitchen-sot-prototype-v2/webapp-prototype
 ```
 
 เปิดใช้งานแบบถาวรโดยเปิด:
 
 ```text
-/Users/trirongyinwichapoon/tt3p/product-hub/nntn/webapp-prototype/index.html
+~/tt3p/product-hub/nntn/.worktrees/kitchen-sot-prototype-v2/webapp-prototype/index.html
 ```
 
 ไม่ต้องใช้ server; URL `127.0.0.1:8765` เป็นเพียง server ชั่วคราวสำหรับ browser verification ใน session ก่อนหน้า
@@ -140,7 +154,7 @@ Parent repository มี tracked/untracked work อื่นอยู่ก่�
 
 **Branch:** `feature/kitchen-sot-prototype-v2`
 
-**Worktree:** `/Users/trirongyinwichapoon/tt3p/product-hub/nntn/.worktrees/kitchen-sot-prototype-v2`
+**Worktree:** `~/tt3p/product-hub/nntn/.worktrees/kitchen-sot-prototype-v2`
 
 The Source Review workspace is now the default landing screen. The first set contains four sellable menus and twelve prepared recipes. Users navigate by Thai recipe name, select nested prepared recipes, compare V1/DOCX/V2/handwriting, edit a kitchen candidate, and save an in-memory draft.
 
