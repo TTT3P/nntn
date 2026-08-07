@@ -128,7 +128,11 @@ async function fetchSafely(
 }
 
 export class HttpKitchenSotDraftClient implements KitchenSotDraftClient {
-  constructor(private readonly fetcher: KitchenSotFetcher = fetch) {}
+  private readonly fetcher: KitchenSotFetcher;
+
+  constructor(fetcher: KitchenSotFetcher = fetch) {
+    this.fetcher = fetcher;
+  }
 
   async load(): Promise<LoadedKitchenSotDraft> {
     const v5Response = await fetchSafely(this.fetcher, V5_ENDPOINT, {
@@ -157,6 +161,9 @@ export class HttpKitchenSotDraftClient implements KitchenSotDraftClient {
   }
 
   async save(document: KitchenSotDocument, baseSha256: string): Promise<SotSaveResponse> {
+    if (baseSha256.trim().length === 0) {
+      throw new KitchenSotHttpError(0, "PRECONDITION_REQUIRED");
+    }
     if (!isSha256(baseSha256)) {
       throw new KitchenSotHttpError(0, "INVALID_SHA256");
     }

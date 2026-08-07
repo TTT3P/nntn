@@ -190,7 +190,20 @@ describe("HttpKitchenSotDraftClient save", () => {
   });
 
   test.each([
-    ["whitespace", " "],
+    ["blank", ""],
+    ["whitespace", " \t\n"],
+  ])("rejects a %s save base as a missing precondition", async (_case, baseSha256) => {
+    const fetcher = vi.fn();
+
+    await expect(new HttpKitchenSotDraftClient(fetcher).save(document, baseSha256)).rejects.toMatchObject({
+      name: "KitchenSotHttpError",
+      status: 0,
+      code: "PRECONDITION_REQUIRED",
+    });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  test.each([
     ["wrong length", "a".repeat(63)],
     ["non-hex", `${"a".repeat(63)}g`],
     ["quote-containing", `${"a".repeat(63)}"`],
