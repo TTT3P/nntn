@@ -20,6 +20,9 @@ test("keeps every router surface and representative interaction read-only on loo
 
   await page.goto("./#/source-review");
   await expect(page.getByRole("heading", { name: /ตรวจสอบแหล่งข้อมูล/u })).toBeVisible();
+  await expect(page.getByText("โหมดอ่านอย่างเดียว").first()).toBeVisible();
+  await expect(page.getByText(/รีเซ็ตเมื่อโหลดหน้าใหม่/u)).toBeVisible();
+  await expect(page.getByRole("button", { name: "บันทึกฉบับร่าง V5" })).toHaveCount(0);
   await strictBrowserBoundary.drain();
 
   for (const stage of ["prep", "cook", "service", "all"] as const) {
