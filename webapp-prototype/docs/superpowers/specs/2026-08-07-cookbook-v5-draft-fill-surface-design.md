@@ -319,6 +319,7 @@ Required evidence:
 16. **Atomicity:** an interrupted or failed write never leaves a truncated V5 document.
 17. **Development-only boundary:** production build contains no writable vault endpoint.
 18. **Regression gates:** unit tests, lint, typecheck, build, browser checks, and relevant E2E tests pass sequentially on the final integrated HEAD.
+19. **Transitive append-order:** optional item and blocker fields use their canonical schema positions independent of edit order, so every valid previous-V5 transition is also valid cumulatively from fresh V4 and serializes byte-identically for equivalent final data.
 
 The real V5 file is created only by an intentional save from the completed local app. Verification must not fabricate kitchen decisions merely to leave an artifact behind.
 

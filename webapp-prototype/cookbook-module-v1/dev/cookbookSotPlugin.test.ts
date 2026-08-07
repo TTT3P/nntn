@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, expect, test } from "vitest";
-import { buildV5Draft } from "../src/domain/sot/kitchenSotEdits";
+import { applyKitchenSotEdit, buildV5Draft } from "../src/domain/sot/kitchenSotEdits";
 import { parseKitchenSotDocument, type KitchenSotDocument } from "../src/domain/sot/kitchenSotDocument";
 import { createCookbookSotRequestHandler } from "./cookbookSotPlugin";
 
@@ -366,6 +366,51 @@ test.each(invalidExistingDraftCases)(
     }
   },
 );
+
+test.each([
+  ["item-serving-note", "item-cost-basis"],
+  ["item-cost-basis", "item-serving-note"],
+] as const)("GET and PUT reopen cumulative optional edits in %s then %s order", async (firstKind, secondKind) => {
+  const vault = await makeTemporaryVault();
+  const source = parseKitchenSotDocument(JSON.parse(FIXTURE_TEXT) as unknown);
+  const recipe = source.recipes[0]!;
+  const item = recipe.items[0]!;
+  const edit = (document: KitchenSotDocument, kind: typeof firstKind, value: string) =>
+    applyKitchenSotEdit(document, {
+      kind,
+      recipeId: recipe.recipe_id,
+      lineKey: item.line_key,
+      value,
+    });
+  const derivedFrom = { path: V4_RELATIVE_PATH, sha256: vault.sha256 } as const;
+  const first = buildV5Draft(edit(source, firstKind, "first value"), "2026-08-07T06:00:00.000Z", derivedFrom);
+  const server = await startMiddlewareServer(createCookbookSotRequestHandler({ vaultRoot: vault.root }));
+  try {
+    const firstPut = await putDraft(server, vault.sha256, first);
+    expect(firstPut.status).toBe(200);
+    const firstBody = await firstPut.json() as { base_sha256: string; document: KitchenSotDocument };
+    const firstGet = await fetch(`${server.origin}/__cookbook/v5-draft`);
+    expect(firstGet.status).toBe(200);
+
+    const second = buildV5Draft(
+      edit(firstBody.document, secondKind, "second value"),
+      "2026-08-07T06:01:00.000Z",
+      derivedFrom,
+    );
+    const secondPut = await putDraft(server, firstBody.base_sha256, second);
+    expect(secondPut.status).toBe(200);
+    const secondGet = await fetch(`${server.origin}/__cookbook/v5-draft`);
+    expect(secondGet.status).toBe(200);
+    const reopened = await secondGet.json() as { document: KitchenSotDocument };
+    expect(Object.keys(reopened.document.recipes[0]!.items[0]!)).toEqual([
+      "line_key", "item_name", "item_kind", "component_recipe_id", "source_values",
+      "candidate_text", "selected_source", "decision_status", "decision_note",
+      "serving_note", "cost_basis_text",
+    ]);
+  } finally {
+    await server.close();
+  }
+});
 
 test.each(invalidExistingDraftCases)(
   "PUT rejects an existing parseable V5 with invalid $name as its previous draft",

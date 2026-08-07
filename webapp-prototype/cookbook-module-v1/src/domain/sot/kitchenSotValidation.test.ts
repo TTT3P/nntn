@@ -29,6 +29,13 @@ function moveKeyToEnd<T extends Record<string, unknown>>(record: T, key: string)
   return Object.fromEntries(entries) as T;
 }
 
+function permutations<T>(values: readonly T[]): T[][] {
+  if (values.length === 0) return [[]];
+  return values.flatMap((value, index) =>
+    permutations(values.filter((_, candidateIndex) => candidateIndex !== index))
+      .map((tail) => [value, ...tail]));
+}
+
 describe("Kitchen SOT transition validation", () => {
   test("allows an unrelated first edit while grandfathering the inherited provenance gap", () => {
     const source = sourceDocument();
@@ -147,6 +154,94 @@ describe("Kitchen SOT transition validation", () => {
     expect(() => validateKitchenSotTransition(source, null, draft(edited), derivedFrom)).not.toThrow();
   });
 
+  test("validates cumulative item optional edits from fresh V4 in every sequential order", () => {
+    const source = sourceDocument();
+    const recipe = source.recipes[0]!;
+    const item = recipe.items[0]!;
+    const edits = {
+      serving_note: {
+        kind: "item-serving-note" as const,
+        recipeId: recipe.recipe_id,
+        lineKey: item.line_key,
+        value: "เสิร์ฟ 1 ถ้วย",
+      },
+      cost_basis_text: {
+        kind: "item-cost-basis" as const,
+        recipeId: recipe.recipe_id,
+        lineKey: item.line_key,
+        value: "ต้นทุน 50 กรัม",
+      },
+    };
+    const bytes = permutations(["serving_note", "cost_basis_text"] as const).map((order) => {
+      const first = buildV5Draft(
+        applyKitchenSotEdit(source, edits[order[0]!]!),
+        "2026-08-07T03:31:00.000Z",
+        derivedFrom,
+      );
+      expect(() => validateKitchenSotTransition(source, null, first, derivedFrom)).not.toThrow();
+      const second = buildV5Draft(
+        applyKitchenSotEdit(first, edits[order[1]!]!),
+        "2026-08-07T03:32:00.000Z",
+        derivedFrom,
+      );
+      expect(() => validateKitchenSotTransition(source, first, second, derivedFrom)).not.toThrow();
+      expect(() => validateKitchenSotTransition(source, null, second, derivedFrom)).not.toThrow();
+      return JSON.stringify(second);
+    });
+    expect(new Set(bytes).size).toBe(1);
+  });
+
+  test("accepts only canonical blocker optional order across every field permutation", () => {
+    const source = sourceDocument();
+    const optionalFields = ["resolved", "resolved_note", "resolved_at"] as const;
+    for (const order of permutations(optionalFields)) {
+      const submitted = draft(source);
+      const recipe = submitted.recipes.find(({ recipe_id }) => recipe_id === 162)!;
+      const blocker = recipe.blockers[0]!;
+      for (const field of order) {
+        if (field === "resolved") blocker[field] = true;
+        else if (field === "resolved_note") blocker[field] = "ครัวยืนยันแล้ว";
+        else blocker[field] = "2026-08-07T03:30:00.000Z";
+      }
+      const validation = () => validateKitchenSotTransition(source, null, submitted, derivedFrom);
+      if (order.join(",") === optionalFields.join(",")) expect(validation).not.toThrow();
+      else expect(validation).toThrow(/order/u);
+    }
+  });
+
+  test("canonical blocker writer output is byte-identical and fresh-V4 valid from every prior key permutation", () => {
+    const optionalFields = ["resolved", "resolved_note", "resolved_at"] as const;
+    const bytes = permutations(optionalFields).map((order) => {
+      const source = sourceDocument();
+      const working = sourceDocument();
+      const blocker = working.recipes.find(({ recipe_id }) => recipe_id === 162)!.blockers[0]!;
+      for (const field of order) {
+        if (field === "resolved") blocker[field] = false;
+        else blocker[field] = "legacy";
+      }
+      const submitted = draft(applyKitchenSotEdit(working, {
+        kind: "resolve-blocker", recipeId: 162, blockerIndex: 0,
+        note: "ครัวยืนยันแล้ว", resolvedAt: "2026-08-07T03:30:00.000Z",
+      }));
+      expect(() => validateKitchenSotTransition(source, null, submitted, derivedFrom)).not.toThrow();
+      return JSON.stringify(submitted);
+    });
+    expect(new Set(bytes).size).toBe(1);
+  });
+
+  test("rejects unknown item and blocker fields under canonical merge validation", () => {
+    const source = sourceDocument();
+    const unknownItem = draft(source);
+    unknownItem.recipes[0]!.items[0]!.invented = "not allowed";
+    expect(() => validateKitchenSotTransition(source, null, unknownItem, derivedFrom))
+      .toThrow(/new field/u);
+
+    const unknownBlocker = draft(source);
+    unknownBlocker.recipes.find(({ blockers }) => blockers.length > 0)!.blockers[0]!.invented = "not allowed";
+    expect(() => validateKitchenSotTransition(source, null, unknownBlocker, derivedFrom))
+      .toThrow(/new field/u);
+  });
+
   test("rejects immutable fields, review-state mutation, and recipe identity reordering", () => {
     const source = sourceDocument();
     const immutable = draft(source);
@@ -214,6 +309,22 @@ describe("Kitchen SOT transition validation", () => {
     submitted.recipes.find(({ recipe_id }) => recipe_id === 162)!.blockers[0] =
       moveKeyToEnd(blocker, "resolved");
     expect(() => validateKitchenSotTransition(source, previous, submitted, derivedFrom)).toThrow(/order/u);
+  });
+
+  test("rejects deletion of a previously added canonical optional item key", () => {
+    const source = sourceDocument();
+    const recipe = source.recipes[0]!;
+    const item = recipe.items[0]!;
+    const previous = draft(applyKitchenSotEdit(source, {
+      kind: "item-serving-note",
+      recipeId: recipe.recipe_id,
+      lineKey: item.line_key,
+      value: "เสิร์ฟ 1 ถ้วย",
+    }));
+    const submitted = buildV5Draft(previous, "2026-08-07T04:00:00.000Z", derivedFrom);
+    delete submitted.recipes[0]!.items[0]!.serving_note;
+    expect(() => validateKitchenSotTransition(source, previous, submitted, derivedFrom))
+      .toThrow(/deleted/u);
   });
 
   test("rejects array length changes and item identity reordering", () => {

@@ -20,6 +20,13 @@ function getRecipe(recipeId: number | string) {
   return recipe;
 }
 
+function permutations<T>(values: readonly T[]): T[][] {
+  if (values.length === 0) return [[]];
+  return values.flatMap((value, index) =>
+    permutations(values.filter((_, candidateIndex) => candidateIndex !== index))
+      .map((tail) => [value, ...tail]));
+}
+
 describe("Kitchen SOT explicit edits", () => {
   test("writes owner confirmation with owner-specific status and the exact dated note", () => {
     const base = parseKitchenSotDocument(fixture);
@@ -57,6 +64,40 @@ describe("Kitchen SOT explicit edits", () => {
     const item = edited.recipes.find(({ recipe_id }) => recipe_id === 159)!.items[0]!;
     expect(item.serving_note).toBe(serving);
     expect(item.cost_basis_text).toBe(cost);
+  });
+
+  test("canonicalizes item optional fields for every edit permutation", () => {
+    const base = parseKitchenSotDocument(fixture);
+    const recipe = base.recipes[0]!;
+    const item = recipe.items[0]!;
+    const edits = {
+      serving_note: {
+        kind: "item-serving-note" as const,
+        recipeId: recipe.recipe_id,
+        lineKey: item.line_key,
+        value: "เสิร์ฟ 1 ถ้วย",
+      },
+      cost_basis_text: {
+        kind: "item-cost-basis" as const,
+        recipeId: recipe.recipe_id,
+        lineKey: item.line_key,
+        value: "ต้นทุน 50 กรัม",
+      },
+    };
+    const serialized = permutations(["serving_note", "cost_basis_text"] as const).map((order) => {
+      const edited = order.reduce(
+        (document, field) => applyKitchenSotEdit(document, edits[field]),
+        base,
+      );
+      const editedItem = edited.recipes[0]!.items[0]!;
+      expect(Object.keys(editedItem)).toEqual([
+        "line_key", "item_name", "item_kind", "component_recipe_id", "source_values",
+        "candidate_text", "selected_source", "decision_status", "decision_note",
+        "serving_note", "cost_basis_text",
+      ]);
+      return JSON.stringify(edited);
+    });
+    expect(new Set(serialized).size).toBe(1);
   });
 
   test("allows optional serving and cost notes to be cleared with an empty raw string", () => {
@@ -112,6 +153,29 @@ describe("Kitchen SOT explicit edits", () => {
       resolved_note: "ครัวยืนยันผลผลิตและวิธีเก็บแล้ว",
       resolved_at: "2026-08-07T03:30:00.000Z",
     });
+  });
+
+  test("canonicalizes blocker optional fields from every pre-existing permutation", () => {
+    const optionalFields = ["resolved", "resolved_note", "resolved_at"] as const;
+    const serialized = permutations(optionalFields).map((order) => {
+      const base = parseKitchenSotDocument(fixture);
+      const recipe = base.recipes.find(({ recipe_id }) => recipe_id === 162)!;
+      const blocker = recipe.blockers[0]!;
+      for (const field of order) {
+        if (field === "resolved") blocker[field] = false;
+        else blocker[field] = "legacy";
+      }
+      const edited = applyKitchenSotEdit(base, {
+        kind: "resolve-blocker", recipeId: 162, blockerIndex: 0,
+        note: "ครัวยืนยันแล้ว", resolvedAt: "2026-08-07T03:30:00.000Z",
+      });
+      const editedBlocker = edited.recipes.find(({ recipe_id }) => recipe_id === 162)!.blockers[0]!;
+      expect(Object.keys(editedBlocker)).toEqual([
+        "code", "message", "resolved", "resolved_note", "resolved_at",
+      ]);
+      return JSON.stringify(edited);
+    });
+    expect(new Set(serialized).size).toBe(1);
   });
 
   test("accepts canonical UTC millisecond timestamps including a valid leap day", () => {

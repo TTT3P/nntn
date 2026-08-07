@@ -1,11 +1,34 @@
 import {
   cloneKitchenSotDocument,
+  type JsonValue,
   type KitchenSotBlocker,
   type KitchenSotDocument,
   type KitchenSotItem,
   type KitchenSotRecipe,
   type RecipeIdentity,
 } from "./kitchenSotDocument.ts";
+
+export const KITCHEN_SOT_ITEM_KEY_ORDER = [
+  "line_key",
+  "item_name",
+  "item_kind",
+  "component_recipe_id",
+  "source_values",
+  "candidate_text",
+  "selected_source",
+  "decision_status",
+  "decision_note",
+  "serving_note",
+  "cost_basis_text",
+] as const;
+
+export const KITCHEN_SOT_BLOCKER_KEY_ORDER = [
+  "code",
+  "message",
+  "resolved",
+  "resolved_note",
+  "resolved_at",
+] as const;
 
 export type KitchenSotEdit =
   | { kind: "item-owner-confirmation"; recipeId: RecipeIdentity; lineKey: string; value: string; confirmedOn: string }
@@ -109,6 +132,30 @@ function findBlocker(recipe: KitchenSotRecipe, blockerIndex: number): KitchenSot
   return recipe.blockers[blockerIndex]!;
 }
 
+function inCanonicalKeyOrder<T extends Record<string, JsonValue>>(
+  record: T,
+  canonicalOrder: readonly string[],
+): T {
+  const knownEntries = canonicalOrder
+    .filter((key) => Object.hasOwn(record, key))
+    .map((key) => [key, record[key]] as const);
+  const unknownEntries = Object.entries(record).filter(([key]) => !canonicalOrder.includes(key));
+  return Object.fromEntries([...knownEntries, ...unknownEntries]) as T;
+}
+
+function canonicalizeItem(recipe: KitchenSotRecipe, lineKey: string): void {
+  const itemIndex = recipe.items.findIndex(({ line_key }) => line_key === lineKey);
+  if (itemIndex < 0) throw new KitchenSotIdentityNotFoundError("item", lineKey);
+  recipe.items[itemIndex] = inCanonicalKeyOrder(recipe.items[itemIndex]!, KITCHEN_SOT_ITEM_KEY_ORDER);
+}
+
+function canonicalizeBlocker(recipe: KitchenSotRecipe, blockerIndex: number): void {
+  recipe.blockers[blockerIndex] = inCanonicalKeyOrder(
+    recipe.blockers[blockerIndex]!,
+    KITCHEN_SOT_BLOCKER_KEY_ORDER,
+  );
+}
+
 export function applyKitchenSotEdit(
   document: KitchenSotDocument,
   edit: KitchenSotEdit,
@@ -126,13 +173,16 @@ export function applyKitchenSotEdit(
       item.selected_source = "owner_confirmation";
       item.decision_status = "confirmed_by_owner";
       item.decision_note = `เจ้าของยืนยันวันที่ ${edit.confirmedOn} ว่า${recipe.recipe_name} ใช้${item.item_name} ${edit.value}`;
+      canonicalizeItem(recipe, edit.lineKey);
       break;
     }
     case "item-serving-note":
       findItem(recipe, edit.lineKey).serving_note = edit.value;
+      canonicalizeItem(recipe, edit.lineKey);
       break;
     case "item-cost-basis":
       findItem(recipe, edit.lineKey).cost_basis_text = edit.value;
+      canonicalizeItem(recipe, edit.lineKey);
       break;
     case "method":
       requireText(edit.value, "value");
@@ -165,6 +215,7 @@ export function applyKitchenSotEdit(
       blocker.resolved = true;
       blocker.resolved_note = resolvedNote;
       blocker.resolved_at = edit.resolvedAt;
+      canonicalizeBlocker(recipe, edit.blockerIndex);
       break;
     }
   }

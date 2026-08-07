@@ -5,7 +5,12 @@ import type {
   KitchenSotItem,
   KitchenSotRecipe,
 } from "./kitchenSotDocument.ts";
-import { isCanonicalKitchenSotTimestamp, type DerivedFrom } from "./kitchenSotEdits.ts";
+import {
+  KITCHEN_SOT_BLOCKER_KEY_ORDER,
+  KITCHEN_SOT_ITEM_KEY_ORDER,
+  isCanonicalKitchenSotTimestamp,
+  type DerivedFrom,
+} from "./kitchenSotEdits.ts";
 
 const TOP_LEVEL_MUTABLE = new Set(["schema_version", "generated_at", "derived_from"]);
 const RECIPE_MUTABLE = new Set([
@@ -65,17 +70,35 @@ function compareImmutableFields(
   appendOrder: readonly string[],
   structural: Set<string>,
   field: string,
+  canonicalOrder?: readonly string[],
 ): void {
   const baselineKeys = Object.keys(baseline);
   const submittedKeys = Object.keys(submitted);
-  if (!jsonEqual(submittedKeys.slice(0, baselineKeys.length), baselineKeys)) {
-    fail(field, "existing field keys were deleted or reordered");
-  }
-  const appendedKeys = submittedKeys.slice(baselineKeys.length);
-  const expectedAppendedKeys = appendOrder.filter((key) =>
-    !baselineKeys.includes(key) && appendedKeys.includes(key));
-  if (!jsonEqual(appendedKeys, expectedAppendedKeys)) {
-    fail(field, "new field keys are not allowed or were appended out of deterministic order");
+  if (canonicalOrder === undefined) {
+    if (!jsonEqual(submittedKeys.slice(0, baselineKeys.length), baselineKeys)) {
+      fail(field, "existing field keys were deleted or reordered");
+    }
+    const appendedKeys = submittedKeys.slice(baselineKeys.length);
+    const expectedAppendedKeys = appendOrder.filter((key) =>
+      !baselineKeys.includes(key) && appendedKeys.includes(key));
+    if (!jsonEqual(appendedKeys, expectedAppendedKeys)) {
+      fail(field, "new field keys are not allowed or were appended out of deterministic order");
+    }
+  } else {
+    if (baselineKeys.some((key) => !submittedKeys.includes(key))) {
+      fail(field, "existing field keys were deleted");
+    }
+    const addedKeys = submittedKeys.filter((key) => !baselineKeys.includes(key));
+    if (addedKeys.some((key) => !appendOrder.includes(key))) {
+      fail(field, "new field keys are not allowed");
+    }
+    const expectedKeys = [
+      ...canonicalOrder.filter((key) => submittedKeys.includes(key)),
+      ...baselineKeys.filter((key) => !canonicalOrder.includes(key)),
+    ];
+    if (!jsonEqual(submittedKeys, expectedKeys)) {
+      fail(field, "field keys were deleted or are not in canonical order");
+    }
   }
   for (const key of baselineKeys.filter((key) => !mutable.has(key) && !structural.has(key))) {
     if (!jsonEqual(baseline[key], submitted[key])) {
@@ -163,6 +186,7 @@ function validateItem(
     ["serving_note", "cost_basis_text"],
     new Set(),
     field,
+    KITCHEN_SOT_ITEM_KEY_ORDER,
   );
   compareSourceValues(baseline.source_values, submitted.source_values, `${field}.source_values`);
   const ownerMappingChanged = ["candidate_text", "selected_source", "decision_status", "decision_note"]
@@ -220,6 +244,7 @@ function validateBlocker(
     ["resolved", "resolved_note", "resolved_at"],
     new Set(),
     field,
+    KITCHEN_SOT_BLOCKER_KEY_ORDER,
   );
   if (!jsonEqual(baseline, submitted)) validateDirtyBlocker(recipe, submitted, field);
 }
