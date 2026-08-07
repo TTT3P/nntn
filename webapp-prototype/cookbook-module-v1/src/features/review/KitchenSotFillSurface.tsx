@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   isKitchenSotRecipeDraft,
   isOwnerProvenanceIncomplete,
@@ -52,6 +52,8 @@ function ItemEditor({
   const [owner, setOwner] = useState(ownerValue);
   const [servingNote, setServingNote] = useState(servingValue);
   const [costBasis, setCostBasis] = useState(costBasisValue);
+  const [ownerError, setOwnerError] = useState<string | null>(null);
+  const ownerErrorId = useId();
 
   return (
     <fieldset className="sot-edit-grid">
@@ -68,20 +70,31 @@ function ItemEditor({
         <input
           disabled={locked}
           value={owner}
-          onChange={(event) => setOwner(event.target.value)}
+          aria-invalid={ownerError !== null}
+          aria-describedby={ownerError === null ? undefined : ownerErrorId}
+          onChange={(event) => {
+            setOwner(event.target.value);
+            setOwnerError(null);
+          }}
           onBlur={() => {
-            if (owner !== ownerValue && owner.trim() !== "") {
-              applyEdit({
-                kind: "item-owner-confirmation",
-                recipeId,
-                lineKey: item.line_key,
-                value: owner,
-                confirmedOn: localIsoDate(),
-              });
+            if (owner === ownerValue) return;
+            if (owner.trim() === "") {
+              setOwner(ownerValue);
+              setOwnerError("ค่าหน้าครัวต้องไม่ว่าง ระบบคืนค่าเดิมแล้ว");
+              return;
             }
+            setOwnerError(null);
+            applyEdit({
+              kind: "item-owner-confirmation",
+              recipeId,
+              lineKey: item.line_key,
+              value: owner,
+              confirmedOn: localIsoDate(),
+            });
           }}
         />
       </label>
+      {ownerError && <p id={ownerErrorId} role="alert">{ownerError}</p>}
 
       <label>
         หมายเหตุปริมาณเสิร์ฟ — {item.item_name}
@@ -140,15 +153,39 @@ function MethodAndYieldEditor({
   const [decisionNote, setDecisionNote] = useState(initialDecisionNote);
   const [yieldText, setYieldText] = useState(initialYield);
   const [methodError, setMethodError] = useState<string | null>(null);
+  const [decisionNoteError, setDecisionNoteError] = useState<string | null>(null);
+  const [yieldError, setYieldError] = useState<string | null>(null);
+  const methodErrorId = useId();
+  const decisionNoteErrorId = useId();
+  const yieldErrorId = useId();
 
   function commitMethod(): void {
-    const changed = method !== initialMethod || decisionNote !== initialDecisionNote;
-    if (!changed || method.trim() === "") return;
+    const methodChanged = method !== initialMethod;
+    const decisionNoteChanged = decisionNote !== initialDecisionNote;
+    if (!methodChanged) {
+      if (decisionNoteChanged) {
+        setDecisionNote(initialDecisionNote);
+        setDecisionNoteError("แก้หมายเหตุได้เมื่อแก้ไขวิธีทำพร้อมกัน ระบบคืนค่าเดิมแล้ว");
+      }
+      return;
+    }
+    if (method.trim() === "") {
+      setMethod(initialMethod);
+      setDecisionNote(initialDecisionNote);
+      setMethodError("วิธีทำต้องไม่ว่าง ระบบคืนค่าเดิมแล้ว");
+      setDecisionNoteError(null);
+      return;
+    }
     if (decisionNote.trim() === "") {
-      setMethodError("ต้องกรอกหมายเหตุขอบเขตวิธีทำก่อนบันทึกวิธีทำ");
+      setDecisionNoteError("ต้องกรอกหมายเหตุขอบเขตวิธีทำก่อนบันทึกวิธีทำ");
+      return;
+    }
+    if (!decisionNoteChanged) {
+      setDecisionNoteError("ต้องอัปเดตหมายเหตุขอบเขตวิธีทำสำหรับวิธีทำใหม่นี้");
       return;
     }
     setMethodError(null);
+    setDecisionNoteError(null);
     applyEdit({
       kind: "method",
       recipeId: recipe.recipe_id,
@@ -165,34 +202,58 @@ function MethodAndYieldEditor({
         <textarea
           disabled={locked}
           value={method}
-          onChange={(event) => setMethod(event.target.value)}
+          aria-invalid={methodError !== null}
+          aria-describedby={methodError === null ? undefined : methodErrorId}
+          onChange={(event) => {
+            setMethod(event.target.value);
+            setMethodError(null);
+          }}
           onBlur={commitMethod}
         />
       </label>
+      {methodError && <p id={methodErrorId} role="alert">{methodError}</p>}
       <label>
         หมายเหตุขอบเขตวิธีทำ
         <textarea
           required
           disabled={locked}
           value={decisionNote}
-          onChange={(event) => setDecisionNote(event.target.value)}
+          aria-invalid={decisionNoteError !== null}
+          aria-describedby={decisionNoteError === null ? undefined : decisionNoteErrorId}
+          onChange={(event) => {
+            setDecisionNote(event.target.value);
+            setDecisionNoteError(null);
+          }}
           onBlur={commitMethod}
         />
       </label>
-      {methodError && <p role="alert">{methodError}</p>}
+      {decisionNoteError && (
+        <p id={decisionNoteErrorId} role="alert">{decisionNoteError}</p>
+      )}
       <label>
         ผลผลิตจากหน้าครัว
         <input
           disabled={locked}
           value={yieldText}
-          onChange={(event) => setYieldText(event.target.value)}
+          aria-invalid={yieldError !== null}
+          aria-describedby={yieldError === null ? undefined : yieldErrorId}
+          onChange={(event) => {
+            setYieldText(event.target.value);
+            setYieldError(null);
+          }}
           onBlur={() => {
-            if (yieldText !== initialYield && yieldText.trim() !== "") {
-              applyEdit({ kind: "yield", recipeId: recipe.recipe_id, value: yieldText });
+            if (yieldText === initialYield) return;
+            if (yieldText.trim() === "") {
+              setYieldText(initialYield);
+              setYieldError("ผลผลิตต้องไม่ว่าง ระบบคืนค่าเดิมแล้ว");
+              return;
             }
+            setYieldError(null);
+            applyEdit({ kind: "yield", recipeId: recipe.recipe_id, value: yieldText });
           }}
         />
       </label>
+      {yieldError && <p id={yieldErrorId} role="alert">{yieldError}</p>}
     </section>
   );
 }

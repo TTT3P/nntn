@@ -177,6 +177,107 @@ test("writes method with its required decision note and raw yield", async () => 
   });
 });
 
+test("requires an explicitly updated decision note before accepting a method for untouched recipe 162", async () => {
+  const user = userEvent.setup();
+  const document = parseKitchenSotDocument(fixture);
+  const view = renderFillSurfaceWithDocument(document);
+  await view.selectRecipe(162);
+
+  const method = screen.getByLabelText("วิธีทำจากหน้าครัว");
+  const note = screen.getByLabelText("หมายเหตุขอบเขตวิธีทำ");
+  const inheritedNote = document.recipes.find(({ recipe_id }) => recipe_id === 162)!
+    .method_decision_note!;
+  expect(note).toHaveValue(inheritedNote);
+
+  await user.type(method, "คลุกส่วนผสมทั้งหมดให้เข้ากัน");
+  await user.tab();
+
+  expect(screen.getByRole("alert")).toHaveTextContent("ต้องอัปเดตหมายเหตุขอบเขตวิธีทำ");
+  expect(screen.getByRole("button", { name: "บันทึกฉบับร่าง V5" })).toBeDisabled();
+
+  await user.clear(note);
+  await user.type(note, "ยังไม่ครอบคลุมการเก็บและผลผลิต");
+  await user.tab();
+  await user.click(screen.getByRole("button", { name: "บันทึกฉบับร่าง V5" }));
+
+  expect(view.client.save.mock.calls[0]![0].recipes.find(({ recipe_id }) => recipe_id === 162))
+    .toMatchObject({
+      method_candidate_text: "คลุกส่วนผสมทั้งหมดให้เข้ากัน",
+      method_selected_source: "owner_confirmation",
+      method_decision_note: "ยังไม่ครอบคลุมการเก็บและผลผลิต",
+    });
+});
+
+test("does not relabel an unchanged method when only its legacy decision note is edited", async () => {
+  const user = userEvent.setup();
+  const document = parseKitchenSotDocument(fixture);
+  const recipe = document.recipes.find(({ recipe_id }) => recipe_id === 165)!;
+  const view = renderFillSurfaceWithDocument(document);
+  await view.selectRecipe(165);
+
+  const note = screen.getByLabelText("หมายเหตุขอบเขตวิธีทำ");
+  await user.clear(note);
+  await user.type(note, "แก้เฉพาะหมายเหตุ");
+  await user.tab();
+
+  expect(screen.getByRole("alert")).toHaveTextContent("แก้หมายเหตุได้เมื่อแก้ไขวิธีทำพร้อมกัน");
+  expect(note).toHaveValue(recipe.method_decision_note);
+  expect(screen.getByRole("button", { name: "บันทึกฉบับร่าง V5" })).toBeDisabled();
+  expect(view.client.save).not.toHaveBeenCalled();
+});
+
+test("restores a cleared prepopulated owner quantity and reports an accessible error", async () => {
+  const user = userEvent.setup();
+  const document = parseKitchenSotDocument(fixture);
+  const view = renderFillSurfaceWithDocument(document);
+  await view.selectRecipe(165);
+
+  const owner = screen.getByLabelText("ค่าหน้าครัว — ข้าวหอมมะลิหุงสุก");
+  expect(owner).toHaveValue("ข้าวหอมมะลิหุงสุก 180 กรัมต่อจาน");
+  await user.clear(owner);
+  await user.tab();
+
+  expect(screen.getByRole("alert")).toHaveTextContent("ค่าหน้าครัวต้องไม่ว่าง");
+  expect(owner).toHaveValue("ข้าวหอมมะลิหุงสุก 180 กรัมต่อจาน");
+  expect(owner).toHaveAttribute("aria-invalid", "true");
+  expect(screen.getByRole("button", { name: "บันทึกฉบับร่าง V5" })).toBeDisabled();
+});
+
+test("restores a cleared prepopulated method and reports an accessible error", async () => {
+  const user = userEvent.setup();
+  const document = parseKitchenSotDocument(fixture);
+  const recipe = document.recipes.find(({ recipe_id }) => recipe_id === 165)!;
+  const view = renderFillSurfaceWithDocument(document);
+  await view.selectRecipe(165);
+
+  const method = screen.getByLabelText("วิธีทำจากหน้าครัว");
+  await user.clear(method);
+  await user.tab();
+
+  expect(screen.getByRole("alert")).toHaveTextContent("วิธีทำต้องไม่ว่าง");
+  expect(method).toHaveValue(recipe.method_candidate_text);
+  expect(method).toHaveAttribute("aria-invalid", "true");
+  expect(screen.getByRole("button", { name: "บันทึกฉบับร่าง V5" })).toBeDisabled();
+});
+
+test("restores a cleared prepopulated yield and reports an accessible error", async () => {
+  const user = userEvent.setup();
+  const document = parseKitchenSotDocument(fixture);
+  const recipeId = "candidate:prepared:ข้าวญี่ปุ่นหุงสุก";
+  const recipe = document.recipes.find(({ recipe_id }) => recipe_id === recipeId)!;
+  const view = renderFillSurfaceWithDocument(document);
+  await view.selectRecipe(recipeId);
+
+  const yieldInput = screen.getByLabelText("ผลผลิตจากหน้าครัว");
+  await user.clear(yieldInput);
+  await user.tab();
+
+  expect(screen.getByRole("alert")).toHaveTextContent("ผลผลิตต้องไม่ว่าง");
+  expect(yieldInput).toHaveValue(recipe.yield_candidate_text);
+  expect(yieldInput).toHaveAttribute("aria-invalid", "true");
+  expect(screen.getByRole("button", { name: "บันทึกฉบับร่าง V5" })).toBeDisabled();
+});
+
 test("requires an explicit owner-N/A reason for an empty-method blocker", async () => {
   const user = userEvent.setup();
   const document = parseKitchenSotDocument(fixture);
