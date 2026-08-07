@@ -50,7 +50,9 @@ Supabase is outside V1. Any future persistence work requires a separate approved
 
 ## Pilot M0 readiness — 2026-08-07
 
-This snapshot is suitable for an **isolated, loopback-only local pilot** after the current commit passes the complete release and print gates in the parent [CookingBook V1 verification guide](../../docs/COOKBOOK-V1-VERIFICATION.md). The operator start/stop and acceptance flow is documented in the module [README](../README.md).
+**Pilot decision: NO-GO pending print correction and fresh PDF evidence.** The operator start/stop and acceptance flow is documented in the module [README](../README.md), but it must not be used for kitchen acceptance yet.
+
+The current blocking evidence is a real Chrome PDF with blank tail pages and leaked export UI. Existing DOM geometry tests and the standard browser/E2E gate can still pass while this output is defective, so their passing result is not sufficient print-readiness evidence. The print owner must correct the defect and record a fresh PDF regression that proves A5 landscape and A4 two-up output have no blank tail pages, clipped content, or non-print UI before the leader changes this decision to GO.
 
 Fresh integration-lane evidence on 2026-08-07 confirmed that `npm ci` completes, the production bundle builds, the Vite development server serves the application shell and module entry at `/nntn-cookbook/`, shutdown leaves no listener, and runtime TypeScript/TSX contains no `fetch`, Supabase, external HTTP, browser storage, WebSocket, or beacon path. The authoritative release-test counts and print-readability evidence belong in the dated verification record and must be rerun for the final integrated commit rather than inferred from this startup check.
 
@@ -58,7 +60,7 @@ Usable now:
 
 - local name-first browsing, dependency and source review, Prep/Cook/Service projections, print planning, DEMO/session media, and JSON prototype export;
 - review of the versioned first-set candidate while preserving raw source text, value, unit, precedence, conflicts, and blockers;
-- Chrome-based A5/A4 pilot evaluation once the current print gate passes.
+- Chrome-based A5/A4 evaluation for diagnosis only until the fresh PDF regression passes.
 
 Still gated:
 
