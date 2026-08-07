@@ -7,6 +7,7 @@ import {
   type KitchenSotDraftClient,
 } from "../data/KitchenSotDraftClient";
 import { PrototypeProvider, usePrototype } from "../prototype/PrototypeProvider";
+import { KitchenSotDraftProvider } from "../features/review/KitchenSotDraftProvider";
 import { exportPrototypeSnapshot } from "../prototype/snapshotExport";
 import { AppRouter } from "./router";
 import "./styles.css";
@@ -185,7 +186,13 @@ export function App({
       </header>
       <PrototypeProvider repository={repository}>
         <ExportPrototypeSnapshot />
-        <AppRouter draftClient={activeDraftClient} />
+        {activeDraftClient === undefined ? (
+          <AppRouter />
+        ) : (
+          <KitchenSotDraftProvider client={activeDraftClient}>
+            <AppRouter draftClient={activeDraftClient} />
+          </KitchenSotDraftProvider>
+        )}
       </PrototypeProvider>
     </main>
   );

@@ -13,8 +13,10 @@ import {
 import {
   cloneKitchenSotDocument,
   deriveFillSummary,
+  isKitchenSotRecipeDraft,
   type FillSummary,
   type KitchenSotDocument,
+  type RecipeIdentity,
 } from "../../domain/sot/kitchenSotDocument";
 import {
   applyKitchenSotEdit,
@@ -27,6 +29,7 @@ export type KitchenSotFillSummary = FillSummary;
 
 export interface KitchenSotDraftContextValue {
   document: KitchenSotDocument;
+  recipeDraftById: ReadonlyMap<RecipeIdentity, boolean>;
   summary: KitchenSotFillSummary;
   origin: "v4" | "v5-draft";
   dirty: boolean;
@@ -239,6 +242,12 @@ export function KitchenSotDraftProvider({ children, client }: DraftProviderProps
 
   const value: KitchenSotDraftContextValue = {
     document: state.document,
+    recipeDraftById: new Map(
+      state.document.recipes.map((recipe) => [
+        recipe.recipe_id,
+        isKitchenSotRecipeDraft(recipe),
+      ]),
+    ),
     summary: deriveFillSummary(state.document),
     origin: state.origin,
     dirty: state.dirty,
@@ -268,4 +277,9 @@ export function useKitchenSotDraft(): KitchenSotDraftContextValue {
     throw new Error("useKitchenSotDraft must be used within KitchenSotDraftProvider");
   }
   return value;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useOptionalKitchenSotDraft(): KitchenSotDraftContextValue | null {
+  return useContext(KitchenSotDraftContext);
 }

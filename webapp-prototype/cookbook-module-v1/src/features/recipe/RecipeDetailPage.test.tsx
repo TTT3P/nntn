@@ -1,8 +1,12 @@
-import { cleanup, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, test } from "vitest";
+import fixture from "../../data/fixtures/first-set.json";
+import type { KitchenSotDraftClient } from "../../data/KitchenSotDraftClient";
 import type { CookbookSnapshot, RecipeIdentity } from "../../domain/cookbook/types";
+import { parseKitchenSotDocument } from "../../domain/sot/kitchenSotDocument";
+import { PrototypeProvider } from "../../prototype/PrototypeProvider";
 import {
   makeIngredientLine,
   makeRecipe,
@@ -12,6 +16,7 @@ import {
 } from "../../test/builders";
 import { renderWithPrototype } from "../../test/renderWithPrototype";
 import { RecipeLibraryPage } from "../library/RecipeLibraryPage";
+import { KitchenSotDraftProvider } from "../review/KitchenSotDraftProvider";
 import { RecipeDetailPage } from "./RecipeDetailPage";
 import { decodeRecipeIdentity, encodeRecipeIdentity } from "./recipeRoute";
 
@@ -72,6 +77,35 @@ function graphSnapshot(): CookbookSnapshot {
 }
 
 describe("RecipeDetailPage", () => {
+  test("uses the same raw Kitchen SOT readiness as Recipe Studio for the selected recipe", async () => {
+    const document = parseKitchenSotDocument(fixture);
+    const client: KitchenSotDraftClient = {
+      load: async () => ({
+        document,
+        origin: "v4",
+        sourcePath: "Operations/CookBook/sot/v4-2026-08-05/source/kitchen-sot-first-set-v2.json",
+        sourceSha256: "a".repeat(64),
+        baseSha256: "b".repeat(64),
+      }),
+      save: async () => { throw new Error("save is not used in this test"); },
+    };
+
+    render(
+      <PrototypeProvider initialSnapshot={graphSnapshot()}>
+        <KitchenSotDraftProvider client={client}>
+          <MemoryRouter initialEntries={["/recipes/159"]}>
+            <Routes><Route path="/recipes/:recipeId" element={<RecipeDetailPage />} /></Routes>
+          </MemoryRouter>
+        </KitchenSotDraftProvider>
+      </PrototypeProvider>,
+    );
+
+    const heading = await screen.findByRole("heading", { name: "ข้าวหน้าเนื้อยากินิกุ" });
+    const header = heading.closest("header");
+    expect(header).not.toBeNull();
+    expect(within(header!).getByText("ฉบับร่าง")).toBeVisible();
+  });
+
   test("shows prepared recipes as links separately from direct ingredient text", () => {
     renderDetail(graphSnapshot(), "/recipes/159");
 

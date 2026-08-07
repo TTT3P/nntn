@@ -135,6 +135,17 @@ test.describe.serial("isolated Cookbook V5 draft persistence", () => {
 
   test("saves an unrelated field, reopens it, and preserves the frozen document shape", async ({ browser }) => {
     const page = await browser.newPage();
+    await page.goto("./#/recipes");
+    const libraryRecipe = page.getByRole("link", { name: "ข้าวหน้าเนื้อยากินิกุ" });
+    await expect(libraryRecipe).toBeVisible();
+    await expect(libraryRecipe.locator("..").locator("..")).toContainText("ฉบับร่าง");
+    await libraryRecipe.click();
+    const detailHeading = page.getByRole("heading", { name: "ข้าวหน้าเนื้อยากินิกุ" });
+    await expect(detailHeading).toBeVisible();
+    await expect(detailHeading.locator("..")).toContainText("ฉบับร่าง");
+    await openRecipe(page, /ข้าวหน้าเนื้อยากินิกุ/u);
+    await expect(page.getByRole("status", { name: "สถานะสูตร" })).toHaveText("DRAFT");
+
     await openRecipe(page, /ผงคั่วพริกเกลือ/u);
     await editYield(page, isolatedYield);
     await page.getByRole("button", { name: "บันทึกฉบับร่าง V5" }).click();

@@ -1,9 +1,15 @@
-import { cleanup, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
+import fixture from "../../data/fixtures/first-set.json";
+import type { KitchenSotDraftClient } from "../../data/KitchenSotDraftClient";
 import type { CookbookSnapshot, RecipeVersion } from "../../domain/cookbook/types";
+import { parseKitchenSotDocument } from "../../domain/sot/kitchenSotDocument";
+import { PrototypeProvider } from "../../prototype/PrototypeProvider";
 import { makeMediaAsset, makeRecipe, makeSnapshot, makeStepMediaLink, makeWorkStep } from "../../test/builders";
 import { renderWithPrototype } from "../../test/renderWithPrototype";
+import { KitchenSotDraftProvider, useKitchenSotDraft } from "../review/KitchenSotDraftProvider";
+import { MemoryRouter } from "react-router-dom";
 import { RecipeLibraryPage } from "./RecipeLibraryPage";
 
 afterEach(cleanup);
@@ -53,7 +59,83 @@ function librarySnapshot(): CookbookSnapshot {
   });
 }
 
+function OwnerConfirmationEditor() {
+  const draft = useKitchenSotDraft();
+  return (
+    <>
+      <output aria-label="จำนวน readiness จาก raw document">
+        {draft.recipeDraftById.size}
+      </output>
+      <output aria-label="สถานะบันทึกทดสอบ">{draft.saveState}</output>
+      <button
+        type="button"
+        onClick={() => draft.applyEdit({
+          kind: "item-owner-confirmation",
+          recipeId: 159,
+          lineKey: "ข้าวหน้าเนื้อยากินิกุ:ข้าวญี่ปุ่น",
+          value: "180 กรัม",
+          confirmedOn: "2026-08-07",
+        })}
+      >
+        ยืนยันข้าวญี่ปุ่น
+      </button>
+      <button type="button" onClick={() => void draft.save()}>
+        บันทึกทดสอบ
+      </button>
+    </>
+  );
+}
+
 describe("RecipeLibraryPage", () => {
+  test("uses raw Kitchen SOT readiness and reacts to draft edits without replacing fixture media/work data", async () => {
+    const user = userEvent.setup();
+    const document = parseKitchenSotDocument(fixture);
+    const client: KitchenSotDraftClient = {
+      load: async () => ({
+        document,
+        origin: "v4",
+        sourcePath: "Operations/CookBook/sot/v4-2026-08-05/source/kitchen-sot-first-set-v2.json",
+        sourceSha256: "a".repeat(64),
+        baseSha256: "b".repeat(64),
+      }),
+      save: async (submitted) => ({
+        document: submitted,
+        sha256: "c".repeat(64),
+        base_sha256: "c".repeat(64),
+        generatedAt: submitted.generated_at,
+        path: "Operations/CookBook/sot/v5-draft/kitchen-sot-first-set-v5-draft.json",
+      }),
+    };
+
+    render(
+      <PrototypeProvider initialSnapshot={librarySnapshot()}>
+        <KitchenSotDraftProvider client={client}>
+          <MemoryRouter>
+            <RecipeLibraryPage />
+            <OwnerConfirmationEditor />
+          </MemoryRouter>
+        </KitchenSotDraftProvider>
+      </PrototypeProvider>,
+    );
+
+    const recipeLink = await screen.findByRole("link", { name: "ข้าวหน้าเนื้อยากินิกุ" });
+    expect(screen.getByLabelText("จำนวน readiness จาก raw document")).toHaveTextContent("18");
+    const recipeRow = recipeLink.closest("li");
+    expect(recipeRow).not.toBeNull();
+    expect(within(recipeRow!).getByText("ฉบับร่าง")).toBeVisible();
+    expect(within(recipeRow!).getByText("รูปขั้นตอนไม่ครบ")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "ยืนยันข้าวญี่ปุ่น" }));
+
+    expect(within(recipeRow!).getByText("พร้อมใช้งาน")).toBeVisible();
+    expect(within(recipeRow!).getByText("รูปขั้นตอนไม่ครบ")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "บันทึกทดสอบ" }));
+
+    expect(await screen.findByText("saved", { selector: "output" })).toBeVisible();
+    expect(within(recipeRow!).getByText("พร้อมใช้งาน")).toBeVisible();
+  });
+
   test("searches Thai recipe names without mutating names or making identifiers primary labels", async () => {
     const user = userEvent.setup();
     const snapshot = librarySnapshot();

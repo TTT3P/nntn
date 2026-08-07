@@ -5,6 +5,7 @@ import { evaluateReadiness } from "../../domain/review/readiness";
 import { usePrototype } from "../../prototype/PrototypeProvider";
 import { deriveRecipeMediaCoverage } from "../recipe/recipeMediaCoverage";
 import { encodeRecipeIdentity } from "../recipe/recipeRoute";
+import { useOptionalKitchenSotDraft } from "../review/KitchenSotDraftProvider";
 
 function compareRecipes(left: RecipeVersion, right: RecipeVersion): number {
   const byName = left.name.localeCompare(right.name, "th");
@@ -30,6 +31,7 @@ const emptyFlags: Flags = {
 
 export function RecipeLibraryPage() {
   const { snapshot } = usePrototype();
+  const kitchenSotDraft = useOptionalKitchenSotDraft();
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("all");
   const [stage, setStage] = useState("all");
@@ -37,7 +39,11 @@ export function RecipeLibraryPage() {
 
   const rows = snapshot.recipes.map((recipe) => {
     const mediaCoverage = deriveRecipeMediaCoverage(recipe, snapshot);
-    const readiness = evaluateReadiness(recipe, mediaCoverage.coverage);
+    const projectedReadiness = evaluateReadiness(recipe, mediaCoverage.coverage);
+    const rawDraft = kitchenSotDraft === null
+      ? projectedReadiness.draft
+      : (kitchenSotDraft.recipeDraftById.get(recipe.recipeId) ?? true);
+    const readiness = { ...projectedReadiness, draft: rawDraft };
     return {
       recipe,
       readiness,

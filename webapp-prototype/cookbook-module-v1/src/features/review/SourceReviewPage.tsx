@@ -4,7 +4,10 @@ import { buildReviewQueue, evaluateReadiness } from "../../domain/review/readine
 import { usePrototype } from "../../prototype/PrototypeProvider";
 import { deriveRecipeMediaCoverage } from "../recipe/recipeMediaCoverage";
 import type { KitchenSotDraftClient } from "../../data/KitchenSotDraftClient";
-import { KitchenSotDraftProvider } from "./KitchenSotDraftProvider";
+import {
+  KitchenSotDraftProvider,
+  useOptionalKitchenSotDraft,
+} from "./KitchenSotDraftProvider";
 import { KitchenSotFillSurface } from "./KitchenSotFillSurface";
 
 class InvalidSourceReviewFieldError extends Error {
@@ -205,6 +208,8 @@ function ReadOnlySourceReviewPage() {
 }
 
 export function SourceReviewPage({ draftClient }: { draftClient?: KitchenSotDraftClient }) {
+  const sharedDraft = useOptionalKitchenSotDraft();
+  if (sharedDraft !== null) return <KitchenSotFillSurface />;
   if (draftClient === undefined) return <ReadOnlySourceReviewPage />;
   return (
     <KitchenSotDraftProvider client={draftClient}>

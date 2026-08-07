@@ -10,6 +10,7 @@ import { evaluateReadiness } from "../../domain/review/readiness";
 import { usePrototype } from "../../prototype/PrototypeProvider";
 import { deriveRecipeMediaCoverage } from "./recipeMediaCoverage";
 import { decodeRecipeIdentity, encodeRecipeIdentity } from "./recipeRoute";
+import { useOptionalKitchenSotDraft } from "../review/KitchenSotDraftProvider";
 
 function sameIdentity(left: RecipeIdentity, right: RecipeIdentity): boolean {
   return typeof left === typeof right && left === right;
@@ -21,10 +22,20 @@ function kindLabel(node: GraphNode): string {
   return "วัตถุดิบโดยตรง";
 }
 
-function recipeStatus(recipe: RecipeVersion, snapshot: CookbookSnapshot) {
+function recipeStatus(
+  recipe: RecipeVersion,
+  snapshot: CookbookSnapshot,
+  rawDraftById: ReadonlyMap<RecipeIdentity, boolean> | null,
+) {
   const mediaCoverage = deriveRecipeMediaCoverage(recipe, snapshot);
+  const projectedReadiness = evaluateReadiness(recipe, mediaCoverage.coverage);
   return {
-    readiness: evaluateReadiness(recipe, mediaCoverage.coverage),
+    readiness: {
+      ...projectedReadiness,
+      draft: rawDraftById === null
+        ? projectedReadiness.draft
+        : (rawDraftById.get(recipe.recipeId) ?? true),
+    },
     ...mediaCoverage,
   };
 }
@@ -32,6 +43,7 @@ function recipeStatus(recipe: RecipeVersion, snapshot: CookbookSnapshot) {
 export function RecipeDetailPage() {
   const { recipeId: routeSegment } = useParams();
   const { snapshot } = usePrototype();
+  const kitchenSotDraft = useOptionalKitchenSotDraft();
   const [expanded, setExpanded] = useState(false);
   const identity = routeSegment === undefined ? null : decodeRecipeIdentity(routeSegment);
   const recipe = identity === null
@@ -65,7 +77,8 @@ export function RecipeDetailPage() {
 
   const preparedLines = recipe.lines.filter((line) => line.itemKind === "prepared_recipe");
   const directLines = recipe.lines.filter((line) => line.itemKind === "direct_ingredient");
-  const rootStatus = recipeStatus(recipe, snapshot);
+  const rawDraftById = kitchenSotDraft?.recipeDraftById ?? null;
+  const rootStatus = recipeStatus(recipe, snapshot, rawDraftById);
   const relatedRecipeNodes = order
     .map((nodeId) => graph.nodes.get(nodeId))
     .filter(
@@ -117,7 +130,7 @@ export function RecipeDetailPage() {
             if (!node) return null;
             const nodeRecipe = node.recipeId === null ? undefined : snapshot.recipes.find((candidate) => sameIdentity(candidate.recipeId, node.recipeId as RecipeIdentity));
             const nodeStatus = nodeRecipe
-              ? recipeStatus(nodeRecipe, snapshot)
+              ? recipeStatus(nodeRecipe, snapshot, rawDraftById)
               : undefined;
             return (
               <li key={node.id}>

@@ -2,7 +2,12 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import type { CookbookRepository } from "../data/CookbookRepository";
-import type { KitchenSotDraftClient } from "../data/KitchenSotDraftClient";
+import fixture from "../data/fixtures/first-set.json";
+import type {
+  KitchenSotDraftClient,
+  LoadedKitchenSotDraft,
+} from "../data/KitchenSotDraftClient";
+import { parseKitchenSotDocument } from "../domain/sot/kitchenSotDocument";
 import { makeRecipe, makeSnapshot, makeWorkStep } from "../test/builders";
 import { App } from "./App";
 
@@ -39,8 +44,15 @@ function makeRepository(snapshot = makeSnapshot()): CookbookRepository {
 }
 
 function makeDraftClient(): KitchenSotDraftClient {
+  const document = parseKitchenSotDocument(fixture);
   return {
-    load: vi.fn(),
+    load: vi.fn(async () => ({
+      document,
+      origin: "v4" as const,
+      sourcePath: "Operations/CookBook/sot/v4-2026-08-05/source/kitchen-sot-first-set-v2.json" as const,
+      sourceSha256: "a".repeat(64),
+      baseSha256: "b".repeat(64),
+    })),
     save: vi.fn(),
   };
 }
@@ -71,7 +83,8 @@ test("labels the app as an explicit read-only session prototype without a draft 
 });
 
 test("labels Recipe Studio as locally durable while other prototype pages remain session-only", async () => {
-  render(<App repository={makeRepository()} draftClient={makeDraftClient()} />);
+  const client = makeDraftClient();
+  render(<App repository={makeRepository()} draftClient={client} />);
 
   expect(
     screen.getByText(
@@ -82,6 +95,45 @@ test("labels Recipe Studio as locally durable while other prototype pages remain
   expect(
     await screen.findByRole("heading", { name: "คลังสูตรอาหาร" }),
   ).toBeInTheDocument();
+  expect(client.load).toHaveBeenCalledTimes(1);
+});
+
+test("fails closed instead of showing fixture READY while the local raw draft is loading", async () => {
+  const projectedReady = makeRecipe({ recipeId: 159, name: "ข้าวหน้าเนื้อยากินิกุ" });
+  const client: KitchenSotDraftClient = {
+    load: vi.fn(() => new Promise<LoadedKitchenSotDraft>(() => undefined)),
+    save: vi.fn(),
+  };
+
+  render(
+    <App
+      repository={makeRepository(makeSnapshot({ recipes: [projectedReady] }))}
+      draftClient={client}
+    />,
+  );
+
+  expect(await screen.findByText("กำลังโหลดร่าง Kitchen SOT…")).toBeVisible();
+  expect(screen.queryByText("พร้อมใช้งาน")).not.toBeInTheDocument();
+  expect(client.load).toHaveBeenCalledTimes(1);
+});
+
+test("fails closed instead of showing fixture READY when the local raw draft cannot load", async () => {
+  const projectedReady = makeRecipe({ recipeId: 159, name: "ข้าวหน้าเนื้อยากินิกุ" });
+  const client: KitchenSotDraftClient = {
+    load: vi.fn(async () => { throw new Error("raw draft unavailable"); }),
+    save: vi.fn(),
+  };
+
+  render(
+    <App
+      repository={makeRepository(makeSnapshot({ recipes: [projectedReady] }))}
+      draftClient={client}
+    />,
+  );
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("โหลดร่าง Kitchen SOT ไม่สำเร็จ");
+  expect(screen.queryByText("พร้อมใช้งาน")).not.toBeInTheDocument();
+  expect(client.load).toHaveBeenCalledTimes(1);
 });
 
 test("keeps responsive layout rules scoped away from projected and Print Center shells", () => {
@@ -127,7 +179,7 @@ test("downloads the current provider snapshot without revoking its active media 
   const storageGet = vi.spyOn(Storage.prototype, "getItem");
   const storageSet = vi.spyOn(Storage.prototype, "setItem");
 
-  render(<App repository={repository} />);
+  render(<App repository={repository} draftClient={null} />);
   await screen.findByRole("heading", { name: "สูตรทดสอบ", level: 2 });
   await user.upload(
     screen.getByLabelText("เลือกรูป"),
@@ -170,7 +222,7 @@ test("reports download URL creation failure without crashing the active route", 
   vi.mocked(URL.createObjectURL).mockImplementationOnce(() => {
     throw new Error("download URL unavailable");
   });
-  render(<App repository={makeRepository()} />);
+  render(<App repository={makeRepository()} draftClient={null} />);
   await screen.findByRole("heading", { name: "คลังสูตรอาหาร" });
 
   await user.click(screen.getByRole("button", { name: "Export prototype snapshot" }));
@@ -186,7 +238,7 @@ test("revokes only the download URL when anchor click fails", async () => {
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementationOnce(() => {
     throw new Error("anchor click failed");
   });
-  render(<App repository={makeRepository()} />);
+  render(<App repository={makeRepository()} draftClient={null} />);
   await screen.findByRole("heading", { name: "คลังสูตรอาหาร" });
 
   await user.click(screen.getByRole("button", { name: "Export prototype snapshot" }));
@@ -204,7 +256,7 @@ test("surfaces Blob construction and URL revocation failures without route crash
       throw new Error("Blob construction failed");
     }
   });
-  render(<App repository={makeRepository()} />);
+  render(<App repository={makeRepository()} draftClient={null} />);
   await screen.findByRole("heading", { name: "คลังสูตรอาหาร" });
 
   await user.click(screen.getByRole("button", { name: "Export prototype snapshot" }));
@@ -231,7 +283,7 @@ test("keeps rapid download URLs independent and releases each after its grace pe
     .mockReturnValueOnce("blob:download-one")
     .mockReturnValueOnce("blob:download-two");
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
-  const view = render(<App repository={makeRepository()} />);
+  const view = render(<App repository={makeRepository()} draftClient={null} />);
   await screen.findByRole("heading", { name: "คลังสูตรอาหาร" });
   const button = screen.getByRole("button", { name: "Export prototype snapshot" });
 
@@ -275,7 +327,7 @@ test.each([
       throw makeThrownValue();
     }
   });
-  render(<App repository={makeRepository()} />);
+  render(<App repository={makeRepository()} draftClient={null} />);
   await screen.findByRole("heading", { name: "คลังสูตรอาหาร" });
 
   await user.click(screen.getByRole("button", { name: "Export prototype snapshot" }));

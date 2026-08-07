@@ -274,6 +274,8 @@ The UI must clearly distinguish:
 
 No error state silently falls back to mock recipe data.
 
+In the local pilot, Recipe Library and Recipe Detail consume the same raw V4/V5 readiness map as Recipe Studio. The map applies `isKitchenSotRecipeDraft` to every loaded recipe, never hardcodes a recipe identity, and updates reactively after draft edits or saves. While the raw document is loading or unavailable, local-dev routes fail closed and never present fixture READY as authoritative. Static production preview may retain fixture readiness because it has no writable raw-draft client. Print Center and Work Stage remain M2 and are not migrated in this milestone.
+
 ## 11. Validation Contract
 
 The server rejects a save when:
@@ -320,6 +322,7 @@ Required evidence:
 17. **Development-only boundary:** production build contains no writable vault endpoint.
 18. **Regression gates:** unit tests, lint, typecheck, build, browser checks, and relevant E2E tests pass sequentially on the final integrated HEAD.
 19. **Transitive append-order:** optional item and blocker fields use their canonical schema positions independent of edit order, so every valid previous-V5 transition is also valid cumulatively from fresh V4 and serializes byte-identically for equivalent final data.
+20. **Cross-surface readiness:** in the local pilot, Recipe Library and Recipe Detail derive their badge from the same raw V4/V5 three-condition predicate as Recipe Studio for all 18 recipes, react to draft edits/saves, and fail closed while raw state is unavailable; no production logic hardcodes recipe `159`, and no recipe may show READY in Library or Detail while it is DRAFT in Recipe Studio.
 
 The real V5 file is created only by an intentional save from the completed local app. Verification must not fabricate kitchen decisions merely to leave an artifact behind.
 
