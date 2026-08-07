@@ -345,12 +345,23 @@ async function acquireWriteLock(
         const ownsQuarantine = quarantinedIdentity.dev === ownerIdentity.dev &&
           quarantinedIdentity.ino === ownerIdentity.ino;
         if (!ownsQuarantine) {
-          if (quarantinedIdentity.isDirectory()) {
-            await rename(quarantinedPath, lockPath).catch(() => undefined);
-          } else {
-            await link(quarantinedPath, lockPath).catch(() => undefined);
+          try {
+            if (quarantinedIdentity.isDirectory()) {
+              await rename(quarantinedPath, lockPath);
+            } else {
+              await link(quarantinedPath, lockPath);
+              const restoredIdentity = await lstat(lockPath);
+              if (
+                restoredIdentity.dev !== quarantinedIdentity.dev ||
+                restoredIdentity.ino !== quarantinedIdentity.ino
+              ) {
+                throw new WriteFailedError();
+              }
+              await unlink(quarantinedPath);
+            }
+          } finally {
+            await cleanupOwner();
           }
-          await cleanupOwner();
           throw new WriteFailedError();
         }
         await afterOwnershipVerified?.(lockPath);

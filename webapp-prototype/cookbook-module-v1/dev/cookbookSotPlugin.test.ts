@@ -459,6 +459,9 @@ test("lock cleanup fails closed without deleting a replacement file", async () =
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({ code: "WRITE_FAILED" });
     expect(await readFile(lockPath!, "utf8")).toBe(replacementOwner);
+    expect((await readdir(draftDirectory)).filter((name) =>
+      name.includes(".lock-quarantine-") || name.includes(".lock-owner-")
+    )).toEqual([]);
   } finally {
     releaseRename();
     await server.close();
@@ -570,6 +573,9 @@ test("pre-release valid lock-directory replacement remains canonical and unchang
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({ code: "WRITE_FAILED" });
     expect(await readFile(join(lockPath, "owner.json"), "utf8")).toBe(replacementOwner);
+    expect((await readdir(draftDirectory)).filter((name) =>
+      name.includes(".lock-quarantine-") || name.includes(".lock-owner-")
+    )).toEqual([]);
   } finally {
     releaseRename();
     await server.close();
