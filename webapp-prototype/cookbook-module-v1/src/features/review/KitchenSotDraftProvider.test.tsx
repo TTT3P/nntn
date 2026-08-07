@@ -77,6 +77,16 @@ function Harness() {
       <button type="button" onClick={() => void draft.save()}>save</button>
       <button
         type="button"
+        onClick={() => draft.applyEdit({
+          kind: "yield",
+          recipeId: 162,
+          value: "ค่าที่พยายามแก้ระหว่างบันทึก",
+        })}
+      >
+        edit during save
+      </button>
+      <button
+        type="button"
         onClick={() => draft.applyEdit({ kind: "yield", recipeId: 999, value: "invalid" })}
       >
         invalid edit
@@ -222,6 +232,91 @@ describe("KitchenSotDraftProvider", () => {
       });
     });
     expect(screen.getByLabelText("save state")).toHaveTextContent("saved");
+  });
+
+  test("rejects an in-flight edit until a successful receipt replaces the submitted working copy", async () => {
+    const user = userEvent.setup();
+    const pending = deferred<Awaited<ReturnType<KitchenSotDraftClient["save"]>>>();
+    const client = makeClient();
+    client.save.mockImplementationOnce(() => pending.promise);
+    render(
+      <KitchenSotDraftProvider client={client}>
+        <Harness />
+      </KitchenSotDraftProvider>,
+    );
+    await screen.findByLabelText("origin");
+    await user.click(screen.getByRole("button", { name: "edit" }));
+    await user.click(screen.getByRole("button", { name: "save" }));
+
+    await user.click(screen.getByRole("button", { name: "edit during save" }));
+
+    expect(screen.getByLabelText("save state")).toHaveTextContent("saving");
+    expect(screen.getByLabelText("yield")).toHaveTextContent("ค่าทดสอบ temp");
+    expect(screen.getByLabelText("dirty")).toHaveTextContent("true");
+    const submitted = client.save.mock.calls[0]![0];
+    await act(async () => pending.resolve({
+      document: submitted,
+      sha256: persistedSha256,
+      base_sha256: persistedSha256,
+      generatedAt: submitted.generated_at,
+      path: "Operations/CookBook/sot/v5-draft/kitchen-sot-first-set-v2.json",
+    }));
+
+    expect(screen.getByLabelText("save state")).toHaveTextContent("saved");
+    expect(screen.getByLabelText("yield")).toHaveTextContent("ค่าทดสอบ temp");
+    expect(screen.getByLabelText("dirty")).toHaveTextContent("false");
+  });
+
+  test("rejects an in-flight edit and retains the accepted working copy after save failure", async () => {
+    const user = userEvent.setup();
+    const pending = deferred<Awaited<ReturnType<KitchenSotDraftClient["save"]>>>();
+    const client = makeClient();
+    client.save.mockImplementationOnce(() => pending.promise);
+    render(
+      <KitchenSotDraftProvider client={client}>
+        <Harness />
+      </KitchenSotDraftProvider>,
+    );
+    await screen.findByLabelText("origin");
+    await user.click(screen.getByRole("button", { name: "edit" }));
+    await user.click(screen.getByRole("button", { name: "save" }));
+
+    await user.click(screen.getByRole("button", { name: "edit during save" }));
+
+    expect(screen.getByLabelText("save state")).toHaveTextContent("saving");
+    expect(screen.getByLabelText("yield")).toHaveTextContent("ค่าทดสอบ temp");
+    expect(screen.getByLabelText("dirty")).toHaveTextContent("true");
+    await act(async () => pending.reject(new KitchenSotHttpError(500, "WRITE_FAILED")));
+
+    expect(screen.getByLabelText("save state")).toHaveTextContent("error");
+    expect(screen.getByLabelText("yield")).toHaveTextContent("ค่าทดสอบ temp");
+    expect(screen.getByLabelText("dirty")).toHaveTextContent("true");
+  });
+
+  test("rejects an in-flight edit and retains the accepted working copy after stale failure", async () => {
+    const user = userEvent.setup();
+    const pending = deferred<Awaited<ReturnType<KitchenSotDraftClient["save"]>>>();
+    const client = makeClient();
+    client.save.mockImplementationOnce(() => pending.promise);
+    render(
+      <KitchenSotDraftProvider client={client}>
+        <Harness />
+      </KitchenSotDraftProvider>,
+    );
+    await screen.findByLabelText("origin");
+    await user.click(screen.getByRole("button", { name: "edit" }));
+    await user.click(screen.getByRole("button", { name: "save" }));
+
+    await user.click(screen.getByRole("button", { name: "edit during save" }));
+
+    expect(screen.getByLabelText("save state")).toHaveTextContent("saving");
+    expect(screen.getByLabelText("yield")).toHaveTextContent("ค่าทดสอบ temp");
+    expect(screen.getByLabelText("dirty")).toHaveTextContent("true");
+    await act(async () => pending.reject(new KitchenSotHttpError(409, "STALE_DRAFT")));
+
+    expect(screen.getByLabelText("save state")).toHaveTextContent("stale");
+    expect(screen.getByLabelText("yield")).toHaveTextContent("ค่าทดสอบ temp");
+    expect(screen.getByLabelText("dirty")).toHaveTextContent("true");
   });
 
   test("ignores an older load after the client is replaced", async () => {

@@ -141,6 +141,7 @@ export function KitchenSotDraftProvider({ children, client }: DraftProviderProps
   function applyEdit(edit: KitchenSotEdit): void {
     const current = stateRef.current;
     if (current.status !== "ready" || current.client !== client) return;
+    if (saveInFlightRef.current || current.saveState === "saving") return;
     try {
       const edited = applyKitchenSotEdit(current.document, edit);
       const next: ReadyDraftState = {
