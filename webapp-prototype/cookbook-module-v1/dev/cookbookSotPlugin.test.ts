@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { copyFile, mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, writeFile } from "node:fs/promises";
+import { copyFile, cp, mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { createServer, request as httpRequest, type Server } from "node:http";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -11,6 +11,7 @@ import { createCookbookSotRequestHandler } from "./cookbookSotPlugin";
 
 const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const V4_RELATIVE_PATH = "Operations/CookBook/sot/v4-2026-08-05/source/kitchen-sot-first-set-v2.json";
+const V4_DIRECTORY_RELATIVE_PATH = "Operations/CookBook/sot/v4-2026-08-05";
 const CHECKSUM_RELATIVE_PATH = "Operations/CookBook/sot/v4-2026-08-05/SHA256SUMS.txt";
 const V5_RELATIVE_PATH = "Operations/CookBook/sot/v5-draft/kitchen-sot-first-set-v5-draft.json";
 const FIXTURE_TEXT = await readFile(join(MODULE_DIRECTORY, "../src/data/fixtures/first-set.json"), "utf8");
@@ -181,6 +182,55 @@ test("rejects a symlinked draft directory that escapes the temporary vault", asy
   }
 });
 
+test("rejects a matching V4 document and manifest reached through an external version-directory symlink", async () => {
+  const vault = await makeTemporaryVault();
+  const outside = await mkdtemp(join(tmpdir(), "cookbook-sot-external-v4-"));
+  temporaryRoots.add(outside);
+  const vaultV4Directory = join(vault.root, V4_DIRECTORY_RELATIVE_PATH);
+  const externalV4Directory = join(outside, "v4-2026-08-05");
+  await cp(vaultV4Directory, externalV4Directory, { recursive: true });
+  await rm(vaultV4Directory, { recursive: true });
+  await symlink(externalV4Directory, vaultV4Directory);
+
+  const server = await startMiddlewareServer(createCookbookSotRequestHandler({ vaultRoot: vault.root }));
+  try {
+    const getResponse = await fetch(`${server.origin}/__cookbook/v4`);
+    expect(getResponse.status).toBe(422);
+    expect(await getResponse.json()).toEqual({ code: "INVALID_DRAFT" });
+
+    const putResponse = await putDraft(server, vault.sha256, makeValidDraft(vault));
+    expect(putResponse.status).toBe(422);
+    expect(await putResponse.json()).toEqual({ code: "INVALID_DRAFT" });
+    await expect(readFile(join(vault.root, V5_RELATIVE_PATH))).rejects.toMatchObject({ code: "ENOENT" });
+  } finally {
+    await server.close();
+  }
+});
+
+test("rejects a symlinked sot ancestor without creating the draft directory outside the vault", async () => {
+  const vault = await makeTemporaryVault();
+  const outside = await mkdtemp(join(tmpdir(), "cookbook-sot-external-ancestor-"));
+  temporaryRoots.add(outside);
+  const vaultSotDirectory = join(vault.root, "Operations/CookBook/sot");
+  const externalSotDirectory = join(outside, "sot");
+  await cp(vaultSotDirectory, externalSotDirectory, { recursive: true });
+  await rm(vaultSotDirectory, { recursive: true });
+  await symlink(externalSotDirectory, vaultSotDirectory);
+  const externalEntriesBefore = await readdir(externalSotDirectory);
+
+  const server = await startMiddlewareServer(createCookbookSotRequestHandler({ vaultRoot: vault.root }));
+  try {
+    const response = await putDraft(server, vault.sha256, makeValidDraft(vault));
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ code: "INVALID_DRAFT" });
+    expect(await readdir(externalSotDirectory)).toEqual(externalEntriesBefore);
+    await expect(readFile(join(externalSotDirectory, "v5-draft", "kitchen-sot-first-set-v5-draft.json")))
+      .rejects.toMatchObject({ code: "ENOENT" });
+  } finally {
+    await server.close();
+  }
+});
+
 test("a mutated V4 fails the checksum gate for GET V4 and PUT V5", async () => {
   const vault = await makeTemporaryVault();
   await writeFile(join(vault.root, V4_RELATIVE_PATH), " ", { flag: "a" });
@@ -324,6 +374,92 @@ test("overlapping writes from one base serialize so only the first can commit", 
     expect(renameCount).toBe(1);
   } finally {
     releaseFirstRename();
+    await server.close();
+  }
+});
+
+test("independent handlers use one filesystem lock for the same canonical draft target", async () => {
+  const vault = await makeTemporaryVault();
+  let releaseFirstRename!: () => void;
+  const firstRenameMayFinish = new Promise<void>((resolve) => { releaseFirstRename = resolve; });
+  let reportFirstRename!: () => void;
+  const firstRenameStarted = new Promise<void>((resolve) => { reportFirstRename = resolve; });
+  const firstServer = await startMiddlewareServer(createCookbookSotRequestHandler({
+    vaultRoot: vault.root,
+    renameFile: async (from, to) => {
+      reportFirstRename();
+      await firstRenameMayFinish;
+      await rename(from, to);
+    },
+  }));
+  let reportSecondRename!: () => void;
+  const secondRenameStarted = new Promise<void>((resolve) => { reportSecondRename = resolve; });
+  let secondRenameCount = 0;
+  const secondServer = await startMiddlewareServer(createCookbookSotRequestHandler({
+    vaultRoot: vault.root,
+    renameFile: async (from, to) => {
+      secondRenameCount += 1;
+      reportSecondRename();
+      await rename(from, to);
+    },
+  }));
+  try {
+    const firstPromise = putDraft(firstServer, vault.sha256, makeValidDraft(vault));
+    await firstRenameStarted;
+    const secondPromise = putDraft(
+      secondServer,
+      vault.sha256,
+      makeValidDraft(vault, "2026-08-07T05:00:00.000Z"),
+    );
+    await Promise.race([
+      secondRenameStarted,
+      new Promise<void>((resolve) => setTimeout(resolve, 200)),
+    ]);
+    releaseFirstRename();
+    const [first, second] = await Promise.all([firstPromise, secondPromise]);
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(409);
+    expect(await second.json()).toEqual({ code: "STALE_DRAFT" });
+    expect(secondRenameCount).toBe(0);
+  } finally {
+    releaseFirstRename();
+    await Promise.all([firstServer.close(), secondServer.close()]);
+  }
+});
+
+test("lock cleanup fails closed without deleting a replacement file", async () => {
+  const vault = await makeTemporaryVault();
+  let releaseRename!: () => void;
+  const renameMayFinish = new Promise<void>((resolve) => { releaseRename = resolve; });
+  let reportRename!: () => void;
+  const renameStarted = new Promise<void>((resolve) => { reportRename = resolve; });
+  const server = await startMiddlewareServer(createCookbookSotRequestHandler({
+    vaultRoot: vault.root,
+    renameFile: async (from, to) => {
+      reportRename();
+      await renameMayFinish;
+      await rename(from, to);
+    },
+  }));
+  try {
+    const responsePromise = putDraft(server, vault.sha256, makeValidDraft(vault));
+    await renameStarted;
+    const draftDirectory = join(vault.root, dirname(V5_RELATIVE_PATH));
+    const lockNames = (await readdir(draftDirectory)).filter((name) => name.endsWith(".lock"));
+    const lockPath = lockNames.length === 1 ? join(draftDirectory, lockNames[0]!) : null;
+    if (lockPath !== null) {
+      await rm(lockPath);
+      await writeFile(lockPath, "unrelated replacement", "utf8");
+    }
+    releaseRename();
+
+    const response = await responsePromise;
+    expect(lockNames).toHaveLength(1);
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ code: "WRITE_FAILED" });
+    expect(await readFile(lockPath!, "utf8")).toBe("unrelated replacement");
+  } finally {
+    releaseRename();
     await server.close();
   }
 });

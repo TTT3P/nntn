@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, open, readFile, realpath, rename, unlink } from "node:fs/promises";
+import { lstat, mkdir, open, readFile, realpath, rename, unlink, type FileHandle } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { dirname, isAbsolute, join, relative } from "node:path";
+import { isAbsolute, join, relative } from "node:path";
 import type { Plugin } from "vite";
 import { parseKitchenSotDocument } from "../src/domain/sot/kitchenSotDocument";
 import { validateKitchenSotTransition } from "../src/domain/sot/kitchenSotValidation";
@@ -14,11 +14,16 @@ import {
 } from "../src/domain/sot/kitchenSotTransport";
 
 const V4_RELATIVE_PATH = "Operations/CookBook/sot/v4-2026-08-05/source/kitchen-sot-first-set-v2.json";
+const V4_DIRECTORY_RELATIVE_PATH = "Operations/CookBook/sot/v4-2026-08-05";
+const V4_SOURCE_DIRECTORY_RELATIVE_PATH = `${V4_DIRECTORY_RELATIVE_PATH}/source`;
 const CHECKSUM_RELATIVE_PATH = "Operations/CookBook/sot/v4-2026-08-05/SHA256SUMS.txt";
 const V5_DIRECTORY_RELATIVE_PATH = "Operations/CookBook/sot/v5-draft";
 const V5_FILENAME = "kitchen-sot-first-set-v5-draft.json";
 const V5_RELATIVE_PATH = `${V5_DIRECTORY_RELATIVE_PATH}/${V5_FILENAME}`;
+const V5_LOCK_FILENAME = `.${V5_FILENAME}.lock`;
 const MAX_BODY_BYTES = 5 * 1024 * 1024;
+const LOCK_RETRY_MS = 10;
+const LOCK_WAIT_MS = 2_000;
 
 interface CookbookSotPluginOptions {
   vaultRoot: string;
@@ -65,15 +70,26 @@ function checksumFromManifest(manifest: string): string | null {
   return null;
 }
 
+async function requireExactPath(realVaultRoot: string, relativePath: string): Promise<string> {
+  const expectedPath = join(realVaultRoot, relativePath);
+  const actualPath = await realpath(expectedPath);
+  if (!isWithin(realVaultRoot, actualPath) || actualPath !== expectedPath) {
+    throw new InvalidDraftError();
+  }
+  return actualPath;
+}
+
 async function loadVerifiedSource(vaultRoot: string): Promise<VerifiedSource> {
-  const sourcePath = join(vaultRoot, V4_RELATIVE_PATH);
-  const sourceDirectory = await realpath(dirname(sourcePath));
-  const realSourcePath = await realpath(sourcePath);
-  if (!isWithin(sourceDirectory, realSourcePath)) throw new Error("V4 source escaped its fixed directory");
+  const realVaultRoot = await realpath(vaultRoot);
+  await requireExactPath(realVaultRoot, V4_DIRECTORY_RELATIVE_PATH);
+  const sourceDirectory = await requireExactPath(realVaultRoot, V4_SOURCE_DIRECTORY_RELATIVE_PATH);
+  const realSourcePath = await requireExactPath(realVaultRoot, V4_RELATIVE_PATH);
+  const realManifestPath = await requireExactPath(realVaultRoot, CHECKSUM_RELATIVE_PATH);
+  if (!isWithin(sourceDirectory, realSourcePath)) throw new InvalidDraftError();
 
   const [bytes, manifest] = await Promise.all([
     readFile(realSourcePath),
-    readFile(join(vaultRoot, CHECKSUM_RELATIVE_PATH), "utf8"),
+    readFile(realManifestPath, "utf8"),
   ]);
   const actualSha256 = sha256(bytes);
   const expectedSha256 = checksumFromManifest(manifest);
@@ -99,15 +115,36 @@ function isMissingFile(error: unknown): boolean {
   return (error as NodeJS.ErrnoException).code === "ENOENT";
 }
 
+function isExistingFile(error: unknown): boolean {
+  return (error as NodeJS.ErrnoException).code === "EEXIST";
+}
+
+async function requireExactDirectory(path: string): Promise<void> {
+  const metadata = await lstat(path);
+  if (!metadata.isDirectory() || metadata.isSymbolicLink() || await realpath(path) !== path) {
+    throw new InvalidDraftError();
+  }
+}
+
 async function resolveDraftDirectory(vaultRoot: string, create: boolean): Promise<string> {
-  const draftDirectory = join(vaultRoot, V5_DIRECTORY_RELATIVE_PATH);
-  if (create) await mkdir(draftDirectory, { recursive: true });
-  const [realVaultRoot, realDraftDirectory] = await Promise.all([
-    realpath(vaultRoot),
-    realpath(draftDirectory),
-  ]);
-  if (!isWithin(realVaultRoot, realDraftDirectory)) throw new InvalidDraftError();
-  return realDraftDirectory;
+  const realVaultRoot = await realpath(vaultRoot);
+  let currentDirectory = realVaultRoot;
+  for (const component of ["Operations", "CookBook", "sot"]) {
+    currentDirectory = join(currentDirectory, component);
+    await requireExactDirectory(currentDirectory);
+  }
+
+  const draftDirectory = join(currentDirectory, "v5-draft");
+  if (create) {
+    try {
+      await mkdir(draftDirectory);
+    } catch (error) {
+      if (!isExistingFile(error)) throw error;
+    }
+  }
+  await requireExactDirectory(draftDirectory);
+  if (!isWithin(realVaultRoot, draftDirectory)) throw new InvalidDraftError();
+  return draftDirectory;
 }
 
 async function loadDraft(vaultRoot: string): Promise<{ bytes: Buffer; document: VerifiedSource["document"] }> {
@@ -175,19 +212,12 @@ function requireMatchingPreconditions(
 }
 
 async function writeDraft(
-  vaultRoot: string,
+  realDraftDirectory: string,
   document: VerifiedSource["document"],
   openFile: typeof open,
   renameFile: typeof rename,
   unlinkFile: typeof unlink,
 ): Promise<{ bytes: Buffer; sha256: string }> {
-  let realDraftDirectory: string;
-  try {
-    realDraftDirectory = await resolveDraftDirectory(vaultRoot, true);
-  } catch (error) {
-    if (error instanceof InvalidDraftError) throw error;
-    throw new WriteFailedError();
-  }
   const targetPath = join(realDraftDirectory, V5_FILENAME);
   try {
     const existingTarget = await realpath(targetPath);
@@ -198,7 +228,7 @@ async function writeDraft(
 
   const bytes = Buffer.from(`${JSON.stringify(document, null, 2)}\n`, "utf8");
   const temporaryPath = join(realDraftDirectory, `.${V5_FILENAME}.${randomUUID()}.tmp`);
-  let handle;
+  let handle: FileHandle | undefined;
   try {
     handle = await openFile(temporaryPath, "wx");
     await handle.writeFile(bytes);
@@ -213,35 +243,111 @@ async function writeDraft(
   return { bytes, sha256: sha256(bytes) };
 }
 
+interface WriteLock {
+  release(): Promise<void>;
+}
+
+async function cleanupOwnedPath(
+  path: string,
+  ownedIdentity: { dev: number | bigint; ino: number | bigint },
+): Promise<void> {
+  const currentIdentity = await lstat(path);
+  if (currentIdentity.dev !== ownedIdentity.dev || currentIdentity.ino !== ownedIdentity.ino) {
+    throw new WriteFailedError();
+  }
+  await unlink(path);
+}
+
+async function acquireWriteLock(realDraftDirectory: string): Promise<WriteLock> {
+  const lockPath = join(realDraftDirectory, V5_LOCK_FILENAME);
+  const deadline = Date.now() + LOCK_WAIT_MS;
+  let handle: FileHandle | undefined;
+  while (handle === undefined) {
+    try {
+      handle = await open(lockPath, "wx");
+    } catch (error) {
+      if (!isExistingFile(error) || Date.now() >= deadline) throw new WriteFailedError();
+      await new Promise<void>((resolve) => setTimeout(resolve, LOCK_RETRY_MS));
+    }
+  }
+  const ownedHandle = handle;
+
+  let ownedIdentity: { dev: number | bigint; ino: number | bigint } | undefined;
+  try {
+    const metadata = await ownedHandle.stat();
+    ownedIdentity = { dev: metadata.dev, ino: metadata.ino };
+    await ownedHandle.writeFile(`${randomUUID()}\n`, "utf8");
+    await ownedHandle.sync();
+  } catch {
+    await ownedHandle.close().catch(() => undefined);
+    if (ownedIdentity !== undefined) {
+      await cleanupOwnedPath(lockPath, ownedIdentity).catch(() => undefined);
+    }
+    throw new WriteFailedError();
+  }
+
+  const finalOwnedIdentity = ownedIdentity;
+  return {
+    async release() {
+      await ownedHandle.close().catch(() => undefined);
+      try {
+        await cleanupOwnedPath(lockPath, finalOwnedIdentity);
+      } catch {
+        throw new WriteFailedError();
+      }
+    },
+  };
+}
+
 async function handlePut(
   request: IncomingMessage,
   response: ServerResponse,
   options: CookbookSotPluginOptions,
 ): Promise<void> {
-  const source = await loadVerifiedSource(options.vaultRoot);
+  await loadVerifiedSource(options.vaultRoot);
   const saveRequest = parseSaveRequest(await readBoundedBody(request));
-  let previousDraft: Awaited<ReturnType<typeof loadDraft>> | null;
+  let realDraftDirectory: string;
   try {
-    previousDraft = await loadDraft(options.vaultRoot);
+    realDraftDirectory = await resolveDraftDirectory(options.vaultRoot, true);
   } catch (error) {
-    if (error instanceof DraftNotFoundError) previousDraft = null;
-    else throw error;
+    if (error instanceof InvalidDraftError) throw error;
+    throw new WriteFailedError();
   }
-  const currentBaseSha256 = previousDraft === null ? source.sha256 : sha256(previousDraft.bytes);
-  requireMatchingPreconditions(request, saveRequest.base_sha256, currentBaseSha256);
-  validateKitchenSotTransition(
-    source.document,
-    previousDraft?.document ?? null,
-    saveRequest.document,
-    { path: V4_RELATIVE_PATH, sha256: source.sha256 },
-  );
-  const saved = await writeDraft(
-    options.vaultRoot,
-    saveRequest.document,
-    options.openFile ?? open,
-    options.renameFile ?? rename,
-    options.unlinkFile ?? unlink,
-  );
+  const lock = await acquireWriteLock(realDraftDirectory);
+  let saved: Awaited<ReturnType<typeof writeDraft>>;
+  try {
+    const source = await loadVerifiedSource(options.vaultRoot);
+    let previousDraft: Awaited<ReturnType<typeof loadDraft>> | null;
+    try {
+      previousDraft = await loadDraft(options.vaultRoot);
+    } catch (error) {
+      if (error instanceof DraftNotFoundError) previousDraft = null;
+      else throw error;
+    }
+    const currentBaseSha256 = previousDraft === null ? source.sha256 : sha256(previousDraft.bytes);
+    requireMatchingPreconditions(request, saveRequest.base_sha256, currentBaseSha256);
+    validateKitchenSotTransition(
+      source.document,
+      previousDraft?.document ?? null,
+      saveRequest.document,
+      { path: V4_RELATIVE_PATH, sha256: source.sha256 },
+    );
+    saved = await writeDraft(
+      realDraftDirectory,
+      saveRequest.document,
+      options.openFile ?? open,
+      options.renameFile ?? rename,
+      options.unlinkFile ?? unlink,
+    );
+  } catch (error) {
+    try {
+      await lock.release();
+    } catch {
+      throw new WriteFailedError();
+    }
+    throw error;
+  }
+  await lock.release();
   const body: SotSaveResponse = {
     document: saveRequest.document,
     sha256: saved.sha256,
@@ -255,7 +361,6 @@ async function handlePut(
 export function createCookbookSotRequestHandler(
   options: CookbookSotPluginOptions,
 ): CookbookSotRequestHandler {
-  let pendingPut = Promise.resolve();
   return async (request, response, next) => {
     const path = request.url?.split("?", 1)[0];
     if (path !== V4_ENDPOINT && path !== V5_ENDPOINT) {
@@ -273,15 +378,7 @@ export function createCookbookSotRequestHandler(
 
     try {
       if (path === V5_ENDPOINT && request.method === "PUT") {
-        const precedingPut = pendingPut;
-        let releasePut!: () => void;
-        pendingPut = new Promise<void>((resolve) => { releasePut = resolve; });
-        await precedingPut;
-        try {
-          await handlePut(request, response, options);
-        } finally {
-          releasePut();
-        }
+        await handlePut(request, response, options);
         return;
       }
       const source = await loadVerifiedSource(options.vaultRoot);
