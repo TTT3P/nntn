@@ -1,10 +1,44 @@
 import { expect, test } from "./browser-guards";
 
 const cssPixelsPerMillimeter = 96 / 25.4;
+const pdfPointsPerMillimeter = 72 / 25.4;
 
 function expectMillimeters(actualPixels: number, expectedMillimeters: number): void {
   expect(Math.abs(actualPixels - expectedMillimeters * cssPixelsPerMillimeter)).toBeLessThanOrEqual(1);
 }
+
+function expectPdfPages(
+  pdf: Buffer,
+  expectedPageCount: number,
+  expectedWidthMillimeters: number,
+  expectedHeightMillimeters: number,
+): void {
+  const mediaBoxes = [...pdf.toString("latin1").matchAll(
+    /\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/g,
+  )].map((match) => ({ width: Number(match[1]), height: Number(match[2]) }));
+  expect(mediaBoxes).toHaveLength(expectedPageCount);
+  for (const mediaBox of mediaBoxes) {
+    expect(Math.abs(mediaBox.width - expectedWidthMillimeters * pdfPointsPerMillimeter)).toBeLessThanOrEqual(1);
+    expect(Math.abs(mediaBox.height - expectedHeightMillimeters * pdfPointsPerMillimeter)).toBeLessThanOrEqual(1);
+  }
+}
+
+test("prints one A5 SOP without app-shell or blank trailing pages", async ({ page }) => {
+  await page.goto("./#/print");
+  await page.getByRole("checkbox", { name: "ข้าวขยำเนื้อแดดเดียว · รหัส 37" }).check();
+  await page.getByRole("combobox", { name: /^จุดงาน/u }).selectOption("service");
+  await expect(page.locator(".workstation-sheet")).toHaveCount(1);
+
+  await page.emulateMedia({ media: "print" });
+  await expect(page.locator(".app-header")).toBeHidden();
+  await expect(page.getByRole("region", { name: "Prototype snapshot export" })).toBeHidden();
+  expectPdfPages(
+    await page.pdf({ preferCSSPageSize: true, printBackground: true }),
+    1,
+    210,
+    148,
+  );
+});
 
 test("loads base-aware DEMO media, preserves step attachment, and fits real A5 cards", async ({ page }) => {
   await page.goto("./#/print");
@@ -137,6 +171,15 @@ test("renders A4 two-up sheets with an unclipped odd tail", async ({ page }) => 
     expect(slot.cardScrollWidth).toBe(slot.cardClientWidth);
     expect(slot.cardScrollHeight).toBe(slot.cardClientHeight);
   }
+
+  await page.emulateMedia({ media: "print" });
+  await expect(page.getByRole("region", { name: "Prototype snapshot export" })).toBeHidden();
+  expectPdfPages(
+    await page.pdf({ preferCSSPageSize: true, printBackground: true }),
+    2,
+    210,
+    297,
+  );
 });
 
 for (const viewport of [
