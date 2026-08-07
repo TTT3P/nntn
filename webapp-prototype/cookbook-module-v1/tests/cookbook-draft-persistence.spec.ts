@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
@@ -14,6 +14,11 @@ const v5RelativePath =
   "Operations/CookBook/sot/v5-draft/kitchen-sot-first-set-v5-draft.json";
 const derivedFromPath = v4RelativePath;
 const isolatedYield = "ค่าทดสอบใน isolated vault";
+const approvedV4Sha = "09e5d64dc54fcd2103769088310d9028fe8317b11243c70341574465ed246f1d";
+const approvedManifestBytes = Buffer.from(
+  `${approvedV4Sha}  source/kitchen-sot-first-set-v2.json\n`,
+  "utf8",
+);
 
 type JsonObject = Record<string, unknown>;
 
@@ -71,6 +76,29 @@ function identityWithJsonType(value: unknown): { type: string; value: unknown } 
   return { type: typeof value, value };
 }
 
+function expectCommonObjectKeyOrder(left: unknown, right: unknown, path = "document"): void {
+  if (Array.isArray(left) && Array.isArray(right)) {
+    expect(right, `${path} array length`).toHaveLength(left.length);
+    for (let index = 0; index < left.length; index += 1) {
+      expectCommonObjectKeyOrder(left[index], right[index], `${path}[${String(index)}]`);
+    }
+    return;
+  }
+  if (
+    typeof left !== "object" || left === null || Array.isArray(left) ||
+    typeof right !== "object" || right === null || Array.isArray(right)
+  ) return;
+
+  const leftObject = left as JsonObject;
+  const rightObject = right as JsonObject;
+  const leftKeys = Object.keys(leftObject);
+  const rightCommonKeys = Object.keys(rightObject).filter((key) => key in leftObject);
+  expect(rightCommonKeys, `${path} key order`).toEqual(leftKeys);
+  for (const key of leftKeys) {
+    expectCommonObjectKeyOrder(leftObject[key], rightObject[key], `${path}.${key}`);
+  }
+}
+
 async function openRecipe(page: Page, recipeName: RegExp): Promise<void> {
   await page.goto("./#/source-review");
   await expect(page.getByRole("heading", { name: "Recipe Studio: ร่าง Kitchen SOT V5" }))
@@ -86,9 +114,26 @@ async function editYield(page: Page, value: string): Promise<void> {
 }
 
 test.describe.serial("isolated Cookbook V5 draft persistence", () => {
-  test("saves an unrelated field, reopens it, and preserves the frozen document shape", async ({ browser }) => {
-    expect(relative(cacheRoot, vaultRoot)).toBe("cookbook-v5-e2e-vault");
+  let pristineV4Bytes: Buffer;
+  let pristineManifestBytes: Buffer;
 
+  test.beforeAll(async () => {
+    expect(vaultRoot).toBe(resolve(moduleRoot, "node_modules/.cache/cookbook-v5-e2e-vault"));
+    expect(relative(cacheRoot, vaultRoot)).toBe("cookbook-v5-e2e-vault");
+    expect(await realpath(cacheRoot)).toBe(cacheRoot);
+    expect(await realpath(vaultRoot)).toBe(vaultRoot);
+    pristineV4Bytes = await readFile(resolve(vaultRoot, v4RelativePath));
+    pristineManifestBytes = await readFile(resolve(vaultRoot, checksumRelativePath));
+    expect(pristineManifestBytes).toEqual(approvedManifestBytes);
+    expect(createHash("sha256").update(pristineV4Bytes).digest("hex")).toBe(approvedV4Sha);
+  });
+
+  test.afterAll(async () => {
+    expect(await readFile(resolve(vaultRoot, v4RelativePath))).toEqual(pristineV4Bytes);
+    expect(await readFile(resolve(vaultRoot, checksumRelativePath))).toEqual(pristineManifestBytes);
+  });
+
+  test("saves an unrelated field, reopens it, and preserves the frozen document shape", async ({ browser }) => {
     const page = await browser.newPage();
     await openRecipe(page, /ผงคั่วพริกเกลือ/u);
     await editYield(page, isolatedYield);
@@ -96,16 +141,23 @@ test.describe.serial("isolated Cookbook V5 draft persistence", () => {
     await expect(page.getByRole("status", { name: "สถานะการบันทึก" })).toContainText("บันทึกแล้ว");
 
     await page.getByRole("button", { name: /ข้าวหน้าเนื้อยากินิกุ/u }).click();
+    await expect(page.getByRole("status", { name: "สถานะสูตร" })).toHaveText("DRAFT");
     await expect(page.getByText("ข้อมูลยืนยันเจ้าของไม่ครบ", { exact: true })).toBeVisible();
     await page.close();
 
     const reopened = await browser.newPage();
-    await openRecipe(reopened, /ผงคั่วพริกเกลือ/u);
+    await openRecipe(reopened, /ข้าวหน้าเนื้อยากินิกุ/u);
+    await expect(reopened.getByRole("status", { name: "สถานะสูตร" })).toHaveText("DRAFT");
+    await expect(reopened.getByText("ข้อมูลยืนยันเจ้าของไม่ครบ", { exact: true })).toBeVisible();
+    await reopened.getByRole("button", { name: /ผงคั่วพริกเกลือ/u }).click();
     await expect(reopened.getByLabel("ผลผลิตจากหน้าครัว")).toHaveValue(isolatedYield);
     await reopened.close();
 
     const v4Bytes = await readFile(resolve(vaultRoot, v4RelativePath));
-    const checksumText = await readFile(resolve(vaultRoot, checksumRelativePath), "utf8");
+    const checksumBytes = await readFile(resolve(vaultRoot, checksumRelativePath));
+    expect(v4Bytes).toEqual(pristineV4Bytes);
+    expect(checksumBytes).toEqual(pristineManifestBytes);
+    const checksumText = checksumBytes.toString("utf8");
     const checksumMatch =
       /^([a-f0-9]{64}) {2}source\/kitchen-sot-first-set-v2\.json\n$/u.exec(checksumText);
     expect(checksumMatch).not.toBeNull();
@@ -118,6 +170,10 @@ test.describe.serial("isolated Cookbook V5 draft persistence", () => {
     expect(v5.schema_version).toBe("2.1.0-prototype-draft");
     expect(v5.generated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u);
     expect(v5.derived_from).toEqual({ path: derivedFromPath, sha256: expectedV4Sha });
+    expect(Object.keys(v5)).toEqual([...Object.keys(v4), "derived_from"]);
+    expect(Object.keys(requireObject(v5.derived_from, "derived_from"))).toEqual(["path", "sha256"]);
+    expect(v5Bytes).toEqual(Buffer.from(`${JSON.stringify(v5, null, 2)}\n`, "utf8"));
+    expectCommonObjectKeyOrder(v4, v5);
 
     const targetIndex = recipes(v4).findIndex(({ recipe_id }) => recipe_id === 162);
     expect(targetIndex).toBeGreaterThanOrEqual(0);
@@ -135,15 +191,10 @@ test.describe.serial("isolated Cookbook V5 draft persistence", () => {
       const v5Recipe = recipeById(v5, v4Recipe.recipe_id as number | string);
       expect(requireArray(v5Recipe.items, "V5 items").map((item) => requireObject(item, "V5 item").line_key))
         .toEqual(requireArray(v4Recipe.items, "V4 items").map((item) => requireObject(item, "V4 item").line_key));
-      expect(Object.keys(v5Recipe)).toEqual(Object.keys(v4Recipe));
       const v4Items = requireArray(v4Recipe.items, "V4 items");
       const v5Items = requireArray(v5Recipe.items, "V5 items");
-      for (let index = 0; index < v4Items.length; index += 1) {
-        expect(Object.keys(requireObject(v5Items[index], "V5 item")))
-          .toEqual(Object.keys(requireObject(v4Items[index], "V4 item")));
-      }
+      expect(v5Items).toHaveLength(v4Items.length);
     }
-    expect(Object.keys(v5).filter((key) => key !== "derived_from")).toEqual(Object.keys(v4));
 
     const v4RecipeIds = recipes(v4).map(({ recipe_id }) => identityWithJsonType(recipe_id));
     const v5RecipeIds = recipes(v5).map(({ recipe_id }) => identityWithJsonType(recipe_id));
