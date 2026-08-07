@@ -62,10 +62,10 @@ The source contains:
 
 The current fill targets derived from this V4 snapshot are:
 
-- 8 items with no selected source;
-- 8 items marked `needs_review`;
-- 7 items marked `conflict`;
-- 6 recipes whose method is missing; and
+- 15 unique items with an unresolved decision status: 8 marked `needs_review` and 7 marked `conflict`;
+- 8 of those 15 unresolved items also have no selected source; this is an overlapping diagnostic, not an additional count;
+- 5 recipes whose method is missing: recipe IDs `2`, `160`, `9`, `161`, and `162`;
+- 1 provenance-incomplete item whose selected source says owner confirmation but whose owner-confirmation source value is absent; and
 - 13 blockers requiring evidence or a decision.
 
 These numbers document the accepted source snapshot; every count displayed by the application is derived from the loaded document and is never hardcoded.
@@ -178,6 +178,8 @@ The item decision note is generated from the recipe, item, entered value, and lo
 
 The value `confirmed` is not used for owner entry because V4 reserves it for matching-source decisions.
 
+Owner-provenance validation applies only to items changed in the current save. An inherited V4 item that already says `selected_source = "owner_confirmation"` and `decision_status = "confirmed_by_owner"` but lacks `source_values.owner_confirmation` is grandfathered unchanged until TINE edits it. The validator must not block an unrelated save, backfill the missing value, or rewrite that inherited row.
+
 ### 8.2 Serving and cost basis
 
 The existing fields `serving_note` and `cost_basis_text` are optional. The UI exposes them only as supporting fields when the kitchen serving quantity differs from the costing basis. They do not trigger unit conversion or calculation.
@@ -213,11 +215,16 @@ A resolution requires a note. Reopening the draft shows the original blocker mes
 
 ## 9. Readiness and DRAFT Rules
 
-Readiness is derived at render time from blocker resolution rather than copied from `review_state` or maintained as a second mutable status.
+Readiness is derived at render time from blocker resolution and owner-provenance completeness rather than copied from `review_state` or maintained as a second mutable status.
 
-A recipe displays DRAFT whenever at least one blocker has `resolved != true`.
+A recipe displays DRAFT whenever either condition is true:
 
-Ingredient decision states remain visible as fill cues. In the accepted V4 snapshot, every recipe containing an unresolved ingredient decision also has an unresolved blocker. Resolving that recorded blocker, rather than recomputing `review_state`, is the explicit readiness transition.
+1. at least one blocker has `resolved != true`; or
+2. an item has `selected_source = "owner_confirmation"` while `source_values.owner_confirmation` is missing or empty.
+
+The second condition is the derived `provenance incomplete` fill cue. The current V4 snapshot contains one such item in recipe 159, but the application derives the condition from data and never hardcodes that recipe ID.
+
+Ingredient decision states remain visible as fill cues. In the accepted V4 snapshot, every recipe containing a status-based unresolved ingredient decision also has an unresolved blocker. Resolving that recorded blocker, rather than recomputing `review_state`, is the explicit readiness transition. The provenance-incomplete condition is a separate exception because its inherited status appears confirmed even though the required owner source value is absent.
 
 Resolved blockers remain in the document as history but no longer block readiness. Unresolved blocker messages remain visible verbatim.
 
@@ -233,6 +240,7 @@ For each selected recipe, the surface shows:
 
 - recipe identity and derived DRAFT/readiness state;
 - ingredient rows with existing source evidence and an owner-confirmation input;
+- a derived `provenance incomplete` cue whenever an owner-confirmed status lacks the corresponding owner source value;
 - method text and a required method provenance/omission note;
 - optional yield, serving note, and cost-basis text using existing schema fields;
 - all blocker messages, plus resolution status and note; and
@@ -259,7 +267,7 @@ The server rejects a save when:
 - the payload is not valid JSON or exceeds the bounded local payload size;
 - recipe or item identity/order differs from the source lineage;
 - an edit introduces an unapproved field;
-- owner quantity lacks its required provenance fields;
+- an owner quantity changed in the current save lacks its required provenance fields;
 - a changed method lacks `method_decision_note`;
 - a resolved blocker lacks its note/timestamp or alters its original code/message;
 - `review_state` changes;
@@ -267,6 +275,8 @@ The server rejects a save when:
 - the target resolves outside the exact V5 location.
 
 Validation compares the submitted V5 against the verified V4 lineage and, when present, the last valid V5 draft. It permits only the transformations documented in this design.
+
+Field-level invariants for owner quantity, method, yield, and blocker resolution apply to dirty records changed in the current save. Pre-existing V4 irregularities are grandfathered only while byte-equivalent at that record; they remain visible as fill cues and cannot be silently repaired, normalized, or used to block an unrelated edit.
 
 ## 12. Testing and Acceptance Evidence
 
@@ -278,19 +288,22 @@ Required evidence:
 2. **Low-noise diff:** V5 versus V4 shows only the entered fields, permitted resolution fields, and required V5 metadata.
 3. **Immutable source:** the real V4 SHA-256 still matches `SHA256SUMS.txt` after all work.
 4. **Complete rendering:** all 18 recipes render.
-5. **Missing methods:** all six missing-method cases render as DRAFT without an error.
+5. **Missing methods:** the five missing-method recipes (`2`, `160`, `9`, `161`, and `162`) render as DRAFT without an error.
 6. **Blocker count:** 13 blocker instances are derived and displayed from the file.
 7. **Status vocabulary:** owner entry produces `confirmed_by_owner`, never generic `confirmed`.
-8. **Blocker history:** resolving a blocker preserves its original code/message and changes readiness only through `resolved`.
-9. **Security:** traversal, symlink escape, unsupported methods, wrong filenames, and writes outside V5 are rejected.
-10. **Atomicity:** an interrupted or failed write never leaves a truncated V5 document.
-11. **Development-only boundary:** production build contains no writable vault endpoint.
-12. **Regression gates:** unit tests, lint, typecheck, build, browser checks, and relevant E2E tests pass sequentially on the final integrated HEAD.
+8. **Blocker history:** resolving a blocker preserves its original code/message, and that blocker stops blocking readiness only through `resolved`.
+9. **Grandfathered provenance trap:** an unrelated first save succeeds despite the inherited provenance-incomplete row, that row remains unchanged, and the UI still presents its derived fill cue and DRAFT state.
+10. **Security:** traversal, symlink escape, unsupported methods, wrong filenames, and writes outside V5 are rejected.
+11. **Atomicity:** an interrupted or failed write never leaves a truncated V5 document.
+12. **Development-only boundary:** production build contains no writable vault endpoint.
+13. **Regression gates:** unit tests, lint, typecheck, build, browser checks, and relevant E2E tests pass sequentially on the final integrated HEAD.
 
 The real V5 file is created only by an intentional save from the completed local app. Verification must not fabricate kitchen decisions merely to leave an artifact behind.
 
 ## 13. Milestone Stop Condition
 
 M1 is complete when TINE can open the local Cookbook, see all 18 real recipes, enter and save missing kitchen facts, reopen the same V5 draft, and review exact unresolved evidence without any mutation to V4 or Stock.
+
+Before M1 is declared complete, a verifier who did not author this design or its source decision must independently inspect the implementation and acceptance evidence. NNTN Oracle's design review does not satisfy this independent final-verification requirement.
 
 After M1 is accepted, M2 may replace Print Center mock data with V5-draft data and V4 fallback while preserving the already-approved A4 Master, A5 Kitchen Guide, and Cookbook Booklet designs.
