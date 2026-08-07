@@ -16,6 +16,7 @@ function assert(condition, message) {
 }
 
 const cssPixelsPerMillimeter = 96 / 25.4;
+const pdfPointsPerMillimeter = 72 / 25.4;
 
 function assertMillimeters(actualPixels, expectedMillimeters, message) {
   const expectedPixels = expectedMillimeters * cssPixelsPerMillimeter;
@@ -23,6 +24,21 @@ function assertMillimeters(actualPixels, expectedMillimeters, message) {
     Math.abs(actualPixels - expectedPixels) <= 1,
     `${message}: expected ${expectedMillimeters}mm (${expectedPixels}px), got ${actualPixels}px`,
   );
+}
+
+function assertPdfPageBoxes(pdf, expectedPageCount, expectedWidthMillimeters, expectedHeightMillimeters, message) {
+  const mediaBoxes = [...pdf.toString("latin1").matchAll(
+    /\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/g,
+  )].map((match) => ({ width: Number(match[1]), height: Number(match[2]) }));
+  assert(mediaBoxes.length === expectedPageCount, `${message}: expected ${expectedPageCount} PDF pages, got ${mediaBoxes.length}`);
+  for (const [index, mediaBox] of mediaBoxes.entries()) {
+    const expectedWidth = expectedWidthMillimeters * pdfPointsPerMillimeter;
+    const expectedHeight = expectedHeightMillimeters * pdfPointsPerMillimeter;
+    assert(
+      Math.abs(mediaBox.width - expectedWidth) <= 1 && Math.abs(mediaBox.height - expectedHeight) <= 1,
+      `${message} page ${index + 1}: expected ${expectedWidthMillimeters}mm × ${expectedHeightMillimeters}mm, got ${JSON.stringify(mediaBox)}`,
+    );
+  }
 }
 
 const server = await createServer({
@@ -139,6 +155,16 @@ try {
     }
   }
 
+
+  await page.goto(`${origin}/nntn-cookbook/tests/print-layout-harness.html?case=normal`);
+  await page.locator(".workstation-sheet").first().waitFor();
+  await page.emulateMedia({ media: "print" });
+  assert(await page.locator(".print-center-header").evaluate((element) => getComputedStyle(element).display) === "none", "A5 print media must hide the page header");
+  assert(await page.locator(".print-controls").evaluate((element) => getComputedStyle(element).display) === "none", "A5 print media must hide print controls");
+  const a5Pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
+  assertPdfPageBoxes(a5Pdf, 5, 210, 148, "A5 print PDF");
+  await page.emulateMedia({ media: "screen" });
+
   await page.goto(`${origin}/nntn-cookbook/tests/print-layout-harness.html?case=two-up`);
   await page.getByLabel("แม่แบบ").selectOption("two-up");
   await page.locator(".two-up-sheet").first().waitFor();
@@ -177,6 +203,12 @@ try {
     assert(slot.scrollWidth === slot.clientWidth, `two-up slot ${index + 1}: horizontal clipping ${JSON.stringify(slot)}`);
     assert(slot.scrollHeight === slot.clientHeight, `two-up slot ${index + 1}: vertical clipping ${JSON.stringify(slot)}`);
   }
+  await page.emulateMedia({ media: "print" });
+  assert(await page.locator(".print-center-header").evaluate((element) => getComputedStyle(element).display) === "none", "A4 two-up print media must hide the page header");
+  assert(await page.locator(".print-controls").evaluate((element) => getComputedStyle(element).display) === "none", "A4 two-up print media must hide print controls");
+  const twoUpPdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
+  assertPdfPageBoxes(twoUpPdf, 3, 210, 297, "A4 two-up print PDF");
+  await page.emulateMedia({ media: "screen" });
 
   const rejectedScenarios = [
     ["header-regional-plus-one", "หัวเอกสาร"],
