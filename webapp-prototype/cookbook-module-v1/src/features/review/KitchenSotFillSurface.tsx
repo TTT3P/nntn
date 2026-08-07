@@ -25,6 +25,10 @@ function rawString(value: JsonValue | undefined): string {
   return typeof value === "string" ? value : "";
 }
 
+function sourceEvidenceText(value: JsonValue): string {
+  return typeof value === "string" ? value : JSON.stringify(value, null, 2);
+}
+
 function localIsoDate(): string {
   const now = new Date();
   const year = String(now.getFullYear()).padStart(4, "0");
@@ -61,6 +65,14 @@ function ItemEditor({
       <p>ค่าที่ใช้แสดง: {item.candidate_text ?? "รอข้อมูล"}</p>
       <p>แหล่งที่เลือก: {item.selected_source ?? "ยังไม่เลือก"}</p>
       <p>สถานะการตัดสินใจ: {item.decision_status}</p>
+      <dl aria-label={`หลักฐานต้นทาง — ${item.item_name}`}>
+        {Object.entries(item.source_values).map(([source, value]) => (
+          <div key={source} data-testid="sot-source-evidence">
+            <dt>{source}</dt>
+            <dd><pre>{sourceEvidenceText(value)}</pre></dd>
+          </div>
+        ))}
+      </dl>
       {isOwnerProvenanceIncomplete(item) && (
         <p className="sot-provenance-warning">ข้อมูลยืนยันเจ้าของไม่ครบ</p>
       )}

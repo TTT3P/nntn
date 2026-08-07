@@ -1,4 +1,4 @@
-import type { KitchenSotDocument } from "./kitchenSotDocument";
+import type { KitchenSotDocument } from "./kitchenSotDocument.ts";
 
 export const V4_ENDPOINT = "/__cookbook/v4";
 export const V5_ENDPOINT = "/__cookbook/v5-draft";

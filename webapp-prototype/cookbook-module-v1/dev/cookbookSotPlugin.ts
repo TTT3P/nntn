@@ -3,15 +3,15 @@ import { link, lstat, mkdir, open, readFile, realpath, rename, unlink, type File
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { isAbsolute, join, relative } from "node:path";
 import type { Plugin } from "vite";
-import { parseKitchenSotDocument } from "../src/domain/sot/kitchenSotDocument";
-import { validateKitchenSotTransition } from "../src/domain/sot/kitchenSotValidation";
+import { parseKitchenSotDocument } from "../src/domain/sot/kitchenSotDocument.ts";
+import { validateKitchenSotTransition } from "../src/domain/sot/kitchenSotValidation.ts";
 import {
   V4_ENDPOINT,
   V5_ENDPOINT,
   type SotReadResponse,
   type SotSaveRequest,
   type SotSaveResponse,
-} from "../src/domain/sot/kitchenSotTransport";
+} from "../src/domain/sot/kitchenSotTransport.ts";
 
 const V4_RELATIVE_PATH = "Operations/CookBook/sot/v4-2026-08-05/source/kitchen-sot-first-set-v2.json";
 const V4_DIRECTORY_RELATIVE_PATH = "Operations/CookBook/sot/v4-2026-08-05";
@@ -46,6 +46,8 @@ interface VerifiedSource {
   document: ReturnType<typeof parseKitchenSotDocument>;
   sha256: string;
 }
+
+type LoadedDraft = Awaited<ReturnType<typeof loadDraft>>;
 
 function sha256(bytes: Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
@@ -164,6 +166,15 @@ async function loadDraft(vaultRoot: string): Promise<{ bytes: Buffer; document: 
     if (error instanceof InvalidDraftError) throw error;
     throw new InvalidDraftError();
   }
+}
+
+function validateExistingDraft(source: VerifiedSource, draft: LoadedDraft): void {
+  validateKitchenSotTransition(
+    source.document,
+    null,
+    draft.document,
+    { path: V4_RELATIVE_PATH, sha256: source.sha256 },
+  );
 }
 
 async function readBoundedBody(request: IncomingMessage): Promise<Buffer> {
@@ -399,6 +410,7 @@ async function handlePut(
     let previousDraft: Awaited<ReturnType<typeof loadDraft>> | null;
     try {
       previousDraft = await loadDraft(options.vaultRoot);
+      validateExistingDraft(source, previousDraft);
     } catch (error) {
       if (error instanceof DraftNotFoundError) previousDraft = null;
       else throw error;
@@ -474,6 +486,7 @@ export function createCookbookSotRequestHandler(
       }
 
       const draft = await loadDraft(options.vaultRoot);
+      validateExistingDraft(source, draft);
       const body: SotReadResponse = {
         document: draft.document,
         sourcePath: V4_RELATIVE_PATH,

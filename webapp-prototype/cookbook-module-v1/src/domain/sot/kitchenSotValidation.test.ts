@@ -61,11 +61,56 @@ describe("Kitchen SOT transition validation", () => {
     expect(() => validateKitchenSotTransition(source, null, repaired, derivedFrom)).not.toThrow();
   });
 
-  test("does not trigger owner mapping from decision_status alone", () => {
+  test("rejects a status-only owner confirmation bypass", () => {
     const source = sourceDocument();
     const submitted = draft(source);
     submitted.recipes[0]!.items[0]!.decision_status = "confirmed_by_owner";
-    expect(() => validateKitchenSotTransition(source, null, submitted, derivedFrom)).not.toThrow();
+    expect(() => validateKitchenSotTransition(source, null, submitted, derivedFrom))
+      .toThrow(/selected_source/u);
+  });
+
+  test.each([
+    ["candidate text", (item: KitchenSotDocument["recipes"][number]["items"][number]) => {
+      item.candidate_text = "crafted candidate";
+    }],
+    ["selected source", (item: KitchenSotDocument["recipes"][number]["items"][number]) => {
+      item.selected_source = "owner_confirmation";
+    }],
+    ["decision note", (item: KitchenSotDocument["recipes"][number]["items"][number]) => {
+      item.decision_note = "crafted provenance";
+    }],
+    ["owner source", (item: KitchenSotDocument["recipes"][number]["items"][number]) => {
+      item.source_values.owner_confirmation = "crafted owner value";
+    }],
+  ] as const)("rejects standalone %s mutation without the atomic owner mapping", (_name, mutate) => {
+    const source = sourceDocument();
+    const submitted = draft(source);
+    mutate(submitted.recipes[0]!.items[0]!);
+    expect(() => validateKitchenSotTransition(source, null, submitted, derivedFrom))
+      .toThrow(InvalidKitchenSotTransitionError);
+  });
+
+  test("rejects crafted owner readiness and provenance states", () => {
+    const source = sourceDocument();
+
+    const missingEvidence = draft(source);
+    const missingEvidenceItem = missingEvidence.recipes[0]!.items[0]!;
+    missingEvidenceItem.candidate_text = "1 ถ้วย";
+    missingEvidenceItem.selected_source = "owner_confirmation";
+    missingEvidenceItem.decision_status = "confirmed_by_owner";
+    missingEvidenceItem.decision_note = "เจ้าของยืนยันวันที่ 2026-08-07 ว่าข้อมูลนี้พร้อม";
+    expect(() => validateKitchenSotTransition(source, null, missingEvidence, derivedFrom))
+      .toThrow(/source_values\.owner_confirmation/u);
+
+    const mismatchedCandidate = draft(source);
+    const mismatchedItem = mismatchedCandidate.recipes[0]!.items[0]!;
+    mismatchedItem.source_values.owner_confirmation = "1 ถ้วย";
+    mismatchedItem.candidate_text = "2 ถ้วย";
+    mismatchedItem.selected_source = "owner_confirmation";
+    mismatchedItem.decision_status = "confirmed_by_owner";
+    mismatchedItem.decision_note = "เจ้าของยืนยันวันที่ 2026-08-07 ว่าข้อมูลนี้พร้อม";
+    expect(() => validateKitchenSotTransition(source, null, mismatchedCandidate, derivedFrom))
+      .toThrow(/candidate_text/u);
   });
 
   test("scopes dirty records against previous V5 despite regenerated metadata", () => {

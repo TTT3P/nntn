@@ -89,6 +89,33 @@ test("shows the derived provenance gap without hardcoding recipe 159", async () 
   expect(screen.getByRole("status", { name: "สถานะสูตร" })).toHaveTextContent("DRAFT");
 });
 
+test("renders every source value in original order with raw safe deterministic evidence", async () => {
+  const document = parseKitchenSotDocument(fixture);
+  const item = document.recipes[0]!.items[0]!;
+  item.source_values = {
+    handwriting: "บรรทัดหนึ่ง\n  บรรทัดสอง <img src=x onerror=alert(1)>",
+    structured: { second: 2, first: ["ดิบ", { nested: true }] },
+    nullEvidence: null,
+  };
+  renderFillSurfaceWithDocument(document);
+
+  const evidenceList = await screen.findByLabelText(`หลักฐานต้นทาง — ${item.item_name}`);
+  const entries = [...evidenceList.querySelectorAll('[data-testid="sot-source-evidence"]')];
+  expect(entries.map((entry) => entry.querySelector("dt")?.textContent)).toEqual([
+    "handwriting",
+    "structured",
+    "nullEvidence",
+  ]);
+  expect(entries[0]!.querySelector("dd")?.textContent).toBe(
+    "บรรทัดหนึ่ง\n  บรรทัดสอง <img src=x onerror=alert(1)>",
+  );
+  expect(entries[1]!.querySelector("dd")?.textContent).toBe(
+    '{\n  "second": 2,\n  "first": [\n    "ดิบ",\n    {\n      "nested": true\n    }\n  ]\n}',
+  );
+  expect(entries[2]!.querySelector("dd")?.textContent).toBe("null");
+  expect(entries[0]!.querySelector("img")).toBeNull();
+});
+
 test.each([2, 160, 9, 161, 162])("renders missing method recipe %s as editable DRAFT", async (recipeId) => {
   const view = renderFillSurfaceWithDocument(parseKitchenSotDocument(fixture));
 

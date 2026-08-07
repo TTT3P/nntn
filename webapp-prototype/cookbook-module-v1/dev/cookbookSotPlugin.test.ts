@@ -74,6 +74,51 @@ function makeValidDraft(vault: TemporaryVault, generatedAt = "2026-08-07T04:00:0
   });
 }
 
+const invalidExistingDraftCases: Array<{
+  name: string;
+  mutate(document: KitchenSotDocument): void;
+}> = [
+  {
+    name: "schema metadata",
+    mutate(document) {
+      document.schema_version = "2.1.0-parseable-but-invalid";
+    },
+  },
+  {
+    name: "recipe order",
+    mutate(document) {
+      [document.recipes[0], document.recipes[1]] = [document.recipes[1]!, document.recipes[0]!];
+    },
+  },
+  {
+    name: "recipe identity",
+    mutate(document) {
+      document.recipes[0]!.recipe_id = "changed-identity";
+    },
+  },
+  {
+    name: "review state",
+    mutate(document) {
+      document.recipes[0]!.review_state = "approved";
+    },
+  },
+  {
+    name: "immutable blocker evidence",
+    mutate(document) {
+      document.recipes.find(({ blockers }) => blockers.length > 0)!.blockers[0]!.message =
+        "parseable rewritten evidence";
+    },
+  },
+];
+
+async function writeDraftFixture(vault: TemporaryVault, document: KitchenSotDocument): Promise<Buffer> {
+  const bytes = Buffer.from(`${JSON.stringify(document, null, 2)}\n`, "utf8");
+  const target = join(vault.root, V5_RELATIVE_PATH);
+  await mkdir(dirname(target), { recursive: true });
+  await writeFile(target, bytes);
+  return bytes;
+}
+
 async function putDraft(
   server: MiddlewareServer,
   baseSha256: string | undefined,
@@ -303,6 +348,48 @@ test("invalid transition data is rejected before creating V5", async () => {
     await server.close();
   }
 });
+
+test.each(invalidExistingDraftCases)(
+  "GET rejects an existing parseable V5 with invalid $name",
+  async ({ mutate }) => {
+    const vault = await makeTemporaryVault();
+    const invalid = makeValidDraft(vault);
+    mutate(invalid);
+    await writeDraftFixture(vault, invalid);
+    const server = await startMiddlewareServer(createCookbookSotRequestHandler({ vaultRoot: vault.root }));
+    try {
+      const response = await fetch(`${server.origin}/__cookbook/v5-draft`);
+      expect(response.status).toBe(422);
+      expect(await response.json()).toEqual({ code: "INVALID_DRAFT" });
+    } finally {
+      await server.close();
+    }
+  },
+);
+
+test.each(invalidExistingDraftCases)(
+  "PUT rejects an existing parseable V5 with invalid $name as its previous draft",
+  async ({ mutate }) => {
+    const vault = await makeTemporaryVault();
+    const invalid = makeValidDraft(vault);
+    mutate(invalid);
+    const before = await writeDraftFixture(vault, invalid);
+    const baseSha256 = createHash("sha256").update(before).digest("hex");
+    const server = await startMiddlewareServer(createCookbookSotRequestHandler({ vaultRoot: vault.root }));
+    try {
+      const response = await putDraft(
+        server,
+        baseSha256,
+        makeValidDraft(vault, "2026-08-07T05:00:00.000Z"),
+      );
+      expect(response.status).toBe(422);
+      expect(await response.json()).toEqual({ code: "INVALID_DRAFT" });
+      expect(await readFile(join(vault.root, V5_RELATIVE_PATH))).toEqual(before);
+    } finally {
+      await server.close();
+    }
+  },
+);
 
 test("failed exclusive open never deletes a temporary path the request did not own", async () => {
   const vault = await makeTemporaryVault();

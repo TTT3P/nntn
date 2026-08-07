@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { cookbookSotPlugin } from "./dev/cookbookSotPlugin";
+import { cookbookSotPlugin } from "./dev/cookbookSotPlugin.ts";
 
 const moduleDirectory = dirname(fileURLToPath(import.meta.url));
 const defaultVaultRoot = resolve(moduleDirectory, "../../../../../..", "vault/nntn");

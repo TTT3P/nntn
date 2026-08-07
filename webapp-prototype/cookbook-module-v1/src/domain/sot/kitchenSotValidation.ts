@@ -4,8 +4,8 @@ import type {
   KitchenSotDocument,
   KitchenSotItem,
   KitchenSotRecipe,
-} from "./kitchenSotDocument";
-import { isCanonicalKitchenSotTimestamp, type DerivedFrom } from "./kitchenSotEdits";
+} from "./kitchenSotDocument.ts";
+import { isCanonicalKitchenSotTimestamp, type DerivedFrom } from "./kitchenSotEdits.ts";
 
 const TOP_LEVEL_MUTABLE = new Set(["schema_version", "generated_at", "derived_from"]);
 const RECIPE_MUTABLE = new Set([
@@ -107,8 +107,14 @@ function compareSourceValues(
   }
 }
 
-function validateDirtyOwnerItem(item: KitchenSotItem, field: string): void {
-  if (item.selected_source !== "owner_confirmation") return;
+function validateDirtyOwnerItem(
+  recipe: KitchenSotRecipe,
+  item: KitchenSotItem,
+  field: string,
+): void {
+  if (item.selected_source !== "owner_confirmation") {
+    fail(`${field}.selected_source`, "changed owner fields must select owner_confirmation");
+  }
   const owner = item.source_values.owner_confirmation;
   if (typeof owner !== "string" || owner.trim() === "") {
     fail(`${field}.source_values.owner_confirmation`, "owner_confirmation is required");
@@ -122,9 +128,27 @@ function validateDirtyOwnerItem(item: KitchenSotItem, field: string): void {
   if (typeof item.decision_note !== "string" || item.decision_note.trim() === "") {
     fail(`${field}.decision_note`, "is required for owner_confirmation");
   }
+  const noteMatch = /^เจ้าของยืนยันวันที่ (\d{4}-\d{2}-\d{2}) ว่า(.+)$/u.exec(item.decision_note);
+  if (noteMatch === null) {
+    fail(`${field}.decision_note`, "must record the dated owner-confirmation mapping");
+  }
+  const date = noteMatch[1]!;
+  const parsed = new Date(`${date}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.valueOf()) || parsed.toISOString().slice(0, 10) !== date) {
+    fail(`${field}.decision_note`, "must contain a valid owner-confirmation date");
+  }
+  const expectedAccount = `${recipe.recipe_name} ใช้${item.item_name} ${owner}`;
+  if (noteMatch[2] !== expectedAccount) {
+    fail(`${field}.decision_note`, "must identify the exact recipe, item, and owner value");
+  }
 }
 
-function validateItem(baseline: KitchenSotItem, submitted: KitchenSotItem, field: string): void {
+function validateItem(
+  baseline: KitchenSotItem,
+  submitted: KitchenSotItem,
+  recipe: KitchenSotRecipe,
+  field: string,
+): void {
   if (baseline.line_key !== submitted.line_key) fail(`${field}.line_key`, "item identity changed");
   if (
     typeof baseline.component_recipe_id !== typeof submitted.component_recipe_id ||
@@ -141,7 +165,13 @@ function validateItem(baseline: KitchenSotItem, submitted: KitchenSotItem, field
     field,
   );
   compareSourceValues(baseline.source_values, submitted.source_values, `${field}.source_values`);
-  if (!jsonEqual(baseline, submitted)) validateDirtyOwnerItem(submitted, field);
+  const ownerMappingChanged = ["candidate_text", "selected_source", "decision_status", "decision_note"]
+    .some((key) => !jsonEqual(baseline[key], submitted[key])) ||
+    !jsonEqual(
+      baseline.source_values.owner_confirmation,
+      submitted.source_values.owner_confirmation,
+    );
+  if (ownerMappingChanged) validateDirtyOwnerItem(recipe, submitted, field);
 }
 
 function validateChangedMethod(recipe: KitchenSotRecipe, field: string): void {
@@ -200,7 +230,8 @@ function validateRecipe(baseline: KitchenSotRecipe, submitted: KitchenSotRecipe,
   }
   compareImmutableFields(baseline, submitted, RECIPE_MUTABLE, [], new Set(["items", "blockers"]), field);
   if (baseline.items.length !== submitted.items.length) fail(`${field}.items`, "array length changed");
-  baseline.items.forEach((item, index) => validateItem(item, submitted.items[index]!, `${field}.items[${index}]`));
+  baseline.items.forEach((item, index) =>
+    validateItem(item, submitted.items[index]!, submitted, `${field}.items[${index}]`));
   if (baseline.blockers.length !== submitted.blockers.length) fail(`${field}.blockers`, "array length changed");
   baseline.blockers.forEach((blocker, index) =>
     validateBlocker(blocker, submitted.blockers[index]!, submitted, `${field}.blockers[${index}]`));

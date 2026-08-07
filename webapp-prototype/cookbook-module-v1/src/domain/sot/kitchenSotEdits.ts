@@ -5,7 +5,7 @@ import {
   type KitchenSotItem,
   type KitchenSotRecipe,
   type RecipeIdentity,
-} from "./kitchenSotDocument";
+} from "./kitchenSotDocument.ts";
 
 export type KitchenSotEdit =
   | { kind: "item-owner-confirmation"; recipeId: RecipeIdentity; lineKey: string; value: string; confirmedOn: string }
