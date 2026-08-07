@@ -3,6 +3,9 @@ import type { RecipeIdentity, RecipeVersion } from "../../domain/cookbook/types"
 import { buildReviewQueue, evaluateReadiness } from "../../domain/review/readiness";
 import { usePrototype } from "../../prototype/PrototypeProvider";
 import { deriveRecipeMediaCoverage } from "../recipe/recipeMediaCoverage";
+import type { KitchenSotDraftClient } from "../../data/KitchenSotDraftClient";
+import { KitchenSotDraftProvider } from "./KitchenSotDraftProvider";
+import { KitchenSotFillSurface } from "./KitchenSotFillSurface";
 
 class InvalidSourceReviewFieldError extends Error {
   constructor(field: string, value: unknown) {
@@ -70,7 +73,7 @@ function statusLabel(status: RecipeVersion["reviewState"]): string {
   return "confirmed";
 }
 
-export function SourceReviewPage() {
+function ReadOnlySourceReviewPage() {
   const { snapshot } = usePrototype();
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
@@ -99,6 +102,7 @@ export function SourceReviewPage() {
     return (
       <section role="alert" aria-labelledby="source-review-error-title">
         <h2 id="source-review-error-title">เปิดคิวตรวจสอบไม่ได้</h2>
+        <p><strong>โหมดอ่านอย่างเดียว</strong></p>
         <p>{errorMessage(error)}</p>
       </section>
     );
@@ -110,6 +114,7 @@ export function SourceReviewPage() {
     return (
       <section className="source-review-page" aria-labelledby="source-review-title">
         <h2 id="source-review-title">ตรวจสอบแหล่งข้อมูล</h2>
+        <p><strong>โหมดอ่านอย่างเดียว</strong></p>
         <p role="status">ไม่มีสูตรที่ต้องตรวจสอบ</p>
       </section>
     );
@@ -121,6 +126,7 @@ export function SourceReviewPage() {
     <section className="source-review-page" aria-labelledby="source-review-title">
       <header>
         <h2 id="source-review-title">ตรวจสอบแหล่งข้อมูล</h2>
+        <p><strong>โหมดอ่านอย่างเดียว</strong></p>
         <p><strong>ลายมือใหม่เป็นหลักเมื่อมีการแก้ไข</strong></p>
         <p>DOCX และ V2 ใช้เป็นหลักฐานเปรียบเทียบ และ V1 ใช้เป็นรายการตั้งต้นเท่านั้น</p>
         <p>การแก้ไขทั้งหมดอยู่เฉพาะเซสชันนี้ และจะไม่บันทึกลงเครือข่ายหรือพื้นที่จัดเก็บ</p>
@@ -195,5 +201,14 @@ export function SourceReviewPage() {
         </section>
       </article>
     </section>
+  );
+}
+
+export function SourceReviewPage({ draftClient }: { draftClient?: KitchenSotDraftClient }) {
+  if (draftClient === undefined) return <ReadOnlySourceReviewPage />;
+  return (
+    <KitchenSotDraftProvider client={draftClient}>
+      <KitchenSotFillSurface />
+    </KitchenSotDraftProvider>
   );
 }

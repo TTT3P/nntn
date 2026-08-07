@@ -2,7 +2,10 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, describe, expect, test } from "vitest";
+import fixture from "../../data/fixtures/first-set.json";
+import type { KitchenSotDraftClient } from "../../data/KitchenSotDraftClient";
 import type { CookbookSnapshot } from "../../domain/cookbook/types";
+import { parseKitchenSotDocument } from "../../domain/sot/kitchenSotDocument";
 import { PrototypeContext } from "../../prototype/PrototypeProvider";
 import { makeIngredientLine, makeMediaAsset, makeRecipe, makeSnapshot, makeStepMediaLink, makeWorkStep } from "../../test/builders";
 import { renderWithPrototype } from "../../test/renderWithPrototype";
@@ -40,6 +43,39 @@ function reviewRecipe(name: string, id: number | string) {
 }
 
 describe("SourceReviewPage", () => {
+  test("keeps legacy mode explicitly read-only", () => {
+    renderWithPrototype(<SourceReviewPage />, {
+      snapshot: makeSnapshot({ recipes: [reviewRecipe("สูตรอ่านอย่างเดียว", 1)] }),
+    });
+
+    expect(screen.getByText(/โหมดอ่านอย่างเดียว/u)).toBeVisible();
+  });
+
+  test("uses the durable fill surface only when a draft client is supplied", async () => {
+    const document = parseKitchenSotDocument(fixture);
+    const client: KitchenSotDraftClient = {
+      load: async () => ({
+        document,
+        origin: "v4",
+        sourcePath: "Operations/CookBook/sot/v4-2026-08-05/source/kitchen-sot-first-set-v2.json",
+        sourceSha256: "a".repeat(64),
+        baseSha256: "b".repeat(64),
+      }),
+      save: async (submitted) => ({
+        document: submitted,
+        sha256: "c".repeat(64),
+        base_sha256: "c".repeat(64),
+        generatedAt: submitted.generated_at,
+        path: "Operations/CookBook/sot/v5-draft/kitchen-sot-first-set-v5-draft.json",
+      }),
+    };
+
+    renderWithPrototype(<SourceReviewPage draftClient={client} />);
+
+    expect(await screen.findByText("18 สูตร")).toBeVisible();
+    expect(screen.queryByText(/เฉพาะเซสชันนี้/u)).not.toBeInTheDocument();
+  });
+
   test("states source precedence and renders exact source facts and newlines", () => {
     const recipe = reviewRecipe("น้ำยำ", 37);
     renderWithPrototype(<SourceReviewPage />, {
@@ -184,6 +220,7 @@ describe("SourceReviewPage", () => {
     const empty = renderWithPrototype(<SourceReviewPage />, {
       snapshot: makeSnapshot({ recipes: [makeRecipe({ reviewState: "confirmed" })] }),
     });
+    expect(screen.getByText(/โหมดอ่านอย่างเดียว/u)).toBeVisible();
     expect(screen.getByRole("status")).toHaveTextContent("ไม่มีสูตรที่ต้องตรวจสอบ");
     empty.unmount();
 
