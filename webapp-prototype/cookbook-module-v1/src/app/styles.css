@@ -212,6 +212,12 @@
   resize: vertical;
 }
 
+.sot-edit-grid input,
+.sot-edit-grid textarea,
+.sot-save-bar button {
+  min-height: 3rem;
+}
+
 .sot-draft-badge,
 .sot-provenance-warning {
   width: fit-content;
@@ -241,6 +247,10 @@
   margin-top: 0.75rem;
 }
 
+.sot-blocker label {
+  min-height: 2.75rem;
+}
+
 .sot-save-bar {
   position: sticky;
   bottom: 0;
@@ -266,11 +276,6 @@
 }
 
 @media (max-width: 48rem) {
-  .app-shell {
-    gap: 1rem;
-    padding: 1rem;
-  }
-
   .source-review-page {
     width: min(100%, calc(100vw - 1rem));
     padding: 1rem;

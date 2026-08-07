@@ -6,6 +6,15 @@ import type { KitchenSotDraftClient } from "../data/KitchenSotDraftClient";
 import { makeRecipe, makeSnapshot, makeWorkStep } from "../test/builders";
 import { App } from "./App";
 
+declare const process: {
+  getBuiltinModule(name: "node:fs"): {
+    readFileSync(path: string, encoding: "utf8"): string;
+  };
+};
+
+const { readFileSync } = process.getBuiltinModule("node:fs");
+const appStyles = readFileSync("src/app/styles.css", "utf8");
+
 afterEach(() => {
   cleanup();
   window.location.hash = "";
@@ -73,6 +82,26 @@ test("labels Recipe Studio as locally durable while other prototype pages remain
   expect(
     await screen.findByRole("heading", { name: "คลังสูตรอาหาร" }),
   ).toBeInTheDocument();
+});
+
+test("keeps responsive layout rules scoped away from projected and Print Center shells", () => {
+  const responsiveStart = appStyles.indexOf("@media (max-width: 48rem)");
+  expect(responsiveStart).toBeGreaterThan(-1);
+  const responsiveStyles = appStyles.slice(responsiveStart);
+
+  expect(responsiveStyles).not.toContain(".app-shell");
+  expect(responsiveStyles).not.toContain(".recipe-page");
+  expect(responsiveStyles).not.toContain(".print-center");
+  expect(appStyles).not.toContain("@media print");
+});
+
+test("sets the accepted minimum interaction sizes for Recipe Studio controls", () => {
+  expect(appStyles).toMatch(
+    /\.sot-edit-grid input,\s*\.sot-edit-grid textarea,\s*\.sot-save-bar button\s*\{[^}]*min-height:\s*3rem;/u,
+  );
+  expect(appStyles).toMatch(
+    /\.sot-blocker label\s*\{[^}]*min-height:\s*2\.75rem;/u,
+  );
 });
 
 test("downloads the current provider snapshot without revoking its active media preview URL", async () => {
