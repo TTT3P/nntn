@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { link, lstat, mkdir, open, readFile, realpath, rename, rmdir, unlink, type FileHandle } from "node:fs/promises";
+import { link, lstat, mkdir, open, readFile, realpath, rename, unlink, type FileHandle } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { isAbsolute, join, relative } from "node:path";
 import type { Plugin } from "vite";
@@ -21,14 +21,13 @@ const V5_DIRECTORY_RELATIVE_PATH = "Operations/CookBook/sot/v5-draft";
 const V5_FILENAME = "kitchen-sot-first-set-v5-draft.json";
 const V5_RELATIVE_PATH = `${V5_DIRECTORY_RELATIVE_PATH}/${V5_FILENAME}`;
 const V5_LOCK_FILENAME = `.${V5_FILENAME}.lock`;
-const V5_LOCK_OWNER_FILENAME = "owner.json";
 const MAX_BODY_BYTES = 5 * 1024 * 1024;
 const LOCK_RETRY_MS = 10;
-const UNINITIALIZED_LOCK_WAIT_MS = 1_000;
 
 interface CookbookSotPluginOptions {
   vaultRoot: string;
   afterLockOwnershipVerified?: (lockPath: string) => Promise<void>;
+  beforeLockPublication?: () => Promise<void>;
   openFile?: typeof open;
   renameFile?: typeof rename;
   unlinkFile?: typeof unlink;
@@ -267,7 +266,7 @@ function parseLockOwner(value: unknown): LockOwner {
 
 async function readLockOwner(lockPath: string): Promise<LockOwner | null> {
   try {
-    const text = await readFile(join(lockPath, V5_LOCK_OWNER_FILENAME), "utf8");
+    const text = await readFile(lockPath, "utf8");
     return parseLockOwner(JSON.parse(text) as unknown);
   } catch (error) {
     if (isMissingFile(error)) return null;
@@ -289,61 +288,74 @@ function isLiveProcess(pid: number): boolean {
 async function acquireWriteLock(
   realDraftDirectory: string,
   afterOwnershipVerified: ((lockPath: string) => Promise<void>) | undefined,
+  beforePublication: (() => Promise<void>) | undefined,
 ): Promise<WriteLock> {
   const lockPath = join(realDraftDirectory, V5_LOCK_FILENAME);
   const owner: LockOwner = { pid: process.pid, token: randomUUID() };
-  let uninitializedSince: number | null = null;
-  while (true) {
-    try {
-      await mkdir(lockPath);
-      break;
-    } catch (error) {
-      if (!isExistingFile(error)) throw new WriteFailedError();
-      const currentOwner = await readLockOwner(lockPath);
-      if (currentOwner === null) {
-        uninitializedSince ??= Date.now();
-        if (Date.now() - uninitializedSince >= UNINITIALIZED_LOCK_WAIT_MS) throw new WriteFailedError();
-      } else {
-        uninitializedSince = null;
-        if (!isLiveProcess(currentOwner.pid)) throw new WriteFailedError();
-      }
-      await new Promise<void>((resolve) => setTimeout(resolve, LOCK_RETRY_MS));
-    }
-  }
-
-  const ownerPath = join(lockPath, V5_LOCK_OWNER_FILENAME);
+  const ownerPath = join(realDraftDirectory, `.${V5_FILENAME}.lock-owner-${owner.token}`);
   let ownerHandle: FileHandle | undefined;
   try {
     ownerHandle = await open(ownerPath, "wx");
     await ownerHandle.writeFile(`${JSON.stringify(owner)}\n`, "utf8");
     await ownerHandle.sync();
-    await ownerHandle.close();
+    await beforePublication?.();
   } catch {
     await ownerHandle?.close().catch(() => undefined);
     if (ownerHandle !== undefined) await unlink(ownerPath).catch(() => undefined);
-    await rmdir(lockPath).catch(() => undefined);
     throw new WriteFailedError();
+  }
+  const finalOwnerHandle = ownerHandle;
+
+  let acquired = false;
+  try {
+    while (!acquired) {
+      try {
+        await link(ownerPath, lockPath);
+        acquired = true;
+      } catch (error) {
+        if (!isExistingFile(error)) throw new WriteFailedError();
+        const currentOwner = await readLockOwner(lockPath);
+        if (currentOwner !== null && !isLiveProcess(currentOwner.pid)) throw new WriteFailedError();
+        await new Promise<void>((resolve) => setTimeout(resolve, LOCK_RETRY_MS));
+      }
+    }
+  } catch {
+    await finalOwnerHandle.close().catch(() => undefined);
+    await unlink(ownerPath).catch(() => undefined);
+    throw new WriteFailedError();
+  }
+
+  const ownerIdentity = await finalOwnerHandle.stat();
+
+  async function cleanupOwner(): Promise<void> {
+    await finalOwnerHandle.close().catch(() => undefined);
+    const currentOwner = await lstat(ownerPath);
+    if (currentOwner.dev !== ownerIdentity.dev || currentOwner.ino !== ownerIdentity.ino) {
+      throw new WriteFailedError();
+    }
+    await unlink(ownerPath);
   }
 
   return {
     async release() {
-      const releasedPath = join(realDraftDirectory, `.${V5_FILENAME}.lock-release-${owner.token}`);
+      const quarantinedPath = join(realDraftDirectory, `.${V5_FILENAME}.lock-quarantine-${owner.token}`);
       try {
-        await rename(lockPath, releasedPath);
-        let releasedOwner: LockOwner | null;
-        try {
-          releasedOwner = await readLockOwner(releasedPath);
-        } catch {
-          await link(releasedPath, lockPath).catch(() => undefined);
-          throw new WriteFailedError();
-        }
-        if (releasedOwner?.token !== owner.token || releasedOwner.pid !== owner.pid) {
-          await link(releasedPath, lockPath).catch(() => undefined);
+        await rename(lockPath, quarantinedPath);
+        const quarantinedIdentity = await lstat(quarantinedPath);
+        const ownsQuarantine = quarantinedIdentity.dev === ownerIdentity.dev &&
+          quarantinedIdentity.ino === ownerIdentity.ino;
+        if (!ownsQuarantine) {
+          if (quarantinedIdentity.isDirectory()) {
+            await rename(quarantinedPath, lockPath).catch(() => undefined);
+          } else {
+            await link(quarantinedPath, lockPath).catch(() => undefined);
+          }
+          await cleanupOwner();
           throw new WriteFailedError();
         }
         await afterOwnershipVerified?.(lockPath);
-        await unlink(join(releasedPath, V5_LOCK_OWNER_FILENAME));
-        await rmdir(releasedPath);
+        await unlink(quarantinedPath);
+        await cleanupOwner();
       } catch {
         throw new WriteFailedError();
       }
@@ -365,7 +377,11 @@ async function handlePut(
     if (error instanceof InvalidDraftError) throw error;
     throw new WriteFailedError();
   }
-  const lock = await acquireWriteLock(realDraftDirectory, options.afterLockOwnershipVerified);
+  const lock = await acquireWriteLock(
+    realDraftDirectory,
+    options.afterLockOwnershipVerified,
+    options.beforeLockPublication,
+  );
   let saved: Awaited<ReturnType<typeof writeDraft>>;
   try {
     const source = await loadVerifiedSource(options.vaultRoot);

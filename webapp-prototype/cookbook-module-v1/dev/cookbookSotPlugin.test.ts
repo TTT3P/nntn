@@ -447,9 +447,10 @@ test("lock cleanup fails closed without deleting a replacement file", async () =
     const draftDirectory = join(vault.root, dirname(V5_RELATIVE_PATH));
     const lockNames = (await readdir(draftDirectory)).filter((name) => name.endsWith(".lock"));
     const lockPath = lockNames.length === 1 ? join(draftDirectory, lockNames[0]!) : null;
+    const replacementOwner = `${JSON.stringify({ pid: process.pid, token: "pre-release-file-replacement" })}\n`;
     if (lockPath !== null) {
       await rm(lockPath, { recursive: true });
-      await writeFile(lockPath, "unrelated replacement", "utf8");
+      await writeFile(lockPath, replacementOwner, "utf8");
     }
     releaseRename();
 
@@ -457,7 +458,7 @@ test("lock cleanup fails closed without deleting a replacement file", async () =
     expect(lockNames).toHaveLength(1);
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({ code: "WRITE_FAILED" });
-    expect(await readFile(lockPath!, "utf8")).toBe("unrelated replacement");
+    expect(await readFile(lockPath!, "utf8")).toBe(replacementOwner);
   } finally {
     releaseRename();
     await server.close();
@@ -503,6 +504,77 @@ test("a live owner held beyond two seconds still makes the competing handler sta
     await Promise.all([firstServer.close(), secondServer.close()]);
   }
 }, 7_000);
+
+test("fully initialized owner publication may pause beyond one second without a 500", async () => {
+  const vault = await makeTemporaryVault();
+  let reportOwnerPrepared!: () => void;
+  const ownerPrepared = new Promise<void>((resolve) => { reportOwnerPrepared = resolve; });
+  const delayedServer = await startMiddlewareServer(createCookbookSotRequestHandler({
+    vaultRoot: vault.root,
+    beforeLockPublication: async () => {
+      reportOwnerPrepared();
+      await new Promise<void>((resolve) => setTimeout(resolve, 1_200));
+    },
+  }));
+  const competingServer = await startMiddlewareServer(createCookbookSotRequestHandler({ vaultRoot: vault.root }));
+  try {
+    const delayedPromise = putDraft(delayedServer, vault.sha256, makeValidDraft(vault));
+    const firstResult = await Promise.race([
+      ownerPrepared.then(() => "prepared" as const),
+      delayedPromise.then(() => "response" as const),
+    ]);
+    expect(firstResult).toBe("prepared");
+
+    const competing = await putDraft(
+      competingServer,
+      vault.sha256,
+      makeValidDraft(vault, "2026-08-07T05:00:00.000Z"),
+    );
+    const delayed = await delayedPromise;
+    expect(competing.status).toBe(200);
+    expect(delayed.status).toBe(409);
+    expect(await delayed.json()).toEqual({ code: "STALE_DRAFT" });
+  } finally {
+    await Promise.all([delayedServer.close(), competingServer.close()]);
+  }
+}, 7_000);
+
+test("pre-release valid lock-directory replacement remains canonical and unchanged", async () => {
+  const vault = await makeTemporaryVault();
+  let releaseRename!: () => void;
+  const renameMayFinish = new Promise<void>((resolve) => { releaseRename = resolve; });
+  let reportRename!: () => void;
+  const renameStarted = new Promise<void>((resolve) => { reportRename = resolve; });
+  const server = await startMiddlewareServer(createCookbookSotRequestHandler({
+    vaultRoot: vault.root,
+    renameFile: async (from, to) => {
+      reportRename();
+      await renameMayFinish;
+      await rename(from, to);
+    },
+  }));
+  try {
+    const responsePromise = putDraft(server, vault.sha256, makeValidDraft(vault));
+    await renameStarted;
+    const draftDirectory = join(vault.root, dirname(V5_RELATIVE_PATH));
+    const lockName = (await readdir(draftDirectory)).find((name) => name.endsWith(".lock"));
+    expect(lockName).toBeDefined();
+    const lockPath = join(draftDirectory, lockName!);
+    await rm(lockPath, { recursive: true });
+    const replacementOwner = `${JSON.stringify({ pid: process.pid, token: "pre-release-replacement" })}\n`;
+    await mkdir(lockPath);
+    await writeFile(join(lockPath, "owner.json"), replacementOwner, "utf8");
+    releaseRename();
+
+    const response = await responsePromise;
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ code: "WRITE_FAILED" });
+    expect(await readFile(join(lockPath, "owner.json"), "utf8")).toBe(replacementOwner);
+  } finally {
+    releaseRename();
+    await server.close();
+  }
+});
 
 test("atomic lock removal cannot delete a replacement created before owner cleanup", async () => {
   const vault = await makeTemporaryVault();
