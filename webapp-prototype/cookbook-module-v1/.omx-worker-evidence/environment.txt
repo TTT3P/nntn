@@ -1,6 +1,0 @@
-# Cookbook Pilot M0 fresh verification
-started_at=2026-08-07T02:07:11Z
-node=v22.22.2
-npm=10.9.7
-chrome=Google Chrome 151.0.7922.108 
-commit=61b64e6e350cf9ab7a1480e51ff23948aef55413
