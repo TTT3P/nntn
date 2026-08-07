@@ -68,7 +68,7 @@ The current fill targets derived from this V4 snapshot are:
 - 1 provenance-incomplete item whose selected source says owner confirmation but whose owner-confirmation source value is absent; and
 - 13 blockers requiring evidence or a decision.
 
-These numbers document the accepted source snapshot; every count displayed by the application is derived from the loaded document and is never hardcoded.
+The deduplicated unresolved-item fill target is 16: the 15 status-unresolved items plus the one provenance-incomplete item, which is not part of the 15. These numbers document the accepted source snapshot; every count displayed by the application is derived from the loaded document and is never hardcoded.
 
 ## 4. Chosen Storage Approach
 
@@ -80,6 +80,8 @@ The plugin exposes exactly two local API paths:
 2. a read/write V5 draft endpoint.
 
 The browser first requests V5. If V5 does not exist, it requests the verified V4 source. The UI never receives a request-supplied filesystem path.
+
+Every successful load returns both the frozen V4 source SHA-256 and a `base_sha256` for the exact document bytes being edited. A save sends that `base_sha256` in the JSON request and the same value as an `If-Match` header. The server accepts the write only when both values agree with each other and with the current V5 bytes, or with V4 bytes on the first save. A stale tab receives a conflict response and must reload instead of overwriting a newer draft.
 
 This approach is chosen because it:
 
@@ -118,9 +120,17 @@ Additional rules:
 
 ## 6. Draft Load and Save Lifecycle
 
+### 6.0 Canonical persistence boundary
+
+The raw V4/V5 JSON document is the canonical editable state. The application patches explicit dirty records in a lossless clone of that raw document and validates/saves the resulting raw document.
+
+The existing `CookbookSnapshot` and `RecipeVersion` types are lossy read projections: they omit `source_values`, decision notes, serving/cost-basis fields, blocker objects, method provenance, and yield. They may continue to support Library, Work Stage, Media, and Print as read-only projections, but they must never be used to construct, validate, or save V5.
+
+Dirty scope is record-specific and is calculated by comparing the raw working record with its raw baseline. File metadata such as `generated_at` does not make every recipe or item dirty.
+
 ### 6.1 Load
 
-1. Request V5 draft.
+1. Request V5 draft and its current `base_sha256`.
 2. If V5 exists and validates, use it as the working document.
 3. If V5 does not exist, request V4.
 4. The server verifies V4 SHA-256 against `SHA256SUMS.txt` before returning it.
@@ -132,11 +142,11 @@ A missing method is valid draft data, not an application error.
 
 The UI keeps a working copy in memory and marks changed fields as dirty. Original source values and blocker evidence remain visible.
 
-No data reaches the vault until TINE presses the existing save-draft action.
+No data reaches the vault until TINE presses the new M1 save-draft control.
 
 ### 6.3 Save
 
-On save, the client builds a V5 draft from the loaded document and applies only explicit edits plus required file-level metadata. The server validates the payload, verifies V4 again, and atomically writes V5.
+On save, the client builds a V5 draft from the loaded raw document and applies only explicit dirty-record edits plus required file-level metadata. It submits the loaded `base_sha256` in both the JSON body and `If-Match`. The server verifies optimistic concurrency and V4, validates the payload, and atomically writes V5.
 
 The successful response includes the saved timestamp and SHA-256. The UI reports that the draft was saved locally and clears the dirty state only after the server confirms the rename.
 
@@ -180,6 +190,8 @@ The value `confirmed` is not used for owner entry because V4 reserves it for mat
 
 Owner-provenance validation applies only to items changed in the current save. An inherited V4 item that already says `selected_source = "owner_confirmation"` and `decision_status = "confirmed_by_owner"` but lacks `source_values.owner_confirmation` is grandfathered unchanged until TINE edits it. The validator must not block an unrelated save, backfill the missing value, or rewrite that inherited row.
 
+The provenance-incomplete predicate is triggered only by `selected_source = "owner_confirmation"` with a missing or empty `source_values.owner_confirmation`. It must not trigger from `decision_status` alone and must not be implemented as a whole-document provenance sweep. V4 contains an intentional asymmetry: one item has `decision_status = "confirmed_by_owner"` while `selected_source = "matching_sources"`; that item is not provenance-incomplete.
+
 ### 8.2 Serving and cost basis
 
 The existing fields `serving_note` and `cost_basis_text` are optional. The UI exposes them only as supporting fields when the kitchen serving quantity differs from the costing basis. They do not trigger unit conversion or calculation.
@@ -193,7 +205,7 @@ Entering a method updates:
 
 `method_decision_note` is required whenever the method changes. It must say what the received kitchen account still does not cover so the application cannot imply invented preparation, storage, holding, or yield instructions.
 
-The six recipes currently lacking method content render as editable DRAFT recipes rather than errors.
+The five recipes currently lacking method content render as editable DRAFT recipes rather than errors.
 
 ### 8.4 Yield
 
@@ -211,20 +223,23 @@ Resolving a blocker adds only:
 
 A resolution requires a note. Reopening the draft shows the original blocker message and its resolution metadata together.
 
+A blocker with `code = "missing_method"` cannot be resolved while `method_candidate_text` is empty. The only exception is an explicit owner N/A decision: `resolved_note` must begin with `เจ้าของยืนยันว่าไม่ต้องมีวิธีทำ (N/A):` and include a meaningful reason after the colon. The UI presents this as an explicit owner-N/A choice; it never infers N/A from an empty method.
+
 `review_state` is a frozen V4 observation and must not be changed or recomputed.
 
 ## 9. Readiness and DRAFT Rules
 
-Readiness is derived at render time from blocker resolution and owner-provenance completeness rather than copied from `review_state` or maintained as a second mutable status.
+Readiness is derived at render time from blocker resolution, unresolved item decisions, and owner-provenance completeness rather than copied from `review_state` or maintained as a second mutable status.
 
-A recipe displays DRAFT whenever either condition is true:
+A recipe displays DRAFT whenever any condition is true:
 
 1. at least one blocker has `resolved != true`; or
-2. an item has `selected_source = "owner_confirmation"` while `source_values.owner_confirmation` is missing or empty.
+2. at least one item has `decision_status` equal to `needs_review` or `conflict`; or
+3. an item has `selected_source = "owner_confirmation"` while `source_values.owner_confirmation` is missing or empty.
 
-The second condition is the derived `provenance incomplete` fill cue. The current V4 snapshot contains one such item in recipe 159, but the application derives the condition from data and never hardcodes that recipe ID.
+The third condition is the derived `provenance incomplete` fill cue. The current V4 snapshot contains one such item in recipe 159, but the application derives the condition from data and never hardcodes that recipe ID.
 
-Ingredient decision states remain visible as fill cues. In the accepted V4 snapshot, every recipe containing a status-based unresolved ingredient decision also has an unresolved blocker. Resolving that recorded blocker, rather than recomputing `review_state`, is the explicit readiness transition. The provenance-incomplete condition is a separate exception because its inherited status appears confirmed even though the required owner source value is absent.
+Ingredient decision states remain independent fill cues. V4 does not link blockers to item `line_key` values, so the application must not infer that resolving a recipe blocker resolves any ingredient decision. For example, recipe 28 has seven `needs_review` items and one unrelated `missing_source` blocker; resolving that blocker alone must leave the recipe DRAFT.
 
 Resolved blockers remain in the document as history but no longer block readiness. Unresolved blocker messages remain visible verbatim.
 
@@ -240,11 +255,11 @@ For each selected recipe, the surface shows:
 
 - recipe identity and derived DRAFT/readiness state;
 - ingredient rows with existing source evidence and an owner-confirmation input;
-- a derived `provenance incomplete` cue whenever an owner-confirmed status lacks the corresponding owner source value;
+- a derived `provenance incomplete` cue whenever `selected_source = "owner_confirmation"` lacks the corresponding owner source value;
 - method text and a required method provenance/omission note;
 - optional yield, serving note, and cost-basis text using existing schema fields;
 - all blocker messages, plus resolution status and note; and
-- the existing save-draft action with saving, success, dirty, and error states.
+- a new M1 save-draft control with saving, success, dirty, stale-base, and error states.
 
 The summary and filters derive their labels and counts from the loaded document. Static labels such as “4 เมนูหลัก + 12 สูตรประกอบ” are removed.
 
@@ -274,9 +289,11 @@ The server rejects a save when:
 - V5 metadata is absent or invalid; or
 - the target resolves outside the exact V5 location.
 
+The server also rejects a save when `base_sha256` or `If-Match` is absent, the two values disagree, or the current draft bytes no longer match the loaded base. A `missing_method` blocker cannot transition to resolved while its method remains empty unless its resolution note carries the explicit owner-N/A prefix and reason.
+
 Validation compares the submitted V5 against the verified V4 lineage and, when present, the last valid V5 draft. It permits only the transformations documented in this design.
 
-Field-level invariants for owner quantity, method, yield, and blocker resolution apply to dirty records changed in the current save. Pre-existing V4 irregularities are grandfathered only while byte-equivalent at that record; they remain visible as fill cues and cannot be silently repaired, normalized, or used to block an unrelated edit.
+Field-level invariants for owner quantity, method, yield, and blocker resolution apply to raw dirty records changed in the current save. Dirty records are identified against the raw baseline, not from a document-level flag or regenerated metadata. Pre-existing V4 irregularities are grandfathered only while byte-equivalent at that record; they remain visible as fill cues and cannot be silently repaired, normalized, or used to block an unrelated edit.
 
 ## 12. Testing and Acceptance Evidence
 
@@ -293,10 +310,15 @@ Required evidence:
 7. **Status vocabulary:** owner entry produces `confirmed_by_owner`, never generic `confirmed`.
 8. **Blocker history:** resolving a blocker preserves its original code/message, and that blocker stops blocking readiness only through `resolved`.
 9. **Grandfathered provenance trap:** an unrelated first save succeeds despite the inherited provenance-incomplete row, that row remains unchanged, and the UI still presents its derived fill cue and DRAFT state.
-10. **Security:** traversal, symlink escape, unsupported methods, wrong filenames, and writes outside V5 are rejected.
-11. **Atomicity:** an interrupted or failed write never leaves a truncated V5 document.
-12. **Development-only boundary:** production build contains no writable vault endpoint.
-13. **Regression gates:** unit tests, lint, typecheck, build, browser checks, and relevant E2E tests pass sequentially on the final integrated HEAD.
+10. **Independent item readiness:** resolving recipe 28's blocker leaves it DRAFT while its seven item decisions remain `needs_review`.
+11. **Missing-method guard:** a `missing_method` blocker cannot resolve against an empty method without an explicit owner-N/A prefix and reason.
+12. **Optimistic concurrency:** the second of two tabs saving the same base is rejected as stale and cannot overwrite the first tab's V5.
+13. **Mixed-ID round trip:** 16 numeric and 2 string recipe IDs, plus 15 numeric and 3 string non-null component IDs, preserve both value and JSON type through load, edit, and save.
+14. **Raw canonical persistence:** V5 is patched and validated from the lossless raw document; `CookbookSnapshot` is never the save source.
+15. **Security:** traversal, symlink escape, unsupported methods, wrong filenames, and writes outside V5 are rejected.
+16. **Atomicity:** an interrupted or failed write never leaves a truncated V5 document.
+17. **Development-only boundary:** production build contains no writable vault endpoint.
+18. **Regression gates:** unit tests, lint, typecheck, build, browser checks, and relevant E2E tests pass sequentially on the final integrated HEAD.
 
 The real V5 file is created only by an intentional save from the completed local app. Verification must not fabricate kitchen decisions merely to leave an artifact behind.
 

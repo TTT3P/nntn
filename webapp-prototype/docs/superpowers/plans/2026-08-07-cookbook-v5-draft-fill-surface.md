@@ -18,9 +18,15 @@
 - Owner entry writes `source_values.owner_confirmation`, `candidate_text`, `selected_source = "owner_confirmation"`, `decision_status = "confirmed_by_owner"`, and a dated `decision_note`.
 - Methods require `method_candidate_text`, `method_selected_source = "owner_confirmation"`, and a no-invention `method_decision_note`; yield uses existing `yield_candidate_text`.
 - Blocker resolution adds only `resolved`, `resolved_note`, and `resolved_at`; never delete or rewrite blocker evidence and never mutate `review_state`.
-- DRAFT is derived from unresolved blockers or derived owner-provenance incompleteness.
-- All displayed counts are derived; the accepted V4 snapshot is 18 recipes, 4 sellable menus, 14 prepared recipes, 15 unique unresolved items, 13 blockers, 5 missing methods, and 1 provenance-incomplete item.
+- DRAFT is derived from unresolved blockers, item statuses `needs_review`/`conflict`, or derived owner-provenance incompleteness; blockers are never inferred to cover item decisions.
+- All displayed counts are derived; the accepted V4 snapshot is 18 recipes, 4 sellable menus, 14 prepared recipes, 15 status-unresolved items, 1 separate provenance-incomplete item, 16 deduplicated unresolved-item fill targets, 13 blockers, and 5 missing methods.
 - Recipe 159 is not hardcoded. Its inherited provenance-incomplete item is grandfathered unchanged until TINE edits that item and must not block an unrelated save.
+- Provenance incompleteness is triggered only by `selected_source = "owner_confirmation"` with a missing/empty owner source value; `decision_status` alone never triggers it.
+- A `missing_method` blocker cannot resolve while its method is empty unless the owner explicitly selects N/A and supplies a reason stored with the exact prefix `เจ้าของยืนยันว่าไม่ต้องมีวิธีทำ (N/A):`.
+- The raw V4/V5 document is canonical editable state. `CookbookSnapshot` is a lossy read projection and is never used to construct, validate, or save V5.
+- Dirty scope is raw-record-specific against the loaded baseline; file metadata such as `generated_at` never makes the whole document dirty.
+- Every load returns a `base_sha256`; every save sends matching body `base_sha256` and `If-Match`, and stale writers receive a conflict instead of overwriting newer V5 bytes.
+- Preserve mixed identity types exactly: recipe IDs are 16 numbers and 2 strings; non-null component recipe IDs are 15 numbers and 3 strings.
 - Automated persistence tests use an isolated temporary vault and never create owner-confirmation data in the real V5 path.
 - Use `/opt/homebrew/bin/git` for every Git command.
 
@@ -31,12 +37,12 @@
 ### New pure domain files
 
 - `webapp-prototype/cookbook-module-v1/src/domain/sot/kitchenSotDocument.ts` — lossless raw JSON types, parsing, summary derivation, provenance cue, and DRAFT derivation.
-- `webapp-prototype/cookbook-module-v1/src/domain/sot/kitchenSotDocument.test.ts` — V4 counts, five missing-method IDs, recipe-159 trap, and clone/order tests.
+- `webapp-prototype/cookbook-module-v1/src/domain/sot/kitchenSotDocument.test.ts` — V4 counts, five missing-method IDs, recipe-28 readiness, recipe-159 provenance asymmetry, mixed IDs, and clone/order tests.
 - `webapp-prototype/cookbook-module-v1/src/domain/sot/kitchenSotTransport.ts` — browser-safe endpoint constants and JSON response contracts shared by client and dev middleware.
 - `webapp-prototype/cookbook-module-v1/src/domain/sot/kitchenSotEdits.ts` — explicit edit union and deterministic V5 construction without unit conversion.
 - `webapp-prototype/cookbook-module-v1/src/domain/sot/kitchenSotEdits.test.ts` — exact field mapping, blocker history, metadata, and no-noise behavior.
 - `webapp-prototype/cookbook-module-v1/src/domain/sot/kitchenSotValidation.ts` — server-side transition validation scoped to changed records.
-- `webapp-prototype/cookbook-module-v1/src/domain/sot/kitchenSotValidation.test.ts` — grandfathered-row, dirty provenance, identity/order, review-state, and unapproved-field rejection.
+- `webapp-prototype/cookbook-module-v1/src/domain/sot/kitchenSotValidation.test.ts` — grandfathered-row, dirty provenance, missing-method resolution guard, raw record scope, identity/order/type, review-state, and unapproved-field rejection.
 
 ### New dev-server files
 
@@ -70,7 +76,7 @@
 
 - `webapp-prototype/cookbook-module-v1/scripts/prepare-cookbook-test-vault.mjs` — create only `node_modules/.cache/cookbook-v5-e2e-vault` from the byte-identical fixture and its computed checksum.
 - `webapp-prototype/cookbook-module-v1/playwright.local.config.ts` — run Vite dev against the isolated vault.
-- `webapp-prototype/cookbook-module-v1/tests/cookbook-draft-persistence.spec.ts` — browser close/reopen, grandfather trap, low-noise diff, and checksum acceptance.
+- `webapp-prototype/cookbook-module-v1/tests/cookbook-draft-persistence.spec.ts` — browser close/reopen, grandfather trap, stale-tab rejection, mixed-ID round trip, low-noise diff, and checksum acceptance.
 
 ---
 
@@ -92,6 +98,7 @@ import fixture from "../../data/fixtures/first-set.json";
 import {
   deriveFillSummary,
   isKitchenSotRecipeDraft,
+  isOwnerProvenanceIncomplete,
   parseKitchenSotDocument,
 } from "./kitchenSotDocument";
 
@@ -102,6 +109,7 @@ test("derives the accepted V4 fill surface without additive double-counting", ()
     sellableMenuCount: 4,
     preparedRecipeCount: 14,
     unresolvedItemCount: 15,
+    itemFillTargetCount: 16,
     noSelectedSourceCount: 8,
     blockerCount: 13,
     missingMethodRecipeIds: [2, 160, 9, 161, 162],
@@ -113,6 +121,22 @@ test("derives recipe 159 as DRAFT from missing owner provenance without adding a
   const document = parseKitchenSotDocument(fixture);
   const recipe = document.recipes.find(({ recipe_id }) => recipe_id === 159)!;
   expect(recipe.blockers).toHaveLength(0);
+  expect(recipe.items.find(({ item_name }) => item_name === "น้ำจิ้มซีฟู้ด")).toMatchObject({
+    selected_source: "matching_sources",
+    decision_status: "confirmed_by_owner",
+  });
+  expect(isOwnerProvenanceIncomplete(
+    recipe.items.find(({ item_name }) => item_name === "น้ำจิ้มซีฟู้ด")!,
+  )).toBe(false);
+  expect(isKitchenSotRecipeDraft(recipe)).toBe(true);
+});
+
+test("keeps recipe 28 DRAFT after its unrelated blocker is resolved", () => {
+  const document = parseKitchenSotDocument(fixture);
+  const recipe = document.recipes.find(({ recipe_id }) => recipe_id === 28)!;
+  recipe.blockers[0]!.resolved = true;
+  expect(recipe.items.filter(({ decision_status }) => decision_status === "needs_review"))
+    .toHaveLength(7);
   expect(isKitchenSotRecipeDraft(recipe)).toBe(true);
 });
 ```
@@ -135,6 +159,7 @@ export type RecipeIdentity = number | string;
 export type KitchenSotItem = Record<string, JsonValue> & {
   line_key: string;
   item_name: string;
+  component_recipe_id: RecipeIdentity | null;
   candidate_text: string | null;
   selected_source: string | null;
   decision_status: string;
@@ -183,11 +208,13 @@ export function isOwnerProvenanceIncomplete(item: KitchenSotItem): boolean {
 
 export function isKitchenSotRecipeDraft(recipe: KitchenSotRecipe): boolean {
   return recipe.blockers.some(({ resolved }) => resolved !== true) ||
+    recipe.items.some(({ decision_status }) =>
+      decision_status === "needs_review" || decision_status === "conflict") ||
     recipe.items.some(isOwnerProvenanceIncomplete);
 }
 ```
 
-Count unresolved items by the union predicate `decision_status === "needs_review" || decision_status === "conflict"`. Count missing methods only when `method_candidate_text` is null or empty after trimming. Preserve recipe order in `missingMethodRecipeIds`.
+Count unresolved items by the union predicate `decision_status === "needs_review" || decision_status === "conflict"`. Derive `itemFillTargetCount` from the union of status-unresolved item identities and provenance-incomplete item identities, producing 16 without double counting. Count missing methods only when `method_candidate_text` is null or empty after trimming. Preserve recipe order in `missingMethodRecipeIds`.
 
 - [ ] **Step 5: Add clone/key-order regression assertions**
 
@@ -198,6 +225,18 @@ test("clones without mutating values or existing key order", () => {
   expect(JSON.stringify(clone)).toBe(JSON.stringify(document));
   clone.recipes[0]!.recipe_name = "changed only in clone";
   expect(document.recipes[0]!.recipe_name).not.toBe("changed only in clone");
+});
+
+test("preserves mixed recipe and component identity JSON types", () => {
+  const document = parseKitchenSotDocument(fixture);
+  expect(document.recipes.filter(({ recipe_id }) => typeof recipe_id === "number")).toHaveLength(16);
+  expect(document.recipes.filter(({ recipe_id }) => typeof recipe_id === "string")).toHaveLength(2);
+  const components = document.recipes.flatMap(({ items }) =>
+    items.map(({ component_recipe_id }) => component_recipe_id).filter((value) => value !== null));
+  expect(components.filter((value) => typeof value === "number")).toHaveLength(15);
+  expect(components.filter((value) => typeof value === "string")).toHaveLength(3);
+  expect(JSON.parse(JSON.stringify(document)).recipes.map((recipe: KitchenSotRecipe) => typeof recipe.recipe_id))
+    .toEqual(document.recipes.map(({ recipe_id }) => typeof recipe_id));
 });
 ```
 
@@ -215,12 +254,19 @@ export interface SotReadResponse {
   document: KitchenSotDocument;
   sourcePath: string;
   sourceSha256: string;
+  base_sha256: string;
   origin: "v4" | "v5-draft";
+}
+
+export interface SotSaveRequest {
+  base_sha256: string;
+  document: KitchenSotDocument;
 }
 
 export interface SotSaveResponse {
   document: KitchenSotDocument;
   sha256: string;
+  base_sha256: string;
   generatedAt: string;
   path: string;
 }
@@ -232,7 +278,7 @@ Both the browser client and Node middleware import this pure contract. The brows
 
 Run: `npm test -- --run src/domain/sot/kitchenSotDocument.test.ts`
 
-Expected: PASS with 18 / 4+14 / 15 / 8 / 13 / five IDs / one provenance trap.
+Expected: PASS with 18 / 4+14 / 15 status-unresolved / 16 deduplicated fill targets / 8 no-source diagnostics / 13 blockers / five IDs / one provenance trap.
 
 Commit:
 
@@ -292,10 +338,17 @@ export type KitchenSotEdit =
   | { kind: "item-cost-basis"; recipeId: RecipeIdentity; lineKey: string; value: string }
   | { kind: "method"; recipeId: RecipeIdentity; value: string; decisionNote: string }
   | { kind: "yield"; recipeId: RecipeIdentity; value: string }
-  | { kind: "resolve-blocker"; recipeId: RecipeIdentity; blockerIndex: number; note: string; resolvedAt: string };
+  | {
+      kind: "resolve-blocker";
+      recipeId: RecipeIdentity;
+      blockerIndex: number;
+      note: string;
+      resolvedAt: string;
+      ownerMethodNa?: boolean;
+    };
 ```
 
-Each action clones the input document, finds one exact recipe/item/blocker, changes only approved fields, and throws a named error for unknown identities, empty required text, invalid ISO date/timestamp, or an out-of-range blocker index. The item note format is `เจ้าของยืนยันวันที่ YYYY-MM-DD ว่า<recipe_name> ใช้<item_name> <raw value>`.
+Each action clones the input document, finds one exact recipe/item/blocker, changes only approved fields, and throws a named error for unknown identities, empty required text, invalid ISO date/timestamp, or an out-of-range blocker index. The item note format is `เจ้าของยืนยันวันที่ YYYY-MM-DD ว่า<recipe_name> ใช้<item_name> <raw value>`. For a `missing_method` blocker with an empty method, `ownerMethodNa` must be explicitly true and the stored note must begin with `เจ้าของยืนยันว่าไม่ต้องมีวิธีทำ (N/A):` followed by a meaningful reason. Never infer owner N/A from an empty method or a generic resolution checkbox.
 
 - [ ] **Step 4: Add method, yield, optional notes, and blocker-history tests**
 
@@ -324,6 +377,8 @@ test("resolves a blocker without removing or rewriting evidence", () => {
 ```
 
 Assert method edits require a non-empty no-invention note, yield writes only `yield_candidate_text`, and serving/cost edits keep raw strings unchanged.
+
+Add a rejection test showing that a `missing_method` blocker cannot resolve while `method_candidate_text` is empty unless `ownerMethodNa: true` and a non-empty reason are supplied. Assert the edit helper constructs the exact owner-N/A prefix rather than accepting caller-authored lookalike text.
 
 - [ ] **Step 5: Implement deterministic V5 metadata construction**
 
@@ -372,7 +427,7 @@ test("rejects a dirty owner item without owner_confirmation", () => {
 
 - [ ] **Step 7: Implement allowlisted structural diff validation**
 
-Validate against `previousV5 ?? sourceV4`. Permit only:
+Validate against the raw `previousV5 ?? sourceV4` baseline before regenerating file metadata. Determine dirty scope record-by-record from raw recipe, item, method/yield, and blocker values; ignore `schema_version`, `generated_at`, and `derived_from` when deciding which content records are dirty. Permit only:
 
 ```ts
 const TOP_LEVEL_MUTABLE = new Set(["schema_version", "generated_at", "derived_from"]);
@@ -394,13 +449,13 @@ const ITEM_MUTABLE = new Set([
 const BLOCKER_MUTABLE = new Set(["resolved", "resolved_note", "resolved_at"]);
 ```
 
-Require equal array lengths and identities at every recipe/item/blocker index. For `source_values`, permit only `owner_confirmation` to differ and require every pre-existing key/value/order to stay identical. For a changed owner item, require all five mapped fields. For a changed method, require owner source and a meaningful decision note. For a changed blocker, require original code/message plus resolution metadata. Reject any `review_state` change through the general immutable-field comparison.
+Require equal array lengths and identities at every recipe/item/blocker index. Preserve both the value and JSON type of every `recipe_id` and `component_recipe_id`; a numeric/string identity conversion is an immutable-field violation. For `source_values`, permit only `owner_confirmation` to differ and require every pre-existing key/value/order to stay identical. For a changed owner item selected from `owner_confirmation`, require all five mapped fields; do not trigger this invariant from `decision_status` alone. For a changed method, require owner source and a meaningful decision note. For a changed blocker, require original code/message plus resolution metadata and enforce the `missing_method`/empty-method owner-N/A guard server-side. Reject any `review_state` change through the general immutable-field comparison.
 
 - [ ] **Step 8: Run all SOT domain tests and commit**
 
 Run: `npm test -- --run src/domain/sot`
 
-Expected: PASS, including inherited recipe-159 save, dirty recipe-159 repair, order preservation, forbidden field, identity reorder, review-state mutation, and blocker rewrite cases.
+Expected: PASS, including inherited recipe-159 save, dirty recipe-159 repair, record-specific dirty scope despite generated metadata, missing-method owner-N/A guard, mixed-ID type preservation, order preservation, forbidden field, identity reorder, review-state mutation, and blocker rewrite cases.
 
 Commit:
 
@@ -431,7 +486,11 @@ test("serves verified V4 and reports V5 missing without falling through", async 
   expect(v5.status).toBe(404);
   const v4 = await fetch(`${server.origin}/__cookbook/v4`);
   expect(v4.status).toBe(200);
-  expect((await v4.json()).sourceSha256).toBe(vault.sha256);
+  expect(await v4.json()).toMatchObject({
+    sourceSha256: vault.sha256,
+    base_sha256: vault.sha256,
+    origin: "v4",
+  });
   await server.close();
 });
 ```
@@ -450,7 +509,7 @@ Expected: FAIL because the dev middleware and test include do not exist.
 const MAX_BODY_BYTES = 5 * 1024 * 1024;
 ```
 
-Import `V4_ENDPOINT`, `V5_ENDPOINT`, `SotReadResponse`, and `SotSaveResponse` from `src/domain/sot/kitchenSotTransport.ts`. Accept only `GET` on V4 and `GET`/`PUT` on V5. Return JSON errors with stable codes: `METHOD_NOT_ALLOWED`, `SOURCE_CHECKSUM_MISMATCH`, `DRAFT_NOT_FOUND`, `INVALID_DRAFT`, `PAYLOAD_TOO_LARGE`, and `WRITE_FAILED`.
+Import `V4_ENDPOINT`, `V5_ENDPOINT`, `SotReadResponse`, `SotSaveRequest`, and `SotSaveResponse` from `src/domain/sot/kitchenSotTransport.ts`. Accept only `GET` on V4 and `GET`/`PUT` on V5. Return JSON errors with stable codes: `METHOD_NOT_ALLOWED`, `SOURCE_CHECKSUM_MISMATCH`, `DRAFT_NOT_FOUND`, `INVALID_DRAFT`, `PAYLOAD_TOO_LARGE`, `PRECONDITION_REQUIRED`, `STALE_DRAFT`, and `WRITE_FAILED`.
 
 - [ ] **Step 4: Implement vault resolution and SHA gate**
 
@@ -473,7 +532,7 @@ try {
 }
 ```
 
-Before writing: re-verify V4, parse the submitted document, load/validate existing V5 when present, and call `validateKitchenSotTransition`. Hash the exact serialized bytes returned in the success response.
+Before writing: re-verify V4, parse the submitted `SotSaveRequest`, load/validate existing V5 when present, and call `validateKitchenSotTransition`. Compute the current base from the exact existing V5 bytes, or the verified V4 bytes for the first save. Require body `base_sha256` and quoted `If-Match` to agree with each other and that current base. Missing preconditions return `428 PRECONDITION_REQUIRED`; stale or mismatched bases return `409 STALE_DRAFT` before any temp file is opened. Hash the exact serialized bytes returned in the success response and return that SHA as the next `base_sha256`.
 
 - [ ] **Step 6: Add hostile-path, checksum, and interrupted-write tests**
 
@@ -484,6 +543,8 @@ Assert:
 - a one-byte V4 mutation returns `SOURCE_CHECKSUM_MISMATCH` for both GET V4 and PUT V5;
 - unsupported POST/DELETE methods return 405;
 - oversized and malformed payloads leave no V5;
+- missing or disagreeing body/header preconditions leave no V5;
+- two PUTs from the same base allow the first write and reject the second with `409 STALE_DRAFT`, preserving the first V5 byte-for-byte;
 - injected rename failure preserves the previous V5 byte-for-byte and leaves no `.tmp` file; and
 - no operation calls chmod or deletion outside the request-owned temporary file.
 
@@ -581,19 +642,20 @@ export interface LoadedKitchenSotDraft {
   origin: "v4" | "v5-draft";
   sourcePath: string;
   sourceSha256: string;
+  baseSha256: string;
 }
 
 export interface KitchenSotDraftClient {
   load(): Promise<LoadedKitchenSotDraft>;
-  save(document: KitchenSotDocument): Promise<SotSaveResponse>;
+  save(document: KitchenSotDocument, baseSha256: string): Promise<SotSaveResponse>;
 }
 ```
 
-Use same-origin absolute endpoint paths, `cache: "no-store"`, `Accept: application/json`, and `Content-Type: application/json` for PUT. Parse every successful document with `parseKitchenSotDocument`. Cap surfaced server error text and never include filesystem stack traces.
+Use same-origin absolute endpoint paths, `cache: "no-store"`, `Accept: application/json`, and `Content-Type: application/json` for PUT. Send `{ base_sha256: baseSha256, document }` and `If-Match: "<baseSha256>"` on every save. Parse every successful document with `parseKitchenSotDocument`. Cap surfaced server error text and never include filesystem stack traces.
 
 - [ ] **Step 4: Add save request and malformed-response tests**
 
-Assert PUT uses the exact V5 endpoint/body; save parses the returned persisted document; invalid JSON, missing fields, network failure, and HTML error bodies produce named user-safe errors.
+Assert PUT uses the exact V5 endpoint/body/header; save parses the returned persisted document and next base SHA; missing load/save base values, `PRECONDITION_REQUIRED`, `STALE_DRAFT`, invalid JSON, missing fields, network failure, and HTML error bodies produce named user-safe errors. A stale response must remain distinguishable so the UI can require reload instead of retrying against the old base.
 
 - [ ] **Step 5: Run focused tests and commit**
 
@@ -661,22 +723,22 @@ export interface KitchenSotDraftContextValue {
   summary: KitchenSotFillSummary;
   origin: "v4" | "v5-draft";
   dirty: boolean;
-  saveState: "idle" | "saving" | "saved" | "error";
+  saveState: "idle" | "saving" | "saved" | "stale" | "error";
   saveMessage: string | null;
   applyEdit(edit: KitchenSotEdit): void;
   save(): Promise<void>;
 }
 ```
 
-Render distinct Thai loading and load-error states. Keep the mounted route alive after action/save errors. Ignore stale async load/save results after unmount or client replacement.
+Keep the loaded `baseSha256` beside the raw baseline and working document. Render distinct Thai loading and load-error states. Keep the mounted route alive after action/save errors. Ignore stale async load/save results after unmount or client replacement.
 
 - [ ] **Step 4: Implement edit and save behavior**
 
-On edit, call `applyKitchenSotEdit`, update only the working document, and set dirty. On save, reject clean saves, call `buildV5Draft` with current ISO time and loaded source lineage, then call the client. Replace base/working documents only with the server-returned document and clear dirty only on success.
+On edit, call `applyKitchenSotEdit`, update only the working raw document, and set dirty. On save, reject clean saves, call `buildV5Draft` with current ISO time and loaded source lineage, then call `client.save(document, baseSha256)`. Replace base/working documents and `baseSha256` only with the server-returned document/SHA and clear dirty only on success. On `STALE_DRAFT`, retain edits, set `saveState = "stale"`, and require an explicit reload; never silently resubmit or merge against the newer file.
 
 - [ ] **Step 5: Add failure, rapid-save, and unmount tests**
 
-Assert a failed save retains edits/dirty state, a second save cannot overlap an in-flight save, a successful receipt exposes path/SHA/time, and no state update occurs after unmount.
+Assert a failed save retains edits/dirty state, a stale save retains edits and exposes the reload-required state, a second save cannot overlap an in-flight save, a successful receipt exposes path/SHA/time and advances the base SHA, and no state update occurs after unmount.
 
 - [ ] **Step 6: Run focused tests and commit**
 
@@ -710,7 +772,7 @@ test("renders all real recipes and derives the accepted snapshot counts", async 
   renderFillSurfaceWithDocument(parseKitchenSotDocument(fixture));
   expect(screen.getByText("18 สูตร")).toBeVisible();
   expect(screen.getByText("4 เมนูขาย + 14 สูตรประกอบ")).toBeVisible();
-  expect(screen.getByText("15 รายการรอเคาะ")).toBeVisible();
+  expect(screen.getByText("16 รายการรอกรอก/เคาะ")).toBeVisible();
   expect(screen.getByText("13 ตัวขวาง")).toBeVisible();
   expect(screen.getAllByRole("button", { name: /revision/u })).toHaveLength(18);
 });
@@ -731,7 +793,7 @@ Expected: FAIL because the fill surface does not exist.
 
 - [ ] **Step 3: Build the derived summary and 18-recipe queue**
 
-Reuse the existing Source Review typography/navigation structure. Each recipe button displays recipe name, revision, DRAFT/readiness, unresolved blocker count, and provenance cue. Use stable identity keys for number/string recipe IDs; do not expose internal candidate IDs as the primary label.
+Reuse the existing Source Review typography/navigation structure. Show the deduplicated 16-item fill-target union as the primary item count; the overlapping 15 status-unresolved and 1 provenance-incomplete diagnostics may appear secondarily but must never be added twice. Each recipe button displays recipe name, revision, DRAFT/readiness, unresolved blocker count, and provenance cue. Use stable identity keys that preserve number/string recipe ID types; do not expose internal candidate IDs as the primary label.
 
 - [ ] **Step 4: Add item owner-confirmation inputs**
 
@@ -753,11 +815,11 @@ Expose `serving_note` and `cost_basis_text` as optional text inputs on the same 
 
 - [ ] **Step 5: Add method, yield, and blocker controls**
 
-Render a method textarea and separate required `method_decision_note` textarea. Render yield using `yield_candidate_text`. For every blocker, show `message` verbatim and never use the message as a React key; use recipe identity plus blocker index. Resolution requires a checkbox and non-empty note before dispatching `resolve-blocker`.
+Render a method textarea and separate required `method_decision_note` textarea. Render yield using `yield_candidate_text`. For every blocker, show `message` verbatim and never use the message as a React key; use typed recipe identity plus blocker index. Resolution requires a checkbox and non-empty note before dispatching `resolve-blocker`. When a `missing_method` blocker has an empty method, disable ordinary resolution and present a separate explicit owner-N/A checkbox plus required reason; dispatch `ownerMethodNa: true` only from that control.
 
 - [ ] **Step 6: Add save state and exact error behavior**
 
-The save button is disabled when clean or saving. Display `กำลังบันทึก…`, the returned V5 path/SHA/time on success, and a safe error on failure. Never switch to fixture/mock data after a load or save error.
+The save button is disabled when clean or saving. Display `กำลังบันทึก…`, the returned V5 path/SHA/time on success, a reload-required Thai message for stale-base conflicts, and a safe error for other failures. Never switch to fixture/mock data after a load or save error and never retry a stale save automatically.
 
 - [ ] **Step 7: Cover five missing methods and verbatim blockers**
 
@@ -778,7 +840,18 @@ test("renders all 13 blocker messages byte-for-byte", async () => {
       .toEqual(recipe.blockers.map(({ message }) => message));
   }
 });
+
+test("keeps recipe 28 DRAFT after its unrelated blocker is resolved", async () => {
+  const document = parseKitchenSotDocument(fixture);
+  document.recipes.find(({ recipe_id }) => recipe_id === 28)!.blockers[0]!.resolved = true;
+  const view = renderFillSurfaceWithDocument(document);
+  await view.selectRecipe(28);
+  expect(screen.getByRole("status", { name: "สถานะสูตร" })).toHaveTextContent("DRAFT");
+  expect(screen.getAllByText(/needs_review/u)).toHaveLength(7);
+});
 ```
+
+Add a UI test proving an empty-method blocker cannot use ordinary resolution, while the explicit owner-N/A path requires a reason and emits the exact guarded edit shape.
 
 - [ ] **Step 8: Make SourceReviewPage choose durable versus explicit legacy mode**
 
@@ -947,8 +1020,11 @@ Open a fresh page after closing the first page, confirm the isolated yield value
 - V5 has `schema_version`, `generated_at`, and `derived_from` metadata;
 - only the selected yield field plus metadata differ;
 - recipe 159 items are deeply equal to V4;
-- recipe/item array order is unchanged; and
+- recipe/item array order is unchanged;
+- all 16 numeric + 2 string recipe IDs and 15 numeric + 3 string non-null component IDs retain exact JSON types; and
 - no real-vault path was created or modified by the test.
+
+Open two browser pages from the same V4/V5 base, make different edits, save page A, then attempt page B. Assert page B receives the visible stale/reload-required state, page A's exact V5 bytes remain authoritative, and page B cannot overwrite them.
 
 - [ ] **Step 5: Keep production preview explicitly read-only**
 
@@ -958,7 +1034,7 @@ Update `tests/no-production-network.spec.ts` so the production build's Source Re
 
 Run: `npm run test:e2e:local-draft`
 
-Expected: PASS for browser save, closed-page reopen, recipe-159 trap, low-noise diff, and isolated checksum.
+Expected: PASS for browser save, closed-page reopen, recipe-159 trap, two-tab stale rejection, mixed-ID round trip, low-noise diff, and isolated checksum.
 
 - [ ] **Step 7: Run the complete sequential gate on one unchanged HEAD**
 
@@ -993,7 +1069,7 @@ Expected: no Node filesystem middleware, checksum reader, writable filesystem pa
 
 - [ ] **Step 9: Obtain independent final verification**
 
-Send the final implementation commit, sequential-gate evidence, V4 checksum output, isolated V5 diff, and build-output scan to a verifier who did not author the design or NNTN decision. Acceptable lanes are codex-oracle or CROO. Require an explicit `[VERIFIED]` or exact `[CHANGES]`; NNTN Oracle's design approval alone is insufficient.
+Send the final implementation commit, sequential-gate evidence, V4 checksum output, isolated V5 diff, concurrency evidence, mixed-ID evidence, and build-output scan to `05-nntn:nntn-codex.1`, which already accepted the independent final-verifier role and did not author this design or the NNTN decision. Require an explicit `[VERIFIED]` or exact `[CHANGES]`; NNTN Oracle's design approval alone is insufficient.
 
 - [ ] **Step 10: Update handoff only after independent verification**
 
