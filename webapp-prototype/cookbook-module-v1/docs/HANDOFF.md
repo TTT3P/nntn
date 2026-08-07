@@ -47,3 +47,22 @@ npm run test:e2e
 ## Future Supabase gate
 
 Supabase is outside V1. Any future persistence work requires a separate approved brief covering schema, RLS policies, Storage buckets/policies, migration sequencing, rollback, backfill, data validation, and production access. No production Supabase mutation, Storage upload, remote migration, or network write is authorized by this handoff.
+
+## Pilot M0 readiness — 2026-08-07
+
+This snapshot is suitable for an **isolated, loopback-only local pilot** after the current commit passes the complete release and print gates in the parent [CookingBook V1 verification guide](../../docs/COOKBOOK-V1-VERIFICATION.md). The operator start/stop and acceptance flow is documented in the module [README](../README.md).
+
+Fresh integration-lane evidence on 2026-08-07 confirmed that `npm ci` completes, the production bundle builds, the Vite development server serves the application shell and module entry at `/nntn-cookbook/`, shutdown leaves no listener, and runtime TypeScript/TSX contains no `fetch`, Supabase, external HTTP, browser storage, WebSocket, or beacon path. The authoritative release-test counts and print-readability evidence belong in the dated verification record and must be rerun for the final integrated commit rather than inferred from this startup check.
+
+Usable now:
+
+- local name-first browsing, dependency and source review, Prep/Cook/Service projections, print planning, DEMO/session media, and JSON prototype export;
+- review of the versioned first-set candidate while preserving raw source text, value, unit, precedence, conflicts, and blockers;
+- Chrome-based A5/A4 pilot evaluation once the current print gate passes.
+
+Still gated:
+
+- any claim that the first-set candidate is Final Approved kitchen SOT;
+- durable save, approval, auth, audit, Supabase/Storage, production data, migration, deployment, or Stock V1/V2 integration;
+- production release while the dependency advisory recorded in the parent verification guide remains open;
+- Safari/Firefox support or kitchen print acceptance beyond the freshly recorded Chrome evidence.
