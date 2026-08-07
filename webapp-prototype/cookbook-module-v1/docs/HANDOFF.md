@@ -50,17 +50,17 @@ Supabase is outside V1. Any future persistence work requires a separate approved
 
 ## Pilot M0 readiness — 2026-08-07
 
-**Pilot decision: NO-GO pending print correction and fresh PDF evidence.** The operator start/stop and acceptance flow is documented in the module [README](../README.md), but it must not be used for kitchen acceptance yet.
+**Pilot decision: GO for the isolated local Cookbook pilot in Google Chrome at verified code commit `43597bd`.** This is not production readiness, deployment approval, or kitchen-data approval. Operators must use the local start/stop and acceptance flow in the module [README](../README.md).
 
-The current blocking evidence is a real Chrome PDF with blank tail pages and leaked export UI. Existing DOM geometry tests and the standard browser/E2E gate can still pass while this output is defective, so their passing result is not sufficient print-readiness evidence. The print owner must correct the defect and record a fresh PDF regression that proves A5 landscape and A4 two-up output have no blank tail pages, clipped content, or non-print UI before the leader changes this decision to GO.
+The prior print blocker is corrected and covered by an actual-App Chrome regression. Fresh integrated evidence produced exactly one A5 landscape page for one SOP sheet and exactly two A4 pages for two two-up sheets, all with the expected A5/A4 MediaBoxes. The rendered PDFs contained no blank tail pages, clipped/overflowing SOP sheet content, export/session UI, or forbidden network requests. The persisted local artifact summary reported `RESULT=PASS`; the regression is also part of the Playwright suite.
 
-Fresh integration-lane evidence on 2026-08-07 confirmed that `npm ci` completes, the production bundle builds, the Vite development server serves the application shell and module entry at `/nntn-cookbook/`, shutdown leaves no listener, and runtime TypeScript/TSX contains no `fetch`, Supabase, external HTTP, browser storage, WebSocket, or beacon path. The authoritative release-test counts and print-readability evidence belong in the dated verification record and must be rerun for the final integrated commit rather than inferred from this startup check.
+Fresh sequential evidence on 2026-08-07 confirmed `npm ci`, 558/558 unit tests, lint, typecheck, production build, both browser harnesses, and 21/21 Playwright tests on the integrated candidate. The Vite application remained loopback-only, shutdown left no listener, and the accepted diff stayed inside the standalone Cookbook scope. Details are recorded in [PILOT-M0-RELEASE-VERIFICATION-2026-08-07.md](./PILOT-M0-RELEASE-VERIFICATION-2026-08-07.md).
 
 Usable now:
 
 - local name-first browsing, dependency and source review, Prep/Cook/Service projections, print planning, DEMO/session media, and JSON prototype export;
 - review of the versioned first-set candidate while preserving raw source text, value, unit, precedence, conflicts, and blockers;
-- Chrome-based A5/A4 evaluation for diagnosis only until the fresh PDF regression passes.
+- Chrome-based A5 landscape and A4 two-up printing for the isolated local pilot at the verified commit.
 
 Still gated:
 

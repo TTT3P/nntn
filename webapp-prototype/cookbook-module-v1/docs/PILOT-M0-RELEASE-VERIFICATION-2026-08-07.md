@@ -6,7 +6,7 @@ This note records the fresh release-verifier lane for the standalone local
 Cookbook prototype. It does not claim production readiness or approve Stock,
 auth, Supabase, deployment, or production-data work.
 
-- Verified commit: `61b64e6e350cf9ab7a1480e51ff23948aef55413`
+- Verified code commit: `43597bdbd904ed97e732b488e594d30cbe3b363d`
 - Node: `v22.22.2`
 - npm: `10.9.7`
 - Browser: Google Chrome `151.0.7922.108`
@@ -26,13 +26,15 @@ All commands ran from `webapp-prototype/cookbook-module-v1/` after a clean
 | `npm run build` | PASS | 49 modules transformed; Vite build completed |
 | `npm run test:browser` | PASS | Print-layout browser harness exit 0 |
 | `npm run test:browser:export` | PASS | Snapshot-export browser harness exit 0 |
-| `npm run test:e2e` | PASS | 20 Playwright tests passed in 29.1 seconds |
+| `npm run test:e2e` | PASS | 21 Playwright tests passed, including the actual-App print regression |
+| Actual-App Chrome PDF probe | PASS | A5 1/1 page at 594.96 × 420 pt; A4 two-up 2/2 pages at 594.96 × 841.92 pt; zero blank pages, export UI hits, or forbidden requests |
 
 The Playwright suite exercised the Thai recipe flow, A5/A4 print-preview
 geometry, media ordering, snapshot export, responsive overflow, router
-surfaces, and the loopback read-only request guard. These passing DOM/browser
-gates are not a substitute for physical PDF inspection; print-media acceptance
-belongs to the separate print-audit lane.
+surfaces, the actual-App print-media PDF contract, and the loopback read-only
+request guard. The independent PDF probe persisted its local evidence under
+`/tmp/cookbook-print-pdf-probe-integrated-20260807T022244Z`; its summary SHA-256
+is `05e2788ff6e32df11ca8d8951efb5ae74fefcb2ffe5cf58457df91f096af6b68`.
 
 ## Boundary checks
 
@@ -54,12 +56,13 @@ belongs to the separate print-audit lane.
   updates require a separate evidence-backed decision.
 - Browser evidence is Chrome-only and local-loopback-only. It makes no Safari,
   Firefox, production hosting, persistence, or production-data claim.
-- Overall isolated-pilot readiness remains gated on the separate print/PDF
-  audit and operator-runbook integration.
+- The dependency advisory remains a production/deployment gate, not a blocker
+  for this isolated, loopback-only local pilot.
 
 ## Release-verifier verdict
 
-**PASS for the fresh automated release gates at the verified baseline.** No
-release-lane code defect reproduced, so no product or test/config fix was
-introduced. The leader must combine this evidence with the print-audit and
-runbook lanes before making the isolated-pilot decision.
+**GO for the isolated local Cookbook pilot in Google Chrome at verified code
+commit `43597bd`.** The print defect was reproduced, corrected with the scoped
+print CSS/App-shell fix, and locked by an actual-App regression. This verdict
+does not authorize production deployment, persistence, Supabase, auth, Stock
+V1/V2 integration, or approval of kitchen source data.
