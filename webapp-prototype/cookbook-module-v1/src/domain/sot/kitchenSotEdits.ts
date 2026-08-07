@@ -66,10 +66,26 @@ function requireIsoDate(value: string, field: string): void {
   }
 }
 
+export function isCanonicalKitchenSotTimestamp(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.(\d{3})Z$/u.exec(value);
+  if (!match) return false;
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return month >= 1 && month <= 12 &&
+    day >= 1 && day <= daysInMonth[month - 1]! &&
+    hour <= 23 && minute <= 59 && second <= 59;
+}
+
 function requireIsoTimestamp(value: string, field: string): void {
-  const isoTimestamp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z|[+-]\d{2}:\d{2})$/u;
-  const parsed = new Date(value);
-  if (!isoTimestamp.test(value) || Number.isNaN(parsed.valueOf())) {
+  if (!isCanonicalKitchenSotTimestamp(value)) {
     throw new InvalidKitchenSotEditError(field, value);
   }
 }

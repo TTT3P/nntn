@@ -21,6 +21,14 @@ function draft(document = sourceDocument()): KitchenSotDocument {
   return buildV5Draft(document, generatedAt, derivedFrom);
 }
 
+function moveKeyToEnd<T extends Record<string, unknown>>(record: T, key: string): T {
+  const entries = Object.entries(record);
+  const movedIndex = entries.findIndex(([entryKey]) => entryKey === key);
+  const [moved] = entries.splice(movedIndex, 1);
+  entries.push(moved!);
+  return Object.fromEntries(entries) as T;
+}
+
 describe("Kitchen SOT transition validation", () => {
   test("allows an unrelated first edit while grandfathering the inherited provenance gap", () => {
     const source = sourceDocument();
@@ -136,6 +144,33 @@ describe("Kitchen SOT transition validation", () => {
     expect(() => validateKitchenSotTransition(source, null, reordered, derivedFrom)).toThrow(/source_values/u);
   });
 
+  test("rejects reordered top-level and recipe mutable keys", () => {
+    const source = sourceDocument();
+    const topLevel = moveKeyToEnd(draft(source), "generated_at");
+    expect(() => validateKitchenSotTransition(source, null, topLevel, derivedFrom)).toThrow(/order/u);
+
+    const recipe = draft(source);
+    recipe.recipes[0] = moveKeyToEnd(recipe.recipes[0]!, "method_candidate_text");
+    expect(() => validateKitchenSotTransition(source, null, recipe, derivedFrom)).toThrow(/order/u);
+  });
+
+  test("rejects reordered item and already-resolved blocker mutable keys", () => {
+    const source = sourceDocument();
+    const item = draft(source);
+    item.recipes[0]!.items[0] = moveKeyToEnd(item.recipes[0]!.items[0]!, "candidate_text");
+    expect(() => validateKitchenSotTransition(source, null, item, derivedFrom)).toThrow(/order/u);
+
+    const previous = draft(applyKitchenSotEdit(source, {
+      kind: "resolve-blocker", recipeId: 162, blockerIndex: 0,
+      note: "ครัวยืนยันแล้ว", resolvedAt: "2026-08-07T03:30:00.000Z",
+    }));
+    const submitted = buildV5Draft(previous, "2026-08-07T04:00:00.000Z", derivedFrom);
+    const blocker = submitted.recipes.find(({ recipe_id }) => recipe_id === 162)!.blockers[0]!;
+    submitted.recipes.find(({ recipe_id }) => recipe_id === 162)!.blockers[0] =
+      moveKeyToEnd(blocker, "resolved");
+    expect(() => validateKitchenSotTransition(source, previous, submitted, derivedFrom)).toThrow(/order/u);
+  });
+
   test("rejects array length changes and item identity reordering", () => {
     const source = sourceDocument();
     const shortened = draft(source);
@@ -184,5 +219,21 @@ describe("Kitchen SOT transition validation", () => {
     const wrongProvenance = draft(source);
     wrongProvenance.derived_from = { path: derivedFrom.path, sha256: "wrong" };
     expect(() => validateKitchenSotTransition(source, null, wrongProvenance, derivedFrom)).toThrow(/derived_from/u);
+  });
+
+  test("rejects impossible calendar timestamps in file and blocker metadata", () => {
+    const source = sourceDocument();
+    const impossibleGeneratedAt = draft(source);
+    impossibleGeneratedAt.generated_at = "2026-02-29T03:31:00.000Z";
+    expect(() => validateKitchenSotTransition(source, null, impossibleGeneratedAt, derivedFrom))
+      .toThrow(/generated_at/u);
+
+    const impossibleResolvedAt = draft(source);
+    const blocker = impossibleResolvedAt.recipes.find(({ blockers }) => blockers.length > 0)!.blockers[0]!;
+    blocker.resolved = true;
+    blocker.resolved_note = "ครัวยืนยันแล้ว";
+    blocker.resolved_at = "2026-04-31T03:30:00.000Z";
+    expect(() => validateKitchenSotTransition(source, null, impossibleResolvedAt, derivedFrom))
+      .toThrow(/resolved_at/u);
   });
 });

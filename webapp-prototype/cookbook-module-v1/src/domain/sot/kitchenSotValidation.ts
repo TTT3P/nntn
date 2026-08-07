@@ -5,7 +5,7 @@ import type {
   KitchenSotItem,
   KitchenSotRecipe,
 } from "./kitchenSotDocument";
-import type { DerivedFrom } from "./kitchenSotEdits";
+import { isCanonicalKitchenSotTimestamp, type DerivedFrom } from "./kitchenSotEdits";
 
 const TOP_LEVEL_MUTABLE = new Set(["schema_version", "generated_at", "derived_from"]);
 const RECIPE_MUTABLE = new Set([
@@ -53,11 +53,8 @@ function jsonEqual(left: JsonValue | undefined, right: JsonValue | undefined): b
 }
 
 function requireIsoTimestamp(value: unknown, field: string): void {
-  if (typeof value !== "string") fail(field, "must be an ISO timestamp");
-  const isoTimestamp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z|[+-]\d{2}:\d{2})$/u;
-  const parsed = new Date(value);
-  if (!isoTimestamp.test(value) || Number.isNaN(parsed.valueOf())) {
-    fail(field, "must be an ISO timestamp");
+  if (!isCanonicalKitchenSotTimestamp(value)) {
+    fail(field, "must be a canonical UTC ISO timestamp with millisecond precision");
   }
 }
 
@@ -65,15 +62,22 @@ function compareImmutableFields(
   baseline: Record<string, JsonValue>,
   submitted: Record<string, JsonValue>,
   mutable: Set<string>,
+  appendOrder: readonly string[],
   structural: Set<string>,
   field: string,
 ): void {
-  const baselineKeys = Object.keys(baseline).filter((key) => !mutable.has(key) && !structural.has(key));
-  const submittedKeys = Object.keys(submitted).filter((key) => !mutable.has(key) && !structural.has(key));
-  if (!jsonEqual(baselineKeys, submittedKeys)) {
-    fail(field, "immutable field keys or order changed");
+  const baselineKeys = Object.keys(baseline);
+  const submittedKeys = Object.keys(submitted);
+  if (!jsonEqual(submittedKeys.slice(0, baselineKeys.length), baselineKeys)) {
+    fail(field, "existing field keys were deleted or reordered");
   }
-  for (const key of baselineKeys) {
+  const appendedKeys = submittedKeys.slice(baselineKeys.length);
+  const expectedAppendedKeys = appendOrder.filter((key) =>
+    !baselineKeys.includes(key) && appendedKeys.includes(key));
+  if (!jsonEqual(appendedKeys, expectedAppendedKeys)) {
+    fail(field, "new field keys are not allowed or were appended out of deterministic order");
+  }
+  for (const key of baselineKeys.filter((key) => !mutable.has(key) && !structural.has(key))) {
     if (!jsonEqual(baseline[key], submitted[key])) {
       fail(`${field}.${key}`, "immutable field changed");
     }
@@ -128,7 +132,14 @@ function validateItem(baseline: KitchenSotItem, submitted: KitchenSotItem, field
   ) {
     fail(`${field}.component_recipe_id`, "component identity or JSON type changed");
   }
-  compareImmutableFields(baseline, submitted, ITEM_MUTABLE, new Set(), field);
+  compareImmutableFields(
+    baseline,
+    submitted,
+    ITEM_MUTABLE,
+    ["serving_note", "cost_basis_text"],
+    new Set(),
+    field,
+  );
   compareSourceValues(baseline.source_values, submitted.source_values, `${field}.source_values`);
   if (!jsonEqual(baseline, submitted)) validateDirtyOwnerItem(submitted, field);
 }
@@ -172,7 +183,14 @@ function validateBlocker(
   recipe: KitchenSotRecipe,
   field: string,
 ): void {
-  compareImmutableFields(baseline, submitted, BLOCKER_MUTABLE, new Set(), field);
+  compareImmutableFields(
+    baseline,
+    submitted,
+    BLOCKER_MUTABLE,
+    ["resolved", "resolved_note", "resolved_at"],
+    new Set(),
+    field,
+  );
   if (!jsonEqual(baseline, submitted)) validateDirtyBlocker(recipe, submitted, field);
 }
 
@@ -180,7 +198,7 @@ function validateRecipe(baseline: KitchenSotRecipe, submitted: KitchenSotRecipe,
   if (typeof baseline.recipe_id !== typeof submitted.recipe_id || baseline.recipe_id !== submitted.recipe_id) {
     fail(`${field}.recipe_id`, "recipe identity or JSON type changed");
   }
-  compareImmutableFields(baseline, submitted, RECIPE_MUTABLE, new Set(["items", "blockers"]), field);
+  compareImmutableFields(baseline, submitted, RECIPE_MUTABLE, [], new Set(["items", "blockers"]), field);
   if (baseline.items.length !== submitted.items.length) fail(`${field}.items`, "array length changed");
   baseline.items.forEach((item, index) => validateItem(item, submitted.items[index]!, `${field}.items[${index}]`));
   if (baseline.blockers.length !== submitted.blockers.length) fail(`${field}.blockers`, "array length changed");
@@ -211,7 +229,14 @@ export function validateKitchenSotTransition(
 ): void {
   const baseline = previousV5 ?? sourceV4;
   validateMetadata(submitted, derivedFrom);
-  compareImmutableFields(baseline, submitted, TOP_LEVEL_MUTABLE, new Set(["recipes"]), "document");
+  compareImmutableFields(
+    baseline,
+    submitted,
+    TOP_LEVEL_MUTABLE,
+    ["derived_from"],
+    new Set(["recipes"]),
+    "document",
+  );
   if (baseline.recipes.length !== submitted.recipes.length) fail("recipes", "array length changed");
   baseline.recipes.forEach((recipe, index) =>
     validateRecipe(recipe, submitted.recipes[index]!, `recipes[${index}]`));

@@ -114,14 +114,28 @@ describe("Kitchen SOT explicit edits", () => {
     });
   });
 
-  test("accepts a valid ISO timestamp with an explicit offset without normalizing it", () => {
+  test("accepts canonical UTC millisecond timestamps including a valid leap day", () => {
     const base = parseKitchenSotDocument(fixture);
     const edited = applyKitchenSotEdit(base, {
       kind: "resolve-blocker", recipeId: 162, blockerIndex: 0,
-      note: "ครัวยืนยันแล้ว", resolvedAt: "2026-08-07T10:30:00+07:00",
+      note: "ครัวยืนยันแล้ว", resolvedAt: "2028-02-29T03:30:00.000Z",
     });
     expect(edited.recipes.find(({ recipe_id }) => recipe_id === 162)!.blockers[0]!.resolved_at)
-      .toBe("2026-08-07T10:30:00+07:00");
+      .toBe("2028-02-29T03:30:00.000Z");
+  });
+
+  test("rejects normalized calendar dates and non-canonical timestamp precision", () => {
+    const base = parseKitchenSotDocument(fixture);
+    expect(() => buildV5Draft(base, "2026-02-29T03:30:00.000Z", derivedFrom))
+      .toThrow(InvalidKitchenSotEditError);
+    expect(() => applyKitchenSotEdit(base, {
+      kind: "resolve-blocker", recipeId: 162, blockerIndex: 0,
+      note: "ครัวยืนยันแล้ว", resolvedAt: "2026-04-31T03:30:00.000Z",
+    })).toThrow(InvalidKitchenSotEditError);
+    expect(() => buildV5Draft(base, "2026-08-07T10:30:00+07:00", derivedFrom))
+      .toThrow(InvalidKitchenSotEditError);
+    expect(() => buildV5Draft(base, "2026-08-07T03:30:00Z", derivedFrom))
+      .toThrow(InvalidKitchenSotEditError);
   });
 
   test("requires explicit owner N/A and constructs the missing-method resolution prefix", () => {
