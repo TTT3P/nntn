@@ -11,17 +11,21 @@ const document: KitchenSotDocument = {
   recipes: [],
 };
 
+const sourceSha256 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const draftSha256 = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+const nextDraftSha256 = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+
 const v5ReadResponse = {
   document,
   sourcePath: "Operations/CookBook/sot/v4/kitchen-sot.json",
-  sourceSha256: "source-sha",
-  base_sha256: "draft-sha",
+  sourceSha256,
+  base_sha256: draftSha256,
   origin: "v5-draft",
 };
 
 const v4ReadResponse = {
   ...v5ReadResponse,
-  base_sha256: "source-sha",
+  base_sha256: sourceSha256,
   origin: "v4",
 };
 
@@ -44,8 +48,8 @@ describe("HttpKitchenSotDraftClient load", () => {
       document,
       origin: "v5-draft",
       sourcePath: "Operations/CookBook/sot/v4/kitchen-sot.json",
-      sourceSha256: "source-sha",
-      baseSha256: "draft-sha",
+      sourceSha256,
+      baseSha256: draftSha256,
     });
     expect(fetcher).toHaveBeenCalledOnce();
     expect(fetcher).toHaveBeenCalledWith("/__cookbook/v5-draft", {
@@ -62,7 +66,7 @@ describe("HttpKitchenSotDraftClient load", () => {
 
     await expect(new HttpKitchenSotDraftClient(fetcher).load()).resolves.toMatchObject({
       origin: "v4",
-      baseSha256: "source-sha",
+      baseSha256: sourceSha256,
     });
     expect(fetcher).toHaveBeenNthCalledWith(1, "/__cookbook/v5-draft", expect.any(Object));
     expect(fetcher).toHaveBeenNthCalledWith(2, "/__cookbook/v4", {
@@ -96,6 +100,36 @@ describe("HttpKitchenSotDraftClient load", () => {
     expect(fetcher).toHaveBeenCalledOnce();
   });
 
+  test("rejects a V5 response that claims the V4 origin", async () => {
+    const fetcher = vi.fn().mockResolvedValue(jsonResponse(200, {
+      ...v5ReadResponse,
+      origin: "v4",
+    }));
+
+    await expect(new HttpKitchenSotDraftClient(fetcher).load()).rejects.toMatchObject({
+      name: "KitchenSotHttpError",
+      status: 200,
+      code: "INVALID_RESPONSE",
+    });
+    expect(fetcher).toHaveBeenCalledOnce();
+  });
+
+  test("rejects a V4 fallback response that claims the V5 draft origin", async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(jsonResponse(404, { code: "DRAFT_NOT_FOUND" }))
+      .mockResolvedValueOnce(jsonResponse(200, {
+        ...v4ReadResponse,
+        origin: "v5-draft",
+      }));
+
+    await expect(new HttpKitchenSotDraftClient(fetcher).load()).rejects.toMatchObject({
+      name: "KitchenSotHttpError",
+      status: 200,
+      code: "INVALID_RESPONSE",
+    });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
   test.each([
     ["sourcePath", { ...v5ReadResponse, sourcePath: undefined }],
     ["sourceSha256", { ...v5ReadResponse, sourceSha256: "" }],
@@ -111,13 +145,28 @@ describe("HttpKitchenSotDraftClient load", () => {
       code: "INVALID_RESPONSE",
     });
   });
+
+  test.each([
+    ["sourceSha256", { ...v5ReadResponse, sourceSha256: " " }],
+    ["sourceSha256", { ...v5ReadResponse, sourceSha256: "a".repeat(63) }],
+    ["base_sha256", { ...v5ReadResponse, base_sha256: `${"b".repeat(63)}g` }],
+    ["base_sha256", { ...v5ReadResponse, base_sha256: `${"b".repeat(63)}"` }],
+  ])("rejects an invalid load response SHA in %s", async (_field, body) => {
+    const fetcher = vi.fn().mockResolvedValue(jsonResponse(200, body));
+
+    await expect(new HttpKitchenSotDraftClient(fetcher).load()).rejects.toMatchObject({
+      name: "KitchenSotHttpError",
+      status: 200,
+      code: "INVALID_RESPONSE",
+    });
+  });
 });
 
 describe("HttpKitchenSotDraftClient save", () => {
   const saveResponse = {
     document,
-    sha256: "next-draft-sha",
-    base_sha256: "next-draft-sha",
+    sha256: nextDraftSha256,
+    base_sha256: nextDraftSha256,
     generatedAt: "2026-08-07T00:00:00.000Z",
     path: "Operations/CookBook/sot/v5-draft/kitchen-sot-first-set-v5-draft.json",
   };
@@ -125,7 +174,7 @@ describe("HttpKitchenSotDraftClient save", () => {
   test("saves to V5 with matching body and If-Match preconditions", async () => {
     const fetcher = vi.fn().mockResolvedValue(jsonResponse(200, saveResponse));
 
-    await expect(new HttpKitchenSotDraftClient(fetcher).save(document, "draft-sha")).resolves.toEqual(
+    await expect(new HttpKitchenSotDraftClient(fetcher).save(document, draftSha256)).resolves.toEqual(
       saveResponse,
     );
     expect(fetcher).toHaveBeenCalledWith("/__cookbook/v5-draft", {
@@ -134,19 +183,24 @@ describe("HttpKitchenSotDraftClient save", () => {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
-        "If-Match": '"draft-sha"',
+        "If-Match": `"${draftSha256}"`,
       },
-      body: JSON.stringify({ base_sha256: "draft-sha", document }),
+      body: JSON.stringify({ base_sha256: draftSha256, document }),
     });
   });
 
-  test("rejects a blank save base without sending a request", async () => {
+  test.each([
+    ["whitespace", " "],
+    ["wrong length", "a".repeat(63)],
+    ["non-hex", `${"a".repeat(63)}g`],
+    ["quote-containing", `${"a".repeat(63)}"`],
+  ])("rejects a %s save base without sending a request", async (_case, baseSha256) => {
     const fetcher = vi.fn();
 
-    await expect(new HttpKitchenSotDraftClient(fetcher).save(document, " ")).rejects.toMatchObject({
+    await expect(new HttpKitchenSotDraftClient(fetcher).save(document, baseSha256)).rejects.toMatchObject({
       name: "KitchenSotHttpError",
       status: 0,
-      code: "PRECONDITION_REQUIRED",
+      code: "INVALID_SHA256",
     });
     expect(fetcher).not.toHaveBeenCalled();
   });
@@ -157,7 +211,7 @@ describe("HttpKitchenSotDraftClient save", () => {
   ])("preserves the save concurrency error %s/%s", async (status, code) => {
     const fetcher = vi.fn().mockResolvedValue(jsonResponse(status, { code }));
 
-    await expect(new HttpKitchenSotDraftClient(fetcher).save(document, "draft-sha"))
+    await expect(new HttpKitchenSotDraftClient(fetcher).save(document, draftSha256))
       .rejects.toMatchObject({ name: "KitchenSotHttpError", status, code });
   });
 
@@ -170,7 +224,23 @@ describe("HttpKitchenSotDraftClient save", () => {
   ])("rejects a successful save response with a missing or invalid %s", async (_field, body) => {
     const fetcher = vi.fn().mockResolvedValue(jsonResponse(200, body));
 
-    await expect(new HttpKitchenSotDraftClient(fetcher).save(document, "draft-sha"))
+    await expect(new HttpKitchenSotDraftClient(fetcher).save(document, draftSha256))
+      .rejects.toMatchObject({
+        name: "KitchenSotHttpError",
+        status: 200,
+        code: "INVALID_RESPONSE",
+      });
+  });
+
+  test.each([
+    ["sha256", { ...saveResponse, sha256: " " }],
+    ["sha256", { ...saveResponse, sha256: "c".repeat(63) }],
+    ["base_sha256", { ...saveResponse, base_sha256: `${"c".repeat(63)}g` }],
+    ["base_sha256", { ...saveResponse, base_sha256: `${"c".repeat(63)}"` }],
+  ])("rejects an invalid save response SHA in %s", async (_field, body) => {
+    const fetcher = vi.fn().mockResolvedValue(jsonResponse(200, body));
+
+    await expect(new HttpKitchenSotDraftClient(fetcher).save(document, draftSha256))
       .rejects.toMatchObject({
         name: "KitchenSotHttpError",
         status: 200,
@@ -185,7 +255,7 @@ describe("HttpKitchenSotDraftClient failure safety", () => {
       new Error("connect ECONNREFUSED /Users/operator/private-vault/secret.json"),
     );
     const client = new HttpKitchenSotDraftClient(fetcher);
-    const request = method === "load" ? client.load() : client.save(document, "draft-sha");
+    const request = method === "load" ? client.load() : client.save(document, draftSha256);
 
     const error = await request.catch((caught: unknown) => caught);
     expect(error).toMatchObject({

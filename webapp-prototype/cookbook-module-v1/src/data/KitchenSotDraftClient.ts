@@ -65,17 +65,31 @@ function requireString(value: unknown): string {
   return value;
 }
 
-function parseLoadedDraft(value: unknown): LoadedKitchenSotDraft {
-  if (!isRecord(value) || (value.origin !== "v4" && value.origin !== "v5-draft")) {
+function isSha256(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{64}$/iu.test(value);
+}
+
+function requireSha256(value: unknown): string {
+  if (!isSha256(value)) {
+    throw new KitchenSotHttpError(200, "INVALID_RESPONSE");
+  }
+  return value;
+}
+
+function parseLoadedDraft(
+  value: unknown,
+  expectedOrigin: LoadedKitchenSotDraft["origin"],
+): LoadedKitchenSotDraft {
+  if (!isRecord(value) || value.origin !== expectedOrigin) {
     throw new KitchenSotHttpError(200, "INVALID_RESPONSE");
   }
   try {
     return {
       document: parseKitchenSotDocument(value.document),
-      origin: value.origin,
+      origin: expectedOrigin,
       sourcePath: requireString(value.sourcePath),
-      sourceSha256: requireString(value.sourceSha256),
-      baseSha256: requireString(value.base_sha256),
+      sourceSha256: requireSha256(value.sourceSha256),
+      baseSha256: requireSha256(value.base_sha256),
     };
   } catch (error) {
     if (error instanceof KitchenSotHttpError) throw error;
@@ -90,8 +104,8 @@ function parseSaveResponse(value: unknown): SotSaveResponse {
   try {
     return {
       document: parseKitchenSotDocument(value.document),
-      sha256: requireString(value.sha256),
-      base_sha256: requireString(value.base_sha256),
+      sha256: requireSha256(value.sha256),
+      base_sha256: requireSha256(value.base_sha256),
       generatedAt: requireString(value.generatedAt),
       path: requireString(value.path),
     };
@@ -123,7 +137,7 @@ export class HttpKitchenSotDraftClient implements KitchenSotDraftClient {
       headers: { Accept: "application/json" },
     });
     const v5Body = await readJson(v5Response);
-    if (v5Response.ok) return parseLoadedDraft(v5Body);
+    if (v5Response.ok) return parseLoadedDraft(v5Body, "v5-draft");
 
     const code = errorCode(v5Body);
     if (v5Response.status !== 404 || code !== "DRAFT_NOT_FOUND") {
@@ -139,12 +153,12 @@ export class HttpKitchenSotDraftClient implements KitchenSotDraftClient {
     if (!v4Response.ok) {
       throw new KitchenSotHttpError(v4Response.status, errorCode(v4Body));
     }
-    return parseLoadedDraft(v4Body);
+    return parseLoadedDraft(v4Body, "v4");
   }
 
   async save(document: KitchenSotDocument, baseSha256: string): Promise<SotSaveResponse> {
-    if (baseSha256.trim().length === 0) {
-      throw new KitchenSotHttpError(0, "PRECONDITION_REQUIRED");
+    if (!isSha256(baseSha256)) {
+      throw new KitchenSotHttpError(0, "INVALID_SHA256");
     }
     const response = await fetchSafely(this.fetcher, V5_ENDPOINT, {
       method: "PUT",
