@@ -2,6 +2,7 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import type { CookbookRepository } from "../data/CookbookRepository";
+import type { KitchenSotDraftClient } from "../data/KitchenSotDraftClient";
 import { makeRecipe, makeSnapshot, makeWorkStep } from "../test/builders";
 import { App } from "./App";
 
@@ -28,6 +29,13 @@ function makeRepository(snapshot = makeSnapshot()): CookbookRepository {
   };
 }
 
+function makeDraftClient(): KitchenSotDraftClient {
+  return {
+    load: vi.fn(),
+    save: vi.fn(),
+  };
+}
+
 function readBlob(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -37,10 +45,10 @@ function readBlob(blob: Blob): Promise<string> {
   });
 }
 
-test("labels the app as a session-only local prototype", async () => {
+test("labels the app as an explicit read-only session prototype without a draft client", async () => {
   const repository = makeRepository();
 
-  render(<App repository={repository} />);
+  render(<App repository={repository} draftClient={null} />);
   expect(screen.getByRole("heading", { name: "CookingBook" })).toBeInTheDocument();
   expect(screen.getByText("Prototype · ข้อมูลเฉพาะเครื่อง")).toBeInTheDocument();
   expect(
@@ -51,6 +59,20 @@ test("labels the app as a session-only local prototype", async () => {
   ).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Export prototype snapshot" })).toBeVisible();
   expect(screen.getByText(/session file binaries are not included/i)).toBeVisible();
+});
+
+test("labels Recipe Studio as locally durable while other prototype pages remain session-only", async () => {
+  render(<App repository={makeRepository()} draftClient={makeDraftClient()} />);
+
+  expect(
+    screen.getByText(
+      "Recipe Studio บันทึกลง V5 draft ในเครื่อง · รูปและหน้าทดลองอื่นยังอยู่เฉพาะเซสชัน",
+    ),
+  ).toBeVisible();
+  expect(screen.queryByText(/รีเซ็ตเมื่อโหลดหน้าใหม่/)).not.toBeInTheDocument();
+  expect(
+    await screen.findByRole("heading", { name: "คลังสูตรอาหาร" }),
+  ).toBeInTheDocument();
 });
 
 test("downloads the current provider snapshot without revoking its active media preview URL", async () => {

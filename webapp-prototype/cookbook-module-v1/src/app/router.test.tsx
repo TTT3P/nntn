@@ -1,6 +1,9 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import fixture from "../data/fixtures/first-set.json";
+import type { KitchenSotDraftClient } from "../data/KitchenSotDraftClient";
+import { parseKitchenSotDocument } from "../domain/sot/kitchenSotDocument";
 import { PrototypeProvider } from "../prototype/PrototypeProvider";
 import { makeRecipe, makeSnapshot } from "../test/builders";
 import { AppRoutes } from "./router";
@@ -8,6 +11,49 @@ import { AppRoutes } from "./router";
 afterEach(cleanup);
 
 describe("AppRoutes", () => {
+  test("passes the durable client only to Source Review", async () => {
+    const document = parseKitchenSotDocument(fixture);
+    const client: KitchenSotDraftClient = {
+      load: vi.fn<KitchenSotDraftClient["load"]>(async () => ({
+        document,
+        origin: "v4",
+        sourcePath: "Operations/CookBook/sot/v4-2026-08-05/source/kitchen-sot-first-set-v2.json",
+        sourceSha256: "a".repeat(64),
+        baseSha256: "b".repeat(64),
+      })),
+      save: vi.fn(),
+    };
+
+    render(
+      <PrototypeProvider initialSnapshot={makeSnapshot()}>
+        <MemoryRouter initialEntries={["/source-review"]}>
+          <AppRoutes draftClient={client} />
+        </MemoryRouter>
+      </PrototypeProvider>,
+    );
+
+    expect(await screen.findByText("18 สูตร")).toBeVisible();
+    expect(client.load).toHaveBeenCalledTimes(1);
+  });
+
+  test("keeps the projected repository route independent from the durable client", () => {
+    const client: KitchenSotDraftClient = {
+      load: vi.fn(),
+      save: vi.fn(),
+    };
+
+    render(
+      <PrototypeProvider initialSnapshot={makeSnapshot()}>
+        <MemoryRouter initialEntries={["/recipes"]}>
+          <AppRoutes draftClient={client} />
+        </MemoryRouter>
+      </PrototypeProvider>,
+    );
+
+    expect(screen.getByRole("heading", { name: "คลังสูตรอาหาร" })).toBeInTheDocument();
+    expect(client.load).not.toHaveBeenCalled();
+  });
+
   test("mounts the real Print Center inside the app routes", () => {
     render(
       <PrototypeProvider initialSnapshot={makeSnapshot()}>

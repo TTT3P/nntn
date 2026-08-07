@@ -2,12 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { brandConfig } from "../config/brand";
 import type { CookbookRepository } from "../data/CookbookRepository";
 import { FixtureCookbookRepository } from "../data/FixtureCookbookRepository";
+import {
+  HttpKitchenSotDraftClient,
+  type KitchenSotDraftClient,
+} from "../data/KitchenSotDraftClient";
 import { PrototypeProvider, usePrototype } from "../prototype/PrototypeProvider";
 import { exportPrototypeSnapshot } from "../prototype/snapshotExport";
 import { AppRouter } from "./router";
 import "./styles.css";
 
 const fixtureRepository = new FixtureCookbookRepository();
+const localDraftClient = import.meta.env.DEV
+  ? new HttpKitchenSotDraftClient()
+  : undefined;
 const DOWNLOAD_URL_GRACE_MS = 1_000;
 
 function hasUnsafeDiagnosticControl(value: string): boolean {
@@ -157,9 +164,13 @@ function ExportPrototypeSnapshot() {
 
 export function App({
   repository = fixtureRepository,
+  draftClient = localDraftClient,
 }: {
   repository?: CookbookRepository;
+  draftClient?: KitchenSotDraftClient | null;
 }) {
+  const activeDraftClient = draftClient ?? undefined;
+
   return (
     <main className="app-shell">
       <header className="app-header">
@@ -167,12 +178,14 @@ export function App({
         <h1>{brandConfig.productName}</h1>
         <p className="app-prototype-label">{brandConfig.prototypeLabel}</p>
         <p className="app-session-notice">
-          การแก้ไขอยู่เฉพาะเซสชันนี้และจะรีเซ็ตเมื่อโหลดหน้าใหม่
+          {activeDraftClient === undefined
+            ? "การแก้ไขอยู่เฉพาะเซสชันนี้และจะรีเซ็ตเมื่อโหลดหน้าใหม่"
+            : "Recipe Studio บันทึกลง V5 draft ในเครื่อง · รูปและหน้าทดลองอื่นยังอยู่เฉพาะเซสชัน"}
         </p>
       </header>
       <PrototypeProvider repository={repository}>
         <ExportPrototypeSnapshot />
-        <AppRouter />
+        <AppRouter draftClient={activeDraftClient} />
       </PrototypeProvider>
     </main>
   );

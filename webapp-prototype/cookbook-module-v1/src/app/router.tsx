@@ -1,4 +1,5 @@
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
+import type { KitchenSotDraftClient } from "../data/KitchenSotDraftClient";
 import { RecipeLibraryPage } from "../features/library/RecipeLibraryPage";
 import { RecipeDetailPage } from "../features/recipe/RecipeDetailPage";
 import { PrintCenterPage } from "../features/print/PrintCenterPage";
@@ -14,7 +15,7 @@ function RoutePlaceholder({ title }: { title: string }) {
   );
 }
 
-export function AppRoutes() {
+export function AppRoutes({ draftClient }: { draftClient?: KitchenSotDraftClient }) {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/recipes" replace />} />
@@ -28,7 +29,7 @@ export function AppRoutes() {
       />
       <Route
         path="/source-review"
-        element={<SourceReviewPage />}
+        element={<SourceReviewPage draftClient={draftClient} />}
       />
       <Route
         path="/work/:recipeId"
@@ -46,10 +47,10 @@ export function AppRoutes() {
   );
 }
 
-export function AppRouter() {
+export function AppRouter({ draftClient }: { draftClient?: KitchenSotDraftClient }) {
   return (
     <HashRouter>
-      <AppRoutes />
+      <AppRoutes draftClient={draftClient} />
     </HashRouter>
   );
 }

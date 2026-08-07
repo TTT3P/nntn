@@ -119,3 +119,241 @@
   margin-top: 0.5rem;
   color: #6c655d;
 }
+
+.source-review-page {
+  width: min(68rem, calc(100vw - 2rem));
+  padding: 1.5rem;
+  border: 1px solid #d8cbb9;
+  border-radius: 0.75rem;
+  background: #fffdf8;
+}
+
+.source-review-page nav ul,
+.source-review-page article ul {
+  padding-left: 1.25rem;
+}
+
+.source-review-page nav li,
+.source-review-page article li {
+  margin-block: 0.75rem;
+}
+
+.source-review-page nav button {
+  text-align: left;
+}
+
+.source-review-page table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.source-review-page th,
+.source-review-page td {
+  padding: 0.75rem;
+  border: 1px solid #d8cbb9;
+  text-align: left;
+  vertical-align: top;
+}
+
+.sot-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+
+.sot-summary p {
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid #d8cbb9;
+  border-radius: 0.75rem;
+  background: #eee3d2;
+}
+
+.sot-edit-grid {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.75fr) minmax(0, 1.25fr);
+  gap: 0.75rem 1rem;
+  margin-block: 1rem;
+  padding: 1rem;
+  border: 1px solid #d8cbb9;
+  border-radius: 0.75rem;
+}
+
+.sot-edit-grid legend,
+.sot-edit-grid h4,
+.sot-edit-grid > p,
+.sot-edit-grid > [role="alert"] {
+  grid-column: 1 / -1;
+}
+
+.sot-edit-grid label {
+  display: grid;
+  gap: 0.35rem;
+  align-content: start;
+}
+
+.sot-edit-grid input,
+.sot-edit-grid textarea,
+.sot-blocker textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid #d8cbb9;
+  border-radius: 0.5rem;
+  color: #27231f;
+  background: #fffdf8;
+  font: inherit;
+}
+
+.sot-edit-grid textarea,
+.sot-blocker textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.sot-draft-badge,
+.sot-provenance-warning {
+  width: fit-content;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: #eee3d2;
+  color: #735b3d;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.sot-blocker {
+  padding: 1rem;
+  border: 1px solid #a84535;
+  border-radius: 0.75rem;
+}
+
+.sot-blocker > p:first-child {
+  margin-top: 0;
+  white-space: pre-wrap;
+}
+
+.sot-blocker label,
+.sot-blocker fieldset {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.sot-save-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #d8cbb9;
+  border-radius: 0.75rem;
+  background: #fffdf8;
+}
+
+.sot-save-bar p {
+  margin: 0;
+  color: #6c655d;
+}
+
+.sot-save-bar [role="alert"] {
+  color: #a84535;
+}
+
+@media (max-width: 48rem) {
+  .app-shell {
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .source-review-page {
+    width: min(100%, calc(100vw - 1rem));
+    padding: 1rem;
+  }
+
+  .sot-summary,
+  .sot-edit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sot-edit-grid legend,
+  .sot-edit-grid h4,
+  .sot-edit-grid > p,
+  .sot-edit-grid > [role="alert"] {
+    grid-column: auto;
+  }
+
+  .source-review-page table,
+  .source-review-page tbody,
+  .source-review-page tr,
+  .source-review-page th,
+  .source-review-page td {
+    display: block;
+    width: 100%;
+  }
+
+  .source-review-page thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .source-review-page tbody tr {
+    margin-block: 0.75rem;
+    border: 1px solid #d8cbb9;
+    border-radius: 0.75rem;
+  }
+
+  .source-review-page tbody th,
+  .source-review-page tbody td {
+    display: grid;
+    grid-template-columns: minmax(7rem, 0.7fr) minmax(0, 1.3fr);
+    gap: 0.75rem;
+    border: 0;
+    border-bottom: 1px solid #d8cbb9;
+  }
+
+  .source-review-page tbody tr > :last-child {
+    border-bottom: 0;
+  }
+
+  .source-review-page tbody th::before {
+    content: "รายการ / บรรทัด";
+    color: #6c655d;
+    font-weight: 700;
+  }
+
+  .source-review-page tbody td:nth-of-type(1)::before {
+    content: "ข้อความต้นฉบับ";
+    color: #6c655d;
+    font-weight: 700;
+  }
+
+  .source-review-page tbody td:nth-of-type(2)::before {
+    content: "แหล่งที่เลือก";
+    color: #6c655d;
+    font-weight: 700;
+  }
+
+  .source-review-page tbody td:nth-of-type(3)::before {
+    content: "สถานะการตัดสินใจ";
+    color: #6c655d;
+    font-weight: 700;
+  }
+
+  .sot-save-bar {
+    align-items: stretch;
+  }
+
+  .sot-save-bar button {
+    width: 100%;
+  }
+}
