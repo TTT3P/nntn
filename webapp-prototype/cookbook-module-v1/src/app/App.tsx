@@ -141,7 +141,7 @@ function ExportPrototypeSnapshot() {
   }
 
   return (
-    <section aria-label="Prototype snapshot export">
+    <section className="prototype-snapshot-export" aria-label="Prototype snapshot export">
       <button type="button" onClick={downloadSnapshot}>
         Export prototype snapshot
       </button>
