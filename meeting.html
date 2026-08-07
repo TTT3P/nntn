@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meeting Room — NNTN Holding</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --croo: #3fb950; --gemini: #d2a8ff; --codex: #f0883e; --tine: #58a6ff;
+    --consensus: #3fb950; --summary: #f0c674;
+    --pass: #3fb950; --fail: #f85149; --warn: #d29922;
+    --brainstorm: #f0c674;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
+
+  header { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  header h1 { font-size: 18px; font-weight: 600; }
+  header .room-badge { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2px 10px; font-size: 12px; color: var(--muted); }
+  header .mode-badge { border-radius: 12px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+  header .actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  header .btn-action { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; color: var(--muted); font-size: 12px; cursor: pointer; }
+  header .btn-action:hover { border-color: var(--accent); color: var(--accent); }
+  header .btn-close { border-color: var(--fail); color: var(--fail); }
+  header .btn-close:hover { background: var(--fail); color: #fff; }
+  header .btn-reveal { border-color: var(--warn); color: var(--warn); display: none; }
+  header .btn-reveal:hover { background: var(--warn); color: #000; }
+  header .status { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+  header .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--croo); }
+  header .dot.closed { background: var(--fail); }
+
+  /* Round / brainstorm progress bar */
+  .round-bar { display: none; padding: 8px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .round-bar.active { display: flex; align-items: center; gap: 12px; }
+  .round-steps { display: flex; gap: 4px; flex: 1; }
+  .round-step { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: background 0.3s; }
+  .round-step.done { background: var(--accent); }
+  .round-step.current { background: var(--accent); animation: pulse 1.5s infinite; }
+  .round-step.brainstorm-current { background: var(--brainstorm); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .round-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+  /* Mode selector bar */
+  .mode-select { display: flex; gap: 6px; padding: 6px 20px; border-bottom: 1px solid var(--border); background: var(--surface); flex-wrap: wrap; align-items: center; }
+  .mode-select .label { font-size: 11px; color: var(--muted); margin-right: 4px; }
+  .mode-btn { background: none; border: 1px solid var(--border); border-radius: 14px; padding: 3px 12px; color: var(--muted); font-size: 12px; cursor: pointer; }
+  .mode-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,0.1); }
+  .mode-btn:hover { border-color: var(--accent); }
+
+  /* Jury tally */
+  .jury-tally { display: none; padding: 8px 20px; border-bottom: 1px solid var(--border); background: var(--surface); font-size: 13px; gap: 16px; align-items: center; }
+  .jury-tally.active { display: flex; }
+  .jury-tally .pass-count { color: var(--pass); font-weight: 700; }
+  .jury-tally .fail-count { color: var(--fail); font-weight: 700; }
+
+  /* 1v1 header */
+  .vs-bar { display: none; padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--surface); font-size: 14px; justify-content: center; align-items: center; gap: 16px; }
+  .vs-bar.active { display: flex; }
+  .vs-bar .vs-name { font-weight: 700; font-size: 16px; }
+  .vs-bar .vs-badge { background: var(--fail); color: #fff; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+
+  #messages { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; }
+
+  .msg { display: flex; gap: 10px; padding: 6px 0; animation: fadeIn 0.3s ease; transition: opacity 0.3s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .msg .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; font-weight: 700; }
+  .msg .body { flex: 1; min-width: 0; }
+  .msg .meta { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+  .msg .name { font-weight: 600; font-size: 14px; }
+  .msg .time { font-size: 11px; color: var(--muted); }
+  .msg .text { font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+  .msg .mention { color: var(--accent); font-weight: 600; }
+
+  .msg[data-speaker="croo"] .avatar { background: var(--croo); color: #000; }
+  .msg[data-speaker="croo"] .name { color: var(--croo); }
+  .msg[data-speaker="gemini"] .avatar { background: var(--gemini); color: #000; }
+  .msg[data-speaker="gemini"] .name { color: var(--gemini); }
+  .msg[data-speaker="codex"] .avatar { background: var(--codex); color: #000; }
+  .msg[data-speaker="codex"] .name { color: var(--codex); }
+  .msg[data-speaker="tine"] .avatar { background: var(--tine); color: #000; }
+  .msg[data-speaker="tine"] .name { color: var(--tine); }
+  .msg[data-speaker="system"] .avatar { background: var(--border); color: var(--muted); }
+  .msg[data-speaker="system"] .name { color: var(--muted); }
+
+  .msg.consensus { border-left: 3px solid var(--consensus); padding-left: 12px; margin: 8px 0; background: rgba(63,185,80,0.05); border-radius: 0 8px 8px 0; }
+  .msg.consensus .badge, .msg.summary .badge, .msg.jury-pass .badge, .msg.jury-fail .badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-right: 6px; }
+  .msg.consensus .badge { background: var(--consensus); color: #000; }
+  .msg.summary { border-left: 3px solid var(--summary); padding-left: 12px; margin: 8px 0; background: rgba(240,198,116,0.05); border-radius: 0 8px 8px 0; }
+  .msg.summary .badge { background: var(--summary); color: #000; }
+  .msg.jury-pass { border-left: 3px solid var(--pass); padding-left: 12px; background: rgba(63,185,80,0.05); border-radius: 0 8px 8px 0; }
+  .msg.jury-pass .badge { background: var(--pass); color: #000; }
+  .msg.jury-fail { border-left: 3px solid var(--fail); padding-left: 12px; background: rgba(248,81,73,0.05); border-radius: 0 8px 8px 0; }
+  .msg.jury-fail .badge { background: var(--fail); color: #fff; }
+
+  /* Blind mode */
+  .msg.blinded .text { filter: blur(8px); user-select: none; transition: filter 0.3s; }
+  .msg.blinded .name { filter: blur(6px); user-select: none; }
+  .msg.blinded.revealed .text, .msg.blinded.revealed .name { filter: none; user-select: auto; }
+
+  /* 1v1 dimmed */
+  .msg.dimmed { opacity: 0.35; }
+
+  /* Brainstorm */
+  .msg.brainstorm-idea { border-left: 3px solid var(--brainstorm); padding-left: 12px; background: rgba(240,198,116,0.04); border-radius: 0 8px 8px 0; }
+
+  .typing-bar { padding: 4px 20px; min-height: 24px; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .typing-dot { display: inline-flex; gap: 3px; }
+  .typing-dot span { width: 4px; height: 4px; border-radius: 50%; background: var(--muted); animation: typeBounce 1.2s infinite; }
+  .typing-dot span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typeBounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-4px); } }
+
+  footer { border-top: 1px solid var(--border); }
+  .input-row { display: flex; gap: 8px; padding: 12px 20px; }
+  .input-row input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 14px; outline: none; }
+  .input-row input:focus { border-color: var(--accent); }
+  .input-row input:disabled { opacity: 0.5; cursor: not-allowed; }
+  .input-row button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .input-row button:hover { opacity: 0.9; }
+  .input-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .input-hints { padding: 0 20px 8px; font-size: 11px; color: var(--muted); }
+
+  .room-select { display: flex; gap: 8px; padding: 8px 20px; border-bottom: 1px solid var(--border); background: var(--surface); flex-wrap: wrap; }
+  .room-btn { background: none; border: 1px solid var(--border); border-radius: 16px; padding: 4px 14px; color: var(--muted); font-size: 13px; cursor: pointer; }
+  .room-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,0.1); }
+
+  .empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 14px; }
+
+  /* HOME page */
+  #home { flex: 1; overflow-y: auto; padding: 0; display: none; }
+  #home.active { display: block; }
+  .home-hero { text-align: center; padding: 48px 20px 32px; }
+  .home-hero h2 { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
+  .home-hero p { color: var(--muted); font-size: 15px; }
+
+  .home-section { padding: 0 20px 24px; max-width: 800px; margin: 0 auto; }
+  .home-section h3 { font-size: 15px; font-weight: 600; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .room-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .room-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: border-color 0.2s, transform 0.15s; }
+  .room-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .room-card .rc-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .room-card .rc-name { font-weight: 600; font-size: 15px; }
+  .room-card .rc-mode { font-size: 10px; padding: 1px 7px; border-radius: 8px; font-weight: 600; }
+  .room-card .rc-status { margin-left: auto; font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 8px; }
+  .room-card .rc-status.live { background: rgba(63,185,80,0.15); color: var(--pass); }
+  .room-card .rc-status.closed { background: rgba(248,81,73,0.15); color: var(--fail); }
+  .room-card .rc-stats { font-size: 12px; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; }
+  .room-card .rc-speakers { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  .create-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .create-row input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 14px; outline: none; }
+  .create-row input:focus { border-color: var(--accent); }
+  .create-row button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .create-row button:hover { opacity: 0.9; }
+  .create-modes { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+  .create-modes .mode-btn { font-size: 12px; }
+
+  .guide-toggle { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; color: var(--muted); font-size: 13px; cursor: pointer; width: 100%; text-align: left; margin-bottom: 10px; }
+  .guide-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .guide-content { display: none; }
+  .guide-content.open { display: block; }
+  .guide-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media (max-width: 600px) { .guide-grid { grid-template-columns: 1fr; } }
+  .guide-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .guide-item .gi-title { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
+  .guide-item .gi-desc { font-size: 12px; color: var(--muted); }
+  .guide-tips { margin-top: 14px; font-size: 12px; color: var(--muted); line-height: 1.8; }
+  .guide-tips code { background: var(--surface); padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+
+  .chat-view { display: flex; flex-direction: column; flex: 1; }
+  .chat-view.hidden { display: none; }
+  .btn-home { font-size: 16px; cursor: pointer; background: none; border: none; color: var(--muted); padding: 2px 6px; border-radius: 4px; }
+  .btn-home:hover { color: var(--accent); background: rgba(88,166,255,0.1); }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="btn-home" id="btn-home" title="Home">🏠</button>
+  <h1>Meeting Room</h1>
+  <span class="room-badge" id="room-label">general</span>
+  <span class="mode-badge" id="mode-label" style="display:none"></span>
+  <div class="actions">
+    <button class="btn-action btn-reveal" id="btn-reveal" title="Reveal all blind messages">Reveal</button>
+    <button class="btn-action" id="btn-round" title="Cycle rounds">Rounds</button>
+    <button class="btn-action btn-close" id="btn-close" title="Close this meeting">Close</button>
+    <button class="btn-action" id="btn-minutes" title="Save meeting minutes">Minutes</button>
+    <div class="status"><div class="dot" id="status-dot"></div> <span id="status-text">Live</span></div>
+  </div>
+</header>
+
+<!-- HOME PAGE -->
+<div id="home">
+  <div class="home-hero">
+    <h2>Meeting Room</h2>
+    <p>ห้องประชุม AI real-time · TINE เป็นประธาน</p>
+  </div>
+
+  <div class="home-section">
+    <h3>Active Rooms</h3>
+    <div class="room-cards" id="room-cards">
+      <div style="color:var(--muted); font-size:13px;">Loading rooms...</div>
+    </div>
+  </div>
+
+  <div class="home-section">
+    <h3>Create New Room</h3>
+    <div class="create-modes" id="create-modes">
+      <button class="mode-btn active" data-cmode="realtime">💬 Real-time</button>
+      <button class="mode-btn" data-cmode="rounds">🔄 Rounds</button>
+      <button class="mode-btn" data-cmode="blind">🔒 Blind</button>
+      <button class="mode-btn" data-cmode="jury">⚖️ Jury</button>
+      <button class="mode-btn" data-cmode="1v1">⚔️ 1v1</button>
+      <button class="mode-btn" data-cmode="brainstorm">💡 Brainstorm</button>
+    </div>
+    <div class="create-row">
+      <input type="text" id="new-room-input" placeholder="ชื่อห้อง (เช่น design-review)" autocomplete="off">
+      <button id="btn-create-room">Create</button>
+    </div>
+  </div>
+
+  <div class="home-section">
+    <button class="guide-toggle" id="guide-toggle">📖 คู่มือการใช้งาน ▸</button>
+    <div class="guide-content" id="guide-content">
+      <div class="guide-grid">
+        <div class="guide-item"><div class="gi-title">💬 Real-time</div><div class="gi-desc">อิสระ เหมือน group chat ทุกคนพิมพ์ได้ตลอด</div></div>
+        <div class="guide-item"><div class="gi-title">🔄 Rounds</div><div class="gi-desc">3 rounds — อิสระ → โต้แย้ง → สรุป</div></div>
+        <div class="guide-item"><div class="gi-title">🔒 Blind</div><div class="gi-desc">ซ่อนคำตอบ เปิดพร้อมกัน กัน anchoring bias</div></div>
+        <div class="guide-item"><div class="gi-title">⚖️ Jury</div><div class="gi-desc">นำเสนอ → โหวต PASS/FAIL พร้อมเหตุผล</div></div>
+        <div class="guide-item"><div class="gi-title">⚔️ 1v1</div><div class="gi-desc">เลือก 2 AI debate ที่เหลือนั่งดู</div></div>
+        <div class="guide-item"><div class="gi-title">💡 Brainstorm</div><div class="gi-desc">ไอเดียก่อน (ห้ามค้าน) → กรองทีหลัง</div></div>
+      </div>
+      <div class="guide-tips">
+        <strong>Tips:</strong><br>
+        <code>@ชื่อ</code> = mention ตรง<br>
+        <code>[consensus]</code> = mark จุดเห็นตรงกัน (แถบเขียว)<br>
+        <code>[summary]</code> = ประธานสรุป (แถบทอง)<br>
+        <code>[PASS]</code> / <code>[FAIL]</code> = โหวต Jury<br>
+        <code>/vs name1 name2</code> = ตั้ง 1v1 debaters<br>
+        ปุ่ม <strong>Minutes</strong> = download วาระประชุม<br>
+        ปุ่ม <strong>Close</strong> = จบประชุม + auto-save
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT VIEW -->
+<div class="chat-view" id="chat-view">
+<div class="round-bar" id="round-bar">
+  <div class="round-steps">
+    <div class="round-step" id="rs1"></div>
+    <div class="round-step" id="rs2"></div>
+    <div class="round-step" id="rs3"></div>
+  </div>
+  <span class="round-label" id="round-label">Round 1/3 — Independent</span>
+</div>
+
+<div class="jury-tally" id="jury-tally">
+  Votes: <span class="pass-count" id="pass-count">0</span> PASS &nbsp;|&nbsp; <span class="fail-count" id="fail-count">0</span> FAIL
+</div>
+
+<div class="vs-bar" id="vs-bar">
+  <span class="vs-name" id="vs-name1" style="color:var(--accent)">?</span>
+  <span class="vs-badge">VS</span>
+  <span class="vs-name" id="vs-name2" style="color:var(--gemini)">?</span>
+</div>
+
+<div class="room-select" id="room-tabs"></div>
+
+<div class="mode-select" id="mode-select">
+  <span class="label">Mode:</span>
+  <button class="mode-btn active" data-mode="realtime">💬 Real-time</button>
+  <button class="mode-btn" data-mode="rounds">🔄 Rounds</button>
+  <button class="mode-btn" data-mode="blind">🔒 Blind</button>
+  <button class="mode-btn" data-mode="jury">⚖️ Jury</button>
+  <button class="mode-btn" data-mode="1v1">⚔️ 1v1</button>
+  <button class="mode-btn" data-mode="brainstorm">💡 Brainstorm</button>
+</div>
+
+<div id="messages">
+  <div class="empty" id="empty-state">waiting for messages...</div>
+</div>
+
+<div class="typing-bar" id="typing-bar"></div>
+
+<footer>
+  <div class="input-row">
+    <input type="text" id="input" placeholder="พิมพ์ข้อความ (ส่งในนาม TINE)..." autocomplete="off">
+    <button id="send">Send</button>
+  </div>
+  <div class="input-hints" id="input-hints">@ชื่อ = mention &nbsp;|&nbsp; [consensus] = consensus &nbsp;|&nbsp; [summary] = chairman summary</div>
+</footer>
+</div><!-- /chat-view -->
+
+<script>
+const SUPABASE_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const messagesEl = document.getElementById('messages');
+const inputEl = document.getElementById('input');
+const sendBtn = document.getElementById('send');
+const roomLabel = document.getElementById('room-label');
+const roomTabs = document.getElementById('room-tabs');
+const typingBar = document.getElementById('typing-bar');
+const roundBar = document.getElementById('round-bar');
+const juryTally = document.getElementById('jury-tally');
+const vsBar = document.getElementById('vs-bar');
+const modeLabelEl = document.getElementById('mode-label');
+const hintsEl = document.getElementById('input-hints');
+
+const params = new URLSearchParams(location.search);
+let currentRoom = params.get('room') || '';
+let currentMode = params.get('mode') || 'realtime';
+let isHome = !currentRoom;
+let rooms = new Set(['general']);
+let currentRound = 0;
+let typingTimers = {};
+let isClosed = false;
+let isRevealed = false;
+let juryPass = 0, juryFail = 0;
+let vsDebaters = [];
+let brainstormRound = 0;
+
+const AVATARS = { croo: 'C', gemini: 'G', codex: 'X', tine: 'T', system: '⚙' };
+const NAMES = { croo: 'CROO', gemini: 'Gemini', codex: 'Codex', tine: 'TINE', system: 'System' };
+const ROUND_LABELS = ['', 'Round 1/3 — Independent', 'Round 2/3 — Debate', 'Round 3/3 — Synthesis'];
+const BRAINSTORM_LABELS = ['', '💡 Round 1/2 — Ideas Only (no criticism)', '🔍 Round 2/2 — Filter & Rank'];
+
+const MODE_HINTS = {
+  realtime: '@ชื่อ = mention &nbsp;|&nbsp; [consensus] = consensus &nbsp;|&nbsp; [summary] = chairman summary',
+  rounds: '@ชื่อ = mention &nbsp;|&nbsp; กด Rounds เพื่อเปลี่ยน round',
+  blind: 'ข้อความจะซ่อนจนกว่าจะกด Reveal &nbsp;|&nbsp; [consensus] / [summary] ใช้ได้',
+  jury: '[PASS] หรือ [FAIL] นำหน้า = โหวต &nbsp;|&nbsp; ข้อความแรกคือ presentation',
+  '1v1': 'เลือก 2 ผู้โต้แย้ง ข้อความคนอื่นจะจาง &nbsp;|&nbsp; พิมพ์ /vs name1 name2 เพื่อตั้ง',
+  brainstorm: 'กด Rounds → 💡 Ideas Only (ห้ามค้าน) → 🔍 Filter & Rank'
+};
+
+const MODE_COLORS = {
+  realtime: 'var(--accent)', rounds: 'var(--accent)', blind: 'var(--warn)',
+  jury: 'var(--fail)', '1v1': 'var(--codex)', brainstorm: 'var(--brainstorm)'
+};
+
+const MODE_ICONS = {
+  realtime: '💬', rounds: '🔄', blind: '🔒', jury: '⚖️', '1v1': '⚔️', brainstorm: '💡'
+};
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function highlightMentions(text) {
+  return text.replace(/@(croo|gemini|codex|tine|wb-il|stl)/gi, (m, name) => {
+    const sp = name.toLowerCase();
+    const color = `var(--${sp === 'wb-il' || sp === 'stl' ? 'accent' : sp})`;
+    return `<span class="mention" style="color:${color}">@${NAMES[sp] || name}</span>`;
+  });
+}
+
+function detectMessageType(msg) {
+  const t = msg.message.toLowerCase();
+  if (t.startsWith('[consensus]')) return 'consensus';
+  if (t.startsWith('[summary]')) return 'summary';
+  if (t.startsWith('[pass]')) return 'jury-pass';
+  if (t.startsWith('[fail]')) return 'jury-fail';
+  return 'normal';
+}
+
+function addMessage(msg) {
+  if (msg.room !== currentRoom) { rooms.add(msg.room); renderTabs(); return; }
+  document.getElementById('empty-state')?.remove();
+
+  // Check for close
+  if (msg.speaker === 'system' && msg.message.includes('Meeting Closed')) {
+    isClosed = true;
+    lockInput();
+  }
+
+  const type = detectMessageType(msg);
+  const el = document.createElement('div');
+  let classes = 'msg';
+  if (type !== 'normal') classes += ' ' + type;
+  if (currentMode === 'blind' && !isRevealed && msg.speaker !== 'system') classes += ' blinded';
+  if (currentMode === '1v1' && vsDebaters.length === 2 && !vsDebaters.includes(msg.speaker.toLowerCase()) && msg.speaker !== 'system') classes += ' dimmed';
+  if (currentMode === 'brainstorm' && brainstormRound === 1 && type === 'normal' && msg.speaker !== 'system') classes += ' brainstorm-idea';
+  el.className = classes;
+  el.dataset.speaker = msg.speaker;
+  const sp = msg.speaker.toLowerCase();
+
+  let displayMsg = msg.message;
+  if (type === 'consensus') displayMsg = displayMsg.replace(/^\[consensus\]\s*/i, '');
+  if (type === 'summary') displayMsg = displayMsg.replace(/^\[summary\]\s*/i, '');
+  if (type === 'jury-pass') displayMsg = displayMsg.replace(/^\[pass\]\s*/i, '');
+  if (type === 'jury-fail') displayMsg = displayMsg.replace(/^\[fail\]\s*/i, '');
+
+  const badges = {
+    'consensus': '<span class="badge">CONSENSUS</span>',
+    'summary': '<span class="badge">SUMMARY</span>',
+    'jury-pass': '<span class="badge">PASS</span>',
+    'jury-fail': '<span class="badge">FAIL</span>'
+  };
+  const badgeHtml = badges[type] || '';
+
+  if (type === 'jury-pass') juryPass++;
+  if (type === 'jury-fail') juryFail++;
+  if (currentMode === 'jury') updateJuryTally();
+
+  el.innerHTML = `
+    <div class="avatar">${AVATARS[sp] || (sp[0] || '?').toUpperCase()}</div>
+    <div class="body">
+      <div class="meta">
+        <span class="name">${NAMES[sp] || msg.speaker}</span>
+        <span class="time">${formatTime(msg.created_at)}</span>
+      </div>
+      <div class="text">${badgeHtml}${highlightMentions(escapeHtml(displayMsg))}</div>
+    </div>
+  `;
+  messagesEl.appendChild(el);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  clearTyping(sp);
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// --- Typing ---
+function showTyping(speaker) {
+  typingTimers[speaker] = Date.now();
+  renderTyping();
+  setTimeout(() => { if (Date.now() - typingTimers[speaker] >= 9500) clearTyping(speaker); }, 10000);
+}
+function clearTyping(speaker) { delete typingTimers[speaker]; renderTyping(); }
+function renderTyping() {
+  const active = Object.keys(typingTimers);
+  if (!active.length) { typingBar.innerHTML = ''; return; }
+  const names = active.map(s => NAMES[s] || s).join(', ');
+  typingBar.innerHTML = `<div class="typing-dot"><span></span><span></span><span></span></div> ${names} กำลังพิมพ์...`;
+}
+
+// --- Rounds ---
+function setRound(n) {
+  currentRound = n;
+  if (n === 0) { roundBar.classList.remove('active'); return; }
+  roundBar.classList.add('active');
+  const labels = currentMode === 'brainstorm' ? BRAINSTORM_LABELS : ROUND_LABELS;
+  const maxSteps = currentMode === 'brainstorm' ? 2 : 3;
+  for (let i = 1; i <= 3; i++) {
+    const step = document.getElementById('rs' + i);
+    if (i > maxSteps) { step.style.display = 'none'; continue; }
+    step.style.display = '';
+    let cls = 'round-step';
+    if (i < n) cls += ' done';
+    else if (i === n) cls += (currentMode === 'brainstorm' ? ' brainstorm-current' : ' current');
+    step.className = cls;
+  }
+  document.getElementById('round-label').textContent = labels[n] || '';
+  if (currentMode === 'brainstorm') brainstormRound = n;
+}
+
+function cycleRound() {
+  if (isClosed) return;
+  const max = currentMode === 'brainstorm' ? 3 : 4;
+  const next = (currentRound + 1) % max;
+  setRound(next);
+  if (next > 0) {
+    const labels = currentMode === 'brainstorm' ? BRAINSTORM_LABELS : ROUND_LABELS;
+    sb.from('meeting_messages').insert({
+      room: currentRoom, speaker: 'system', message: `--- ${labels[next]} ---`
+    });
+  }
+}
+
+// --- Mode ---
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+
+  const color = MODE_COLORS[mode] || 'var(--accent)';
+  modeLabelEl.style.display = 'inline';
+  modeLabelEl.style.background = color;
+  modeLabelEl.style.color = '#000';
+  modeLabelEl.textContent = `${MODE_ICONS[mode] || ''} ${mode}`;
+
+  hintsEl.innerHTML = MODE_HINTS[mode] || '';
+
+  document.getElementById('btn-reveal').style.display = mode === 'blind' ? '' : 'none';
+  juryTally.classList.toggle('active', mode === 'jury');
+  vsBar.classList.toggle('active', mode === '1v1');
+
+  if (mode !== 'rounds' && mode !== 'brainstorm') setRound(0);
+
+  const u = new URL(location.href);
+  u.searchParams.set('mode', mode);
+  history.replaceState(null, '', u);
+
+  reloadCurrentMessages();
+}
+
+function reloadCurrentMessages() {
+  juryPass = 0; juryFail = 0;
+  loadMessages();
+}
+
+// --- Jury ---
+function updateJuryTally() {
+  document.getElementById('pass-count').textContent = juryPass;
+  document.getElementById('fail-count').textContent = juryFail;
+}
+
+// --- 1v1 ---
+function setVsDebaters(a, b) {
+  vsDebaters = [a.toLowerCase(), b.toLowerCase()];
+  document.getElementById('vs-name1').textContent = NAMES[vsDebaters[0]] || vsDebaters[0];
+  document.getElementById('vs-name2').textContent = NAMES[vsDebaters[1]] || vsDebaters[1];
+}
+
+// --- Blind reveal ---
+function revealAll() {
+  isRevealed = true;
+  document.querySelectorAll('.msg.blinded').forEach(el => el.classList.add('revealed'));
+  document.getElementById('btn-reveal').textContent = 'Revealed';
+}
+
+// --- Close ---
+async function closeMeeting() {
+  if (isClosed) return;
+  if (!confirm('จบการประชุมห้อง ' + currentRoom + '?')) return;
+
+  const { data } = await sb.from('meeting_messages').select('*').eq('room', currentRoom).order('created_at');
+  const count = data ? data.length : 0;
+  const speakers = data ? [...new Set(data.map(m => m.speaker))].filter(s => s !== 'system') : [];
+  const first = data && data[0] ? new Date(data[0].created_at) : new Date();
+  const dur = Math.round((Date.now() - first.getTime()) / 60000);
+
+  await sb.from('meeting_messages').insert({
+    room: currentRoom, speaker: 'system',
+    message: `--- Meeting Closed --- [${count} messages, ${speakers.length} participants, ${dur} min]`
+  });
+
+  isClosed = true;
+  lockInput();
+  saveMinutes();
+}
+
+function lockInput() {
+  inputEl.disabled = true;
+  inputEl.placeholder = 'Meeting closed';
+  sendBtn.disabled = true;
+  document.getElementById('status-dot').classList.add('closed');
+  document.getElementById('status-text').textContent = 'Closed';
+}
+
+// --- Rooms ---
+function renderTabs() {
+  roomTabs.innerHTML = '';
+  for (const r of rooms) {
+    const btn = document.createElement('button');
+    btn.className = 'room-btn' + (r === currentRoom ? ' active' : '');
+    btn.textContent = r;
+    btn.onclick = () => switchRoom(r);
+    roomTabs.appendChild(btn);
+  }
+}
+
+async function switchRoom(room) {
+  showChat(room, currentMode);
+}
+
+async function loadMessages() {
+  const { data } = await sb.from('meeting_messages').select('*').eq('room', currentRoom)
+    .order('created_at', { ascending: true }).limit(200);
+  messagesEl.innerHTML = '';
+  juryPass = 0; juryFail = 0;
+  if (!data || !data.length) {
+    messagesEl.innerHTML = '<div class="empty">waiting for messages...</div>';
+    return;
+  }
+  data.forEach(addMessage);
+  if (currentMode === 'jury') updateJuryTally();
+}
+
+async function loadRooms() {
+  const { data } = await sb.from('meeting_messages').select('room').order('created_at', { ascending: false });
+  if (data) data.forEach(r => rooms.add(r.room));
+  renderTabs();
+}
+
+async function sendMessage() {
+  if (isClosed) return;
+  let text = inputEl.value.trim();
+  if (!text) return;
+
+  // /vs command for 1v1
+  if (text.startsWith('/vs ')) {
+    const parts = text.replace('/vs ', '').trim().split(/\s+/);
+    if (parts.length >= 2) {
+      setVsDebaters(parts[0], parts[1]);
+      sb.from('meeting_messages').insert({
+        room: currentRoom, speaker: 'system',
+        message: `--- 1v1 Mode: ${NAMES[parts[0].toLowerCase()] || parts[0]} VS ${NAMES[parts[1].toLowerCase()] || parts[1]} ---`
+      });
+    }
+    inputEl.value = '';
+    return;
+  }
+
+  inputEl.value = '';
+  await sb.from('meeting_messages').insert({ room: currentRoom, speaker: 'tine', message: text });
+}
+
+// --- Realtime ---
+sb.channel('meeting-realtime')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'meeting_messages' }, (payload) => {
+    addMessage(payload.new);
+    rooms.add(payload.new.room);
+    renderTabs();
+  })
+  .subscribe();
+
+// --- Minutes ---
+async function saveMinutes() {
+  const { data } = await sb.from('meeting_messages').select('*').eq('room', currentRoom)
+    .order('created_at', { ascending: true });
+  if (!data || !data.length) { alert('No messages to save'); return; }
+
+  const speakers = [...new Set(data.map(m => m.speaker))];
+  const first = new Date(data[0].created_at);
+  const last = new Date(data[data.length - 1].created_at);
+  const dur = Math.round((last - first) / 60000);
+  const consensusItems = data.filter(m => m.message.toLowerCase().startsWith('[consensus]'));
+  const summaryItems = data.filter(m => m.message.toLowerCase().startsWith('[summary]'));
+  const passItems = data.filter(m => m.message.toLowerCase().startsWith('[pass]'));
+  const failItems = data.filter(m => m.message.toLowerCase().startsWith('[fail]'));
+
+  let md = `# Meeting Minutes — ${currentRoom}\n\n`;
+  md += `**Date:** ${first.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}\n`;
+  md += `**Time:** ${first.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} — ${last.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} (${dur} min)\n`;
+  md += `**Mode:** ${currentMode}\n`;
+  md += `**Participants:** ${speakers.map(s => (NAMES[s] || s)).join(', ')}\n`;
+  md += `**Messages:** ${data.length}\n\n`;
+
+  if (consensusItems.length) {
+    md += `## Consensus Points\n\n`;
+    consensusItems.forEach(m => { md += `- ${m.message.replace(/^\[consensus\]\s*/i, '')} *(${NAMES[m.speaker] || m.speaker})*\n`; });
+    md += '\n';
+  }
+  if (summaryItems.length) {
+    md += `## Chairman Summary\n\n`;
+    summaryItems.forEach(m => { md += `${m.message.replace(/^\[summary\]\s*/i, '')}\n\n— *${NAMES[m.speaker] || m.speaker}*\n\n`; });
+  }
+  if (passItems.length || failItems.length) {
+    md += `## Jury Votes\n\n- PASS: ${passItems.length}\n- FAIL: ${failItems.length}\n\n`;
+  }
+
+  md += `---\n\n## Full Transcript\n\n`;
+  data.forEach(m => {
+    const t = new Date(m.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    md += `**${NAMES[m.speaker] || m.speaker}** (${t}):\n${m.message}\n\n`;
+  });
+  md += `---\n*Generated from Meeting Room — ${new Date().toISOString()}*\n`;
+
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `minutes-${currentRoom}-${first.toISOString().slice(0,10)}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// --- Home / Chat toggle ---
+function showHome() {
+  isHome = true;
+  document.getElementById('home').classList.add('active');
+  document.getElementById('chat-view').classList.add('hidden');
+  roomLabel.textContent = '';
+  modeLabelEl.style.display = 'none';
+  document.querySelectorAll('.actions .btn-action, .actions .status').forEach(el => el.style.display = 'none');
+  const u = new URL(location.href);
+  u.searchParams.delete('room');
+  u.searchParams.delete('mode');
+  history.replaceState(null, '', u.pathname);
+  loadHome();
+}
+
+function showChat(room, mode) {
+  isHome = false;
+  currentRoom = room;
+  currentMode = mode || 'realtime';
+  document.getElementById('home').classList.remove('active');
+  document.getElementById('chat-view').classList.remove('hidden');
+  document.querySelectorAll('.actions .btn-action, .actions .status').forEach(el => el.style.display = '');
+  roomLabel.textContent = room;
+  isClosed = false; isRevealed = false; juryPass = 0; juryFail = 0;
+  inputEl.disabled = false; sendBtn.disabled = false;
+  inputEl.placeholder = 'พิมพ์ข้อความ (ส่งในนาม TINE)...';
+  document.getElementById('status-dot').classList.remove('closed');
+  document.getElementById('status-text').textContent = 'Live';
+  setMode(currentMode);
+  loadRooms();
+  loadMessages();
+  const u = new URL(location.href);
+  u.searchParams.set('room', room);
+  u.searchParams.set('mode', currentMode);
+  history.replaceState(null, '', u);
+}
+
+async function loadHome() {
+  const cardsEl = document.getElementById('room-cards');
+  cardsEl.innerHTML = '<div style="color:var(--muted);font-size:13px;">Loading...</div>';
+
+  const { data } = await sb.from('meeting_messages').select('room, speaker, message, created_at')
+    .order('created_at', { ascending: false }).limit(1000);
+
+  if (!data || !data.length) {
+    cardsEl.innerHTML = '<div style="color:var(--muted);font-size:13px;">ยังไม่มีห้องประชุม — สร้างห้องใหม่ด้านล่าง</div>';
+    return;
+  }
+
+  const roomMap = {};
+  data.forEach(m => {
+    if (!roomMap[m.room]) roomMap[m.room] = { messages: 0, speakers: new Set(), lastActivity: m.created_at, closed: false, mode: '' };
+    const r = roomMap[m.room];
+    r.messages++;
+    if (m.speaker !== 'system') r.speakers.add(m.speaker);
+    if (m.message.includes('Meeting Closed')) r.closed = true;
+    const modeMatch = m.message.match(/--- Mode: .+ (\w+) ---/);
+    if (modeMatch) r.mode = modeMatch[1];
+  });
+
+  const sorted = Object.entries(roomMap).sort((a, b) => {
+    if (a[1].closed !== b[1].closed) return a[1].closed ? 1 : -1;
+    return new Date(b[1].lastActivity) - new Date(a[1].lastActivity);
+  });
+
+  cardsEl.innerHTML = '';
+  sorted.forEach(([name, info]) => {
+    const card = document.createElement('div');
+    card.className = 'room-card';
+    card.onclick = () => showChat(name, info.mode || 'realtime');
+
+    const ago = getTimeAgo(info.lastActivity);
+    const speakerList = [...info.speakers].map(s => NAMES[s] || s).join(', ');
+    const modeIcon = MODE_ICONS[info.mode] || '💬';
+    const modeColor = MODE_COLORS[info.mode] || 'var(--accent)';
+
+    card.innerHTML = `
+      <div class="rc-top">
+        <span class="rc-name">${name}</span>
+        <span class="rc-mode" style="background:${modeColor};color:#000">${modeIcon} ${info.mode || 'realtime'}</span>
+        <span class="rc-status ${info.closed ? 'closed' : 'live'}">${info.closed ? 'Closed' : 'Active'}</span>
+      </div>
+      <div class="rc-stats">
+        <span>💬 ${info.messages}</span>
+        <span>👥 ${info.speakers.size}</span>
+        <span>🕐 ${ago}</span>
+      </div>
+      <div class="rc-speakers">${speakerList}</div>
+    `;
+    cardsEl.appendChild(card);
+  });
+}
+
+function getTimeAgo(ts) {
+  const diff = Date.now() - new Date(ts).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  return Math.floor(hrs / 24) + 'd ago';
+}
+
+// --- Events ---
+document.getElementById('btn-home').onclick = showHome;
+
+document.getElementById('btn-create-room').onclick = () => {
+  const nameRaw = document.getElementById('new-room-input').value.trim();
+  if (!nameRaw) return;
+  const name = nameRaw.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9฀-๿-]/g, '');
+  if (!name) return;
+  const activeBtn = document.querySelector('#create-modes .mode-btn.active');
+  const mode = activeBtn ? activeBtn.dataset.cmode : 'realtime';
+  document.getElementById('new-room-input').value = '';
+  showChat(name, mode);
+};
+
+document.querySelectorAll('#create-modes .mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#create-modes .mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+document.getElementById('guide-toggle').onclick = () => {
+  const content = document.getElementById('guide-content');
+  const toggle = document.getElementById('guide-toggle');
+  const isOpen = content.classList.toggle('open');
+  toggle.textContent = isOpen ? '📖 คู่มือการใช้งาน ▾' : '📖 คู่มือการใช้งาน ▸';
+};
+
+document.getElementById('btn-minutes').onclick = saveMinutes;
+document.getElementById('btn-round').onclick = cycleRound;
+document.getElementById('btn-close').onclick = closeMeeting;
+document.getElementById('btn-reveal').onclick = revealAll;
+document.getElementById('send').onclick = sendMessage;
+inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mode = btn.dataset.mode;
+    setMode(mode);
+    sb.from('meeting_messages').insert({
+      room: currentRoom, speaker: 'system', message: `--- Mode: ${MODE_ICONS[mode]} ${mode} ---`
+    });
+  });
+});
+
+// --- Init ---
+if (isHome) {
+  showHome();
+} else {
+  showChat(currentRoom, currentMode);
+}
+</script>
+</body>
+</html>

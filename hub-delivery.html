@@ -1,0 +1,2924 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="/nntn/auth.js"></script>
+<title>NNTN — ออกใบนำส่ง</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="nntn-theme.css">
+<style>
+:root {
+  --red: #8B0000; --red-light: #c62828; --red-bg: #fff5f5;
+  --green: #1B5E20; --green-light: #4CAF50;
+  --blue: #1565C0; --blue-light: #1976D2; --blue-bg: #E3F2FD;
+  --orange: #E65100;
+  --bg: #f5f5f5; --card: #fff; --border: #e0e0e0;
+  --text: #212121; --muted: #757575;
+  --header-bg: #1a1a2e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; padding-bottom: 80px; }
+
+header {
+  background: var(--header-bg); color: white; padding: 12px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+header .brand h1 { font-size: 1rem; font-weight: 700; }
+header .brand small { font-size: 0.7rem; opacity: 0.6; display: block; margin-top: 1px; }
+.back-btn {
+  font-size: 0.82rem; color: rgba(255,255,255,0.7); background: none;
+  border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;
+  padding: 5px 10px; cursor: pointer; font-family: inherit; text-decoration: none;
+}
+.back-btn:hover { color: white; border-color: rgba(255,255,255,0.4); }
+
+.wrap { padding: 14px; max-width: 600px; margin: 0 auto; }
+
+.card {
+  background: var(--card); border-radius: 10px;
+  padding: 16px; margin-bottom: 14px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.card-title {
+  font-size: 0.85rem; font-weight: 700; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 6px;
+}
+.tag { font-size: 0.68rem; background: var(--blue-bg); color: var(--blue);
+       padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+
+label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 5px; }
+input, select {
+  width: 100%; padding: 10px 12px; font-family: inherit; font-size: 0.9rem;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  background: white; color: var(--text); transition: border-color .15s;
+}
+input:focus, select:focus { outline: none; border-color: var(--blue-light); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.mb { margin-bottom: 12px; }
+
+.btn {
+  padding: 11px 20px; border-radius: 8px; border: none;
+  font-family: inherit; font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; transition: opacity .15s;
+}
+.btn:active { opacity: 0.8; }
+.btn-primary { background: var(--red-light); color: white; width: 100%; margin-top: 4px; }
+.btn-outline { background: none; border: 1.5px dashed; padding: 9px 14px; font-size: 0.82rem; }
+.btn-outline-green { color: var(--green); border-color: var(--green); }
+.btn-outline-blue { color: var(--blue); border-color: var(--blue); }
+.btn-sm { padding: 6px 12px; font-size: 0.78rem; border-radius: 6px; }
+.btn-danger { background: none; border: none; color: #ef5350; cursor: pointer; padding: 4px; font-size: 1rem; line-height: 1; }
+
+/* Lot chips */
+.lot-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.lot-chip {
+  padding: 8px 12px; border-radius: 8px;
+  border: 2px solid var(--border); cursor: pointer;
+  font-size: 0.82rem; background: white; transition: all .15s;
+}
+.lot-chip.selected { border-color: var(--blue-light); background: var(--blue-bg); color: var(--blue); }
+.lot-chip .lot-name { font-weight: 700; }
+.lot-chip .lot-kg { font-size: 0.72rem; color: var(--muted); }
+.lot-chip.selected .lot-kg { color: var(--blue); }
+
+/* Meat item block */
+.meat-block {
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px; margin-bottom: 10px;
+}
+.meat-block-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.meat-block-title { font-size: 0.82rem; font-weight: 700; }
+.lot-group-label {
+  font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; margin-top: 8px;
+}
+.meat-summary {
+  font-size: 0.82rem; color: var(--muted); padding-top: 8px;
+  border-top: 1px solid var(--border); margin-top: 8px;
+}
+.meat-summary b { color: var(--text); }
+
+/* Searchable Select */
+.ss-wrap { position: relative; }
+.ss-input {
+  width: 100%; padding: 10px 12px; font-family: inherit; font-size: 0.9rem;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  background: white; color: var(--text); transition: border-color .15s;
+  box-sizing: border-box;
+}
+.ss-input:focus { outline: none; border-color: var(--blue-light); }
+.ss-dropdown {
+  position: absolute; top: calc(100% + 3px); left: 0; right: 0;
+  background: white; border: 1.5px solid var(--blue-light); border-radius: 8px;
+  max-height: 220px; overflow-y: auto; z-index: 999;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+.ss-item {
+  padding: 9px 12px; cursor: pointer; font-size: 0.88rem;
+  border-bottom: 1px solid #f5f5f5;
+}
+.ss-item:last-child { border-bottom: none; }
+.ss-item:hover, .ss-item.active {
+  background: var(--blue-bg); color: var(--blue);
+}
+
+/* Non-meat rows */
+.nm-row-wrap { margin-bottom: 10px; }
+.nm-row {
+  display: grid; grid-template-columns: 1fr 70px 70px 28px;
+  gap: 8px; align-items: center;
+}
+.nm-row input, .nm-row select, .nm-row .ss-input { padding: 8px 10px; font-size: 0.85rem; }
+.nm-avail {
+  font-size: 0.75rem; margin-top: 4px; padding-left: 2px;
+  color: var(--muted); min-height: 16px;
+}
+.nm-avail.ok   { color: var(--green); }
+.nm-avail.over { color: var(--red-light); font-weight: 600; }
+
+/* Info / warn banners */
+.info-banner {
+  background: var(--blue-bg); border-left: 3px solid var(--blue-light);
+  padding: 10px 12px; border-radius: 6px; font-size: 0.82rem; margin-bottom: 12px;
+  color: var(--blue);
+}
+.warn-banner {
+  background: #FFF8E1; border-left: 3px solid #FFA000;
+  padding: 10px 12px; border-radius: 6px; font-size: 0.82rem; margin-bottom: 12px;
+  color: #E65100;
+}
+.success-banner {
+  background: #E8F5E9; border-left: 3px solid var(--green-light);
+  padding: 10px 12px; border-radius: 6px; font-size: 0.88rem; margin-bottom: 12px;
+  color: var(--green);
+}
+
+/* Preview / delivery note */
+.delivery-note {
+  font-family: 'Sarabun', sans-serif; font-size: 0.85rem;
+}
+.delivery-note .dn-header {
+  text-align: center; margin-bottom: 12px; padding-bottom: 10px;
+  border-bottom: 2px solid var(--border);
+}
+.delivery-note .dn-header h2 { font-size: 1rem; font-weight: 700; }
+.delivery-note .dn-header .dn-meta { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+.dn-section-title {
+  font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--muted); margin: 10px 0 6px;
+}
+.dn-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+.dn-table th { background: #f5f5f5; padding: 6px 8px; font-size: 0.75rem; text-align: left;
+               border-bottom: 1px solid var(--border); }
+.dn-table td { padding: 7px 8px; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem; }
+.dn-table tfoot td { font-weight: 700; border-top: 2px solid var(--border); border-bottom: none; }
+
+/* Modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.5); align-items: flex-end; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: white; border-radius: 16px 16px 0 0;
+  padding: 20px 16px 32px; width: 100%; max-width: 480px;
+  max-height: 85vh; overflow-y: auto;
+}
+.modal-title { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+.modal-sub { font-size: 0.78rem; color: var(--muted); margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+.modal-actions .btn-cancel {
+  flex:1; padding: 11px; border-radius: 8px; border: 1.5px solid var(--border);
+  background: none; font-family: inherit; font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; color: var(--muted);
+}
+.modal-actions .btn-confirm {
+  flex:2; padding: 11px; border-radius: 8px; border: none;
+  background: var(--red-light); color: white;
+  font-family: inherit; font-size: 0.9rem; font-weight: 700; cursor: pointer;
+}
+
+.loading { color: var(--muted); font-style: italic; font-size: 0.85rem; text-align: center; padding: 20px; }
+
+/* Tabs */
+.tabs {
+  display: flex; gap: 4px; margin-bottom: 14px;
+  background: var(--card); border-radius: 10px;
+  padding: 6px; border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.tab-btn {
+  flex: 1; padding: 9px 10px; border: none; border-radius: 7px;
+  font-family: inherit; font-size: 0.88rem; font-weight: 600;
+  cursor: pointer; background: none; color: var(--muted);
+  transition: all .15s;
+}
+.tab-btn.active {
+  background: var(--header-bg); color: white;
+}
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* Audit log table */
+.audit-section { margin-top: 14px; }
+.audit-section .card-title { margin-bottom: 10px; }
+.audit-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.audit-table th {
+  background: #f5f5f5; padding: 6px 8px; text-align: left;
+  border-bottom: 1px solid var(--border); font-size: 0.75rem; white-space: nowrap;
+}
+.audit-table td { padding: 6px 8px; border-bottom: 1px solid #f5f5f5; vertical-align: top; }
+.audit-table tr:last-child td { border-bottom: none; }
+.audit-action-edit   { color: var(--blue); font-weight: 600; }
+.audit-action-delete { color: #ef5350; font-weight: 600; }
+.audit-action-add    { color: var(--green); font-weight: 600; }
+.audit-qty-delete    { color: #ef5350; }
+.audit-qty-add       { color: var(--green); }
+
+/* History tab */
+.hist-bill-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06); overflow: hidden;
+}
+.hist-bill-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 14px; cursor: pointer;
+  border-bottom: 1px solid transparent; transition: background .12s;
+}
+.hist-bill-header:hover { background: #fafafa; }
+.hist-bill-header.open { border-bottom-color: var(--border); }
+.hist-bill-info { flex: 1; }
+.hist-bill-num { font-weight: 700; font-size: 0.92rem; }
+.hist-bill-meta { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+.hist-bill-count {
+  font-size: 0.75rem; background: var(--blue-bg); color: var(--blue);
+  padding: 3px 9px; border-radius: 10px; font-weight: 600; white-space: nowrap;
+}
+.hist-bill-body { padding: 10px 14px; }
+.hist-item-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid #f5f5f5; font-size: 0.88rem;
+}
+.hist-item-row:last-child { border-bottom: none; }
+.hist-item-name { flex: 1; }
+.hist-item-qty { font-weight: 700; min-width: 60px; text-align: right; }
+.hist-item-unit { color: var(--muted); font-size: 0.8rem; min-width: 40px; }
+.hist-edit-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 3px 8px; font-size: 0.75rem; cursor: pointer; color: var(--muted);
+  font-family: inherit; transition: all .12s;
+}
+.hist-edit-btn:hover { border-color: var(--blue-light); color: var(--blue); }
+.hist-edit-row {
+  display: flex; align-items: center; gap: 6px; margin-top: 4px; padding: 6px 0;
+  border-top: 1px dashed var(--border);
+}
+.hist-edit-row label { font-size: 0.75rem; color: var(--muted); margin: 0; white-space: nowrap; }
+.hist-edit-row input {
+  width: 90px; padding: 6px 8px; font-size: 0.85rem;
+  border: 1.5px solid var(--blue-light); border-radius: 6px; font-family: inherit;
+}
+.hist-save-btn {
+  padding: 6px 12px; border-radius: 6px; border: none;
+  background: var(--blue-light); color: white;
+  font-family: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+}
+.hist-cancel-btn {
+  padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border);
+  background: none; font-family: inherit; font-size: 0.8rem; cursor: pointer;
+  color: var(--muted);
+}
+.hist-warn {
+  font-size: 0.72rem; color: var(--orange); margin-top: 2px;
+}
+.hist-empty { text-align: center; color: var(--muted); padding: 32px 0; font-size: 0.88rem; }
+.hist-filter-bar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+.hist-filter-bar input {
+  flex: 1; padding: 8px 11px; font-size: 0.85rem;
+  border: 1.5px solid var(--border); border-radius: 8px; font-family: inherit;
+}
+.hist-filter-bar input:focus { outline: none; border-color: var(--blue-light); }
+.hist-del-btn {
+  background: none; border: none; cursor: pointer; padding: 3px 5px;
+  font-size: 1rem; line-height: 1; color: #bdbdbd; transition: color .12s;
+}
+.hist-del-btn:hover { color: #ef5350; }
+.hist-add-row-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 8px 0; margin-top: 6px;
+  background: none; border: 1.5px dashed var(--border); border-radius: 8px;
+  font-family: inherit; font-size: 0.82rem; color: var(--muted); cursor: pointer;
+  transition: all .15s;
+}
+.hist-add-row-btn:hover { border-color: var(--blue-light); color: var(--blue); }
+.hist-add-form {
+  display: none; background: var(--blue-bg); border: 1.5px solid var(--blue-light);
+  border-radius: 8px; padding: 10px 12px; margin-top: 8px;
+}
+.hist-add-form .add-form-row {
+  display: grid; grid-template-columns: 1fr 80px; gap: 8px; margin-bottom: 8px;
+}
+.hist-add-form select, .hist-add-form input[type="number"] {
+  padding: 7px 9px; font-size: 0.85rem; border: 1.5px solid var(--border);
+  border-radius: 6px; font-family: inherit; background: white;
+}
+.hist-add-form select:focus, .hist-add-form input[type="number"]:focus {
+  outline: none; border-color: var(--blue-light);
+}
+.hist-add-form .add-form-actions { display: flex; gap: 8px; }
+.hist-add-form .add-form-actions .hist-save-btn { flex: 2; }
+.hist-add-form .add-form-actions .hist-cancel-btn { flex: 1; }
+
+@media print {
+  header, .no-print { display: none !important; }
+  .wrap { padding: 0; }
+  .card { box-shadow: none; border: none; }
+  body { background: white; padding: 0; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>🚛 ออกใบนำส่ง</h1>
+    <small>NNTN Hub — เนื้อ + Non-meat</small>
+  </div>
+  <a href="hub.html" class="back-btn no-print">← Hub</a>
+</header>
+
+<div class="wrap">
+
+  <!-- ════ Tabs ════ -->
+  <div class="tabs no-print">
+    <button class="tab-btn active" id="tab-btn-delivery" onclick="switchTab('delivery')">📝 เตรียมใบ</button>
+    <button class="tab-btn" id="tab-btn-drafts" onclick="switchTab('drafts')">⏳ รอส่ง</button>
+    <button class="tab-btn" id="tab-btn-history" onclick="switchTab('history')">📋 ประวัติ</button>
+    <button class="tab-btn" id="tab-btn-adjust" onclick="switchTab('adjust')">🔧 ปรับแก้</button>
+  </div>
+
+  <!-- Draft banner -->
+  <!-- ════ Tab: ออกใบนำส่ง ════ -->
+  <div class="tab-pane active" id="tab-delivery">
+
+  <!-- ════ ข้อมูลใบนำส่ง ════ -->
+  <div class="card no-print">
+    <div class="card-title">📋 ข้อมูลใบนำส่ง</div>
+    <div class="row2">
+      <div><label>วันที่ส่ง</label><input type="date" id="dl-date"></div>
+      <div>
+        <label>ปลายทาง</label>
+        <select id="dl-dest">
+          <option value="ครัวกลาง (NT)">ครัวกลาง (NT)</option>
+          <option value="หน้าร้าน (FS)">หน้าร้าน (FS)</option>
+          <option value="อื่นๆ">อื่นๆ</option>
+        </select>
+      </div>
+    </div>
+    <div><label>เลขที่ใบนำส่ง</label>
+      <input type="text" id="dl-bill" placeholder="เช่น NT-20260408-01">
+    </div>
+  </div>
+
+  <!-- ════ Block 1: เนื้อตุ๋น ════ -->
+  <div class="card">
+    <div class="card-title">🥩 Block 1 — เนื้อตุ๋น <span class="tag">รายถุง</span></div>
+    <div id="meat-blocks"><div class="loading">กำลังโหลด...</div></div>
+    <button class="btn btn-outline btn-outline-green no-print" style="width:100%;margin-top:8px" onclick="addMeatBlock()">
+      + เพิ่มรายการเนื้อ
+    </button>
+  </div>
+
+  <!-- ════ Block 2: Non-meat ════ -->
+  <div class="card">
+    <div class="card-title">🧂 Block 2 — Non-meat <span class="tag">จำนวน</span></div>
+    <div class="info-banner no-print">📝 บันทึกเพื่ออ้างอิงในใบนำส่ง — อัปเดตสต๊อกแยกผ่าน withdrawal-form</div>
+    <div id="nm-rows"></div>
+    <button class="btn btn-outline btn-outline-blue no-print" style="width:100%;margin-top:4px" onclick="addNmRow()">
+      + เพิ่มรายการ Non-meat
+    </button>
+  </div>
+
+  <!-- ════ Preview ════ -->
+  <div class="card" id="preview-card">
+    <div class="card-title">👁 Preview ใบนำส่ง</div>
+    <div id="preview-content" class="delivery-note">
+      <div style="color:var(--muted);font-size:.85rem">กรอกข้อมูลและเลือกถุงเพื่อดู Preview</div>
+    </div>
+    <div class="no-print" style="margin-top:14px">
+      <button class="btn btn-outline btn-outline-blue btn-sm" onclick="window.print()">🖨 พิมพ์</button>
+    </div>
+  </div>
+
+  <!-- ════ Submit ════ -->
+  <div class="no-print" style="display:flex;gap:10px">
+    <button class="btn" id="draft-btn" onclick="saveDraftToCloud()" style="flex:1;background:#f5f5f5;border:1.5px solid #bdbdbd;color:#333;font-weight:700">💾 บันทึก Draft</button>
+    <button class="btn btn-primary" id="submit-btn" onclick="submitDelivery()" style="flex:2">🚛 บันทึกส่งออก</button>
+  </div>
+
+  </div><!-- end tab-delivery -->
+
+  <!-- ════ Tab: รอส่ง (Drafts) ════ -->
+  <div class="tab-pane" id="tab-drafts">
+    <div class="card">
+      <div class="card-title">⏳ ใบนำส่งที่รอส่ง</div>
+      <div id="drafts-list"><div class="loading">กำลังโหลด...</div></div>
+    </div>
+  </div>
+
+  <!-- ════ Tab: ประวัติ ════ -->
+  <div class="tab-pane" id="tab-history">
+    <div class="card">
+      <div class="card-title">📋 ประวัติการส่ง Non-meat</div>
+      <div class="hist-filter-bar">
+        <input type="text" id="hist-search" placeholder="ค้นหาบิล / ปลายทาง..." oninput="filterHistory()">
+      </div>
+      <div id="hist-list"><div class="loading">แตะแท็บ ประวัติ เพื่อโหลดข้อมูล</div></div>
+    </div>
+
+  </div><!-- end tab-history -->
+
+  <!-- ════ Tab: ปรับแก้ (Adjust) ════ -->
+  <div class="tab-pane" id="tab-adjust">
+    <div class="card">
+      <div class="card-title">🔧 ปรับแก้ใบนำส่ง</div>
+      <div class="info-banner no-print" style="background:#FFF3E0;border-color:#FFB74D;margin-bottom:12px">
+        ⏰ แก้ไขได้เฉพาะบิลที่ส่งภายใน 24 ชั่วโมง — เลือกบิล แล้วกดปุ่มที่ต้องการ
+      </div>
+      <div id="adjust-list"><div class="loading">แตะแท็บ ปรับแก้ เพื่อโหลดข้อมูล</div></div>
+    </div>
+  </div><!-- end tab-adjust -->
+
+</div>
+
+<!-- ════ Modal เลือกถุง ════ -->
+<div class="modal-overlay" id="bag-modal" onclick="if(event.target===this)closeBagModal()">
+  <div class="modal-box">
+    <div class="modal-title" id="bag-modal-title">📦 เลือกถุง</div>
+    <div class="modal-sub" id="bag-modal-count">ยังไม่ได้เลือก</div>
+    <div id="bag-modal-body" style="max-height:52vh;overflow-y:auto"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeBagModal()">ยกเลิก</button>
+      <button class="btn-confirm" onclick="confirmBags()">✅ ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SB  = 'https://emjqulzikpxorvpaaiww.supabase.co'
+const KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M'
+const jwt  = localStorage.getItem('nntn_sb_token') || KEY
+const H    = { 'apikey': KEY, 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' }
+
+// ─── submit_log audit trail (Phase A · 30/04) ───────────────────────────────
+// Append-only log of every submit attempt (success/fail/cancel) for audit defense.
+// Best-effort: never blocks the actual submit flow.
+async function _logSubmit(action, status, payload, opts) {
+  try {
+    const tok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+    let actor = null
+    try {
+      const claims = JSON.parse(atob(tok.split('.')[1]))
+      actor = claims?.email || claims?.sub || null
+    } catch (_) {}
+    const body = {
+      actor_id:    actor,
+      device_hint: (navigator.platform || '') + ' · ' + (window.innerWidth + 'x' + window.innerHeight),
+      action,
+      status,
+      payload:     payload || null,
+      error_msg:   opts?.error_msg || null,
+      ref_id:      opts?.ref_id || null,
+      user_agent:  navigator.userAgent?.slice(0, 300) || null
+    }
+    await fetch(`${SB}/rest/v1/submit_log`, {
+      method:  'POST',
+      headers: { ...H, 'Authorization': 'Bearer ' + tok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock', 'Prefer': 'return=minimal' },
+      body:    JSON.stringify(body)
+    })
+  } catch (_) { /* swallow — audit best-effort */ }
+}
+
+// State
+let mtItems       = []   // MT- items from items table
+let spItems       = []   // SP- items from items table
+let cwBags        = []   // catch_weight rows (in_stock)
+let bagCache      = {}   // bagId → { weight_g, lot_date, item_id, legacy_cw_row }
+let spStockBySku  = {}   // sku → current_qty (from current_stock view)
+
+let meatBlockCount = 0
+const meatSel = {}   // blockN → { itemId, selectedBags: Set<id> }
+
+let nmRowCount = 0
+let _modalBlock = null  // which block is the modal for
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+async function get(table, params = {}) {
+  const q = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
+  const tok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+  const h = { ...H, Authorization: 'Bearer ' + tok }
+  const r = await fetch(`${SB}/rest/v1/${table}?${q}`, { headers: h })
+  if (!r.ok) throw new Error(`GET ${table}: ${r.status}`)
+  return r.json()
+}
+
+function fmtDate(s) {
+  if (!s) return '—'
+  const d = s.split('T')[0]
+  const [y, m, dd] = d.split('-')
+  return `${dd}/${m}/${y.slice(2)}`
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  // Set today's date
+  document.getElementById('dl-date').value = new Date().toISOString().split('T')[0]
+
+  try {
+    const [allItems, bags, stockRows] = await Promise.all([
+      get('items', { select: 'id,sku,name,unit,category', is_active: 'eq.true', order: 'sku.asc', limit: 500 }),
+      get('catch_weight', {
+        select: 'id,item_id,weight_g,lot_date,warehouse,legacy_cw_row',
+        status: 'eq.✅ In Stock',
+        order: 'lot_date.asc',
+        limit: 2000
+      }),
+      get('v_stock_unified', { select: 'sku,qty_on_hand', limit: 500 })
+    ])
+
+    const items = Array.isArray(allItems) ? allItems : []
+    mtItems = items.filter(i => i.category && i.category.startsWith('meat'))
+    spItems = items.filter(i => !i.category || !i.category.startsWith('meat'))
+    window._itemsById = {}
+    items.forEach(i => { window._itemsById[i.id] = i })
+
+    // Build sku → current_qty map for ALL non-meat items (SP + PKG)
+    ;(Array.isArray(stockRows) ? stockRows : []).forEach(r => {
+      if (r.sku && (r.sku.startsWith('SP') || r.sku.startsWith('PKG'))) {
+        spStockBySku[r.sku] = parseFloat(r.qty_on_hand) || 0
+      }
+    })
+
+    cwBags = Array.isArray(bags) ? bags : []
+    cwBags.forEach(b => { bagCache[b.id] = b })
+
+    // Init first meat block
+    document.getElementById('meat-blocks').innerHTML = ''
+    addMeatBlock()
+
+    // Init first non-meat row
+    addNmRow()
+
+    // Check for saved draft
+
+  } catch(e) {
+    const is401 = e.message && e.message.includes('401')
+    document.getElementById('meat-blocks').innerHTML = is401
+      ? `<div class="warn-banner" style="text-align:center;padding:20px 16px">
+           🔒 กรุณาล็อกอินเพื่อเข้าใช้งาน<br>
+           <a href="/nntn/login.html" style="display:inline-block;margin-top:12px;background:#8B0000;color:#fff;padding:8px 20px;border-radius:8px;text-decoration:none;font-size:0.9rem">เข้าสู่ระบบ</a>
+         </div>`
+      : `<div class="warn-banner">❌ โหลดข้อมูลไม่ได้: ${e.message}</div>`
+  }
+
+  // Auto-update preview when header changes
+  document.getElementById('dl-date').addEventListener('input', () => { updatePreview(); suggestBillNum() })
+  document.getElementById('dl-dest').addEventListener('change', () => { updatePreview(); suggestBillNum() })
+  document.getElementById('dl-bill').addEventListener('input', updatePreview)
+  suggestBillNum()
+})
+
+// ─── Searchable Select ────────────────────────────────────────────────────────
+function makeSearchable(selectId, placeholder) {
+  const sel = document.getElementById(selectId)
+  if (!sel) return
+  sel.style.display = 'none'
+
+  const wrap = document.createElement('div')
+  wrap.className = 'ss-wrap'
+  wrap.innerHTML = `
+    <input type="text" class="ss-input" placeholder="${placeholder}" autocomplete="off" id="${selectId}-search">
+    <div class="ss-dropdown" id="${selectId}-dd" style="display:none"></div>`
+  sel.parentNode.insertBefore(wrap, sel)
+
+  const input    = wrap.querySelector('.ss-input')
+  const dropdown = wrap.querySelector('.ss-dropdown')
+  let activeIdx  = -1
+
+  const options = Array.from(sel.options).filter(o => o.value)
+
+  function filtered() {
+    const q = input.value.trim().toLowerCase()
+    return q ? options.filter(o => o.text.toLowerCase().includes(q)) : options
+  }
+
+  function render(items) {
+    activeIdx = -1
+    dropdown.innerHTML = items.map((o, i) =>
+      `<div class="ss-item" data-val="${o.value}" data-i="${i}">${o.text}</div>`
+    ).join('') || `<div class="ss-item" style="color:var(--muted);cursor:default">ไม่พบรายการ</div>`
+    dropdown.style.display = 'block'
+    dropdown.querySelectorAll('.ss-item[data-val]').forEach(el =>
+      el.addEventListener('mousedown', e => { e.preventDefault(); pick(el) })
+    )
+  }
+
+  function pick(el) {
+    sel.value = el.dataset.val
+    input.value = el.textContent
+    dropdown.style.display = 'none'
+    activeIdx = -1
+    sel.dispatchEvent(new Event('change'))
+  }
+
+  function setActive(idx) {
+    const items = dropdown.querySelectorAll('.ss-item[data-val]')
+    items.forEach(el => el.classList.remove('active'))
+    if (idx >= 0 && idx < items.length) {
+      items[idx].classList.add('active')
+      items[idx].scrollIntoView({ block: 'nearest' })
+      activeIdx = idx
+    }
+  }
+
+  input.addEventListener('focus', () => { if (input.value.trim()) { render(filtered()); setActive(0) } })
+  input.addEventListener('input', () => { if (input.value.trim()) { render(filtered()); setActive(0) } else { dropdown.style.display = 'none' } })
+
+  input.addEventListener('keydown', e => {
+    const items = dropdown.querySelectorAll('.ss-item[data-val]')
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(activeIdx + 1, items.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(activeIdx - 1, 0)) }
+    else if (e.key === 'Enter') { e.preventDefault(); if (activeIdx >= 0 && items[activeIdx]) pick(items[activeIdx]) }
+    else if (e.key === 'Escape') { dropdown.style.display = 'none' }
+  })
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => { dropdown.style.display = 'none' }, 160)
+  })
+}
+
+// ─── Meat Blocks ──────────────────────────────────────────────────────────────
+function addMeatBlock() {
+  meatBlockCount++
+  const n = meatBlockCount
+  meatSel[n] = { itemId: null, selectedBags: new Set() }
+
+  const opts = mtItems.map(i =>
+    `<option value="${i.id}" data-name="${i.name}" data-sku="${i.sku}">${i.sku} | ${i.name}</option>`
+  ).join('')
+
+  const div = document.createElement('div')
+  div.className = 'meat-block no-print-border'
+  div.id = `meat-block-${n}`
+  div.innerHTML = `
+    <div class="meat-block-header">
+      <div class="meat-block-title">รายการที่ ${n}</div>
+      ${n > 1 ? `<button class="btn-danger" onclick="removeMeatBlock(${n})">✕</button>` : ''}
+    </div>
+    <div class="mb">
+      <label>SKU / รายการ</label>
+      <select id="mb-sku-${n}" onchange="onMeatItemChange(${n})">
+        <option value="">— เลือก MT item —</option>${opts}
+      </select>
+    </div>
+    <button class="btn btn-outline btn-outline-blue btn-sm no-print"
+            id="mb-pick-btn-${n}" style="display:none;width:100%;margin-bottom:10px"
+            onclick="openBagModal(${n})">
+      📦 เลือกถุง
+    </button>
+    <div id="mb-chips-${n}"></div>
+    <div class="meat-summary" id="mb-sum-${n}" style="display:none"></div>`
+
+  document.getElementById('meat-blocks').appendChild(div)
+  makeSearchable(`mb-sku-${n}`, '— พิมพ์ค้นหา MT item —')
+  renumberMeatBlocks()
+}
+
+function removeMeatBlock(n) {
+  document.getElementById(`meat-block-${n}`)?.remove()
+  delete meatSel[n]
+  renumberMeatBlocks()
+  updatePreview()
+}
+
+function renumberMeatBlocks() {
+  document.querySelectorAll('#meat-blocks .meat-block').forEach((block, idx) => {
+    const titleEl = block.querySelector('.meat-block-title')
+    if (titleEl) titleEl.textContent = `รายการที่ ${idx + 1}`
+  })
+}
+
+function onMeatItemChange(n) {
+  const sel = document.getElementById(`mb-sku-${n}`)
+  const itemId = sel.value
+  meatSel[n].itemId = itemId
+  meatSel[n].selectedBags = new Set()
+  document.getElementById(`mb-chips-${n}`).innerHTML = ''
+  document.getElementById(`mb-sum-${n}`).style.display = 'none'
+  const btn = document.getElementById(`mb-pick-btn-${n}`)
+  if (itemId) {
+    const name = sel.options[sel.selectedIndex]?.dataset?.name || ''
+    btn.style.display = 'block'
+    btn.textContent = `📦 เลือกถุง — ${name}`
+  } else {
+    btn.style.display = 'none'
+  }
+  updatePreview()
+}
+
+function renderMeatChips(n) {
+  const { itemId, selectedBags } = meatSel[n]
+  const chipsEl = document.getElementById(`mb-chips-${n}`)
+  const sumEl = document.getElementById(`mb-sum-${n}`)
+
+  if (selectedBags.size === 0) {
+    chipsEl.innerHTML = ''
+    sumEl.style.display = 'none'
+    return
+  }
+
+  // Group by lot
+  const lots = {}
+  selectedBags.forEach(id => {
+    const b = bagCache[id]
+    if (!b) return
+    const lot = b.lot_date ? b.lot_date.split('T')[0] : 'unknown'
+    if (!lots[lot]) lots[lot] = []
+    lots[lot].push(b)
+  })
+
+  chipsEl.innerHTML = Object.entries(lots).sort().map(([lot, bags]) => {
+    const chips = bags.map(b => {
+      const cw = b.legacy_cw_row ? `${b.legacy_cw_row}` : '#' + String(b.id).substring(0, 6)
+      const kg = ((b.weight_g || 0) / 1000).toFixed(3)
+      return `<div class="lot-chip selected" style="cursor:default">
+        <div class="lot-name">${cw}</div>
+        <div class="lot-kg">${kg} กก.</div>
+      </div>`
+    }).join('')
+    return `<div class="lot-group-label">lot ${fmtDate(lot)} — ${bags.length} ถุง</div>
+            <div class="lot-chips">${chips}</div>`
+  }).join('')
+
+  let totalKg = 0
+  selectedBags.forEach(id => { totalKg += (bagCache[id]?.weight_g || 0) / 1000 })
+  sumEl.style.display = 'block'
+  sumEl.innerHTML = `✅ <b>${selectedBags.size} ถุง</b> / <b>${totalKg.toFixed(3)} กก.</b>`
+
+  updatePreview()
+  saveDraft()
+}
+
+// ─── Bag Modal ────────────────────────────────────────────────────────────────
+function openBagModal(n) {
+  _modalBlock = n
+  const { itemId, selectedBags } = meatSel[n]
+  if (!itemId) return
+
+  const sel = document.getElementById(`mb-sku-${n}`)
+  const name = sel.options[sel.selectedIndex]?.dataset?.name || ''
+  document.getElementById('bag-modal-title').textContent = `📦 ${name}`
+
+  const bags = cwBags.filter(b => b.item_id === itemId)
+  const lots = {}
+  bags.forEach(b => {
+    const lot = b.lot_date ? b.lot_date.split('T')[0] : 'unknown'
+    if (!lots[lot]) lots[lot] = []
+    lots[lot].push(b)
+  })
+
+  const body = document.getElementById('bag-modal-body')
+  if (bags.length === 0) {
+    body.innerHTML = `<div style="text-align:center;color:var(--muted);padding:24px">ไม่มีถุง In Stock สำหรับรายการนี้</div>`
+  } else {
+    body.innerHTML = Object.entries(lots).sort().map(([lot, lotBags]) => {
+      const chips = lotBags.map(b => {
+        const cw = b.legacy_cw_row ? `${b.legacy_cw_row}` : '#' + String(b.id).substring(0, 6)
+        const kg = ((b.weight_g || 0) / 1000).toFixed(3)
+        const isSel = selectedBags.has(String(b.id)) ? ' selected' : ''
+        return `<div class="lot-chip${isSel}" id="bagchip-${b.id}"
+                     data-id="${b.id}" onclick="toggleBag('${b.id}')">
+          <div class="lot-name">${cw}</div>
+          <div class="lot-kg">${kg} กก.</div>
+        </div>`
+      }).join('')
+      return `<div class="lot-group-label">lot ${fmtDate(lot)} — ${lotBags.length} ถุง</div>
+              <div class="lot-chips">${chips}</div>`
+    }).join('')
+  }
+
+  updateModalCount()
+  document.getElementById('bag-modal').classList.add('open')
+}
+
+function toggleBag(bagId) {
+  const n = _modalBlock
+  const sel = meatSel[n].selectedBags
+  const chip = document.getElementById(`bagchip-${bagId}`)
+  if (sel.has(bagId)) { sel.delete(bagId); chip?.classList.remove('selected') }
+  else                 { sel.add(bagId);    chip?.classList.add('selected') }
+  updateModalCount()
+}
+
+function updateModalCount() {
+  const n = _modalBlock
+  const sel = meatSel[n]?.selectedBags || new Set()
+  let kg = 0
+  sel.forEach(id => { kg += (bagCache[id]?.weight_g || 0) / 1000 })
+  const el = document.getElementById('bag-modal-count')
+  el.textContent = sel.size === 0
+    ? 'แตะถุงเพื่อเลือก'
+    : `เลือกแล้ว ${sel.size} ถุง / ${kg.toFixed(3)} กก.`
+}
+
+function confirmBags() {
+  const n = _modalBlock
+  renderMeatChips(n)
+  closeBagModal()
+}
+
+function closeBagModal() {
+  document.getElementById('bag-modal').classList.remove('open')
+  _modalBlock = null
+}
+
+// ─── Non-meat Rows ────────────────────────────────────────────────────────────
+function addNmRow() {
+  nmRowCount++
+  const n = nmRowCount
+  const opts = spItems.map(i => {
+    const stk = spStockBySku[i.sku]
+    const isMisc = i.sku.startsWith('MISC')
+    const isOOS = !isMisc && stk !== undefined && stk <= 0
+    const stkTag = isMisc ? '' : (stk !== undefined ? ` · มี ${stk}` : '')
+    const oosTag = isOOS ? ' ❌ หมด' : ''
+    return `<option value="${i.id}" data-sku="${i.sku}" data-unit="${i.unit || ''}" data-name="${i.name}" ${isOOS ? 'disabled' : ''}>${i.sku} | ${i.name}${stkTag}${oosTag}</option>`
+  }).join('')
+
+  const wrap = document.createElement('div')
+  wrap.className = 'nm-row-wrap'
+  wrap.id = `nm-row-${n}`
+  wrap.innerHTML = `
+    <div class="nm-row">
+      <select id="nm-item-${n}" onchange="onNmChange(${n})">
+        <option value="">— เลือก SP item —</option>${opts}
+      </select>
+      <input type="number" id="nm-qty-${n}" min="0" step="0.01" placeholder="qty" oninput="validateNmQty(${n})">
+      <input type="text" id="nm-unit-${n}" placeholder="หน่วย" oninput="updatePreview()">
+      <button class="btn-danger" onclick="removeNmRow(${n})">✕</button>
+    </div>
+    <div class="nm-avail" id="nm-avail-${n}"></div>
+    <input type="text" id="nm-note-${n}" placeholder="ชื่อรายการ (บังคับ)" style="display:none;width:100%;margin-top:4px;box-sizing:border-box" oninput="updatePreview();saveDraft()">`
+
+  document.getElementById('nm-rows').appendChild(wrap)
+  makeSearchable(`nm-item-${n}`, '— พิมพ์ค้นหา SP item —')
+}
+
+function removeNmRow(n) {
+  document.getElementById(`nm-row-${n}`)?.remove()
+  updatePreview()
+  saveDraft()
+}
+
+function onNmChange(n) {
+  const sel    = document.getElementById(`nm-item-${n}`)
+  const opt    = sel.options[sel.selectedIndex]
+  const sku    = opt?.dataset?.sku || ''
+  const isMisc = sku.startsWith('MISC')
+  const avEl   = document.getElementById(`nm-avail-${n}`)
+  const noteEl = document.getElementById(`nm-note-${n}`)
+  const _nmUnit = isMisc ? '' : (opt?.dataset?.unit || '')
+  document.getElementById(`nm-unit-${n}`).value = _nmUnit
+  const _nmQtyInput = document.getElementById(`nm-qty-${n}`)
+  if (_nmQtyInput) {
+    _nmQtyInput.step = window.nntnIsDecimalUnit(_nmUnit) ? '0.01' : '1'
+    _nmQtyInput.inputMode = window.nntnIsDecimalUnit(_nmUnit) ? 'decimal' : 'numeric'
+  }
+  if (noteEl) noteEl.style.display = isMisc ? '' : 'none'
+  if (isMisc) {
+    avEl.textContent = ''
+  } else if (sku && spStockBySku[sku] !== undefined) {
+    const avail = spStockBySku[sku]
+    avEl.className = 'nm-avail'
+    avEl.textContent = `มีอยู่: ${avail} ${opt?.dataset?.unit || 'หน่วย'}`
+  } else {
+    avEl.className = 'nm-avail'
+    avEl.textContent = ''
+  }
+  validateNmQty(n)
+  saveDraft()
+}
+
+function validateNmQty(n) {
+  const sel   = document.getElementById(`nm-item-${n}`)
+  const opt   = sel?.options[sel.selectedIndex]
+  const sku   = opt?.dataset?.sku || ''
+  const unit  = opt?.dataset?.unit || 'หน่วย'
+  const qty   = parseFloat(document.getElementById(`nm-qty-${n}`)?.value) || 0
+  const avEl  = document.getElementById(`nm-avail-${n}`)
+  const avail = spStockBySku[sku]
+
+  if (!sku || avail === undefined) { updatePreview(); return }
+
+  if (qty <= 0) {
+    avEl.className = 'nm-avail'
+    avEl.textContent = `มีอยู่: ${avail} ${unit}`
+  } else if (qty <= avail) {
+    avEl.className = 'nm-avail ok'
+    avEl.textContent = `✅ เบิกได้ — คงเหลือ ${(avail - qty)} ${unit}`
+  } else {
+    avEl.className = 'nm-avail over'
+    avEl.textContent = `⚠️ เบิกได้สูงสุด ${avail} ${unit} (มีอยู่ ${avail})`
+  }
+  updatePreview()
+}
+
+// ─── Preview ──────────────────────────────────────────────────────────────────
+function updatePreview() {
+  const date  = document.getElementById('dl-date').value
+  const dest  = document.getElementById('dl-dest').value
+  const bill  = document.getElementById('dl-bill').value.trim()
+
+  // Collect meat data
+  const meatRows = []
+  Object.entries(meatSel).forEach(([n, state]) => {
+    if (!state.itemId || state.selectedBags.size === 0) return
+    const skuEl = document.getElementById(`mb-sku-${n}`)
+    const name = skuEl?.options[skuEl.selectedIndex]?.dataset?.name || '?'
+    state.selectedBags.forEach(id => {
+      const b = bagCache[id]
+      if (!b) return
+      const cw = b.legacy_cw_row ? `${b.legacy_cw_row}` : '#' + String(id).substring(0, 6)
+      const lot = fmtDate(b.lot_date)
+      const kg  = ((b.weight_g || 0) / 1000).toFixed(3)
+      meatRows.push({ name, cw, lot, kg: parseFloat(kg) })
+    })
+  })
+
+  // Collect non-meat data — ใช้ querySelectorAll แทน index loop เพื่อรองรับ delete+add
+  const nmRows = []
+  document.querySelectorAll('#nm-rows .nm-row-wrap').forEach(wrap => {
+    const n = wrap.id.replace('nm-row-', '')
+    const itemEl = document.getElementById(`nm-item-${n}`)
+    const qtyEl  = document.getElementById(`nm-qty-${n}`)
+    const unitEl = document.getElementById(`nm-unit-${n}`)
+    if (!itemEl || !itemEl.value) return
+    const opt    = itemEl.options[itemEl.selectedIndex]
+    const sku    = opt?.dataset?.sku || ''
+    const isMisc = sku.startsWith('MISC')
+    const name   = isMisc
+      ? (document.getElementById(`nm-note-${n}`)?.value?.trim() || 'รายการพิเศษ')
+      : (opt?.dataset?.name || '?')
+    const qty  = parseFloat(qtyEl?.value) || 0
+    const unit = unitEl?.value || ''
+    if (qty > 0) nmRows.push({ name, qty, unit })
+  })
+
+  const el = document.getElementById('preview-content')
+
+  if (meatRows.length === 0 && nmRows.length === 0) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:.85rem">กรอกข้อมูลและเลือกถุงเพื่อดู Preview</div>`
+    return
+  }
+
+  const totalMeatKg = meatRows.reduce((s, r) => s + r.kg, 0)
+
+  let html = `<div class="dn-header">
+    <h2>ใบนำส่ง — ${bill || '(ยังไม่ระบุเลขบิล)'}</h2>
+    <div class="dn-meta">วันที่: ${date ? fmtDate(date) : '—'} | ปลายทาง: ${dest}</div>
+  </div>`
+
+  if (meatRows.length > 0) {
+    html += `<div class="dn-section-title">Block 1 — เนื้อตุ๋น (${meatRows.length} ถุง / ${totalMeatKg.toFixed(3)} กก.)</div>
+    <table class="dn-table">
+      <thead><tr><th>#CW</th><th>รายการ</th><th>lot</th><th style="text-align:right">กก.</th></tr></thead>
+      <tbody>`
+    meatRows.forEach((r, i) => {
+      html += `<tr><td>${r.cw}</td><td>${r.name}</td><td>${r.lot}</td><td style="text-align:right">${r.kg.toFixed(3)}</td></tr>`
+    })
+    html += `</tbody>
+      <tfoot><tr><td colspan="3">รวม ${meatRows.length} ถุง</td><td style="text-align:right">${totalMeatKg.toFixed(3)} กก.</td></tr></tfoot>
+    </table>`
+  }
+
+  if (nmRows.length > 0) {
+    html += `<div class="dn-section-title">Block 2 — Non-meat</div>
+    <table class="dn-table">
+      <thead><tr><th>รายการ</th><th style="text-align:right">จำนวน</th><th>หน่วย</th></tr></thead>
+      <tbody>`
+    nmRows.forEach(r => {
+      html += `<tr><td>${r.name}</td><td style="text-align:right">${r.qty}</td><td>${r.unit}</td></tr>`
+    })
+    html += `</tbody></table>`
+  }
+
+  el.innerHTML = html
+}
+
+// ─── Tab switching ────────────────────────────────────────────────────────────
+let historyLoaded = false
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'))
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+  document.getElementById(`tab-${tab}`).classList.add('active')
+  document.getElementById(`tab-btn-${tab}`).classList.add('active')
+  if (tab === 'history') loadHistory()
+  if (tab === 'drafts') loadDrafts()
+  if (tab === 'adjust') loadAdjust()
+}
+
+// ─── Drafts ───────────────────────────────────────────────────────────────────
+window._draftCache = {}   // id → { nm_lines, meat_lines, ... } (mutable in-memory)
+
+async function loadDrafts() {
+  const listEl = document.getElementById('drafts-list')
+  listEl.innerHTML = '<div class="loading">กำลังโหลด...</div>'
+  try {
+    const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+    const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+    const res = await fetch(`${SB}/rest/v1/delivery_drafts?status=eq.draft&order=created_at.desc&limit=50`, { headers: DH })
+    const drafts = await res.json()
+    if (!drafts.length) { listEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:24px">ยังไม่มี Draft ค้างอยู่</div>'; return }
+    window._draftCache = {}
+    drafts.forEach(d => {
+      d.nm_lines   = Array.isArray(d.nm_lines)   ? d.nm_lines   : []
+      d.meat_lines = Array.isArray(d.meat_lines) ? d.meat_lines : []
+      window._draftCache[d.id] = d
+    })
+    listEl.innerHTML = drafts.map(d => renderDraftCard(d)).join('')
+    drafts.forEach(d => makeSearchable(`dadd-item-${d.id}`, '— พิมพ์ค้นหา SP item —'))
+  } catch(e) {
+    listEl.innerHTML = `<div style="color:var(--red-light);padding:12px">โหลดไม่ได้: ${e.message}</div>`
+  }
+}
+
+function renderDraftCard(d) {
+  const dt = new Date(d.created_at).toLocaleString('th-TH', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+  const meatCount = d.meat_lines.length
+  const nmCount   = d.nm_lines.length
+  const meatRows = d.meat_lines.map(m => `
+    <div class="hist-item-row" style="background:#FFF8E1">
+      <div class="hist-item-name">🥩 ${escHtml(m.name || 'เนื้อตุ๋น')}</div>
+      <div class="hist-item-qty">${((m.weight_g||0)/1000).toFixed(3)} <span style="font-size:0.75em;color:#888">กก.</span></div>
+      <div class="hist-item-unit" style="font-size:.72rem;color:#aaa">${escHtml(m.lot_date||'')}</div>
+      <button class="hist-del-btn" onclick="deleteDraftMeat('${d.id}','${m.bag_id}')" title="ลบถุงนี้ออกจาก Draft">🗑️</button>
+    </div>`).join('')
+  const nmRows = d.nm_lines.map((l, li) => renderDraftNmRow(d.id, li, l)).join('')
+  return `
+  <div class="hist-bill-card" id="dc-${d.id}" style="border-left:4px solid #FFA000">
+    <div class="hist-bill-header" onclick="toggleDraftCard('${d.id}')">
+      <div class="hist-bill-info">
+        <div class="hist-bill-num">${escHtml(d.bill_no || '(ยังไม่มีเลขบิล)')} → ${escHtml(d.branch||'')}</div>
+        <div class="hist-bill-meta">วันที่: ${d.date} · บันทึก ${dt} · โดย ${escHtml(d.created_by||'?')}</div>
+        <div style="font-size:.82rem;margin-top:4px">🥩 ${meatCount} ถุง · 🧂 ${nmCount} รายการ</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+        <button class="btn btn-sm btn-primary" onclick="event.stopPropagation();submitDraft('${d.id}')">🚛 ส่งออก</button>
+        <button class="btn btn-sm" style="background:#fff0f0;color:#c62828;border:1px solid #ffcdd2" onclick="event.stopPropagation();deleteDraft('${d.id}')">🗑</button>
+        <span style="color:var(--muted);padding:4px 8px;cursor:pointer">▼</span>
+      </div>
+    </div>
+    <div class="hist-bill-body" id="dc-body-${d.id}" style="display:none">
+      ${meatRows}
+      <button class="hist-add-row-btn" onclick="showAddDraftMeat('${d.id}')">+ เพิ่มถุงเนื้อ</button>
+      <div class="hist-add-form" id="dmadd-form-${d.id}">
+        <div class="add-form-row">
+          <select id="dmadd-item-${d.id}" onchange="renderDraftMeatBagPicker('${d.id}')">
+            <option value="">— เลือก SKU เนื้อ —</option>
+            ${Array.from(new Set(cwBags.map(b => b.item_id))).map(iid => {
+              const it = (window._itemsById||{})[iid] || {}
+              return `<option value="${iid}">${escHtml(it.sku||'')} | ${escHtml(it.name||iid)}</option>`
+            }).join('')}
+          </select>
+        </div>
+        <div id="dmadd-bags-${d.id}" style="margin:8px 0;max-height:200px;overflow-y:auto"></div>
+        <div class="add-form-actions" style="display:flex;gap:8px">
+          <button class="hist-save-btn" style="flex:2" onclick="saveNewDraftMeat('${d.id}')">บันทึก</button>
+          <button class="hist-cancel-btn" style="flex:1" onclick="cancelAddDraftMeat('${d.id}')">ยกเลิก</button>
+        </div>
+      </div>
+      <div id="dc-nm-${d.id}">${nmRows}</div>
+      <button class="hist-add-row-btn" onclick="showAddDraftNm('${d.id}')">+ เพิ่ม Non-meat</button>
+      <div class="hist-add-form" id="dadd-form-${d.id}">
+        <div class="add-form-row">
+          <select id="dadd-item-${d.id}">
+            <option value="">— เลือก SP item —</option>
+            ${spItems.map(i => `<option value="${i.id}" data-sku="${i.sku}" data-unit="${i.unit||''}" data-name="${i.name}">${i.sku} | ${escHtml(i.name)}</option>`).join('')}
+          </select>
+          <input type="number" id="dadd-qty-${d.id}" min="0" step="0.01" placeholder="จำนวน">
+        </div>
+        <div class="add-form-actions" style="display:flex;gap:8px">
+          <button class="hist-save-btn" style="flex:2" onclick="saveNewDraftNm('${d.id}')">บันทึก</button>
+          <button class="hist-cancel-btn" style="flex:1" onclick="cancelAddDraftNm('${d.id}')">ยกเลิก</button>
+        </div>
+      </div>
+    </div>
+  </div>`
+}
+
+function renderDraftNmRow(draftId, li, l) {
+  // Stock indicator — bright red if insufficient, green if OK
+  const item = window._itemsById?.[l.item_id]
+  const sku = item?.sku || ''
+  const isMisc = String(sku).startsWith('MISC')
+  let stockBadge = ''
+  if (!isMisc && sku && spStockBySku[sku] !== undefined) {
+    const have = spStockBySku[sku]
+    const need = parseFloat(l.qty) || 0
+    if (have <= 0) {
+      stockBadge = `<span style="color:#c62828;font-weight:700;font-size:0.8em;margin-left:6px">❌ ของหมด</span>`
+    } else if (have < need) {
+      stockBadge = `<span style="color:#ef6c00;font-weight:700;font-size:0.8em;margin-left:6px">⚠️ มี ${have} · ไม่พอ</span>`
+    } else {
+      stockBadge = `<span style="color:#2e7d32;font-weight:600;font-size:0.8em;margin-left:6px">✓ มี ${have}</span>`
+    }
+  }
+  return `
+  <div class="hist-item-row" id="drow-${draftId}-${li}">
+    <div class="hist-item-name">${escHtml(l.name || l.item_id || '?')}${stockBadge}</div>
+    <div class="hist-item-qty">${l.qty} <span style="font-size:0.75em;color:#888">${escHtml(l.unit||'')}</span></div>
+    <div class="hist-item-unit"></div>
+    <button class="hist-edit-btn" onclick="showEditDraftNm('${draftId}',${li})">✏️ แก้</button>
+    <button class="hist-del-btn" onclick="deleteDraftNm('${draftId}',${li})" title="ลบรายการนี้">🗑️</button>
+  </div>
+  <div class="hist-edit-row" id="dedit-${draftId}-${li}" style="display:none">
+    <label>จำนวน:</label>
+    <input type="number" id="dedit-input-${draftId}-${li}" value="${l.qty}" min="0"
+      step="${window.nntnIsDecimalUnit(l.unit) ? '0.01' : '1'}"
+      inputmode="${window.nntnIsDecimalUnit(l.unit) ? 'decimal' : 'numeric'}">
+    <button class="hist-save-btn" onclick="saveEditDraftNm('${draftId}',${li})">บันทึก</button>
+    <button class="hist-cancel-btn" onclick="cancelEditDraftNm('${draftId}',${li})">ยกเลิก</button>
+    <div style="flex:1"></div>
+  </div>`
+}
+
+function toggleDraftCard(id) {
+  const body = document.getElementById(`dc-body-${id}`)
+  const header = document.querySelector(`#dc-${id} .hist-bill-header`)
+  if (!body) return
+  const open = body.style.display !== 'none'
+  body.style.display = open ? 'none' : 'block'
+  header.classList.toggle('open', !open)
+}
+
+function showAddDraftNm(id) {
+  document.getElementById(`dadd-form-${id}`).style.display = 'block'
+  const ssInput = document.querySelector(`#dadd-form-${id} .ss-input`)
+  ;(ssInput || document.getElementById(`dadd-item-${id}`)).focus()
+}
+
+function cancelAddDraftNm(id) {
+  const form = document.getElementById(`dadd-form-${id}`)
+  form.style.display = 'none'
+  document.getElementById(`dadd-item-${id}`).value = ''
+  const ssInput = form.querySelector('.ss-input')
+  if (ssInput) { ssInput.value = ''; const dd = form.querySelector('.ss-dropdown'); if (dd) dd.style.display = 'none' }
+  document.getElementById(`dadd-qty-${id}`).value = ''
+}
+
+async function saveNewDraftNm(id) {
+  const itemSel = document.getElementById(`dadd-item-${id}`)
+  const qtyEl   = document.getElementById(`dadd-qty-${id}`)
+  const itemId  = itemSel.value
+  const qty     = parseFloat(qtyEl.value)
+  if (!itemId) { alert('กรุณาเลือก SP item'); return }
+  if (isNaN(qty) || qty <= 0) { alert('กรุณากรอกจำนวนที่ถูกต้อง'); return }
+  const opt  = itemSel.options[itemSel.selectedIndex]
+  const unit = opt?.dataset?.unit || ''
+  const name = opt?.dataset?.name || ''
+  const chkAdd = window.nntnEnforceIntegerUnit(qty, unit, name)
+  if (!chkAdd.ok) { alert(chkAdd.message); return }
+  const draft = window._draftCache[id]
+  if (!draft) return
+  const newLines = [...draft.nm_lines, { item_id: itemId, name, qty: chkAdd.qty, unit }]
+  try {
+    await persistDraftNmLines(id, newLines)
+    draft.nm_lines = newLines
+    refreshDraftCard(id)
+    _hdToast(`✅ เพิ่ม ${name} x${qty} ${unit}`)
+  } catch(e) { _hdToast('❌ บันทึกไม่สำเร็จ: ' + e.message, 'error') }
+}
+
+function showEditDraftNm(id, li) {
+  document.getElementById(`drow-${id}-${li}`).style.display = 'none'
+  document.getElementById(`dedit-${id}-${li}`).style.display = 'flex'
+  document.getElementById(`dedit-input-${id}-${li}`).focus()
+}
+
+function cancelEditDraftNm(id, li) {
+  document.getElementById(`drow-${id}-${li}`).style.display = ''
+  document.getElementById(`dedit-${id}-${li}`).style.display = 'none'
+}
+
+async function saveEditDraftNm(id, li) {
+  const qty = parseFloat(document.getElementById(`dedit-input-${id}-${li}`).value)
+  if (isNaN(qty) || qty <= 0) { alert('กรุณากรอกจำนวนที่ถูกต้อง'); return }
+  const draft = window._draftCache[id]
+  if (!draft) return
+  const line = draft.nm_lines[li]
+  const chkEdit = window.nntnEnforceIntegerUnit(qty, line?.unit || '', line?.name || '')
+  if (!chkEdit.ok) { alert(chkEdit.message); return }
+  const newLines = draft.nm_lines.map((l, i) => i === li ? { ...l, qty: chkEdit.qty } : l)
+  try {
+    await persistDraftNmLines(id, newLines)
+    draft.nm_lines = newLines
+    refreshDraftCard(id)
+    _hdToast('✅ บันทึกจำนวนใหม่แล้ว')
+  } catch(e) { _hdToast('❌ บันทึกไม่สำเร็จ: ' + e.message, 'error') }
+}
+
+async function deleteDraftNm(id, li) {
+  const draft = window._draftCache[id]
+  if (!draft) return
+  const line = draft.nm_lines[li]
+  if (!confirm(`ลบรายการ "${line?.name||'?'}" ออกจาก Draft?`)) return
+  const newLines = draft.nm_lines.filter((_, i) => i !== li)
+  try {
+    await persistDraftNmLines(id, newLines)
+    draft.nm_lines = newLines
+    refreshDraftCard(id)
+    _hdToast('🗑 ลบรายการแล้ว')
+  } catch(e) { _hdToast('❌ ลบไม่สำเร็จ: ' + e.message, 'error') }
+}
+
+function showAddDraftMeat(id) {
+  document.getElementById(`dmadd-form-${id}`).style.display = 'block'
+  document.getElementById(`dmadd-item-${id}`).focus()
+}
+
+function cancelAddDraftMeat(id) {
+  const form = document.getElementById(`dmadd-form-${id}`)
+  form.style.display = 'none'
+  document.getElementById(`dmadd-item-${id}`).value = ''
+  document.getElementById(`dmadd-bags-${id}`).innerHTML = ''
+}
+
+function renderDraftMeatBagPicker(id) {
+  const itemId = document.getElementById(`dmadd-item-${id}`).value
+  const box = document.getElementById(`dmadd-bags-${id}`)
+  if (!itemId) { box.innerHTML = ''; return }
+  const draft = window._draftCache[id]
+  const usedInThis = new Set((draft?.meat_lines||[]).map(m => String(m.bag_id)))
+  const avail = cwBags.filter(b => b.item_id === itemId && !usedInThis.has(String(b.id)))
+  if (avail.length === 0) { box.innerHTML = '<div style="color:#999;padding:8px">ไม่มีถุงคงเหลือให้เลือก</div>'; return }
+  box.innerHTML = avail.map(b => `
+    <label style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid #eee;cursor:pointer">
+      <input type="checkbox" class="dmadd-bag-cb" data-bag="${b.id}">
+      <span style="flex:1">ถุง #${b.id}</span>
+      <span style="min-width:70px;text-align:right">${((b.weight_g||0)/1000).toFixed(3)} กก.</span>
+      <span style="font-size:.72rem;color:#888">${escHtml(b.lot_date||'')}</span>
+      <span style="font-size:.7rem;color:#aaa">${escHtml(b.warehouse||'')}</span>
+    </label>`).join('')
+}
+
+async function saveNewDraftMeat(id) {
+  const itemSel = document.getElementById(`dmadd-item-${id}`)
+  const itemId = itemSel.value
+  if (!itemId) { alert('กรุณาเลือก SKU เนื้อ'); return }
+  const checks = document.querySelectorAll(`#dmadd-bags-${id} .dmadd-bag-cb:checked`)
+  if (checks.length === 0) { alert('กรุณาเลือกถุงอย่างน้อย 1 ถุง'); return }
+  const draft = window._draftCache[id]
+  if (!draft) return
+  const item = (window._itemsById||{})[itemId] || {}
+  const newBags = []
+  checks.forEach(cb => {
+    const bagId = cb.dataset.bag
+    const b = bagCache[bagId]
+    if (!b) return
+    newBags.push({ item_id: itemId, bag_id: b.id, name: item.name || '', weight_g: b.weight_g, lot_date: b.lot_date })
+  })
+  const newLines = [...(draft.meat_lines||[]), ...newBags]
+  try {
+    await persistDraftMeatLines(id, newLines)
+    draft.meat_lines = newLines
+    refreshDraftCard(id)
+    _hdToast(`✅ เพิ่ม ${newBags.length} ถุง`)
+  } catch(e) { _hdToast('❌ บันทึกไม่สำเร็จ: ' + e.message, 'error') }
+}
+
+async function deleteDraftMeat(id, bagId) {
+  const draft = window._draftCache[id]
+  if (!draft) return
+  const line = (draft.meat_lines||[]).find(m => String(m.bag_id) === String(bagId))
+  if (!confirm(`ลบถุง #${bagId} (${line?.name||'?'} ${((line?.weight_g||0)/1000).toFixed(3)} กก.) ออกจาก Draft?`)) return
+  const newLines = (draft.meat_lines||[]).filter(m => String(m.bag_id) !== String(bagId))
+  try {
+    await persistDraftMeatLines(id, newLines)
+    draft.meat_lines = newLines
+    refreshDraftCard(id)
+    _hdToast('🗑 ลบถุงแล้ว')
+  } catch(e) { _hdToast('❌ ลบไม่สำเร็จ: ' + e.message, 'error') }
+}
+
+async function persistDraftMeatLines(draftId, newLines) {
+  const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+  const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock', 'Content-Type': 'application/json' }
+  const res = await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${draftId}`, {
+    method: 'PATCH', headers: DH, body: JSON.stringify({ meat_lines: newLines })
+  })
+  if (!res.ok) throw new Error(await res.text())
+}
+
+async function persistDraftNmLines(draftId, newLines) {
+  const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+  const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock', 'Content-Type': 'application/json' }
+  const res = await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${draftId}`, {
+    method: 'PATCH', headers: DH, body: JSON.stringify({ nm_lines: newLines })
+  })
+  if (!res.ok) throw new Error(await res.text())
+}
+
+function refreshDraftCard(id) {
+  const draft = window._draftCache[id]
+  if (!draft) return
+  const card = document.getElementById(`dc-${id}`)
+  if (!card) return
+  const body = document.getElementById(`dc-body-${id}`)
+  const wasOpen = body && body.style.display !== 'none'
+  card.outerHTML = renderDraftCard(draft)
+  makeSearchable(`dadd-item-${id}`, '— พิมพ์ค้นหา SP item —')
+  if (wasOpen) toggleDraftCard(id)
+}
+
+async function submitDraft(draftId) {
+  const draft = window._draftCache[draftId]
+  if (!draft) { _hdToast('ไม่พบ Draft', 'error'); return }
+  if (!confirm('โหลด Draft เข้าฟอร์ม? ตรวจสอบแล้วค่อยกด 🚛 บันทึกส่งออก')) return
+
+  switchTab('delivery')
+  if (draft.date) document.getElementById('dl-date').value = draft.date
+  const branchMap = { NT: 'ครัวกลาง (NT)', FS: 'หน้าร้าน (FS)' }
+  if (draft.branch) document.getElementById('dl-dest').value = branchMap[draft.branch] || draft.branch
+  // Always regenerate bill_no — don't reuse draft's (may already be submitted)
+  document.getElementById('dl-bill').value = ''
+  await suggestBillNum()
+
+  // B9 fix: re-validate meat_lines against live catch_weight status before loading
+  // (prevents stale draft from holding bags already Delivered/disposed by another session)
+  let meatLines = draft.meat_lines || []
+  const prunedBags = []
+  if (meatLines.length > 0) {
+    try {
+      const vTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+      const vH   = { 'apikey': KEY, 'Authorization': 'Bearer ' + vTok }
+      const ids  = meatLines.map(m => Number(m.bag_id)).filter(n => Number.isFinite(n))
+      if (ids.length > 0) {
+        const url = `${SB}/rest/v1/catch_weight?id=in.(${ids.join(',')})&select=id,status`
+        const r   = await fetch(url, { headers: vH })
+        if (r.ok) {
+          const rows = await r.json()
+          const statusById = new Map(rows.map(x => [String(x.id), x.status]))
+          const fresh = []
+          meatLines.forEach(m => {
+            const st = statusById.get(String(m.bag_id))
+            if (st === '✅ In Stock') fresh.push(m)
+            else prunedBags.push({ ...m, _liveStatus: st || '(ไม่พบ)' })
+          })
+          meatLines = fresh
+        }
+      }
+    } catch (_) { /* network glitch — load draft as-is, submit guard will catch */ }
+  }
+  if (prunedBags.length > 0) {
+    const lines = prunedBags.slice(0, 15).map(p => `• ${p.name} bag ${p.bag_id} → ${p._liveStatus}`).join('\n')
+    const more  = prunedBags.length > 15 ? `\n…และอีก ${prunedBags.length - 15} ถุง` : ''
+    alert(`⚠️ ตัด ${prunedBags.length} ถุงออกจาก Draft อัตโนมัติ\n\nถุงพวกนี้ไม่อยู่ใน "✅ In Stock" แล้ว (อาจถูกส่ง / ปรับสต๊อกโดย session อื่น):\n\n${lines}${more}\n\nDraft จะถูกอัปเดตให้เหลือเฉพาะถุงที่ยังส่งได้ (${meatLines.length} ถุง)`)
+    // persist pruned set so the draft stays clean for next reload
+    try {
+      const pTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+      const pH   = { 'apikey': KEY, 'Authorization': 'Bearer ' + pTok, 'Content-Type': 'application/json',
+                     'Content-Profile': 'stock', 'Accept-Profile': 'stock', 'Prefer': 'return=minimal' }
+      await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${draftId}`, {
+        method: 'PATCH', headers: pH, body: JSON.stringify({ meat_lines: meatLines })
+      })
+      // refresh local cache so subsequent submit cross-check sees pruned set
+      if (window._draftCache && window._draftCache[draftId]) {
+        window._draftCache[draftId] = { ...window._draftCache[draftId], meat_lines: meatLines }
+      }
+    } catch (_) { /* best-effort persist */ }
+  }
+
+  // Rebuild meat blocks grouped by item_id
+  const meatByItem = {}
+  meatLines.forEach(m => {
+    if (!meatByItem[m.item_id]) meatByItem[m.item_id] = { itemId: m.item_id, name: m.name, bags: [] }
+    meatByItem[m.item_id].bags.push(m.bag_id)
+  })
+  document.getElementById('meat-blocks').innerHTML = ''
+  Object.keys(meatSel).forEach(k => delete meatSel[k])
+  const meatGroups = Object.values(meatByItem)
+  if (meatGroups.length === 0) {
+    addMeatBlock()
+  } else {
+    meatGroups.forEach(g => {
+      addMeatBlock()
+      const n = meatBlockCount
+      const sel = document.getElementById(`mb-sku-${n}`)
+      if (!sel) return
+      sel.value = g.itemId
+      const opt = sel.options[sel.selectedIndex]
+      const si  = document.getElementById(`mb-sku-${n}-search`)
+      if (si && opt?.text) si.value = opt.text
+      onMeatItemChange(n)
+      setTimeout(() => {
+        g.bags.forEach(bagId => {
+          if (bagCache[bagId]) meatSel[n].selectedBags.add(bagId)
+        })
+        renderMeatChips(n)
+      }, 80)
+    })
+  }
+
+  // Rebuild nm rows
+  document.getElementById('nm-rows').innerHTML = ''
+  nmRowCount = 0
+  const nmList = draft.nm_lines || []
+  if (nmList.length === 0) {
+    addNmRow()
+  } else {
+    nmList.forEach(saved => {
+      addNmRow()
+      const n   = nmRowCount
+      const sel = document.getElementById(`nm-item-${n}`)
+      if (sel && saved.item_id) {
+        sel.value = saved.item_id
+        const opt = sel.options[sel.selectedIndex]
+        const si  = document.getElementById(`nm-item-${n}-search`)
+        if (si && opt?.text) si.value = opt.text
+        onNmChange(n)
+      }
+      if (saved.qty)  document.getElementById(`nm-qty-${n}`).value  = saved.qty
+      if (saved.unit) document.getElementById(`nm-unit-${n}`).value = saved.unit
+    })
+  }
+
+  updatePreview()
+  await new Promise(r => setTimeout(r, 200))
+  _hdToast(`✅ โหลด Draft แล้ว — ตรวจสอบแล้วกด 🚛 บันทึกส่งออก (เนื้อ ${meatLines.length} ถุง / nm ${nmList.length} รายการ)`)
+  window._pendingDraftId = draftId
+}
+
+async function deleteDraft(id) {
+  if (!confirm('ลบ Draft นี้?')) return
+  const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+  const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+  await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${id}`, { method: 'DELETE', headers: DH })
+  loadDrafts()
+}
+
+// ─── History ──────────────────────────────────────────────────────────────────
+let historyData = []   // array of bill groups
+
+async function loadHistory() {
+  const listEl = document.getElementById('hist-list')
+  listEl.innerHTML = '<div class="loading">กำลังโหลดประวัติ...</div>'
+  const searchVal = (document.getElementById('hist-search')?.value || '').toLowerCase()
+
+  try {
+    const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+    const SHh = { ...H, Authorization: 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+    // ดึงจาก deliveries + lines โดยตรง
+    const res = await fetch(
+      `${SB}/rest/v1/deliveries?select=id,bill_no,branch,date,channel,created_at,delivery_lines(id,catch_weight_id,item_id,qty,weight_g,note)&order=created_at.desc&limit=100`,
+      { headers: SHh }
+    )
+    const deliveries = await res.json()
+
+    if (!Array.isArray(deliveries)) {
+      console.error('loadHistory: non-array response', deliveries)
+      listEl.innerHTML = `<div class="warn-banner">❌ โหลดประวัติไม่ได้: ${deliveries?.message || 'unknown'}</div>`
+      return
+    }
+    if (deliveries.length === 0) {
+      listEl.innerHTML = '<div class="hist-empty">ยังไม่มีประวัติการส่ง</div>'
+      historyLoaded = true
+      return
+    }
+
+    // Resolve item metadata client-side from window._itemsById
+    deliveries.forEach(d => {
+      (d.delivery_lines || []).forEach(l => {
+        const it = window._itemsById?.[l.item_id]
+        if (it) l.items = { sku: it.sku, name: it.name, unit: it.unit }
+      })
+    })
+
+    // Fetch catch_weight status for all referenced cw_ids (reverse detection)
+    const cwIds = Array.from(new Set(
+      deliveries.flatMap(d => (d.delivery_lines||[]).map(l => l.catch_weight_id).filter(Boolean))
+    ))
+    const cwStatus = {}
+    if (cwIds.length) {
+      // chunk to avoid URL length limit (~2000 chars)
+      const chunks = []
+      for (let i = 0; i < cwIds.length; i += 200) chunks.push(cwIds.slice(i, i+200))
+      for (const chunk of chunks) {
+        const cwRes = await fetch(
+          `${SB}/rest/v1/catch_weight?id=in.(${chunk.join(',')})&select=id,status`,
+          { headers: SHh }
+        )
+        if (cwRes.ok) {
+          const rows = await cwRes.json()
+          rows.forEach(r => { cwStatus[r.id] = r.status })
+        }
+      }
+    }
+
+    let filtered = deliveries
+    if (searchVal) {
+      filtered = deliveries.filter(d =>
+        (d.bill_no||'').toLowerCase().includes(searchVal) ||
+        (d.branch||'').toLowerCase().includes(searchVal)
+      )
+    }
+
+    // Build historyData compatible with renderHistory (grouped by bill)
+    historyData = filtered.map(d => {
+      const lines = d.delivery_lines || []
+      const meatLines = lines.filter(l => l.catch_weight_id)
+      const nmLines = lines.filter(l => !l.catch_weight_id && l.item_id)
+      const totalKg = meatLines.reduce((s, l) => s + (l.weight_g || 0) / 1000, 0)
+      // Reverse detection: catch_weight.status = '✅ In Stock' = ถุงกลับมาแล้ว (reversed)
+      const reversedMeat = meatLines.filter(l => cwStatus[l.catch_weight_id] === '✅ In Stock').length
+      const meatCount = meatLines.length
+      let reverseStatus = 'none'
+      if (meatCount > 0) {
+        if (reversedMeat === meatCount) reverseStatus = 'all'
+        else if (reversedMeat > 0) reverseStatus = 'partial'
+      }
+      return {
+        bill_no: d.bill_no,
+        branch: d.branch,
+        date: d.date,
+        meat_count: meatCount,
+        nm_count: nmLines.length,
+        total_kg: totalKg,
+        meat_lines: meatLines,
+        nm_lines: nmLines,
+        delivery_id: d.id,
+        counted_at: d.date,
+        reverse_status: reverseStatus,
+        reversed_meat: reversedMeat
+      }
+    })
+
+    historyLoaded = true
+    renderDeliveryHistory(historyData)
+
+  } catch(e) {
+    listEl.innerHTML = `<div class="warn-banner">❌ โหลดประวัติไม่ได้: ${e.message}</div>`
+  }
+}
+
+function renderDeliveryHistory(deliveries) {
+  const listEl = document.getElementById('hist-list')
+  if (!deliveries.length) {
+    listEl.innerHTML = '<div class="hist-empty">ไม่พบประวัติการส่ง</div>'
+    return
+  }
+  listEl.innerHTML = deliveries.map((d, i) => {
+    const meatRows = (d.meat_lines||[]).map(l => {
+      const name = l.items?.name || 'เนื้อตุ๋น'
+      const kg = l.weight_g ? (l.weight_g/1000).toFixed(3) : '?'
+      return `<div style="font-size:.82rem;padding:4px 8px;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between;background:#FFF8E1">
+        <span>🥩 ${name}</span>
+        <span style="color:var(--muted)">${kg} กก.</span>
+      </div>`
+    }).join('')
+    const nmRows = (d.nm_lines||[]).map(l =>
+      `<div style="font-size:.82rem;padding:4px 8px;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between">
+        <span>${l.items?.name || '?'}</span>
+        <span style="color:var(--muted)">${l.qty} ${l.items?.unit||''}</span>
+      </div>`
+    ).join('')
+    const hasSub = (d.meat_lines?.length || 0) + (d.nm_lines?.length || 0) > 0
+    const isAllReversed = d.reverse_status === 'all'
+    const isPartialReversed = d.reverse_status === 'partial'
+    const groupStyle = isAllReversed ? 'opacity:.55;background:#FAFAFA' : ''
+    const billStyle = isAllReversed ? 'text-decoration:line-through;color:#888' : ''
+    const reverseBadge = isAllReversed
+      ? `<span style="background:#FFEBEE;color:#C62828;border:1px solid #EF9A9A;border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:700;margin-left:6px">🔄 REVERSED</span>`
+      : isPartialReversed
+        ? `<span style="background:#FFF3E0;color:#E65100;border:1px solid #FFB74D;border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:700;margin-left:6px">⚠️ partial ${d.reversed_meat}/${d.meat_count}</span>`
+        : ''
+    return `<div class="hist-group" style="margin-bottom:10px;border:1px solid var(--border);border-radius:10px;overflow:hidden;${groupStyle}">
+      <div class="hist-header" onclick="if(this.nextElementSibling)this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"
+           style="padding:12px 14px;cursor:pointer;background:#fafafa;display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div style="flex:1;min-width:0">
+          <span style="font-weight:700;${billStyle}">${d.bill_no||'?'}</span>${reverseBadge}
+          <span style="font-size:.8rem;color:var(--muted);margin-left:8px">${d.branch} · ${fmtDate(d.date)}</span>
+        </div>
+        <div style="font-size:.82rem;color:var(--muted);display:flex;gap:10px;align-items:center;flex-shrink:0">
+          <span>🥩 ${d.meat_count} ถุง/${d.total_kg.toFixed(3)}กก.</span>
+          ${d.nm_count > 0 ? `<span>🧂 ${d.nm_count} รายการ</span>` : ''}
+          <button class="btn btn-sm btn-outline-blue" onclick="event.stopPropagation();printHistBill(${i})" title="พิมพ์ใบนำส่ง">🖨</button>
+          <button class="btn btn-sm" onclick="event.stopPropagation();editHistBill(${i})" title="แก้ไข bill_no / branch / date" style="background:#FFF3E0;color:#E65100;border:1px solid #FFB74D">✏️</button>
+          <span>▼</span>
+        </div>
+      </div>
+      ${hasSub ? `<div style="display:none">${meatRows}${nmRows}</div>` : ''}
+    </div>`
+  }).join('')
+}
+
+async function editHistBill(i) {
+  const d = historyData[i]
+  if (!d) return
+  const newBill = prompt(`แก้ไข bill_no\n\nปัจจุบัน: ${d.bill_no}\n\nใส่ใหม่ (หรือเว้นว่างเพื่อไม่แก้):`, d.bill_no || '')
+  if (newBill === null) return
+  const newBranch = prompt(`แก้ไข branch\n\nปัจจุบัน: ${d.branch}\n\nใส่ใหม่ — NT หรือ FS:`, d.branch || '')
+  if (newBranch === null) return
+  const newDate = prompt(`แก้ไข date (YYYY-MM-DD)\n\nปัจจุบัน: ${d.date}`, d.date || '')
+  if (newDate === null) return
+
+  const patch = {}
+  if (newBill.trim() && newBill.trim() !== d.bill_no) patch.bill_no = newBill.trim()
+  if (['NT','FS'].includes(newBranch.trim()) && newBranch.trim() !== d.branch) patch.branch = newBranch.trim()
+  if (newDate.trim() && /^\d{4}-\d{2}-\d{2}$/.test(newDate.trim()) && newDate.trim() !== d.date) patch.date = newDate.trim()
+
+  if (Object.keys(patch).length === 0) return alert('ไม่มีการเปลี่ยนแปลง')
+  if (!confirm(`ยืนยันแก้ไข?\n\n${JSON.stringify(patch, null, 2)}`)) return
+
+  try {
+    const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+    const SH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+    const res = await fetch(`${SB}/rest/v1/deliveries?id=eq.${d.id}`, {
+      method: 'PATCH',
+      headers: { ...SH, Prefer: 'return=minimal' },
+      body: JSON.stringify(patch)
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status} — ${await res.text()}`)
+    alert('✅ แก้ไขแล้ว — refresh ประวัติ')
+    historyLoaded = false
+    loadHistory()
+  } catch(e) {
+    alert(`❌ แก้ไขไม่สำเร็จ: ${e.message}`)
+  }
+}
+
+function printHistBill(i) {
+  const d = historyData[i]
+  if (!d) return
+  const dateStr = fmtDate(d.date)
+  const branchFull = d.branch === 'NT' ? 'ครัวกลาง (NT)' : d.branch === 'FS' ? 'หน้าร้าน (FS)' : (d.branch || '-')
+  const meatRows = (d.meat_lines||[]).map((l, idx) => {
+    const name = l.items?.name || 'เนื้อตุ๋น'
+    const kg = l.weight_g ? (l.weight_g/1000).toFixed(3) : '?'
+    return `<tr><td>${idx+1}</td><td>🥩 ${escHtml(name)}</td><td style="text-align:right">${kg}</td><td>กก.</td></tr>`
+  }).join('')
+  const nmRows = (d.nm_lines||[]).map((l, idx) => {
+    const name = l.items?.name || l.item_id || '?'
+    const unit = l.items?.unit || ''
+    return `<tr><td>${(d.meat_lines||[]).length + idx + 1}</td><td>${escHtml(name)}</td><td style="text-align:right">${l.qty}</td><td>${escHtml(unit)}</td></tr>`
+  }).join('')
+  const totalKg = (d.total_kg || 0).toFixed(3)
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(d.bill_no||'')}</title>
+<style>
+  body { font-family: 'Sarabun', sans-serif; padding: 20px; color: #222; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px }
+  .meta { font-size: .9rem; color: #555; margin-bottom: 14px }
+  .meta b { color: #222 }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem }
+  th, td { border: 1px solid #bbb; padding: 6px 8px; text-align: left }
+  th { background: #f0f0f0 }
+  td:first-child { width: 40px; text-align: center }
+  td:nth-child(3) { width: 80px }
+  td:nth-child(4) { width: 60px }
+  .summary { margin-top: 14px; font-size: .9rem; display: flex; gap: 20px }
+  .sig { margin-top: 40px; display: flex; justify-content: space-between; font-size: .88rem }
+  .sig > div { text-align: center; width: 45% }
+  .sig .line { border-top: 1px solid #444; margin-top: 40px; padding-top: 4px }
+  @media print { body { padding: 10px } }
+</style></head><body>
+<h1>🚚 ใบนำส่ง — ${escHtml(d.bill_no||'')}</h1>
+<div class="meta">
+  วันที่: <b>${dateStr}</b> &nbsp;·&nbsp; ปลายทาง: <b>${escHtml(branchFull)}</b>
+</div>
+<table>
+  <thead><tr><th>#</th><th>รายการ</th><th style="text-align:right">จำนวน</th><th>หน่วย</th></tr></thead>
+  <tbody>${meatRows}${nmRows}</tbody>
+</table>
+<div class="summary">
+  <span>🥩 เนื้อ <b>${d.meat_count}</b> ถุง / <b>${totalKg}</b> กก.</span>
+  ${d.nm_count > 0 ? `<span>🧂 Non-meat <b>${d.nm_count}</b> รายการ</span>` : ''}
+</div>
+<div class="sig">
+  <div><div class="line">ผู้ส่ง</div></div>
+  <div><div class="line">ผู้รับ</div></div>
+</div>
+<scr${''}ipt>window.onload=()=>{setTimeout(()=>window.print(),250)}</scr${''}ipt>
+</body></html>`
+  const w = window.open('', '_blank', 'width=800,height=900')
+  if (!w) { alert('ไม่สามารถเปิดหน้าต่างใหม่ได้ — กรุณาอนุญาต popup'); return }
+  w.document.write(html)
+  w.document.close()
+}
+
+// ─── Adjust Tab ──────────────────────────────────────────────────────────────
+let adjustData = []
+
+async function loadAdjust() {
+  const el = document.getElementById('adjust-list')
+  el.innerHTML = '<div class="loading">กำลังโหลดบิลที่ปรับแก้ได้...</div>'
+  try {
+    const tok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+    const SH = { ...H, Authorization: 'Bearer ' + tok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+    const cutoff = new Date(Date.now() - 24*60*60*1000).toISOString()
+    const res = await fetch(
+      `${SB}/rest/v1/deliveries?select=id,bill_no,branch,date,channel,created_at,created_by,delivery_lines(id,catch_weight_id,item_id,qty,weight_g,note)&created_at=gte.${cutoff}&order=created_at.desc`,
+      { headers: SH }
+    )
+    const deliveries = await res.json()
+    if (!Array.isArray(deliveries) || !deliveries.length) {
+      el.innerHTML = '<div class="hist-empty">ไม่มีบิลที่ปรับแก้ได้ (ภายใน 24 ชม.)</div>'
+      return
+    }
+
+    // created_by guard
+    const me = window.nntnCurrentUser || null
+    const allowed = deliveries.filter(d => !d.created_by || d.created_by === me)
+    if (!allowed.length) {
+      el.innerHTML = '<div class="hist-empty">ไม่มีบิลที่คุณมีสิทธิ์ปรับแก้</div>'
+      return
+    }
+
+    // Resolve item names
+    allowed.forEach(d => {
+      (d.delivery_lines || []).forEach(l => {
+        const it = window._itemsById?.[l.item_id]
+        if (it) l.items = { sku: it.sku, name: it.name, unit: it.unit }
+      })
+    })
+
+    // Fetch catch_weight status for reverse detection
+    const cwIds = Array.from(new Set(
+      allowed.flatMap(d => (d.delivery_lines||[]).map(l => l.catch_weight_id).filter(Boolean))
+    ))
+    const cwStatus = {}
+    if (cwIds.length) {
+      const chunks = []
+      for (let i = 0; i < cwIds.length; i += 200) chunks.push(cwIds.slice(i, i+200))
+      for (const chunk of chunks) {
+        const cwRes = await fetch(
+          `${SB}/rest/v1/catch_weight?id=in.(${chunk.join(',')})&select=id,status,bag_no,weight_g`,
+          { headers: { ...H, Authorization: 'Bearer ' + tok } }
+        )
+        if (cwRes.ok) (await cwRes.json()).forEach(r => { cwStatus[r.id] = r })
+      }
+    }
+
+    adjustData = allowed.map(d => ({ ...d, cwStatus }))
+    renderAdjust(adjustData, cwStatus)
+  } catch (e) {
+    el.innerHTML = `<div class="warn-banner">❌ โหลดไม่ได้: ${e.message}</div>`
+  }
+}
+
+function renderAdjust(deliveries, cwStatus) {
+  const el = document.getElementById('adjust-list')
+  el.innerHTML = deliveries.map((d, di) => {
+    const lines = d.delivery_lines || []
+    const meatLines = lines.filter(l => l.catch_weight_id)
+    const nmLines = lines.filter(l => !l.catch_weight_id && l.item_id)
+
+    const meatHtml = meatLines.map(l => {
+      const cw = cwStatus[l.catch_weight_id] || {}
+      const name = l.items?.name || '?'
+      const kg = (l.weight_g || 0) / 1000
+      const isReversed = cw.status === '✅ In Stock'
+      const statusBadge = isReversed
+        ? '<span style="background:#E8F5E9;color:#2E7D32;border-radius:4px;padding:1px 6px;font-size:.7rem;margin-left:4px">คืนแล้ว</span>'
+        : '<span style="background:#FFF8E1;color:#F57F17;border-radius:4px;padding:1px 6px;font-size:.7rem;margin-left:4px">ส่งแล้ว</span>'
+      const actions = isReversed ? '' : `
+        <button class="btn btn-sm" onclick="event.stopPropagation();adjustReverse(${di},${l.catch_weight_id})"
+                style="background:#FFEBEE;color:#C62828;border:1px solid #EF9A9A;font-size:.72rem;padding:2px 8px"
+                title="คืนเข้าสต๊อก">🗑️ คืน</button>
+        <button class="btn btn-sm" onclick="event.stopPropagation();adjustSwap(${di},${l.catch_weight_id},'${escHtml(l.items?.name||'')}')"
+                style="background:#E3F2FD;color:#1565C0;border:1px solid #90CAF9;font-size:.72rem;padding:2px 8px"
+                title="สลับถุง">🔄 สลับ</button>`
+      return `<div style="font-size:.82rem;padding:6px 8px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;background:${isReversed?'#FAFAFA':'#FFF8E1'}">
+        <span style="${isReversed?'opacity:.5;text-decoration:line-through':''}">🥩 ${escHtml(name)} <span style="color:var(--muted)">#${cw.bag_no||'?'} · ${kg.toFixed(3)}กก.</span>${statusBadge}</span>
+        <span style="display:flex;gap:4px">${actions}</span>
+      </div>`
+    }).join('')
+
+    const nmHtml = nmLines.map(l => {
+      return `<div style="font-size:.82rem;padding:4px 8px;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between">
+        <span>${escHtml(l.items?.name || '?')}</span>
+        <span style="color:var(--muted)">${l.qty} ${escHtml(l.items?.unit||'')}</span>
+      </div>`
+    }).join('')
+
+    const ageMin = Math.round((Date.now() - new Date(d.created_at).getTime()) / 60000)
+    const ageStr = ageMin < 60 ? `${ageMin} นาทีที่แล้ว` : `${Math.round(ageMin/60)} ชม.ที่แล้ว`
+
+    return `<div style="margin-bottom:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+      <div style="padding:12px 14px;background:#fafafa;display:flex;justify-content:space-between;align-items:center;cursor:pointer"
+           onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+        <div>
+          <span style="font-weight:700">${escHtml(d.bill_no||'?')}</span>
+          <span style="font-size:.8rem;color:var(--muted);margin-left:8px">${escHtml(d.branch)} · ${fmtDate(d.date)} · ${ageStr}</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn btn-sm" onclick="event.stopPropagation();adjustAddBag(${di})"
+                  style="background:#E8F5E9;color:#2E7D32;border:1px solid #A5D6A7;font-size:.72rem;padding:2px 10px"
+                  title="เพิ่มถุงเข้าบิลนี้">➕ เพิ่มถุง</button>
+          <span>▼</span>
+        </div>
+      </div>
+      <div style="display:none">${meatHtml}${nmHtml || '<div style="font-size:.82rem;padding:6px 8px;color:var(--muted)">ไม่มีรายการ non-meat</div>'}</div>
+    </div>`
+  }).join('')
+}
+
+async function callAdjustRpc(rpcName, params) {
+  const tok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+  const res = await fetch(`${SB}/rest/v1/rpc/${rpcName}`, {
+    method: 'POST',
+    headers: { ...H, Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
+    body: JSON.stringify(params)
+  })
+  const body = await res.json().catch(() => null)
+  if (!res.ok) {
+    const msg = body?.message || body?.details || JSON.stringify(body)
+    throw new Error(msg)
+  }
+  return body
+}
+
+async function adjustReverse(di, cwId) {
+  const reason = prompt('เหตุผลที่คืนถุง (≥ 10 ตัวอักษร):')
+  if (!reason) return
+  if (reason.length < 10) return alert('❌ เหตุผลต้องมีอย่างน้อย 10 ตัวอักษร')
+  if (!confirm(`ยืนยันคืนถุง #${cwId} เข้าสต๊อก?\n\nเหตุผล: ${reason}`)) return
+  try {
+    const actor = window.nntnCurrentUser || 'unknown'
+    const r = await callAdjustRpc('rpc_delivery_reverse', { p_actor: actor, p_cw_id: cwId, p_reason: reason })
+    alert(`✅ คืนถุงสำเร็จ (sm #${r.sm_id})`)
+    _logSubmit('adjust_reverse', 'success', { cw_id: cwId, reason }, { ref_id: cwId.toString() })
+    loadAdjust()
+  } catch (e) {
+    alert(`❌ คืนไม่ได้: ${e.message}`)
+    _logSubmit('adjust_reverse', 'error', { cw_id: cwId, reason }, { error_msg: e.message })
+  }
+}
+
+async function adjustSwap(di, oldCwId, itemName) {
+  const d = adjustData[di]
+  if (!d) return
+  try {
+    const tok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+    const itemId = d.delivery_lines.find(l => l.catch_weight_id === oldCwId)?.item_id
+    const cwRes = await fetch(
+      `${SB}/rest/v1/catch_weight?status=eq.✅ In Stock${itemId ? '&item_id=eq.' + itemId : ''}&select=id,bag_no,weight_g,item_id&order=bag_no&limit=50`,
+      { headers: { ...H, Authorization: 'Bearer ' + tok } }
+    )
+    const available = await cwRes.json()
+    if (!available?.length) return alert('❌ ไม่มีถุงว่างใน stock สำหรับรายการนี้')
+
+    const opts = available.map(b => `#${b.bag_no} (${(b.weight_g/1000).toFixed(3)}กก.) [id:${b.id}]`).join('\n')
+    const pick = prompt(`สลับถุง #${oldCwId} (${itemName})\n\nเลือกถุงใหม่ — พิมพ์เลข id:\n\n${opts}`)
+    if (!pick) return
+    const newCwId = parseInt(pick.replace(/[^\d]/g, ''), 10)
+    if (!newCwId || !available.find(b => b.id === newCwId)) return alert('❌ id ไม่ถูกต้อง — ต้องเป็นตัวเลขจากรายการ')
+
+    const reason = prompt('เหตุผลที่สลับ (≥ 10 ตัวอักษร):')
+    if (!reason) return
+    if (reason.length < 10) return alert('❌ เหตุผลต้องมีอย่างน้อย 10 ตัวอักษร')
+
+    const oldBag = d.cwStatus[oldCwId]
+    const newBag = available.find(b => b.id === newCwId)
+    if (!confirm(`ยืนยันสลับ?\n\nออก: #${oldBag?.bag_no||oldCwId} → กลับเข้าสต๊อก\nเข้า: #${newBag.bag_no} (${(newBag.weight_g/1000).toFixed(3)}กก.) → ส่งออก\n\nเหตุผล: ${reason}`)) return
+
+    const actor = window.nntnCurrentUser || 'unknown'
+    const r = await callAdjustRpc('rpc_delivery_swap_bag', { p_actor: actor, p_old_cw_id: oldCwId, p_new_cw_id: newCwId, p_reason: reason })
+    alert(`✅ สลับสำเร็จ\n\nถุงเก่า #${oldCwId} → In Stock (sm #${r.sm_reverse_id})\nถุงใหม่ #${newCwId} → Delivered (sm #${r.sm_deliver_id})`)
+    _logSubmit('adjust_swap', 'success', { old_cw_id: oldCwId, new_cw_id: newCwId, reason })
+    loadAdjust()
+  } catch (e) {
+    alert(`❌ สลับไม่ได้: ${e.message}`)
+    _logSubmit('adjust_swap', 'error', { old_cw_id: oldCwId, reason: '' }, { error_msg: e.message })
+  }
+}
+
+async function adjustAddBag(di) {
+  const d = adjustData[di]
+  if (!d) return
+  try {
+    const tok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+    const cwRes = await fetch(
+      `${SB}/rest/v1/catch_weight?status=eq.✅ In Stock&select=id,bag_no,weight_g,item_id&order=item_id,bag_no&limit=100`,
+      { headers: { ...H, Authorization: 'Bearer ' + tok } }
+    )
+    const available = await cwRes.json()
+    if (!available?.length) return alert('❌ ไม่มีถุงว่างใน stock')
+
+    // Group by item for readability
+    const grouped = {}
+    available.forEach(b => {
+      const it = window._itemsById?.[b.item_id]
+      const name = it?.name || b.item_id
+      if (!grouped[name]) grouped[name] = []
+      grouped[name].push(b)
+    })
+    const opts = Object.entries(grouped).map(([name, bags]) =>
+      `── ${name} ──\n` + bags.map(b => `  #${b.bag_no} (${(b.weight_g/1000).toFixed(3)}กก.) [id:${b.id}]`).join('\n')
+    ).join('\n')
+
+    const pick = prompt(`เพิ่มถุงเข้าบิล ${d.bill_no}\n\nเลือกถุง — พิมพ์เลข id:\n\n${opts}`)
+    if (!pick) return
+    const newCwId = parseInt(pick.replace(/[^\d]/g, ''), 10)
+    if (!newCwId || !available.find(b => b.id === newCwId)) return alert('❌ id ไม่ถูกต้อง')
+
+    const reason = prompt('เหตุผลที่เพิ่ม (≥ 10 ตัวอักษร):')
+    if (!reason) return
+    if (reason.length < 10) return alert('❌ เหตุผลต้องมีอย่างน้อย 10 ตัวอักษร')
+
+    const newBag = available.find(b => b.id === newCwId)
+    const bagName = window._itemsById?.[newBag.item_id]?.name || '?'
+    if (!confirm(`ยืนยันเพิ่มถุง?\n\nบิล: ${d.bill_no}\nถุง: ${bagName} #${newBag.bag_no} (${(newBag.weight_g/1000).toFixed(3)}กก.)\n\nเหตุผล: ${reason}`)) return
+
+    const actor = window.nntnCurrentUser || 'unknown'
+    const r = await callAdjustRpc('rpc_delivery_add_bag', { p_actor: actor, p_delivery_id: d.id, p_cw_id: newCwId, p_reason: reason })
+    alert(`✅ เพิ่มถุงสำเร็จ (sm #${r.sm_id})`)
+    _logSubmit('adjust_add', 'success', { delivery_id: d.id, cw_id: newCwId, reason })
+    loadAdjust()
+  } catch (e) {
+    alert(`❌ เพิ่มไม่ได้: ${e.message}`)
+    _logSubmit('adjust_add', 'error', { delivery_id: d?.id }, { error_msg: e.message })
+  }
+}
+
+function parseBillNote(note) {
+  // note format: "NT-20260409-01 → ครัวกลาง (NT)"
+  const parts = (note || '').split('→')
+  return {
+    bill: parts[0]?.trim() || note,
+    dest: parts[1]?.trim() || ''
+  }
+}
+
+async function suggestBillNum() {
+  const billEl = document.getElementById('dl-bill')
+  if (billEl.value.trim()) return
+  const dateVal = document.getElementById('dl-date').value
+  const dest    = document.getElementById('dl-dest').value
+  if (!dateVal) return
+  const tag = dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : 'OT'
+  const d   = dateVal.replace(/-/g, '')   // 20260418
+  const prefix = `${tag}${d}`             // NT20260418
+  // ค้นจาก deliveries table โดยตรง
+  const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+  const SHst = { ...H, Authorization: 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+  try {
+    const res  = await fetch(`${SB}/rest/v1/deliveries?bill_no=like.${prefix}*&select=bill_no&limit=50`, { headers: SHst })
+    const rows = await res.json()
+    let maxSeq = 0
+    ;(Array.isArray(rows) ? rows : []).forEach(r => {
+      const m = (r.bill_no || '').match(new RegExp(`${prefix}-(\\d+)`))
+      if (m) maxSeq = Math.max(maxSeq, parseInt(m[1]))
+    })
+    billEl.value = `${prefix}-${maxSeq + 1}`
+  } catch(_) {
+    billEl.value = `${prefix}-1`
+  }
+  updatePreview()
+}
+
+function renderHistory(groups) {
+  const listEl = document.getElementById('hist-list')
+  if (groups.length === 0) {
+    listEl.innerHTML = '<div class="hist-empty">ยังไม่มีประวัติการส่ง Non-meat</div>'
+    return
+  }
+  const effectiveGis = []
+  listEl.innerHTML = groups.map((g, gi) => {
+    // ใช้ original index จาก historyData เสมอ (กัน filter-then-edit ผิด group)
+    const realGi = historyData.indexOf(g)
+    const effectiveGi = realGi >= 0 ? realGi : gi
+    effectiveGis.push(effectiveGi)
+    const { bill, dest } = parseBillNote(g.note)
+    const dateStr = g.counted_at ? fmtDate(g.counted_at) : '—'
+    const itemCount = g.rows.length
+    return `
+    <div class="hist-bill-card" id="hg-${effectiveGi}">
+      <div class="hist-bill-header" onclick="toggleBillCard(${effectiveGi})">
+        <div class="hist-bill-info">
+          <div class="hist-bill-num">${escHtml(bill)}</div>
+          <div class="hist-bill-meta">${escHtml(dest)} · ${dateStr}</div>
+        </div>
+        <span class="hist-bill-count">${itemCount} รายการ</span>
+      </div>
+      <div class="hist-bill-body" id="hg-body-${effectiveGi}" style="display:none">
+        <div id="hg-rows-${effectiveGi}">
+          ${g.rows.map((r, ri) => renderHistRow(r, effectiveGi, ri)).join('')}
+        </div>
+        <button class="hist-add-row-btn" onclick="showAddItemForm(${effectiveGi})">+ เพิ่มรายการ</button>
+        <div class="hist-add-form" id="hadd-form-${effectiveGi}">
+          <div class="add-form-row">
+            <select id="hadd-item-${effectiveGi}">
+              <option value="">— เลือก SP item —</option>
+              ${spItems.map(i => `<option value="${i.id}" data-sku="${i.sku}" data-unit="${i.unit||''}" data-name="${i.name}">${i.sku} | ${escHtml(i.name)}</option>`).join('')}
+            </select>
+            <input type="number" id="hadd-qty-${effectiveGi}" min="0" step="0.01" placeholder="จำนวน">
+          </div>
+          <div class="hist-add-form .add-form-actions" style="display:flex;gap:8px">
+            <button class="hist-save-btn" style="flex:2" onclick="saveNewHistItem(${effectiveGi})">บันทึก</button>
+            <button class="hist-cancel-btn" style="flex:1" onclick="cancelAddItemForm(${effectiveGi})">ยกเลิก</button>
+          </div>
+        </div>
+        <!-- Per-bill audit log -->
+        <div id="hg-audit-${effectiveGi}" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">📋 Log การแก้ไข</div>
+          <div id="hg-audit-rows-${effectiveGi}"></div>
+        </div>
+      </div>
+    </div>`
+  }).join('')
+  // Apply searchable to each hadd-item select
+  effectiveGis.forEach(gi => makeSearchable(`hadd-item-${gi}`, '— พิมพ์ค้นหา SP item —'))
+}
+
+function renderHistRow(r, gi, ri) {
+  // MT row (catch_weight delivered) — read-only
+  if (r._rowType === 'mt') {
+    const item   = r.items || {}
+    const name   = `🥩 ${item.name || 'เนื้อตุ๋น'}${r.legacy_cw_row ? ` [${r.legacy_cw_row}]` : ''}`
+    const kgDisp = r.weight_g ? (r.weight_g / 1000).toFixed(3) : '?'
+    const lot    = r.lot_date || ''
+    return `
+  <div class="hist-item-row" id="hrow-${gi}-${ri}" style="background:#FFF8E1">
+    <div class="hist-item-name">${escHtml(name)}</div>
+    <div class="hist-item-qty">${kgDisp} <span style="font-size:0.75em;color:#888">กก.</span></div>
+    <div class="hist-item-unit" style="font-size:0.72rem;color:#aaa">${lot}</div>
+    <span style="font-size:0.72rem;color:#E65100;padding:4px 8px;background:#FFF3E0;border-radius:6px">เนื้อตุ๋น</span>
+  </div>`
+  }
+
+  // SP row (stock_counts) — editable
+  const item        = r.items || {}
+  const name        = item.name || r.item_id || '?'
+  const unit        = item.unit || ''
+  const dispQty     = r.dispense_qty !== null && r.dispense_qty !== undefined ? Number(r.dispense_qty) : null
+  const remainQty   = r.qty !== null && r.qty !== undefined ? Number(r.qty) : null
+  const displayQty  = dispQty !== null ? dispQty : (remainQty !== null ? remainQty : '?')
+  const editVal     = dispQty !== null ? dispQty : (remainQty !== null ? remainQty : '')
+  const qtyLabel    = dispQty !== null ? 'เบิก' : 'คงเหลือ'
+  return `
+  <div class="hist-item-row" id="hrow-${gi}-${ri}">
+    <div class="hist-item-name">${escHtml(name)}</div>
+    <div class="hist-item-qty">${displayQty} <span style="font-size:0.75em;color:#888">${qtyLabel}</span></div>
+    <div class="hist-item-unit">${escHtml(unit)}</div>
+    <button class="hist-edit-btn" onclick="showEditRow(${gi},${ri})">✏️ แก้</button>
+    <button class="hist-del-btn" onclick="deleteHistRow(${gi},${ri})" title="ลบรายการนี้">🗑️</button>
+  </div>
+  <div class="hist-edit-row" id="hedit-${gi}-${ri}" style="display:none">
+    <label>จำนวนเบิก:</label>
+    <input type="number" id="hedit-input-${gi}-${ri}" value="${editVal}" step="0.01" min="0">
+    <button class="hist-save-btn" onclick="saveHistRow(${gi},${ri})">บันทึก</button>
+    <button class="hist-cancel-btn" onclick="cancelEditRow(${gi},${ri})">ยกเลิก</button>
+    <div style="flex:1"></div>
+  </div>
+  <div class="hist-warn" id="hwarn-${gi}-${ri}" style="display:none">
+    ⚠️ แก้ไข = จำนวนที่เบิกจริง (บิลนี้)
+  </div>`
+}
+
+function toggleBillCard(gi) {
+  const body   = document.getElementById(`hg-body-${gi}`)
+  const header = document.querySelector(`#hg-${gi} .hist-bill-header`)
+  const isOpen = body.style.display !== 'none'
+  body.style.display   = isOpen ? 'none' : 'block'
+  header.classList.toggle('open', !isOpen)
+  if (!isOpen) {
+    const group = historyData[gi]
+    if (group) {
+      const { bill } = parseBillNote(group.note)
+      loadBillAuditLog(gi, bill)
+    }
+  }
+}
+
+function showEditRow(gi, ri) {
+  document.getElementById(`hedit-${gi}-${ri}`).style.display = 'flex'
+  document.getElementById(`hwarn-${gi}-${ri}`).style.display = 'block'
+  document.getElementById(`hedit-input-${gi}-${ri}`).focus()
+}
+
+function cancelEditRow(gi, ri) {
+  document.getElementById(`hedit-${gi}-${ri}`).style.display = 'none'
+  document.getElementById(`hwarn-${gi}-${ri}`).style.display = 'none'
+}
+
+async function saveHistRow(gi, ri) {
+  const group  = historyData[gi]
+  const record = group.rows[ri]
+  // Edit field = dispense_qty if available, else qty
+  const hasDispQty = record.dispense_qty !== null && record.dispense_qty !== undefined
+  const oldQty = hasDispQty ? Number(record.dispense_qty) : (record.qty !== null ? Number(record.qty) : null)
+  const newQty = parseFloat(document.getElementById(`hedit-input-${gi}-${ri}`).value)
+
+  if (isNaN(newQty) || newQty < 0) { alert('กรุณากรอกตัวเลขที่ถูกต้อง'); return }
+
+  const saveBtn = document.querySelector(`#hedit-${gi}-${ri} .hist-save-btn`)
+  saveBtn.disabled = true
+  saveBtn.textContent = '⏳...'
+
+  try {
+    // If record has dispense_qty: update dispense_qty + recalculate remaining qty (avail = qty + dispense_qty)
+    const patchBody = hasDispQty
+      ? { dispense_qty: newQty, qty: Number(record.qty) + Number(record.dispense_qty) - newQty }
+      : { qty: newQty }
+
+    const res = await fetch(`${SB}/rest/v1/stock_counts?id=eq.${record.id}`, {
+      method: 'PATCH',
+      headers: { ...H, Prefer: 'return=minimal' },
+      body: JSON.stringify(patchBody)
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`)
+
+    // Log the edit
+    const item = record.items || {}
+    const { bill } = parseBillNote(group.note)
+    await logDeliveryEdit({
+      bill, action: 'แก้ไข',
+      item_name: item.name || record.item_id || null,
+      item_sku:  item.sku  || null,
+      old_qty:   oldQty,
+      new_qty:   newQty
+    })
+
+    // Update local data
+    if (hasDispQty) {
+      record.qty = Number(record.qty) + Number(record.dispense_qty) - newQty
+      record.dispense_qty = newQty
+    } else {
+      record.qty = newQty
+    }
+
+    // Re-render entire rows container (same approach as deleteHistRow — avoids index/ID mismatch)
+    const rowsEl = document.getElementById(`hg-rows-${gi}`)
+    rowsEl.innerHTML = group.rows.map((r, newRi) => renderHistRow(r, gi, newRi)).join('')
+
+    // Flash green on the updated row (find by new index after re-render)
+    const newRi = group.rows.indexOf(record)
+    const newRowEl = document.getElementById(`hrow-${gi}-${newRi}`)
+    if (newRowEl) {
+      newRowEl.style.background = '#E8F5E9'
+      setTimeout(() => { newRowEl.style.background = '' }, 1200)
+    }
+
+    // Refresh per-bill audit log
+    loadBillAuditLog(gi, parseBillNote(historyData[gi].note).bill)
+
+  } catch(e) {
+    alert(`❌ บันทึกไม่สำเร็จ: ${e.message}`)
+    saveBtn.disabled = false
+    saveBtn.textContent = 'บันทึก'
+  }
+}
+
+// ─── Delete a history row ─────────────────────────────────────────────────────
+async function deleteHistRow(gi, ri) {
+  const group  = historyData[gi]
+  const record = group.rows[ri]
+  const item   = record.items || {}
+  const name   = item.name || record.item_id || '?'
+
+  if (!confirm(`ลบ "${name}" ออกจากบิลนี้?`)) return
+
+  try {
+    const res = await fetch(`${SB}/rest/v1/stock_counts?id=eq.${record.id}`, {
+      method: 'DELETE',
+      headers: { ...H, Prefer: 'return=minimal' }
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`)
+
+    // Log the delete
+    const { bill } = parseBillNote(group.note)
+    await logDeliveryEdit({
+      bill, action: 'ลบรายการ',
+      item_name: item.name || record.item_id || null,
+      item_sku:  item.sku  || null,
+      old_qty:   record.qty !== null && record.qty !== undefined ? Number(record.qty) : null
+    })
+
+    // Remove from local data
+    group.rows.splice(ri, 1)
+
+    // Re-render rows container
+    const rowsEl = document.getElementById(`hg-rows-${gi}`)
+    rowsEl.innerHTML = group.rows.map((r, newRi) => renderHistRow(r, gi, newRi)).join('')
+
+    // Update item count badge
+    const countEl = document.querySelector(`#hg-${gi} .hist-bill-count`)
+    if (countEl) countEl.textContent = `${group.rows.length} รายการ`
+
+    // If no rows left, show empty message
+    if (group.rows.length === 0) {
+      rowsEl.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:8px 0">ไม่มีรายการในบิลนี้</div>'
+    }
+
+    // Refresh per-bill audit log
+    loadBillAuditLog(gi, parseBillNote(historyData[gi].note).bill)
+
+  } catch(e) {
+    alert(`❌ ลบไม่สำเร็จ: ${e.message}`)
+  }
+}
+
+// ─── Add a new line item to existing bill ────────────────────────────────────
+function showAddItemForm(gi) {
+  document.getElementById(`hadd-form-${gi}`).style.display = 'block'
+  // Focus ss-input (searchable wrapper) ถ้ามี ไม่งั้น fallback select
+  const ssInput = document.querySelector(`#hadd-form-${gi} .ss-input`)
+  ;(ssInput || document.getElementById(`hadd-item-${gi}`)).focus()
+}
+
+function cancelAddItemForm(gi) {
+  const form = document.getElementById(`hadd-form-${gi}`)
+  form.style.display = 'none'
+  document.getElementById(`hadd-item-${gi}`).value = ''
+  const ssInput = form.querySelector('.ss-input')
+  if (ssInput) { ssInput.value = ''; form.querySelector('.ss-dropdown').style.display = 'none' }
+  document.getElementById(`hadd-qty-${gi}`).value = ''
+}
+
+async function saveNewHistItem(gi) {
+  const group   = historyData[gi]
+  const itemSel = document.getElementById(`hadd-item-${gi}`)
+  const qtyEl   = document.getElementById(`hadd-qty-${gi}`)
+  const itemId  = itemSel.value
+  const dispQty = parseFloat(qtyEl.value)
+
+  if (!itemId) { alert('กรุณาเลือก SP item'); return }
+  if (isNaN(dispQty) || dispQty <= 0) { alert('กรุณากรอกจำนวนที่ถูกต้อง'); return }
+
+  const opt  = itemSel.options[itemSel.selectedIndex]
+  const sku  = opt?.dataset?.sku || ''
+  const unit = opt?.dataset?.unit || ''
+  const name = opt?.dataset?.name || sku
+
+  const saveBtn = document.querySelector(`#hadd-form-${gi} .hist-save-btn`)
+  saveBtn.disabled = true
+  saveBtn.textContent = '⏳...'
+
+  try {
+    // Get current stock for this item (latest stock_counts record — all event types)
+    const latest = await get('stock_counts', {
+      select: 'qty',
+      item_id: `eq.${itemId}`,
+      order: 'counted_at.desc',
+      limit: '1'
+    })
+    const currentStock = (Array.isArray(latest) && latest.length > 0)
+      ? parseFloat(latest[0].qty) || 0
+      : (spStockBySku[sku] ?? 0)
+
+    const newQty = currentStock - dispQty
+
+    // INSERT new stock_counts record (with dispense_qty for correct history display)
+    const res = await fetch(`${SB}/rest/v1/stock_counts`, {
+      method: 'POST',
+      headers: { ...H, Prefer: 'return=representation' },
+      body: JSON.stringify([{
+        item_id:      itemId,
+        qty:          newQty,
+        dispense_qty: dispQty,
+        event_type:   'dispense',
+        counted_by:   (window.nntnCurrentUser || 'UNKNOWN') + ' · hub-delivery',
+        note:         group.note,
+        counted_at:   new Date().toISOString()
+      }])
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`)
+    const inserted = await res.json()
+    const newRecord = Array.isArray(inserted) ? inserted[0] : inserted
+
+    // Attach items info locally
+    newRecord.items = { name, unit, sku }
+
+    // Add to local data
+    const ri = group.rows.length
+    group.rows.push(newRecord)
+
+    // Append new row to DOM
+    const rowsEl = document.getElementById(`hg-rows-${gi}`)
+    rowsEl.insertAdjacentHTML('beforeend', renderHistRow(newRecord, gi, ri))
+
+    // Update item count badge
+    const countEl = document.querySelector(`#hg-${gi} .hist-bill-count`)
+    if (countEl) countEl.textContent = `${group.rows.length} รายการ`
+
+    // Update local stock cache
+    if (sku) spStockBySku[sku] = newQty
+
+    // Log the add
+    const { bill } = parseBillNote(group.note)
+    await logDeliveryEdit({
+      bill, action: 'เพิ่มรายการ',
+      item_name: name || null,
+      item_sku:  sku  || null,
+      new_qty:   dispQty
+    })
+
+    cancelAddItemForm(gi)
+
+    // Refresh per-bill audit log
+    loadBillAuditLog(gi, parseBillNote(historyData[gi].note).bill)
+
+  } catch(e) {
+    alert(`❌ บันทึกไม่สำเร็จ: ${e.message}`)
+  } finally {
+    saveBtn.disabled = false
+    saveBtn.textContent = 'บันทึก'
+  }
+}
+
+// ─── Per-bill Audit Log ───────────────────────────────────────────────────────
+async function loadBillAuditLog(gi, bill) {
+  const section = document.getElementById(`hg-audit-${gi}`)
+  const rowsEl  = document.getElementById(`hg-audit-rows-${gi}`)
+  if (!section || !rowsEl) return
+  section.style.display = 'block'
+  rowsEl.innerHTML = '<div class="loading" style="font-size:0.82rem">กำลังโหลด log...</div>'
+  try {
+    const rows = await get('delivery_edit_log', {
+      select: 'id,action,item_name,item_sku,old_qty,new_qty,done_at',
+      bill:   `eq.${bill}`,
+      order:  'done_at.desc',
+      limit:  '50'
+    })
+    const data = Array.isArray(rows) ? rows : []
+    if (data.length === 0) {
+      rowsEl.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;padding:4px 0">ยังไม่มี log การแก้ไข</div>'
+      return
+    }
+    rowsEl.innerHTML = `<div style="overflow-x:auto"><table class="audit-table" style="font-size:0.8rem">
+      <thead><tr><th>วันเวลา</th><th>action</th><th>รายการ</th><th>qty</th></tr></thead>
+      <tbody>${data.map(r => {
+        const dt = r.done_at ? new Date(r.done_at) : null
+        const dateStr = dt
+          ? dt.toLocaleDateString('th-TH', { day:'2-digit', month:'2-digit', year:'2-digit' })
+            + ' ' + dt.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' })
+          : '—'
+        const cls = r.action === 'แก้ไข' ? 'audit-action-edit'
+                  : r.action === 'ลบรายการ' ? 'audit-action-delete'
+                  : r.action === 'เพิ่มรายการ' ? 'audit-action-add' : ''
+        let qtyHtml = '—'
+        if (r.action === 'แก้ไข')        qtyHtml = `${r.old_qty ?? '?'} → ${r.new_qty ?? '?'}`
+        else if (r.action === 'ลบรายการ')   qtyHtml = `<span class="audit-qty-delete">${r.old_qty ?? '?'}</span>`
+        else if (r.action === 'เพิ่มรายการ') qtyHtml = `<span class="audit-qty-add">${r.new_qty ?? '?'}</span>`
+        const item = r.item_sku ? `${escHtml(r.item_sku)} ${escHtml(r.item_name||'')}` : escHtml(r.item_name||'—')
+        return `<tr>
+          <td style="white-space:nowrap;color:var(--muted)">${dateStr}</td>
+          <td class="${cls}">${escHtml(r.action||'—')}</td>
+          <td>${item}</td>
+          <td>${qtyHtml}</td>
+        </tr>`
+      }).join('')}</tbody>
+    </table></div>`
+  } catch(e) {
+    rowsEl.innerHTML = '<div class="warn-banner" style="font-size:0.82rem">❌ โหลด log ไม่ได้</div>'
+  }
+}
+
+// ─── Audit Log ────────────────────────────────────────────────────────────────
+async function logDeliveryEdit({ bill, action, item_name, item_sku, old_qty, new_qty, note }) {
+  try {
+    await fetch(`${SB}/rest/v1/delivery_edit_log`, {
+      method: 'POST',
+      headers: { ...H, Prefer: 'return=minimal' },
+      body: JSON.stringify([{
+        bill:      bill || null,
+        action:    action,
+        item_name: item_name || null,
+        item_sku:  item_sku  || null,
+        old_qty:   old_qty   !== undefined ? old_qty : null,
+        new_qty:   new_qty   !== undefined ? new_qty : null,
+        done_at:   new Date().toISOString(),
+        note:      note || null
+      }])
+    })
+  } catch(e) {
+    console.warn('audit log failed:', e.message)
+  }
+}
+
+async function loadAuditLog() {
+  const el = document.getElementById('audit-log-content')
+  if (!el) return
+  el.innerHTML = '<div class="loading">กำลังโหลด log...</div>'
+  try {
+    const rows = await get('delivery_edit_log', {
+      select: 'id,bill,action,item_name,item_sku,old_qty,new_qty,done_at,note',
+      order:  'done_at.desc',
+      limit:  '50'
+    })
+    const data = Array.isArray(rows) ? rows : []
+    if (data.length === 0) {
+      el.innerHTML = '<div class="hist-empty">ยังไม่มี log การแก้ไข</div>'
+      return
+    }
+    el.innerHTML = `
+      <div style="overflow-x:auto">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>วันเวลา</th>
+              <th>บิล</th>
+              <th>action</th>
+              <th>รายการ</th>
+              <th>qty เดิม → qty ใหม่</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map(r => {
+              const dt = r.done_at ? new Date(r.done_at) : null
+              const dateStr = dt
+                ? dt.toLocaleDateString('th-TH', { day:'2-digit', month:'2-digit', year:'2-digit' })
+                  + ' ' + dt.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' })
+                : '—'
+              const actionClass =
+                r.action === 'แก้ไข'      ? 'audit-action-edit'   :
+                r.action === 'ลบรายการ'   ? 'audit-action-delete' :
+                r.action === 'เพิ่มรายการ' ? 'audit-action-add'    : ''
+              let qtyHtml = '—'
+              if (r.action === 'แก้ไข') {
+                qtyHtml = `${r.old_qty ?? '?'} → ${r.new_qty ?? '?'}`
+              } else if (r.action === 'ลบรายการ') {
+                qtyHtml = `<span class="audit-qty-delete">${r.old_qty ?? '?'}</span>`
+              } else if (r.action === 'เพิ่มรายการ') {
+                qtyHtml = `<span class="audit-qty-add">${r.new_qty ?? '?'}</span>`
+              }
+              const itemLabel = r.item_sku ? `${escHtml(r.item_sku)} ${escHtml(r.item_name || '')}` : escHtml(r.item_name || '—')
+              return `<tr>
+                <td style="white-space:nowrap;color:var(--muted)">${dateStr}</td>
+                <td style="white-space:nowrap">${escHtml(r.bill || '—')}</td>
+                <td class="${actionClass}">${escHtml(r.action || '—')}</td>
+                <td>${itemLabel}</td>
+                <td>${qtyHtml}</td>
+              </tr>`
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`
+  } catch(e) {
+    el.innerHTML = `<div class="warn-banner">❌ โหลด log ไม่ได้: ${e.message}</div>`
+  }
+}
+
+function filterHistory() {
+  const q = document.getElementById('hist-search').value.trim().toLowerCase()
+  if (!q) { renderHistory(historyData); return }
+  const filtered = historyData.filter(g => g.note.toLowerCase().includes(q))
+  renderHistory(filtered)
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+// ─── Submit ───────────────────────────────────────────────────────────────────
+let _submitting = false
+
+function _hdToast(msg, type) {
+  const el = document.createElement('div')
+  el.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+    background:${type==='error'?'#c62828':'#2e7d32'};color:#fff;
+    padding:10px 20px;border-radius:8px;font-size:.9rem;z-index:9999;max-width:90vw;text-align:center`
+  el.textContent = msg
+  document.body.appendChild(el)
+  setTimeout(() => el.remove(), 3500)
+}
+
+function friendlyErr(msg) {
+  if (msg.includes('42501') || msg.includes('403') || msg.includes('permission denied'))
+    return 'ไม่มีสิทธิ์บันทึก — กรุณา login ใหม่แล้วลองอีกครั้ง'
+  if (msg.includes('404')) return 'ไม่พบข้อมูล — กรุณารีเฟรชหน้าแล้วลองใหม่'
+  // Strip raw JSON/code payload
+  return msg.replace(/\s*—\s*\{.*\}[\s\S]*$/, '').replace(/\s*—\s*".*"$/, '')
+}
+
+async function saveDraftToCloud() {
+  const date = document.getElementById('dl-date').value
+  const bill = document.getElementById('dl-bill').value.trim()
+  const dest = document.getElementById('dl-dest').value
+  if (!date || !dest) { _hdToast('กรุณากรอกวันที่และปลายทางก่อน', 'error'); return }
+
+  const meatLines = []
+  Object.entries(meatSel).forEach(([n, s]) => {
+    if (!s.itemId || s.selectedBags.size === 0) return
+    const sel = document.getElementById(`mb-sku-${n}`)
+    const name = sel?.options[sel?.selectedIndex]?.dataset?.name || ''
+    s.selectedBags.forEach(id => {
+      const b = bagCache[id]
+      if (b) meatLines.push({ bag_id: id, item_id: s.itemId, name, weight_g: b.weight_g, lot_date: b.lot_date })
+    })
+  })
+
+  const nmLines = []
+  document.querySelectorAll('#nm-rows .nm-row-wrap').forEach(wrap => {
+    const n = wrap.id.replace('nm-row-', '')
+    const itemEl = document.getElementById(`nm-item-${n}`)
+    const qtyEl  = document.getElementById(`nm-qty-${n}`)
+    const unitEl = document.getElementById(`nm-unit-${n}`)
+    if (!itemEl?.value) return
+    const qty = parseFloat(qtyEl?.value) || 0
+    if (qty <= 0) return
+    const opt = itemEl.options[itemEl.selectedIndex]
+    nmLines.push({ item_id: itemEl.value, name: opt?.dataset?.name || '', qty, unit: unitEl?.value || '' })
+  })
+
+  if (meatLines.length === 0 && nmLines.length === 0) {
+    _hdToast('กรุณาเลือกถุงเนื้อหรือ Non-meat ก่อน', 'error'); return
+  }
+
+  const btn = document.getElementById('draft-btn')
+  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'
+
+  try {
+    const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+    const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+    const res = await fetch(`${SB}/rest/v1/delivery_drafts`, {
+      method: 'POST',
+      headers: { ...DH, Prefer: 'return=representation' },
+      body: JSON.stringify([{
+        bill_no: bill || null, branch: dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : dest,
+        date, meat_lines: meatLines, nm_lines: nmLines,
+        created_by: window.nntnCurrentUser || 'UNKNOWN', status: 'draft'
+      }])
+    })
+    if (!res.ok) throw new Error(await res.text())
+    _hdToast(`✅ บันทึก Draft แล้ว — ${meatLines.length} ถุง / ${nmLines.length} non-meat`)
+  } catch(e) {
+    _hdToast('❌ Draft ไม่สำเร็จ: ' + e.message, 'error')
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 บันทึก Draft'
+  }
+}
+
+async function submitDelivery() {
+  if (_submitting) return
+  const date = document.getElementById('dl-date').value
+  const dest = document.getElementById('dl-dest').value
+  const bill = document.getElementById('dl-bill').value.trim()
+
+  if (!bill) { alert('กรุณาระบุเลขที่ใบนำส่ง'); return }
+  if (!date) { alert('กรุณาเลือกวันที่ส่ง'); return }
+
+  // (c) anti double-submit: claim the lock + disable the button BEFORE any async work
+  //   (covers the draft-fetch + stock-guard await windows, not just the RPC). Every
+  //   pre-RPC abort path below must call _release() so the lock never sticks.
+  const btn = document.getElementById('submit-btn')
+  _submitting = true
+  btn.disabled = true
+  const _release = () => { _submitting = false; btn.disabled = false }
+
+  // Collect meat bags — if linked to a draft, refetch draft from DB as source of truth
+  //   (prevents stale form vs draft desync when user edits draft in another tab)
+  let allBagIds = []
+  let nmOverride = null
+  if (window._pendingDraftId) {
+    try {
+      const dTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+      const dH = { ...H, 'Authorization': 'Bearer ' + dTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+      const dRes = await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${window._pendingDraftId}&select=meat_lines,nm_lines`, { headers: dH })
+      if (!dRes.ok) throw new Error('fetch draft failed')
+      const dArr = await dRes.json()
+      const fresh = dArr?.[0]
+      if (!fresh) throw new Error('draft not found — may have been deleted')
+      const draftBagIds = (fresh.meat_lines || []).map(m => String(m.bag_id))
+      const formBagIds  = []
+      Object.values(meatSel).forEach(s => s.selectedBags.forEach(id => formBagIds.push(String(id))))
+      const draftSet = new Set(draftBagIds)
+      const formSet  = new Set(formBagIds)
+      const onlyForm  = formBagIds.filter(id => !draftSet.has(id))
+      const onlyDraft = draftBagIds.filter(id => !formSet.has(id))
+      if (onlyForm.length > 0 || onlyDraft.length > 0) {
+        const lines = []
+        if (onlyForm.length > 0)  lines.push(`• ในฟอร์มแต่ไม่อยู่ใน Draft (${onlyForm.length}): ${onlyForm.slice(0,10).join(', ')}${onlyForm.length>10?'…':''}`)
+        if (onlyDraft.length > 0) lines.push(`• ใน Draft แต่ไม่อยู่ในฟอร์ม (${onlyDraft.length}): ${onlyDraft.slice(0,10).join(', ')}${onlyDraft.length>10?'…':''}`)
+        const msg = `⚠️ Form กับ Draft ไม่ตรงกัน\n\n${lines.join('\n')}\n\n[ตกลง] = ใช้ Draft เป็นหลัก (ปลอดภัย · Draft คือสิ่งที่บันทึกไว้ล่าสุด)\n[ยกเลิก] = หยุด · ไปตรวจ Draft + Form เอง`
+        if (!confirm(msg)) { _release(); return }
+        // User chose draft → use draft as source + reload form to reflect
+        allBagIds = draftBagIds.map(Number)
+        nmOverride = fresh.nm_lines || null
+        _hdToast(`✅ ใช้ Draft เป็นหลัก · ${draftBagIds.length} ถุง`)
+      } else {
+        // in sync — use draft's bag order but verified equal
+        allBagIds = draftBagIds.map(Number)
+      }
+    } catch (e) {
+      alert('❌ ตรวจ Draft ไม่สำเร็จ: ' + e.message + '\nยกเลิก submit เพื่อความปลอดภัย')
+      _release(); return
+    }
+  } else {
+    Object.values(meatSel).forEach(s => s.selectedBags.forEach(id => allBagIds.push(Number(id))))
+  }
+  // meat is optional — allow non-meat only delivery
+
+  // Collect + validate non-meat rows — ใช้ querySelectorAll แทน index loop
+  const nmWithdrawals = []
+  const overLimit = []
+  document.querySelectorAll('#nm-rows .nm-row-wrap').forEach(wrap => {
+    const n = wrap.id.replace('nm-row-', '')
+    const itemEl = document.getElementById(`nm-item-${n}`)
+    const qtyEl  = document.getElementById(`nm-qty-${n}`)
+    const unitEl = document.getElementById(`nm-unit-${n}`)
+    if (!itemEl?.value) return
+    const qty = parseFloat(qtyEl?.value) || 0
+    if (qty <= 0) return
+    const opt    = itemEl.options[itemEl.selectedIndex]
+    const sku    = opt?.dataset?.sku || ''
+    const isMisc = sku.startsWith('MISC')
+    const note   = document.getElementById(`nm-note-${n}`)?.value?.trim() || ''
+    if (isMisc && !note) {
+      overLimit.push(`• รายการพิเศษ: กรุณาระบุชื่อรายการ`)
+      return
+    }
+    const name   = isMisc ? note : (opt?.dataset?.name || sku)
+    const unit   = unitEl?.value || opt?.dataset?.unit || 'หน่วย'
+    const avail  = isMisc ? null : (spStockBySku[sku] ?? 0)
+    const chkNm  = window.nntnEnforceIntegerUnit(qty, unit, name)
+    if (!chkNm.ok) { overLimit.push(chkNm.message); return }
+    if (avail !== null && qty > avail) {
+      overLimit.push(`• ${name}: เบิก ${qty} แต่มีอยู่ ${avail} ${unit}`)
+    }
+    nmWithdrawals.push({ item_id: itemEl.value, sku, name, unit, qty, avail, note: isMisc ? note : null })
+  })
+
+  if (overLimit.length > 0) {
+    alert(`❌ เบิกเกินสต๊อก — ไม่สามารถส่งออกได้\n\n${overLimit.join('\n')}\n\nกรุณาแก้ไขจำนวนก่อน`)
+    _release(); return
+  }
+
+  if (allBagIds.length === 0 && nmWithdrawals.length === 0) {
+    alert('กรุณาเลือกถุงเนื้อ หรือเพิ่มรายการ Non-meat อย่างน้อย 1 รายการ')
+    _release(); return
+  }
+
+  const bagCount = allBagIds.length
+  const totalKg  = allBagIds.reduce((s, id) => s + (bagCache[id]?.weight_g || 0) / 1000, 0)
+  const nmSummary = nmWithdrawals.length > 0
+    ? `\nNon-meat: ${nmWithdrawals.length} รายการ`
+    : ''
+  if (!confirm(`ยืนยันส่งออก?\n\nบิล: ${bill}\nปลายทาง: ${dest}\nเนื้อ: ${bagCount} ถุง / ${totalKg.toFixed(3)} กก.${nmSummary}`)) {
+    _logSubmit('hub_delivery.submit', 'cancel',
+      { bill, dest, date, bag_count: bagCount, nm_count: nmWithdrawals.length },
+      { ref_id: bill })
+    _release(); return
+  }
+
+  // ── NM Stock Guard: re-fetch latest qty_on_hand ก่อน submit (กัน stale cache) ──
+  if (nmWithdrawals.length > 0) {
+    const nmSkus = [...new Set(nmWithdrawals.filter(w => !String(w.sku).startsWith('MISC')).map(w => w.sku))]
+    if (nmSkus.length > 0) {
+      const skuList = nmSkus.map(s => `"${s}"`).join(',')
+      const stkRes = await fetch(`${SB}/rest/v1/v_stock_unified?sku=in.(${skuList})&select=sku,qty_on_hand`, { headers: H })
+      if (stkRes.ok) {
+        const fresh = await stkRes.json()
+        const freshMap = {}
+        fresh.forEach(r => { freshMap[r.sku] = parseFloat(r.qty_on_hand) || 0 })
+        const nowOOS = nmWithdrawals.filter(w => !String(w.sku).startsWith('MISC') && w.qty > (freshMap[w.sku] ?? 0))
+        if (nowOOS.length > 0) {
+          alert(`❌ สต๊อกไม่พอ (เพิ่งถูกอัปเดต)\n\n${nowOOS.map(w => `• ${w.name}: เบิก ${w.qty} แต่มี ${freshMap[w.sku] ?? 0} ${w.unit}`).join('\n')}\n\nหน้าจะรีเฟรช`)
+          location.reload()
+          return
+        }
+      }
+    }
+  }
+
+  // ── Stock Guard: ตรวจว่าทุกถุงยังเป็น In Stock อยู่จริง ──
+  if (allBagIds.length > 0) {
+    const checkIdList = allBagIds.map(id => `"${id}"`).join(',')
+    const checkRes = await fetch(`${SB}/rest/v1/catch_weight?id=in.(${checkIdList})&select=id,status`, { headers: H })
+    if (checkRes.ok) {
+      const checkBags = await checkRes.json()
+      const notInStock = checkBags.filter(b => b.status !== '✅ In Stock')
+      if (notInStock.length > 0) {
+        alert(`❌ ส่งออกไม่ได้\n\nพบ ${notInStock.length} ถุงที่ไม่ได้อยู่ใน In Stock (อาจถูกส่งออกไปแล้วโดย session อื่น)\n\nหน้าจะรีเฟรชเพื่อโหลดสต๊อกล่าสุด`)
+        location.reload()
+        return
+      }
+    }
+  }
+
+  // lock + btn.disabled already set at top of submitDelivery (anti double-submit)
+  btn.textContent = '⏳ กำลังบันทึก...'
+
+  const _auditPayload = {
+    bill, dest, date,
+    bag_count: bagCount,
+    bag_ids:   allBagIds,
+    nm_count:  nmWithdrawals.length,
+    nm_skus:   nmWithdrawals.map(w => ({ sku: w.sku, qty: w.qty, unit: w.unit })),
+    total_kg:  Number(totalKg.toFixed(3)),
+    draft_id:  window._pendingDraftId || null
+  }
+  _logSubmit('hub_delivery.submit', 'attempt', _auditPayload, { ref_id: bill })
+
+  try {
+    // Atomic RPC — deliveries + lines + catch_weight + stock_counts all-or-nothing
+    const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+    const SH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+    // If draft-linked + override was chosen, use draft's nm_lines instead of form's
+    const nmPayload = nmOverride
+      ? nmOverride.map(w => ({
+          item_id: w.item_id,
+          qty:     w.qty,
+          note:    w.note || null,
+          is_misc: String(w.sku || '').startsWith('MISC'),
+          avail:   w.avail ?? null
+        }))
+      : nmWithdrawals.map(w => ({
+          item_id: w.item_id,
+          qty:     w.qty,
+          note:    w.note,
+          is_misc: String(w.sku || '').startsWith('MISC'),
+          avail:   w.avail
+        }))
+    const rpcRes = await fetch(`${SB}/rest/v1/rpc/submit_delivery`, {
+      method: 'POST',
+      headers: { ...SH, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        p_bill:     bill,
+        p_branch:   dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : dest,
+        p_date:     date,
+        p_channel:  'hub-delivery',
+        p_bag_ids:  allBagIds.map(id => Number(id)),
+        p_nm_lines: nmPayload
+      })
+    })
+    if (!rpcRes.ok) {
+      const errText = await rpcRes.text()
+      // Parse INSUFFICIENT_STOCK for specific SKU list (from check_stock_before_dispense trigger)
+      // Format: "INSUFFICIENT_STOCK: <SKU> <name> — on hand <x>, trying to dispense <y>"
+      if (errText.includes('INSUFFICIENT_STOCK')) {
+        const matches = [...errText.matchAll(/INSUFFICIENT_STOCK: ([^—]+)— on hand ([\d.]+), trying to dispense ([\d.]+)/g)]
+        const lines = matches.length > 0
+          ? matches.map(m => `• ${m[1].trim()} — มี ${m[2]} เบิก ${m[3]}`).join('\n')
+          : errText.split('INSUFFICIENT_STOCK:')[1]?.split('\\n')[0] || errText
+        throw new Error(`❌ สต๊อกไม่พอ — เบิกเกินที่มี\n\n${lines}\n\nกรุณานับสต๊อกจริง + ปรับก่อนเบิก`)
+      }
+      // (b) P0001 "some bag IDs not found" — submit_delivery couldn't match one or more
+      //   bag IDs to an In-Stock row (delivered/repacked by another session, or a stale
+      //   draft submitted twice). Re-fetch the real status of the submitted bags, tell the
+      //   user exactly which bag + its current status, then reload to clear the stale list.
+      if (/bag ids? not found/i.test(errText) || errText.includes('some bag IDs')) {
+        let detail = ''
+        try {
+          const idList = allBagIds.map(id => `"${id}"`).join(',')
+          const sRes = await fetch(`${SB}/rest/v1/catch_weight?id=in.(${idList})&select=id,bag_no,status`, { headers: H })
+          if (sRes.ok) {
+            const rows = await sRes.json()
+            const byId = {}; rows.forEach(r => { byId[String(r.id)] = r })
+            const bad = allBagIds
+              .map(id => byId[String(id)] || { id, bag_no: id, status: 'ไม่พบในระบบ' })
+              .filter(r => r.status !== '✅ In Stock')
+            if (bad.length > 0) {
+              detail = '\n\n' + bad.map(r => `• ถุง #${r.bag_no ?? r.id} — สถานะ: ${r.status}`).join('\n')
+            }
+          }
+        } catch (_) {}
+        _logSubmit('hub_delivery.submit', 'fail', _auditPayload,
+          { ref_id: bill, error_msg: 'P0001 some bag IDs not found' + detail })
+        alert(`❌ ส่งออกไม่ได้ — ถุงบางถุงถูกส่งไปแล้ว / ไม่พร้อมส่ง${detail}\n\nหน้าจะรีเฟรชเพื่อโหลดสต๊อกล่าสุด แล้วลองใหม่อีกครั้ง`)
+        location.reload()
+        return
+      }
+      if (errText.includes('not In Stock') || errText.includes('Cannot deliver bag')) {
+        throw new Error(`❌ DB ปฏิเสธ: มีถุงที่ไม่ได้อยู่ใน In Stock — รีเฟรชแล้วลองใหม่`)
+      }
+      if (errText.includes('duplicate key') && errText.includes('bill_no')) {
+        throw new Error(`❌ เลขที่บิลนี้ซ้ำกับที่มีอยู่แล้ว — กรุณาเปลี่ยนเลขใบนำส่ง`)
+      }
+      throw new Error(`❌ บันทึกไม่สำเร็จ\nสาเหตุ: ${errText.slice(0, 300)}`)
+    }
+
+    _logSubmit('hub_delivery.submit', 'success', _auditPayload, { ref_id: bill })
+
+    // Update local nm stock cache
+    nmWithdrawals.forEach(w => {
+      if (!String(w.sku || '').startsWith('MISC') && w.avail !== null) {
+        spStockBySku[w.sku] = w.avail - w.qty
+      }
+    })
+
+    btn.textContent = '✅ บันทึกแล้ว'
+
+    // Reset history so next visit to tab fetches fresh data including this bill
+    historyLoaded = false
+
+    // Remove delivered bags from cwBags
+    const deliveredSet = new Set(allBagIds)
+    cwBags = cwBags.filter(b => !deliveredSet.has(String(b.id)))
+
+    // Show success banner
+    const nmLine = nmWithdrawals.length > 0
+      ? ` | Non-meat <b>${nmWithdrawals.length} รายการ</b> อัปเดตสต๊อกแล้ว`
+      : ''
+    const successHtml = `<div class="success-banner">
+      ✅ ส่งออกสำเร็จ! บิล: <b>${bill}</b> | ${dest}<br>
+      เนื้อ <b>${bagCount} ถุง / ${totalKg.toFixed(3)} กก.</b>${nmLine}
+    </div>`
+    clearDraft()
+    document.getElementById('preview-card').insertAdjacentHTML('beforebegin', successHtml)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    // Submit-done modal + redirect to history (28/04 ไทน์ rule)
+    if (window.nntnSubmitDone) {
+      const nmDetail = nmWithdrawals.slice(0,4).map(w => `• ${w.name||w.sku} × ${w.qty}`).join('<br>')
+      const nmMore = nmWithdrawals.length > 4 ? `<br>... และอีก ${nmWithdrawals.length-4} รายการ` : ''
+      window.nntnSubmitDone({
+        title: '🚚 ส่งออกสำเร็จ',
+        summary: `บิล <strong>${bill}</strong> → ${dest}<br>เนื้อ <strong>${bagCount} ถุง</strong> · ${totalKg.toFixed(3)} กก.<br>${nmLine ? '<strong>'+nmWithdrawals.length+'</strong> รายการ non-meat:<br>'+nmDetail+nmMore : ''}`,
+        eventType: 'delivery',
+        delaySec: 4
+      })
+    }
+
+    // B2 fix v2: delete ONLY the source draft by id (not by bill_no)
+    // Reason: bill_no fallback was sweeping unrelated drafts (e.g., draft saved for tomorrow
+    // with same bill_no got nuked when today's bill submitted). Trust _pendingDraftId only.
+    // If state lost, leave orphan draft — user can clean manually via #drafts tab.
+    if (window._pendingDraftId) {
+      try {
+        const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
+        const DH = { ...H, 'Authorization': 'Bearer ' + freshTok, 'Content-Profile': 'stock', 'Accept-Profile': 'stock' }
+        await fetch(`${SB}/rest/v1/delivery_drafts?id=eq.${window._pendingDraftId}`, { method: 'DELETE', headers: DH })
+        window._pendingDraftId = null
+      } catch(_) {}
+    }
+
+    // Jump to history if this was from a draft
+    if (window._pendingDraftId === null) {
+      setTimeout(() => { historyLoaded = false; switchTab('history') }, 900)
+    }
+
+  } catch(e) {
+    _logSubmit('hub_delivery.submit', 'fail', _auditPayload,
+      { ref_id: bill, error_msg: String(e?.message || e).slice(0, 1000) })
+    alert(`❌ บันทึกไม่สำเร็จ: ${friendlyErr(e.message)}`)
+    btn.disabled = false
+    btn.textContent = '🚛 บันทึกส่งออก'
+  } finally {
+    _submitting = false
+  }
+}
+
+// ─── Draft (localStorage) ──────────────────────────────────────────────────────
+const DRAFT_KEY = 'nntn_delivery_draft'
+
+function saveDraft() {
+  try {
+    const draft = {
+      ts:   Date.now(),
+      date: document.getElementById('dl-date')?.value || '',
+      dest: document.getElementById('dl-dest')?.value || '',
+      bill: document.getElementById('dl-bill')?.value || '',
+      meat: Object.entries(meatSel)
+        .filter(([, s]) => s.itemId)
+        .map(([, s]) => ({ itemId: s.itemId, bags: [...s.selectedBags] })),
+      nm: []
+    }
+    document.querySelectorAll('#nm-rows .nm-row-wrap').forEach(wrap => {
+      const n     = wrap.id.replace('nm-row-', '')
+      const itemId = document.getElementById(`nm-item-${n}`)?.value
+      const qty    = document.getElementById(`nm-qty-${n}`)?.value
+      const unit   = document.getElementById(`nm-unit-${n}`)?.value
+      const note = document.getElementById(`nm-note-${n}`)?.value || ''
+      if (itemId) draft.nm.push({ itemId, qty: qty || '', unit: unit || '', note })
+    })
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+  } catch(e) {}
+}
+
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY)
+}
+
+// Auto-save on header changes
+document.addEventListener('DOMContentLoaded', () => {
+  ['dl-date','dl-bill'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', saveDraft)
+  })
+  document.getElementById('dl-dest')?.addEventListener('change', saveDraft)
+  // Auto-save nm qty/unit via delegation
+  document.getElementById('nm-rows')?.addEventListener('input', e => {
+    if (e.target.matches('[id^="nm-qty-"],[id^="nm-unit-"]')) saveDraft()
+  })
+})
+</script>
+<script src="/nntn/shared/nntn-shell.js"></script>
+</body>
+</html>

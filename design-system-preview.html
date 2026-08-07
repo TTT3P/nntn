@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NNTN Design System v1 — Preview</title>
+<link rel="stylesheet" href="shared/nntn-tokens.css">
+<style>
+  body { margin:0; background: var(--nntn-color-bg); font-family: var(--nntn-font-family); color: var(--nntn-color-text); }
+  header.top { background: var(--nntn-color-surface); border-bottom: 1px solid var(--nntn-color-border); padding: var(--nntn-space-3) var(--nntn-space-6); position:sticky; top:0; z-index:var(--nntn-z-sticky); }
+  header.top h1 { font-size: var(--nntn-font-lg); margin:0; font-weight:var(--nntn-weight-semibold); }
+  header.top .sub { font-size: var(--nntn-font-sm); color: var(--nntn-color-text-subdued); }
+  section.demo { padding: var(--nntn-space-8) var(--nntn-space-6); max-width: var(--nntn-max-width); margin: 0 auto; }
+  section.demo h2 { font-size: var(--nntn-font-xl); font-weight: var(--nntn-weight-semibold); margin: 0 0 var(--nntn-space-2); }
+  section.demo .sub-heading { color: var(--nntn-color-text-subdued); margin-bottom: var(--nntn-space-5); font-size: var(--nntn-font-sm); }
+  .grid { display: grid; gap: var(--nntn-space-4); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .stack { display: flex; flex-direction: column; gap: var(--nntn-space-3); }
+  .row { display: flex; gap: var(--nntn-space-3); flex-wrap: wrap; align-items: center; }
+  .swatch { border: 1px solid var(--nntn-color-border); border-radius: var(--nntn-radius-md); overflow: hidden; background: var(--nntn-color-surface); }
+  .swatch .color { height: 72px; }
+  .swatch .meta { padding: var(--nntn-space-2) var(--nntn-space-3); font-size: var(--nntn-font-xs); }
+  .swatch .name { font-weight: var(--nntn-weight-medium); }
+  .swatch .val { color: var(--nntn-color-text-subdued); font-family: var(--nntn-font-family-mono); }
+  code { background: var(--nntn-color-surface-subdued); padding: 2px 6px; border-radius: var(--nntn-radius-sm); font-family: var(--nntn-font-family-mono); font-size: var(--nntn-font-sm); }
+
+  /* IndexTable */
+  .nntn-table { width: 100%; border-collapse: collapse; background: var(--nntn-color-surface); border-radius: var(--nntn-radius-md); overflow:hidden; }
+  .nntn-table th, .nntn-table td { text-align: left; padding: var(--nntn-space-3) var(--nntn-space-4); border-bottom: 1px solid var(--nntn-color-border-subdued); font-size: var(--nntn-font-sm); }
+  .nntn-table th { background: var(--nntn-color-surface-subdued); font-weight: var(--nntn-weight-semibold); color: var(--nntn-color-text-subdued); text-transform: uppercase; font-size: var(--nntn-font-xs); letter-spacing: 0.05em; }
+  .nntn-table tr:hover td { background: var(--nntn-color-surface-hover); cursor: pointer; }
+  .nntn-table tr:last-child td { border-bottom: none; }
+
+  /* Badge */
+  .nntn-badge { display: inline-flex; align-items:center; gap: 4px; padding: 2px 8px; border-radius: var(--nntn-radius-full); font-size: var(--nntn-font-xs); font-weight: var(--nntn-weight-medium); }
+  .nntn-badge--success { background: var(--nntn-color-success-bg); color: var(--nntn-color-success); }
+  .nntn-badge--warning { background: var(--nntn-color-warning-bg); color: var(--nntn-color-warning); }
+  .nntn-badge--info { background: var(--nntn-color-info-bg); color: var(--nntn-color-info); }
+  .nntn-badge--critical { background: var(--nntn-color-critical-bg); color: var(--nntn-color-critical); }
+
+  /* Timeline */
+  .nntn-timeline { display: flex; flex-direction: column; gap: 0; border-left: 2px solid var(--nntn-color-border); padding-left: var(--nntn-space-5); margin-left: var(--nntn-space-2); }
+  .nntn-event { position: relative; padding: var(--nntn-space-3) 0; }
+  .nntn-event::before {
+    content: ""; position: absolute; left: calc(-1 * (var(--nntn-space-5) + 5px));
+    top: var(--nntn-space-4); width: 8px; height: 8px; border-radius: var(--nntn-radius-full);
+    background: var(--nntn-color-primary); border: 2px solid var(--nntn-color-surface);
+  }
+  .nntn-event-title { font-weight: var(--nntn-weight-medium); font-size: var(--nntn-font-sm); }
+  .nntn-event-meta { color: var(--nntn-color-text-subdued); font-size: var(--nntn-font-xs); margin-top: 2px; }
+  .nntn-event-body { font-size: var(--nntn-font-sm); color: var(--nntn-color-text-subdued); margin-top: var(--nntn-space-1); }
+
+  /* Type scale */
+  .type-xs { font-size: var(--nntn-font-xs); }
+  .type-sm { font-size: var(--nntn-font-sm); }
+  .type-md { font-size: var(--nntn-font-md); }
+  .type-lg { font-size: var(--nntn-font-lg); }
+  .type-xl { font-size: var(--nntn-font-xl); }
+  .type-2xl { font-size: var(--nntn-font-2xl); }
+
+  /* Space demo */
+  .space-demo { background: var(--nntn-color-info-bg); border: 1px dashed var(--nntn-color-info); }
+</style>
+</head>
+<body class="nntn-scope">
+
+<header class="top">
+  <h1>NNTN Design System v1 · Preview</h1>
+  <div class="sub">Shopify-inspired · Thai meat-stock ops · 2026-04-19</div>
+</header>
+
+<!-- SECTION 1: Colors -->
+<section class="demo">
+  <h2>1. Color tokens</h2>
+  <div class="sub-heading">Surface, text, border, semantic. Everything is a CSS variable — ไม่ hardcode อีก</div>
+  <div class="grid grid-3">
+    <div class="swatch"><div class="color" style="background: var(--nntn-color-bg)"></div><div class="meta"><div class="name">bg</div><div class="val">--nntn-color-bg</div></div></div>
+    <div class="swatch"><div class="color" style="background: var(--nntn-color-surface)"></div><div class="meta"><div class="name">surface</div><div class="val">--nntn-color-surface</div></div></div>
+    <div class="swatch"><div class="color" style="background: var(--nntn-color-surface-subdued)"></div><div class="meta"><div class="name">surface-subdued</div><div class="val">--nntn-color-surface-subdued</div></div></div>
+    <div class="swatch"><div class="color" style="background: var(--nntn-color-primary)"></div><div class="meta"><div class="name" style="color:var(--nntn-color-text-inverse)">primary</div><div class="val">--nntn-color-primary</div></div></div>
+    <div class="swatch"><div class="color" style="background: var(--nntn-color-success)"></div><div class="meta"><div class="name">success</div><div class="val">--nntn-color-success</div></div></div>
+    <div class="swatch"><div class="color" style="background: var(--nntn-color-warning)"></div><div class="meta"><div class="name">warning</div><div class="val">--nntn-color-warning</div></div></div>
+    <div class="swatch"><div class="color" style="background: var(--nntn-color-critical)"></div><div class="meta"><div class="name">critical</div><div class="val">--nntn-color-critical</div></div></div>
+    <div class="swatch"><div class="color" style="background: var(--nntn-color-info)"></div><div class="meta"><div class="name">info</div><div class="val">--nntn-color-info</div></div></div>
+  </div>
+</section>
+
+<!-- SECTION 2: Typography -->
+<section class="demo">
+  <h2>2. Typography</h2>
+  <div class="sub-heading">Prompt + IBM Plex Sans Thai — 6 sizes × 4 weights</div>
+  <div class="stack">
+    <div class="type-2xl">Page hero — ระบบสต๊อกเนื้อตุ๋น NNTN (2xl / 32px)</div>
+    <div class="type-xl">Page title — Dashboard (xl / 24px)</div>
+    <div class="type-lg">Card title — เนื้อต้นทาง Input (lg / 18px)</div>
+    <div class="type-md">Body text — วัตถุดิบที่ใช้ (md / 16px)</div>
+    <div class="type-sm" style="color: var(--nntn-color-text-subdued)">Secondary — 10 กก. · คลัง A (sm / 14px)</div>
+    <div class="type-xs" style="color: var(--nntn-color-text-subdued)">Meta — updated 19/04/2026 17:50 (xs / 12px)</div>
+  </div>
+</section>
+
+<!-- SECTION 3: Buttons -->
+<section class="demo">
+  <h2>3. Buttons</h2>
+  <div class="sub-heading">5 variants · consistent across every page</div>
+  <div class="row">
+    <button class="nntn-btn nntn-btn--primary">✅ บันทึกแปรรูป</button>
+    <button class="nntn-btn">ยกเลิก</button>
+    <button class="nntn-btn nntn-btn--critical">🗑️ ลบ PO</button>
+    <button class="nntn-btn nntn-btn--plain">+ เพิ่มถุงต้นทาง</button>
+    <button class="nntn-btn" disabled>⏳ กำลังบันทึก...</button>
+  </div>
+</section>
+
+<!-- SECTION 4: Banners (replace alert) -->
+<section class="demo">
+  <h2>4. Banner — replaces <code>alert()</code></h2>
+  <div class="sub-heading">Inline, non-blocking, 4 variants</div>
+  <div class="stack">
+    <div class="nntn-banner nntn-banner--info">
+      <div><div class="nntn-banner-title">ℹ️ Repack flow</div>
+        <div class="nntn-banner-body">เลือกถุงต้นทาง แล้วระบุน้ำหนักรายถุงของ output — ระบบจะ mass-balance อัตโนมัติ</div></div>
+    </div>
+    <div class="nntn-banner nntn-banner--success">
+      <div><div class="nntn-banner-title">✅ บันทึกสำเร็จ</div>
+        <div class="nntn-banner-body">SP-020 ลูกชิ้นเนื้อ 10kg → 20 × MT-039 [500g] · yield 100%</div></div>
+    </div>
+    <div class="nntn-banner nntn-banner--warning">
+      <div><div class="nntn-banner-title">⚠️ Yield ต่ำกว่าคาด</div>
+        <div class="nntn-banner-body">Yield 85% — ต่ำกว่า expected range (90-100%) — ตรวจน้ำหนัก output อีกครั้ง</div></div>
+    </div>
+    <div class="nntn-banner nntn-banner--critical">
+      <div><div class="nntn-banner-title">❌ Output SKU ไม่ match Input</div>
+        <div class="nntn-banner-body">SP-020 ลูกชิ้นเนื้อ → MT-039 เท่านั้น (จาก REPACK_MAP). ไม่สามารถเลือก MT-014 ได้</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5: Toast -->
+<section class="demo">
+  <h2>5. Toast — ephemeral feedback</h2>
+  <div class="sub-heading">Auto-dismiss 3s · ทุก success action</div>
+  <div class="stack">
+    <div class="nntn-toast">💾 Draft saved</div>
+    <div class="nntn-toast nntn-toast--success">✅ บันทึกแล้ว · 20 ถุง MT-039</div>
+    <div class="nntn-toast nntn-toast--critical">❌ บันทึกไม่สำเร็จ · network error</div>
+  </div>
+</section>
+
+<!-- SECTION 6: Card -->
+<section class="demo">
+  <h2>6. Card</h2>
+  <div class="sub-heading">Primary content container · replaces ad-hoc wrappers</div>
+  <div class="grid grid-2">
+    <div class="nntn-card">
+      <div class="nntn-card-title">เนื้อต้นทาง (Input)</div>
+      <div class="nntn-banner nntn-banner--warning" style="margin-bottom:var(--nntn-space-4)">
+        <div><div class="nntn-banner-body">ถุงที่เลือกจะถูกเปลี่ยนสถานะเป็น ♻️ Repacked</div></div>
+      </div>
+      <div class="type-sm" style="color:var(--nntn-color-text-subdued)">ประเภทเนื้อ</div>
+      <div class="type-md">ลูกชิ้นเนื้อ · 1 ถุง · 10.00 กก. · คลัง A</div>
+    </div>
+    <div class="nntn-card">
+      <div class="nntn-card-title">ผลผลิต (Output)</div>
+      <div class="type-sm" style="color:var(--nntn-color-text-subdued)">SKU output</div>
+      <div class="type-md">MT-039 · [500g]ลูกชิ้นเนื้อ · <span class="nntn-badge nntn-badge--info">20 ถุง</span></div>
+      <div style="margin-top:var(--nntn-space-4)" class="type-sm">Yield: <strong style="color:var(--nntn-color-success)">100%</strong></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 7: IndexTable -->
+<section class="demo">
+  <h2>7. IndexTable — production history (mock)</h2>
+  <div class="sub-heading">Resource list · filter · click row for detail</div>
+  <table class="nntn-table">
+    <thead>
+      <tr>
+        <th>เวลา</th>
+        <th>ประเภท</th>
+        <th>Input</th>
+        <th>Output</th>
+        <th>Yield</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>19/04 17:55</td>
+        <td>♻️ แปรรูป</td>
+        <td>SP-031 · 10.00 กก.</td>
+        <td>MT-009 · 20 ถุง × 500g</td>
+        <td><span class="nntn-badge nntn-badge--success">100%</span></td>
+        <td><span class="nntn-badge nntn-badge--info">Complete</span></td>
+      </tr>
+      <tr>
+        <td>19/04 17:50</td>
+        <td>♻️ แปรรูป</td>
+        <td>SP-020 · 10.00 กก.</td>
+        <td>MT-039 · 20 ถุง × 500g</td>
+        <td><span class="nntn-badge nntn-badge--success">100%</span></td>
+        <td><span class="nntn-badge nntn-badge--info">Complete</span></td>
+      </tr>
+      <tr>
+        <td>19/04 16:43</td>
+        <td>🍲 ปิดหม้อ</td>
+        <td>สามชั้นดิบ · 3.2 กก.</td>
+        <td>MT-028 สามชั้นตุ๋น · 7 ถุง</td>
+        <td><span class="nntn-badge nntn-badge--warning">87%</span></td>
+        <td><span class="nntn-badge nntn-badge--info">Complete</span></td>
+      </tr>
+      <tr>
+        <td>18/04 09:09</td>
+        <td>🍲 ปิดหม้อ</td>
+        <td>สะโพกก้อน · 5.0 กก.</td>
+        <td>—</td>
+        <td>—</td>
+        <td><span class="nntn-badge nntn-badge--critical">Reverted</span></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- SECTION 8: Timeline -->
+<section class="demo">
+  <h2>8. Timeline — structured audit trail</h2>
+  <div class="sub-heading">Replaces Discord chat-log dependency · filter by type/actor/date</div>
+  <div class="nntn-card" style="max-width:720px">
+    <div class="nntn-card-title">SP-020 ลูกชิ้นเนื้อ · ถุง #2931</div>
+    <div class="nntn-timeline">
+      <div class="nntn-event">
+        <div class="nntn-event-title">♻️ Repacked → 20 × MT-039</div>
+        <div class="nntn-event-meta">19/04 17:50 · ไทน์ · source: web-process</div>
+        <div class="nntn-event-body">10.00 กก. → 20 ถุง × 500g · yield 100% · คลัง C</div>
+      </div>
+      <div class="nntn-event">
+        <div class="nntn-event-title">🔄 Status changed</div>
+        <div class="nntn-event-meta">19/04 17:02 · น้อง</div>
+        <div class="nntn-event-body">✅ In Stock → 🔄 Repacked</div>
+      </div>
+      <div class="nntn-event">
+        <div class="nntn-event-title">📥 Received</div>
+        <div class="nntn-event-meta">19/04 17:02 · น้อง · via "รับเนื้อสด"</div>
+        <div class="nntn-event-body">10.00 กก. · คลัง A · supplier: ร้านเนื้อ</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 9: EmptyState + Skeleton -->
+<section class="demo">
+  <h2>9. Empty & Loading states</h2>
+  <div class="grid grid-2">
+    <div class="nntn-card">
+      <div class="nntn-empty">
+        <div style="font-size:48px; margin-bottom:var(--nntn-space-3)">📭</div>
+        <div class="nntn-empty-title">ยังไม่มี production run วันนี้</div>
+        <div class="type-sm" style="margin-bottom:var(--nntn-space-4)">เริ่มจากการสร้าง run ใหม่ที่หน้า meat-stock</div>
+        <button class="nntn-btn nntn-btn--primary">+ เริ่ม run ใหม่</button>
+      </div>
+    </div>
+    <div class="nntn-card">
+      <div class="nntn-card-title">Loading state — skeleton</div>
+      <div class="stack" style="margin-top:var(--nntn-space-3)">
+        <div class="nntn-skeleton" style="height:16px; width:60%"></div>
+        <div class="nntn-skeleton" style="height:12px; width:90%"></div>
+        <div class="nntn-skeleton" style="height:12px; width:75%"></div>
+        <div class="nntn-skeleton" style="height:12px; width:85%"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 10: Spacing scale -->
+<section class="demo">
+  <h2>10. Spacing scale (4px grid)</h2>
+  <div class="stack">
+    <div class="row"><div class="space-demo" style="width: var(--nntn-space-1); height:24px"></div><code>--nntn-space-1 · 4px</code></div>
+    <div class="row"><div class="space-demo" style="width: var(--nntn-space-2); height:24px"></div><code>--nntn-space-2 · 8px</code></div>
+    <div class="row"><div class="space-demo" style="width: var(--nntn-space-4); height:24px"></div><code>--nntn-space-4 · 16px</code></div>
+    <div class="row"><div class="space-demo" style="width: var(--nntn-space-6); height:24px"></div><code>--nntn-space-6 · 24px</code></div>
+    <div class="row"><div class="space-demo" style="width: var(--nntn-space-8); height:24px"></div><code>--nntn-space-8 · 32px</code></div>
+    <div class="row"><div class="space-demo" style="width: var(--nntn-space-12); height:24px"></div><code>--nntn-space-12 · 48px</code></div>
+  </div>
+</section>
+
+<footer style="padding: var(--nntn-space-6); text-align:center; color: var(--nntn-color-text-subdued); font-size: var(--nntn-font-xs); border-top: 1px solid var(--nntn-color-border); margin-top: var(--nntn-space-10)">
+  NNTN Design System v1 · Preview · <code>shared/nntn-tokens.css</code> · Based on Shopify/Polaris research
+</footer>
+
+</body>
+</html>

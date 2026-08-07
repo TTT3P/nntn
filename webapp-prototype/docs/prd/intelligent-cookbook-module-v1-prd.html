@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PRD — Intelligent CookingBook Module V1</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2316351f'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-size='36' fill='%23fbf2d8'%3E%E0%B8%99%3C/text%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #172018;
+      --muted: #667066;
+      --green-950: #16351f;
+      --green-800: #245331;
+      --green-100: #e9f1e9;
+      --cream: #f8f6ef;
+      --paper: #ffffff;
+      --gold: #c99a38;
+      --gold-soft: #fbf2d8;
+      --red: #9d3b2c;
+      --red-soft: #fae9e4;
+      --line: #dedfd7;
+      --shadow: 0 18px 50px rgba(29, 54, 35, .09);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--cream);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Thai", Tahoma, sans-serif;
+      line-height: 1.65;
+    }
+
+    a { color: var(--green-800); }
+    strong { color: var(--green-950); }
+    code {
+      padding: .12rem .35rem;
+      border-radius: 6px;
+      background: #eef1ec;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: .88em;
+    }
+
+    .hero {
+      color: white;
+      background:
+        radial-gradient(circle at 85% 10%, rgba(201,154,56,.35), transparent 30%),
+        linear-gradient(135deg, #132f1b, #234b2d 72%, #2d613a);
+      border-bottom: 5px solid var(--gold);
+    }
+
+    .hero-inner {
+      width: min(1320px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 62px 0 54px;
+    }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: #f3d98e;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 920px;
+      margin: 0;
+      font-size: clamp(38px, 5vw, 72px);
+      line-height: 1.05;
+      letter-spacing: -.04em;
+    }
+
+    .hero-copy {
+      max-width: 850px;
+      margin: 22px 0 0;
+      color: rgba(255,255,255,.82);
+      font-size: clamp(17px, 2vw, 22px);
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 11px;
+      border: 1px solid rgba(255,255,255,.24);
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 32px;
+      width: min(1320px, calc(100% - 40px));
+      margin: 34px auto 80px;
+    }
+
+    .toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      max-height: calc(100vh - 48px);
+      overflow: auto;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.86);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .toc-title {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .toc a {
+      display: block;
+      padding: 7px 9px;
+      border-radius: 8px;
+      color: #3f4a40;
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .toc a:hover { background: var(--green-100); color: var(--green-950); }
+
+    main { min-width: 0; }
+    .section {
+      margin-bottom: 26px;
+      padding: clamp(24px, 4vw, 44px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .section-number {
+      display: inline-grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      margin-bottom: 13px;
+      border-radius: 10px;
+      background: var(--green-100);
+      color: var(--green-950);
+      font-weight: 900;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      color: var(--green-950);
+      font-size: clamp(25px, 3vw, 38px);
+      line-height: 1.2;
+      letter-spacing: -.025em;
+    }
+    h3 { margin: 28px 0 10px; color: var(--green-950); font-size: 20px; }
+    h4 { margin: 20px 0 8px; color: #314337; }
+    p { margin: 0 0 14px; }
+
+    .lead {
+      max-width: 850px;
+      color: #475148;
+      font-size: 18px;
+    }
+
+    .callout {
+      margin: 20px 0;
+      padding: 18px 20px;
+      border-left: 5px solid var(--gold);
+      border-radius: 0 12px 12px 0;
+      background: var(--gold-soft);
+    }
+    .callout.danger { border-left-color: var(--red); background: var(--red-soft); }
+
+    .metric-grid,
+    .module-grid,
+    .decision-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .metric,
+    .module,
+    .decision {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fbfcfa;
+    }
+
+    .metric b {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--green-950);
+      font-size: 22px;
+    }
+    .metric span,
+    .module p,
+    .decision p { color: var(--muted); font-size: 14px; }
+    .module h3, .decision h3 { margin: 0 0 7px; font-size: 17px; }
+
+    .stage-flow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .stage {
+      position: relative;
+      padding: 18px;
+      border-radius: 14px;
+      color: white;
+      background: var(--green-800);
+    }
+    .stage:nth-child(2) { background: #6b5427; }
+    .stage:nth-child(3) { background: #5b3b30; }
+    .stage b { color: white; }
+    .stage small { display: block; margin-top: 4px; color: rgba(255,255,255,.76); }
+
+    ul, ol { padding-left: 1.35rem; }
+    li { margin: 7px 0; }
+    .stories > li { margin: 10px 0; padding-left: 5px; }
+    .stories > li::marker { color: var(--green-800); font-weight: 900; }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
+    th, td { padding: 12px 13px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--green-950); background: var(--green-100); }
+
+    .status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .status.must { color: var(--green-950); background: var(--green-100); }
+    .status.later { color: #73571a; background: var(--gold-soft); }
+    .status.out { color: var(--red); background: var(--red-soft); }
+
+    .acceptance li {
+      margin: 10px 0;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fbfcfa;
+    }
+
+    .footer {
+      padding: 26px 20px 46px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1050px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; max-height: none; columns: 2; }
+      .toc-title { column-span: all; }
+      .metric-grid, .module-grid, .decision-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 680px) {
+      .hero-inner, .layout { width: min(100% - 24px, 1320px); }
+      .hero-inner { padding: 42px 0 38px; }
+      .toc { columns: 1; }
+      .metric-grid, .module-grid, .decision-grid, .stage-flow { grid-template-columns: 1fr; }
+      .section { padding: 22px 18px; }
+    }
+
+    @media print {
+      body { background: white; font-size: 10.5pt; }
+      .hero { color: var(--ink); background: white; border-bottom: 2px solid var(--green-950); }
+      .hero-inner { width: 100%; padding: 20px 0; }
+      .hero-copy, .pill { color: var(--ink); }
+      .pill { border-color: var(--line); background: white; }
+      .layout { display: block; width: 100%; margin: 0; }
+      .toc { display: none; }
+      .section { box-shadow: none; break-inside: avoid; margin: 0 0 16px; }
+      .module-grid, .decision-grid, .metric-grid { break-inside: avoid; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Product Requirements Document · Draft for Review</p>
+      <h1>Intelligent CookingBook Module V1</h1>
+      <p class="hero-copy">ระบบต้นฉบับสูตรหน้าครัวของ NNTN ที่เชื่อมเมนู สูตรเตรียม วิธีทำ รูปมาตรฐาน และเอกสารพิมพ์เข้าด้วยกัน โดยไม่เดาหน่วยและไม่กระทบระบบ NNTN ที่ใช้งานอยู่</p>
+      <div class="meta-row">
+        <span class="pill">เจ้าของโจทย์: NNTN / TINE</span>
+        <span class="pill">วันที่: 4 สิงหาคม 2026</span>
+        <span class="pill">สถานะ: รอตรวจ PRD</span>
+        <span class="pill">เป้าหมาย: Internal-first, product-ready</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="สารบัญ">
+      <p class="toc-title">สารบัญ</p>
+      <a href="#summary">ภาพรวม</a>
+      <a href="#problem">ปัญหา</a>
+      <a href="#solution">แนวทางแก้</a>
+      <a href="#users">ผู้ใช้และงานหลัก</a>
+      <a href="#stories">User Stories</a>
+      <a href="#scope">ขอบเขต Module V1</a>
+      <a href="#requirements">ข้อกำหนดการทำงาน</a>
+      <a href="#media">ระบบรูปภาพ</a>
+      <a href="#print">Print Center</a>
+      <a href="#architecture">Implementation Decisions</a>
+      <a href="#testing">Testing Decisions</a>
+      <a href="#metrics">ตัวชี้วัดความสำเร็จ</a>
+      <a href="#acceptance">Acceptance Criteria</a>
+      <a href="#out">Out of Scope</a>
+      <a href="#delivery">ลำดับส่งมอบ</a>
+      <a href="#future">ทิศทางผลิตภัณฑ์</a>
+    </nav>
+
+    <main>
+      <section class="section" id="summary">
+        <span class="section-number">01</span>
+        <h2>ภาพรวมผลิตภัณฑ์</h2>
+        <p class="lead">CookingBook V1 เป็นเว็บแอปแยกสำหรับทำให้สูตรครัวของ NNTN กลายเป็น Source of Truth ที่คนทำงานจริงเปิดดู แก้ ตรวจ และพิมพ์ได้ โดยเริ่มจากข้อมูลที่เรารวบรวมและตรวจเทียบจากลายมือ DOCX V2/V3 และเว็บเดิม</p>
+        <div class="callout"><strong>คำมั่นของผลิตภัณฑ์:</strong> สูตรหน้าครัวต้องแสดงสิ่งที่ครัวใช้จริง เช่น ช้อนชา ช้อนโต๊ะ กรัม และมิลลิลิตร โดยไม่แปลงกลับไปกลับมาจนสูตรเพี้ยน ส่วนข้อมูล normalized สำหรับ Food Cost เป็นข้อมูลอีกชั้นหนึ่งและไม่เขียนทับต้นฉบับครัว</div>
+        <div class="metric-grid">
+          <div class="metric"><b>1 สูตรกลาง</b><span>เมนู สูตรเตรียม และวัตถุดิบเชื่อมกันเป็นกราฟเดียว</span></div>
+          <div class="metric"><b>3 จุดงาน</b><span>เตรียมของ · ครัวปรุง · จัดเสิร์ฟ</span></div>
+          <div class="metric"><b>2 งานพิมพ์หลัก</b><span>A5 แนวนอน และ A4 แบบสองใบพร้อมตัด</span></div>
+        </div>
+      </section>
+
+      <section class="section" id="problem">
+        <span class="section-number">02</span>
+        <h2>Problem Statement</h2>
+        <p class="lead">ปัจจุบันความจริงของสูตรกระจายอยู่หลายแหล่ง และเว็บ Food Cost ใช้โครงข้อมูลที่เน้นกรัม ทำให้สูตรหน้าครัวถูกแปลงหน่วยจนเสี่ยงเพี้ยน คนทำงานต้องไล่หาเมนู สูตรย่อย และวิธีทำจากหลายไฟล์ อีกทั้งยังไม่มีระบบรูปมาตรฐานหรือเอกสารที่เหมาะกับแต่ละจุดงาน</p>
+        <ul>
+          <li>ลายมือใหม่เป็นแหล่งแก้ไขล่าสุด แต่ข้อมูลบางส่วนอยู่ใน DOCX และ V2/V3</li>
+          <li>เมนูขายหนึ่งเมนูอาจประกอบด้วยซอส น้ำซุป เครื่องปรุง และของเตรียมหลายสูตร</li>
+          <li>การบีบปริมาณทุกอย่างเป็นกรัมทำให้ค่าช้อนหรือหน่วยครัวดั้งเดิมหาย</li>
+          <li>รายการวัตถุดิบและสูตรเตรียมถูกมองคล้ายกัน ทำให้ไม่รู้ว่าสิ่งใดต้องผลิตก่อน</li>
+          <li>วิธีทำบางสูตรไม่ครบ และยังไม่มีพื้นที่ทยอยเติมข้อมูลหรือรูปโดยไม่ขวางงานส่วนอื่น</li>
+          <li>เอกสารพิมพ์จากหน้าเว็บทั่วไปไม่เหมาะกับการแขวนหรือวางตามจุดทำงาน</li>
+          <li>ยังไม่มีภาพมาตรฐานของขนาดหั่น สี ความสุก ความข้น และตำแหน่งจัดเสิร์ฟ</li>
+        </ul>
+      </section>
+
+      <section class="section" id="solution">
+        <span class="section-number">03</span>
+        <h2>Solution</h2>
+        <p class="lead">สร้าง CookingBook Module V1 เป็นแอปอิสระด้วย React, TypeScript และ Vite โดยใช้ recipe graph และ recipe revision เป็นแกนกลาง แล้วฉายข้อมูลชุดเดียวออกเป็นมุมมองตรวจต้นฉบับ เอกสารจุดงาน รูปประกอบขั้นตอน และ Print Center</p>
+        <div class="stage-flow">
+          <div class="stage"><b>ผลิตซอสและของเตรียม</b><small>batch, ขนาดหั่น, สี, ความข้น, yield</small></div>
+          <div class="stage"><b>ครัวปรุง / BOM</b><small>ต้ม ผัด แกง ทอด และ visual checkpoint</small></div>
+          <div class="stage"><b>จัดเสิร์ฟหน้าร้าน</b><small>ข้าว 180 กรัม ตำแหน่งวาง ภาชนะ และของแยก</small></div>
+        </div>
+        <p>ระบบต้องฉลาดแบบตรวจสอบได้: จัด dependency ให้ก่อนหลัง แนะนำ template ตรวจข้อมูลขาด และเตือนรูปที่อาจไม่ตรง revision แต่ไม่สร้างหรือแก้สูตรแทนเจ้าของสูตร</p>
+      </section>
+
+      <section class="section" id="users">
+        <span class="section-number">04</span>
+        <h2>ผู้ใช้และงานหลัก</h2>
+        <div class="module-grid">
+          <article class="module"><h3>เจ้าของสูตร / ผู้อนุมัติ</h3><p>ตรวจต้นฉบับ ตัดสินข้อขัดแย้ง ยืนยันหน่วย วิธีทำ และ revision ที่ใช้จริง</p></article>
+          <article class="module"><h3>ครัวเตรียม</h3><p>ดูสูตร batch ของซอส น้ำซุป เครื่องปรุง และขนาดการเตรียมวัตถุดิบ</p></article>
+          <article class="module"><h3>ครัวปรุง</h3><p>ดูขั้นตอนต้ม ผัด แกง ทอด พร้อมภาพจุดตรวจที่ข้อความอย่างเดียวบอกยาก</p></article>
+          <article class="module"><h3>หน้าร้าน / จัดเสิร์ฟ</h3><p>ดูปริมาณต่อจาน ตำแหน่งวาง ภาชนะ และของที่ต้องเสิร์ฟแยก</p></article>
+          <article class="module"><h3>ผู้ดูแลข้อมูล</h3><p>ค้นสูตรที่ข้อมูลหรือรูปยังไม่ครบ และทยอยอัปเดตโดยไม่เดาหน่วย</p></article>
+          <article class="module"><h3>ผู้พิมพ์เอกสาร</h3><p>เลือกเมนู จุดงาน และ template แล้วพิมพ์ชุดเอกสารที่ไม่ซ้ำสูตรประกอบ</p></article>
+        </div>
+      </section>
+
+      <section class="section" id="stories">
+        <span class="section-number">05</span>
+        <h2>User Stories</h2>
+        <h3>ค้นหาและทำความเข้าใจสูตร</h3>
+        <ol class="stories">
+          <li>ในฐานะเจ้าของสูตร ฉันต้องการค้นด้วยชื่อเมนู เพื่อไม่ต้องจำรหัสสูตร</li>
+          <li>ในฐานะผู้ใช้ครัว ฉันต้องการเห็นว่าเมนูหนึ่งประกอบด้วยสูตรเตรียมอะไรบ้าง เพื่อเตรียมงานได้ครบ</li>
+          <li>ในฐานะผู้ใช้ครัว ฉันต้องการแยกวัตถุดิบซื้อเข้าจากสูตรที่ครัวต้องผลิต เพื่อไม่หยิบของผิดประเภท</li>
+          <li>ในฐานะผู้ดูแลข้อมูล ฉันต้องการเปิด recipe graph ลงไปถึงซอสและน้ำซุป เพื่อเห็น dependency ทั้งหมด</li>
+          <li>ในฐานะผู้ดูแลข้อมูล ฉันต้องการให้สูตรประกอบที่ใช้หลายเมนูมีตัวตนเดียว เพื่อไม่แก้หลายที่</li>
+          <li>ในฐานะเจ้าของสูตร ฉันต้องการเห็นแหล่งที่มาของแต่ละค่า เพื่อรู้ว่าอ้างลายมือ DOCX หรือ V2</li>
+          <li>ในฐานะเจ้าของสูตร ฉันต้องการเห็นข้อขัดแย้งเป็นชื่อเมนูและข้อความจริง เพื่อไม่ต้องไล่หารหัส</li>
+          <li>ในฐานะผู้ใช้ ฉันต้องการกรองสูตรที่ขาดวิธีทำ ปริมาณ หรือรูป เพื่อทยอยปิดช่องว่าง</li>
+        </ol>
+
+        <h3>สูตร หน่วย และ revision</h3>
+        <ol class="stories" start="9">
+          <li>ในฐานะเจ้าของสูตร ฉันต้องการเก็บหน่วยช้อนชาและช้อนโต๊ะตามต้นฉบับ เพื่อให้ครัวทำตามจริง</li>
+          <li>ในฐานะผู้ดูแลต้นทุน ฉันต้องการให้ค่าหน้าครัวและค่า normalized แยกกัน เพื่อคำนวณต้นทุนโดยไม่ทำลายสูตร</li>
+          <li>ในฐานะเจ้าของสูตร ฉันต้องการให้ระบบไม่เดา conversion เมื่อไม่มีข้อมูล เพื่อป้องกันสูตรเพี้ยน</li>
+          <li>ในฐานะเจ้าของสูตร ฉันต้องการสร้าง revision ใหม่โดยเก็บ revision เก่าไว้ เพื่อย้อนดูการเปลี่ยนแปลง</li>
+          <li>ในฐานะผู้ใช้ครัว ฉันต้องการเห็นชัดว่ากำลังอ่าน revision ใด เพื่อไม่ใช้เอกสารเก่า</li>
+          <li>ในฐานะเจ้าของสูตร ฉันต้องการแยก blocker ออกจากหมายเหตุทั่วไป เพื่อรู้ว่าเรื่องใดห้ามอนุมัติ</li>
+          <li>ในฐานะเจ้าของสูตร ฉันต้องการใช้ลายมือใหม่เป็นหลักเมื่อเป็นการแก้ล่าสุด และใช้ DOCX/V2 เป็นหลักฐานเทียบ</li>
+          <li>ในฐานะผู้ดูแลข้อมูล ฉันต้องการอ้าง ingredient ID กลาง เพื่อไม่สร้างวัตถุดิบชื่อซ้ำ</li>
+        </ol>
+
+        <h3>จุดงานและวิธีทำ</h3>
+        <ol class="stories" start="17">
+          <li>ในฐานะครัวเตรียม ฉันต้องการเห็นเฉพาะงานผลิตซอสและของเตรียม เพื่อไม่ปนกับขั้นจัดเสิร์ฟ</li>
+          <li>ในฐานะครัวปรุง ฉันต้องการเห็นเฉพาะขั้นต้ม ผัด แกง ทอด เพื่อทำงานตาม station</li>
+          <li>ในฐานะหน้าร้าน ฉันต้องการเห็นเฉพาะปริมาณและตำแหน่งจัดเสิร์ฟ เพื่อประกอบเมนูเร็วขึ้น</li>
+          <li>ในฐานะผู้ดูแลสูตร ฉันต้องการแบ่งวิธีทำเดียวเป็นหลายจุดงานโดยไม่คัดลอกสูตร เพื่อป้องกันข้อมูลแตก</li>
+          <li>ในฐานะครัวเตรียม ฉันต้องการคูณ batch เฉพาะสูตรที่ scalable เพื่อไม่คูณปริมาณต่อจานผิด</li>
+          <li>ในฐานะหน้าร้าน ฉันต้องการให้ปริมาณจัดเสิร์ฟไม่ถูกคูณตาม batch เพื่อรักษามาตรฐานต่อจาน</li>
+          <li>ในฐานะผู้ใช้ ฉันต้องการให้ complete pack เรียง Prep → Cook → Service เพื่อเดินงานตามลำดับจริง</li>
+          <li>ในฐานะผู้ใช้ ฉันต้องการให้สูตรเตรียมเดียวพิมพ์ครั้งเดียวแม้หลายเมนูใช้ร่วมกัน เพื่อไม่สับสน</li>
+        </ol>
+
+        <h3>รูปภาพมาตรฐาน</h3>
+        <ol class="stories" start="25">
+          <li>ในฐานะครัวเตรียม ฉันต้องการเห็นรูปขนาดหั่นพร้อมคำอธิบาย เพื่อเตรียมวัตถุดิบสม่ำเสมอ</li>
+          <li>ในฐานะครัวปรุง ฉันต้องการเห็นสีหรือระดับความสุกในขั้นสำคัญ เพื่อเทียบผลลัพธ์ด้วยตา</li>
+          <li>ในฐานะหน้าร้าน ฉันต้องการเห็นรูปตำแหน่งจัดวางในจาน เพื่อจัดเสิร์ฟตรงมาตรฐาน</li>
+          <li>ในฐานะหน้าร้าน ฉันต้องการรูปแยกสำหรับกล่องเดลิเวอรี เพื่อไม่ใช้ layout ของจานกับกล่อง</li>
+          <li>ในฐานะหน้าร้าน ฉันต้องการเห็นของที่เสิร์ฟแยก เช่น ถ้วย 1 oz เพื่อไม่ลืมแนบ</li>
+          <li>ในฐานะผู้ดูแลข้อมูล ฉันต้องการแนบหลายรูปกับขั้นตอนเดียวและเรียงลำดับได้ เพื่ออธิบายก่อน ระหว่าง และหลังทำ</li>
+          <li>ในฐานะผู้ดูแลข้อมูล ฉันต้องการใช้รูปเดียวกับหลายขั้นตอนโดยไม่อัปโหลดซ้ำ เพื่อจัดการคลังรูปง่ายขึ้น</li>
+          <li>ในฐานะผู้ดูแลข้อมูล ฉันต้องการทยอยเติมรูป โดยสูตรที่ไม่มีรูปยังใช้งานได้ เพื่อไม่ต้องรอถ่ายครบทั้งเล่ม</li>
+          <li>ในฐานะเจ้าของสูตร ฉันต้องการให้รูปถูกเตือนตรวจใหม่เมื่อความหมายขั้นตอนเปลี่ยน เพื่อไม่ใช้ภาพผิด revision</li>
+          <li>ในฐานะผู้ใช้ ฉันต้องการให้เอกสารไม่มีกรอบว่างเมื่อขั้นตอนไม่มีรูป เพื่อใช้พื้นที่กระดาษคุ้มค่า</li>
+        </ol>
+
+        <h3>Print Center</h3>
+        <ol class="stories" start="35">
+          <li>ในฐานะผู้พิมพ์ ฉันต้องการพิมพ์ A5 แนวนอน เพื่อวางเอกสารตามจุดงานได้สะดวก</li>
+          <li>ในฐานะผู้พิมพ์ ฉันต้องการวาง A5 สองใบลง A4 พร้อมเส้นตัด เพื่อประหยัดกระดาษ</li>
+          <li>ในฐานะผู้พิมพ์ ฉันต้องการเลือกระหว่าง Prep, Cook, Service หรือทั้งหมด เพื่อพิมพ์เท่าที่จำเป็น</li>
+          <li>ในฐานะผู้พิมพ์ ฉันต้องการเห็น preview ก่อนพิมพ์ เพื่อจับหน้าล้นหรือข้อมูลผิด</li>
+          <li>ในฐานะผู้พิมพ์ ฉันต้องการให้ขั้นตอนยาวต่อหน้าใหม่โดยอัตโนมัติ เพื่อไม่ให้ข้อความถูกตัด</li>
+          <li>ในฐานะผู้ใช้ครัว ฉันต้องการให้รูปเรียงคู่กับข้อความของขั้นตอน เพื่อไม่ต้องจับคู่เอง</li>
+          <li>ในฐานะผู้พิมพ์ ฉันต้องการเห็นคำว่า DRAFT เมื่อสูตรมี blocker เพื่อไม่เข้าใจว่าได้รับอนุมัติแล้ว</li>
+          <li>ในฐานะผู้พิมพ์ ฉันต้องการให้การขาดเฉพาะรูปไม่สร้าง DRAFT เพื่อยังพิมพ์สูตรที่ใช้ได้</li>
+        </ol>
+
+        <h3>Prototype และการย้ายระบบ</h3>
+        <ol class="stories" start="43">
+          <li>ในฐานะเจ้าของระบบ ฉันต้องการให้ prototype ไม่เขียน Supabase production เพื่อหลีกเลี่ยงผลกระทบต่อระบบใช้งานจริง</li>
+          <li>ในฐานะผู้ทดสอบ ฉันต้องการเห็นป้าย Prototype ชัดเจน เพื่อไม่คิดว่าข้อมูลถูกบันทึกจริง</li>
+          <li>ในฐานะทีมพัฒนา ฉันต้องการ export fixture และ media manifest ได้ เพื่อส่งต่อไป migration ภายหลัง</li>
+          <li>ในฐานะทีมพัฒนา ฉันต้องการให้ domain logic ไม่ขึ้นกับ UI เพื่อทดสอบและนำกลับใช้ในผลิตภัณฑ์ได้</li>
+          <li>ในฐานะเจ้าของธุรกิจ ฉันต้องการให้ CookingBook แยกจาก frontend NNTN ปัจจุบัน เพื่อเร่งงานโดยไม่ทำระบบหลักเสีย</li>
+          <li>ในฐานะเจ้าของธุรกิจ ฉันต้องการให้ module นี้พร้อมต่อยอดเป็นผลิตภัณฑ์ โดยไม่แบก multi-tenant และ billing เข้ามาใน V1</li>
+        </ol>
+      </section>
+
+      <section class="section" id="scope">
+        <span class="section-number">06</span>
+        <h2>ขอบเขต Module V1</h2>
+        <div class="module-grid">
+          <article class="module"><h3>1 · Domain Core</h3><p>Recipe, RecipeVersion, ingredient/component lines, provenance, blockers และ no-guess rules</p></article>
+          <article class="module"><h3>2 · Source Review</h3><p>เทียบลายมือ DOCX V2/V3 และรายการเว็บเดิมด้วยชื่อเมนู</p></article>
+          <article class="module"><h3>3 · Recipe Graph</h3><p>เมนูขาย → สูตรเตรียม → วัตถุดิบ พร้อม cycle detection และ deduplication</p></article>
+          <article class="module"><h3>4 · Work Documents</h3><p>projection สำหรับ Prep, Cook และ Service จาก RecipeVersion เดียว</p></article>
+          <article class="module"><h3>5 · Media Library</h3><p>รูปกลาง caption ลำดับ ชนิดรูป ภาชนะ และความสัมพันธ์กับ step</p></article>
+          <article class="module"><h3>6 · Print Center</h3><p>dependency pack, A5 landscape, A4 two-up, pagination และ draft handling</p></article>
+          <article class="module"><h3>7 · Prototype Repository</h3><p>fixture และ sample asset แบบ local-only พร้อม export contract</p></article>
+          <article class="module"><h3>8 · App Shell</h3><p>routing, configuration, NNTN branding adapter และสถานะ Prototype</p></article>
+          <article class="module"><h3>9 · Quality Rules</h3><p>missing data, media coverage, revision warnings และ print readiness</p></article>
+        </div>
+      </section>
+
+      <section class="section" id="requirements">
+        <span class="section-number">07</span>
+        <h2>ข้อกำหนดการทำงาน</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>พื้นที่</th><th>ข้อกำหนด V1</th><th>ระดับ</th></tr></thead>
+            <tbody>
+              <tr><td>Recipe identity</td><td>แยกตัวตน recipe ออกจาก revision และรักษา legacy/canonical identity</td><td><span class="status must">ต้องมี</span></td></tr>
+              <tr><td>Quantity</td><td>เก็บ source value/text/unit โดยไม่แปลงเอง และรองรับ derived normalized field แยก</td><td><span class="status must">ต้องมี</span></td></tr>
+              <tr><td>Dependency</td><td>หนึ่งบรรทัดอ้าง direct ingredient หรือ prepared recipe อย่างใดอย่างหนึ่ง</td><td><span class="status must">ต้องมี</span></td></tr>
+              <tr><td>Revision</td><td>ดูแหล่งที่มา blocker สถานะตรวจ และประวัติ revision ได้</td><td><span class="status must">ต้องมี</span></td></tr>
+              <tr><td>Work stages</td><td>แยก Prep, Cook, Service โดยไม่ทำสำเนาสูตร</td><td><span class="status must">ต้องมี</span></td></tr>
+              <tr><td>Media</td><td>แนบหลายรูปต่อ step เรียงลำดับ ระบุ role และ vessel ได้</td><td><span class="status must">ต้องมี</span></td></tr>
+              <tr><td>Media persistence</td><td>Prototype ใช้ sample/local preview; production upload ทำใน Supabase phase</td><td><span class="status later">ภายหลัง</span></td></tr>
+              <tr><td>Printing</td><td>A5 landscape, A4 two-up, stage filter, complete pack และ continuation pages</td><td><span class="status must">ต้องมี</span></td></tr>
+              <tr><td>Food Cost</td><td>รักษาจุดเชื่อม normalized costing แต่ไม่คำนวณต้นทุนจริงใน V1</td><td><span class="status out">นอกขอบเขต</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="media">
+        <span class="section-number">08</span>
+        <h2>ระบบรูปภาพและ Visual Standard</h2>
+        <p class="lead">รูปไม่ใช่แกลเลอรีประกอบสวย ๆ แต่เป็นข้อมูลมาตรฐานที่ผูกกับลำดับงานจริง</p>
+        <h3>ชนิดรูป</h3>
+        <ul>
+          <li><code>before</code> — สภาพก่อนเริ่มขั้นตอน</li>
+          <li><code>during</code> — สภาพระหว่างทำที่ควรรู้</li>
+          <li><code>checkpoint</code> — จุดตรวจขนาด สี ความข้น หรือความสุก</li>
+          <li><code>final</code> — ผลลัพธ์หรือภาพพร้อมเสิร์ฟ</li>
+        </ul>
+        <h3>กติกา</h3>
+        <ul>
+          <li>รูปเป็น optional และทยอยเติมได้</li>
+          <li>รูปหนึ่งใบใช้กับหลาย step ได้โดยไม่เก็บไฟล์ซ้ำ</li>
+          <li>รูปจัดเสิร์ฟแยกตาม <code>plate</code>, <code>delivery_box</code>, <code>cup_1oz</code> หรือภาชนะที่กำหนด</li>
+          <li>ขั้นตอนเปลี่ยนความหมายแล้วต้องขึ้น `รูปควรตรวจใหม่`</li>
+          <li>ภาพเสียใน preview ต้องเห็น error ชัด; งานพิมพ์ต้องไม่ปล่อยกรอบรูปแตก</li>
+          <li>เมื่อไม่มีรูป เอกสารคืนพื้นที่ให้ข้อความและไม่สร้างช่องว่าง</li>
+        </ul>
+      </section>
+
+      <section class="section" id="print">
+        <span class="section-number">09</span>
+        <h2>Print Center</h2>
+        <p class="lead">เอกสารพิมพ์เป็น output หลักของระบบ ไม่ใช่ภาพหน้าจอที่บังเอิญกด Print ได้</p>
+        <div class="decision-grid">
+          <article class="decision"><h3>A5 Landscape</h3><p>ค่าเริ่มต้นของจุดงาน รูปคู่ข้อความ ประมาณ 3–4 visual steps ต่อหน้า</p></article>
+          <article class="decision"><h3>A4 Two-up</h3><p>วาง A5 สองใบใน A4 portrait พร้อมเส้นตัดและลำดับหน้าชัดเจน</p></article>
+          <article class="decision"><h3>Complete Pack</h3><p>เรียง Prep → Cook → Service และพิมพ์ dependency ที่ใช้ร่วมเพียงครั้งเดียว</p></article>
+        </div>
+        <ul>
+          <li>ข้อความหรือรูปเกินพื้นที่ต้องต่อหน้าใหม่ ห้าม clip</li>
+          <li>Service quantity ไม่ถูกคูณด้วย batch multiplier</li>
+          <li>สูตรที่มี blocker แสดง `DRAFT — ข้อมูลไม่ครบ`</li>
+          <li>สูตรที่ขาดเฉพาะรูปยังพิมพ์ได้โดยไม่เป็น draft</li>
+          <li>Preview ต้องตรงกับขนาดกระดาษและไม่มี horizontal overflow</li>
+        </ul>
+      </section>
+
+      <section class="section" id="architecture">
+        <span class="section-number">10</span>
+        <h2>Implementation Decisions</h2>
+        <div class="decision-grid">
+          <article class="decision"><h3>Separate application</h3><p>CookingBook ใช้ repository และ build pipeline แยก ไม่ import โค้ด frontend NNTN ที่ใช้งานอยู่</p></article>
+          <article class="decision"><h3>React + TypeScript + Vite</h3><p>รองรับ form state, typed domain model, component isolation และ static deployment</p></article>
+          <article class="decision"><h3>Hash routing V1</h3><p>รองรับ GitHub Pages โดยไม่ต้องตั้ง server rewrite</p></article>
+          <article class="decision"><h3>Deep domain modules</h3><p>Recipe graph, work projection, media linking และ print planner เป็น pure/testable modules</p></article>
+          <article class="decision"><h3>Repository adapter</h3><p>Prototype repository และ Supabase repository ใช้ interface เดียวกัน เพื่อเปลี่ยน persistence โดยไม่เขียน UI ใหม่</p></article>
+          <article class="decision"><h3>Shared ingredient identity</h3><p>ภายหลังอ้าง ingredient ID ชุดเดียวกับ NNTN ไม่สร้าง master ซ้ำ</p></article>
+          <article class="decision"><h3>Single organization V1</h3><p>ใช้ NNTN ก่อน แต่แยก branding configuration และไม่ฝังชื่อธุรกิจใน domain rules</p></article>
+          <article class="decision"><h3>Human approval</h3><p>ระบบเตือนและช่วยจัดข้อมูล แต่คนเป็นผู้ตัดสินสูตร conversion และ revision</p></article>
+          <article class="decision"><h3>No production mutation</h3><p>Prototype ไม่เขียน Supabase, Storage, issue tracker หรือ production frontend</p></article>
+        </div>
+
+        <h3>แนวข้อมูล Supabase ใน phase ถัดไป</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ข้อมูล</th><th>เจ้าของข้อมูล</th><th>การใช้ร่วม</th></tr></thead>
+            <tbody>
+              <tr><td>Ingredient master</td><td>canonical cookingbook/shared schema</td><td>NNTN และ CookingBook อ้าง ID เดียวกัน</td></tr>
+              <tr><td>Kitchen recipe versions</td><td>kitchen schema</td><td>CookingBook เป็นผู้เขียน; ระบบอื่นอ่านตาม policy</td></tr>
+              <tr><td>Work steps</td><td>kitchen schema</td><td>ใช้สร้างเอกสารแต่ละจุดงาน</td></tr>
+              <tr><td>Media metadata</td><td>kitchen schema</td><td>ผูกกับ step และ revision</td></tr>
+              <tr><td>Image binary</td><td>private Storage bucket</td><td>เข้าผ่าน RLS และ signed/public policy ตามที่อนุมัติ</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="testing">
+        <span class="section-number">11</span>
+        <h2>Testing Decisions</h2>
+        <p>ทดสอบพฤติกรรมภายนอกและกฎโดเมน ไม่ผูก test กับรายละเอียด component ภายใน ชุดทดสอบเดิมของ prototype เป็น prior art สำหรับ dependency, kitchen units, work projections และ print planning</p>
+        <h3>Modules ที่ต้องมี unit tests</h3>
+        <ul>
+          <li>Recipe graph, cycle detection และ dependency deduplication</li>
+          <li>Kitchen quantity preservation และ no-conversion side effects</li>
+          <li>Work-stage projection และ batch multiplier rules</li>
+          <li>Media ordering, reuse, missing-media behavior และ revision warning</li>
+          <li>Print page planning, A5 continuation และ A4 two-up</li>
+          <li>Draft/readiness rules ที่แยก blocker สูตรออกจาก media gap</li>
+        </ul>
+        <h3>Browser tests</h3>
+        <ul>
+          <li>ค้นเมนูและเปิด recipe graph ด้วยชื่อ</li>
+          <li>สลับ Prep, Cook และ Service</li>
+          <li>แนบ preview และเรียงรูปตาม step</li>
+          <li>ไม่มีกรอบว่างเมื่อรูปขาด</li>
+          <li>แยกจาน กล่องเดลิเวอรี และถ้วย 1 oz</li>
+          <li>ขนาด A5/A4 ถูกต้อง ไม่มี clipping และ console สะอาด</li>
+          <li>Prototype ไม่มี request ไป production Supabase</li>
+        </ul>
+      </section>
+
+      <section class="section" id="metrics">
+        <span class="section-number">12</span>
+        <h2>ตัวชี้วัดความสำเร็จ</h2>
+        <div class="metric-grid">
+          <div class="metric"><b>100%</b><span>รายการใน first-set manifest แยกประเภท menu / prepared recipe / ingredient ได้</span></div>
+          <div class="metric"><b>0 การเดา</b><span>ไม่มี conversion หรือปริมาณที่สร้างเองโดยไร้หลักฐาน</span></div>
+          <div class="metric"><b>3 จุดงาน</b><span>สร้างเอกสาร Prep, Cook และ Service จาก recipe source เดียว</span></div>
+          <div class="metric"><b>0 สูตรซ้ำ</b><span>dependency ที่ใช้ร่วมไม่ถูกพิมพ์ซ้ำใน complete pack โดยไม่ตั้งใจ</span></div>
+          <div class="metric"><b>0 clipping</b><span>ข้อความและรูปไม่หลุดขอบ A5/A4 ใน browser ที่รองรับ</span></div>
+          <div class="metric"><b>0 production writes</b><span>prototype ไม่แก้ข้อมูล Supabase หรือ frontend ที่ใช้งานจริง</span></div>
+        </div>
+      </section>
+
+      <section class="section" id="acceptance">
+        <span class="section-number">13</span>
+        <h2>Acceptance Criteria</h2>
+        <ol class="acceptance">
+          <li>ผู้ใช้ค้นเมนูด้วยชื่อและเห็นสูตรประกอบทั้งหมดเป็นต้นไม้โดยไม่ต้องจำรหัส</li>
+          <li>ค่าหน้าครัวจากต้นฉบับยังเป็นช้อนชา ช้อนโต๊ะ กรัม หรือมิลลิลิตรตามที่ยืนยัน และไม่มีการแปลงอัตโนมัติ</li>
+          <li>ทุกเมนูข้าวใน first set ที่มีข้าวจัดเสิร์ฟ แสดงข้าวหุงสุก 180 กรัม; ค่า raw cost basis ไม่ปรากฏในเอกสาร Service</li>
+          <li>ข้าวญี่ปุ่นใช้เฉพาะเมนูที่กำหนด และเมนูอื่นใช้ข้าวหอมมะลิตามข้อมูลที่เจ้าของสูตรยืนยัน</li>
+          <li>สูตรซุป V3 แสดงหนึ่งหม้อประมาณ 50 ลิตร หม้อเบอร์ 70 และไม่รวมขั้นลงเนื้อ</li>
+          <li>ผู้ใช้สลับดู Prep, Cook และ Service โดยข้อมูลยังอ้าง RecipeVersion เดียว</li>
+          <li>ขั้นตอนหนึ่งมีหลายรูป เรียงตามลำดับและแสดงคู่กับข้อความบน A5 ได้</li>
+          <li>ขั้นตอนที่ไม่มีรูปยังแสดงและพิมพ์ได้โดยไม่เกิดกรอบว่างหรือ DRAFT จากสาเหตุรูปอย่างเดียว</li>
+          <li>รูปจัดเสิร์ฟแยกจาน กล่องเดลิเวอรี และถ้วย 1 oz ได้</li>
+          <li>complete pack เรียง Prep → Cook → Service และไม่พิมพ์ prepared dependency ซ้ำ</li>
+          <li>A5 landscape และ A4 two-up มีขนาดถูกต้อง ไม่มีข้อความหรือรูปถูกตัด</li>
+          <li>สูตรที่มี blocker ด้านปริมาณ วิธีทำ หรือ dependency แสดง DRAFT อย่างชัดเจน</li>
+          <li>prototype แสดงสถานะ local/mock และไม่มี production Supabase request หรือ write</li>
+          <li>automated tests และ browser smoke checks ผ่านก่อนส่งมอบ</li>
+        </ol>
+      </section>
+
+      <section class="section" id="out">
+        <span class="section-number">14</span>
+        <h2>Out of Scope</h2>
+        <ul>
+          <li>การแก้หรือ rewrite frontend NNTN ที่ใช้งานอยู่</li>
+          <li>Stock, purchasing, receiving, dispense และ production inventory</li>
+          <li>POS, sales, channel mapping และ delivery routing</li>
+          <li>Food Cost engine และ price calculation ตัวจริง</li>
+          <li>Supabase production migration, RLS, Auth และ Storage upload</li>
+          <li>Google Sheet dual-write หรือใช้เป็น operational SOT</li>
+          <li>Multi-tenant, organization administration, subscription และ billing</li>
+          <li>AI ที่สร้างสูตร คาดเดาปริมาณ หรือรับรอง conversion</li>
+          <li>Native mobile app และ direct printer hardware integration</li>
+        </ul>
+      </section>
+
+      <section class="section" id="delivery">
+        <span class="section-number">15</span>
+        <h2>ลำดับส่งมอบ</h2>
+        <ol>
+          <li><strong>Foundation:</strong> สร้างแอป React/TypeScript/Vite แยก พร้อม domain types และ prototype repository</li>
+          <li><strong>Recipe core:</strong> ย้าย fixture ชุดแรก Source Review และ Recipe Graph</li>
+          <li><strong>Work stages:</strong> ทำ Prep, Cook และ Service projections พร้อม readiness rules</li>
+          <li><strong>Media:</strong> เพิ่ม sample media, step linking, ordering, vessel และ revision warning</li>
+          <li><strong>Print:</strong> ย้าย Print Center และเพิ่ม photo-aware A5/A4 pagination</li>
+          <li><strong>Quality:</strong> unit tests, browser tests, print verification และ prototype boundary checks</li>
+          <li><strong>Persistence handoff:</strong> จัด Supabase brief, schema, migration, rollback และ RLS ให้ owner ตรวจใน phase แยก</li>
+        </ol>
+      </section>
+
+      <section class="section" id="future">
+        <span class="section-number">16</span>
+        <h2>Further Notes — ทิศทางผลิตภัณฑ์ในอนาคต</h2>
+        <p>CookingBook V1 ใช้ใน NNTN ก่อน แต่เลือก boundary ที่ทำให้พัฒนาเป็นผลิตภัณฑ์ได้ โดยไม่สร้าง feature เชิงพาณิชย์ก่อนพิสูจน์การใช้งานจริง</p>
+        <h3>สิ่งที่ V1 เตรียมไว้</h3>
+        <ul>
+          <li>business rules ที่ไม่ฝังชื่อ NNTN</li>
+          <li>branding configuration แยกจาก domain logic</li>
+          <li>repository interface ที่เปลี่ยน backend ได้</li>
+          <li>recipe, work-stage, media และ print modules ที่ทดสอบแยกได้</li>
+          <li>human approval และ provenance เป็นแกนความน่าเชื่อถือ</li>
+        </ul>
+        <h3>สิ่งที่ต้องเรียนรู้จากการใช้งาน NNTN ก่อนขาย</h3>
+        <ul>
+          <li>พนักงานใช้เอกสาร stage ใดบ่อยที่สุด</li>
+          <li>รูปประเภทใดลดข้อผิดพลาดได้จริง</li>
+          <li>รูปแบบ revision และ approval ที่ไม่สร้างงานเอกสารเกินจำเป็น</li>
+          <li>template ใดเหมาะกับครัวจริงและเครื่องพิมพ์ที่มี</li>
+          <li>ข้อมูลใดเป็นทั่วไป และข้อมูลใดเฉพาะธุรกิจ</li>
+        </ul>
+        <div class="callout danger"><strong>Commercialization gate:</strong> ยังไม่สร้าง multi-tenant, billing หรือ AI generative จนกว่า V1 จะพิสูจน์ว่าคนใน NNTN ใช้ workflow นี้ได้จริงและข้อมูลสูตรมีคุณภาพเพียงพอ</div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="footer">Intelligent CookingBook Module V1 · PRD draft for review · Local artifact only · No issue tracker or production publication</footer>
+</body>
+</html>

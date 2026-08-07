@@ -1,0 +1,502 @@
+<!-- WIREFRAME · MOCK DATA · ห้าม apply production · ไทน์ approve ก่อน -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR · Employee Config (Admin)</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #005036;
+    --gold: #D29568;
+    --green-light: #e8f2ed;
+    --gold-light: #fdf3eb;
+    --red: #c0392b;
+    --gray: #6b7280;
+    --gray-light: #f3f4f6;
+    --border: #e5e7eb;
+    --text: #111827;
+    --text-muted: #6b7280;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Sarabun', sans-serif; background: #f9fafb; color: var(--text); }
+
+  .header {
+    background: var(--green); color: white;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 10px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-logo {
+    width: 34px; height: 34px; background: var(--gold);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; color: var(--green);
+  }
+  .admin-badge {
+    margin-left: auto;
+    background: rgba(255,255,255,0.2);
+    border-radius: 6px; padding: 3px 8px;
+    font-size: 11px;
+  }
+
+  .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-bottom: 80px; }
+
+  /* Emp list */
+  .emp-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .emp-row {
+    background: white; border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 14px;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .emp-row:hover { border-color: var(--green); }
+  .emp-row.selected { border-color: var(--green); }
+  .emp-row.inactive { opacity: 0.5; }
+
+  .emp-row-top {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+  }
+  .emp-avatar {
+    width: 46px; height: 46px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .emp-main { flex: 1; min-width: 0; }
+  .emp-nick { font-size: 17px; font-weight: 700; }
+  .emp-fullname { font-size: 12px; color: var(--text-muted); }
+  .emp-pos { font-size: 12px; color: var(--green); margin-top: 2px; }
+
+  .badge-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .badge {
+    font-size: 11px; border-radius: 5px; padding: 2px 7px;
+    font-weight: 500;
+  }
+  .badge-ot    { background: #fef2f2; color: #dc2626; }
+  .badge-exempt{ background: #f3f4f6; color: #6b7280; }
+  .badge-daily { background: #ecfdf5; color: #065f46; }
+  .badge-pt    { background: #eff6ff; color: #1d4ed8; }
+  .badge-pro   { background: #fdf4ff; color: #be185d; }
+  .badge-sup   { background: #f5f3ff; color: #7c3aed; }
+
+  /* Collapsed summary */
+  .emp-summary {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    gap: 6px; margin-top: 8px;
+  }
+  .sum-item { background: var(--gray-light); border-radius: 6px; padding: 6px 8px; text-align: center; }
+  .sum-item-val { font-size: 14px; font-weight: 700; color: var(--green); }
+  .sum-item-label { font-size: 10px; color: var(--text-muted); }
+
+  /* Expand panel */
+  .emp-detail { display: none; border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
+  .emp-detail.open { display: block; }
+
+  .field-group { margin-bottom: 14px; }
+  .field-group-title {
+    font-size: 11px; font-weight: 700; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  .field label {
+    font-size: 12px; color: var(--text-muted); font-weight: 500;
+    display: block; margin-bottom: 4px;
+  }
+  .field input, .field select {
+    width: 100%; border: 1.5px solid var(--border);
+    border-radius: 8px; padding: 9px 10px;
+    font-family: 'Sarabun', sans-serif; font-size: 14px; outline: none;
+    transition: border-color 0.15s; color: var(--text);
+  }
+  .field input:focus, .field select:focus { border-color: var(--green); }
+
+  /* Toggle switches */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label { font-size: 14px; }
+  .toggle-sub { font-size: 12px; color: var(--text-muted); }
+  .switch {
+    position: relative; width: 44px; height: 24px; flex-shrink: 0;
+  }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; inset: 0; background: #d1d5db;
+    border-radius: 24px; cursor: pointer; transition: 0.2s;
+  }
+  .slider:before {
+    content:''; position: absolute;
+    width: 18px; height: 18px; left: 3px; top: 3px;
+    background: white; border-radius: 50%; transition: 0.2s;
+  }
+  .switch input:checked + .slider { background: var(--green); }
+  .switch input:checked + .slider:before { transform: translateX(20px); }
+
+  /* Action buttons */
+  .detail-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .btn-save-emp {
+    background: var(--green); color: white;
+    border: none; border-radius: 10px; padding: 12px;
+    font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .btn-inactive {
+    background: white; color: var(--red);
+    border: 1.5px solid var(--red); border-radius: 10px; padding: 12px;
+    font-family: 'Sarabun', sans-serif; font-size: 14px; cursor: pointer;
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: white; border-top: 1px solid var(--border);
+    display: flex; padding: 8px 0;
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; gap: 3px; padding: 4px 0;
+    cursor: pointer; font-size: 10px; color: var(--text-muted);
+  }
+  .nav-item.active { color: var(--green); }
+  .nav-icon { font-size: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">NT</div>
+  <div>
+    <div style="font-size:17px;font-weight:600;">จัดการพนักงาน</div>
+    <div style="font-size:12px;opacity:0.8;">Admin · 10 คน</div>
+  </div>
+  <div class="admin-badge">🔒 Admin</div>
+</div>
+
+<div class="container">
+  <div class="emp-list" id="empList"></div>
+</div>
+
+<div class="bottom-nav">
+  <div class="nav-item"><div class="nav-icon">📝</div><div>บันทึก</div></div>
+  <div class="nav-item"><div class="nav-icon">📊</div><div>ภาพรวม</div></div>
+  <div class="nav-item active"><div class="nav-icon">👥</div><div>พนักงาน</div></div>
+</div>
+
+<script>
+const EMPS = [
+  {
+    code:'EMP001', nick:'ใหม่', full:'กานต์ชนก เศวตะทัต',
+    pos:'ฝ่ายพัฒนา/QC', color:'#D29568',
+    salary:8000, ot_type:'normal', travel:0, position_pay:0, room:0,
+    badges:[], probation:false, active:true,
+    bank:'กสิกรไทย', bank_no:'xxx-x-xxxxx-x',
+    note:'',
+  },
+  {
+    code:'EMP002', nick:'แก้ว', full:'แบงค์ชาติ เที่ยงแท้',
+    pos:'จัดการทั่วไป', color:'#6b7280',
+    salary:12000, ot_type:'exempt', travel:0, position_pay:0, room:0,
+    badges:['ยกเว้น OT'], probation:false, active:true,
+    bank:'ไทยพาณิชย์', bank_no:'xxx-xxxxxx-x',
+    note:'ช่วยสาขาอื่น — ยกเว้น OT',
+  },
+  {
+    code:'EMP003', nick:'อิม', full:'กรกรรณ เที่ยงแท้',
+    pos:'Supervisor ครัวกลาง', color:'#7c3aed',
+    salary:16500, ot_type:'normal', travel:1000, position_pay:1000, room:0,
+    badges:['Supervisor'], probation:false, active:true,
+    bank:'กรุงไทย', bank_no:'xxx-x-xxxxx-x',
+    note:'',
+  },
+  {
+    code:'EMP004', nick:'ชาติ', full:'(ยังไม่กรอก)',
+    pos:'พ.ประจำหน้าเตา', color:'#dc2626',
+    salary:13200, ot_type:'flat75', travel:0, position_pay:0, room:2700,
+    badges:['OT 75฿/ชม','บ.ออกค่าห้อง'],
+    probation:false, active:true,
+    bank:'กสิกรไทย', bank_no:'xxx-x-xxxxx-x',
+    note:'บริษัทออกค่าห้อง 2,700 — ไม่หักในสลิป',
+  },
+  {
+    code:'EMP005', nick:'ส้ม', full:'(ยังไม่กรอก)',
+    pos:'พ.ครัว', color:'#ea580c',
+    salary:13200, ot_type:'normal', travel:1000, position_pay:1400, room:3000,
+    badges:['ค่าอุ่นซุป'],
+    probation:false, active:true,
+    bank:'ออมสิน', bank_no:'xxx-xxxxxxxx',
+    note:'ตำแหน่ง 1,400 = ค่าอุ่นซุป',
+  },
+  {
+    code:'EMP006', nick:'อุทัย', full:'(ยังไม่กรอก)',
+    pos:'พ.ประจำหน้าเตา', color:'#b45309',
+    salary:13200, ot_type:'flat75', travel:1000, position_pay:0, room:0,
+    badges:['OT 75฿/ชม'],
+    probation:false, active:true,
+    bank:'กรุงเทพ', bank_no:'xxx-x-xxxxx-x',
+    note:'',
+  },
+  {
+    code:'EMP007', nick:'กุ้ง', full:'Settha Bouakeo',
+    pos:'พ่อครัว', color:'#0891b2',
+    salary:13200, ot_type:'normal', travel:1000, position_pay:3050, room:2200,
+    badges:['พ่อครัว'],
+    probation:false, active:true,
+    bank:'กสิกรไทย', bank_no:'xxx-x-xxxxx-x',
+    note:'ตำแหน่ง 3,050 แยก 2 บรรทัด: ตำแหน่ง 1,000 + ช่วยงานศพ+อุ่นซุป 2,050',
+  },
+  {
+    code:'EMP008', nick:'พร', full:'(ยังไม่กรอก)',
+    pos:'แม่ครัว', color:'#be185d',
+    salary:13200, ot_type:'normal', travel:1000, position_pay:1000, room:0,
+    badges:['ผ่านโปร 09/04'],
+    probation:true, active:true,
+    bank:'ทหารไทยธนชาต', bank_no:'xxx-x-xxxxx-x',
+    note:'ผ่านโปร 09/04/2026 — ตรวจอัปเดตเงินเดือน',
+  },
+  {
+    code:'EMP009', nick:'โส', full:'ทิพย์วรรณ',
+    pos:'ผู้ช่วยครัว', color:'#065f46',
+    salary:400, ot_type:'normal', travel:1000, position_pay:0, room:0,
+    badges:['รายวัน 400฿/วัน'],
+    probation:false, active:true,
+    bank:'กสิกรไทย', bank_no:'xxx-x-xxxxx-x',
+    note:'อัตรา 400฿/วัน × N วัน',
+  },
+  {
+    code:'EMP010', nick:'แอปเปิ้ล', full:'จตุพร ฝาชัยภูมิ',
+    pos:'Part Time', color:'#1d4ed8',
+    salary:0, ot_type:'contract', travel:0, position_pay:0, room:0,
+    badges:['Part Time'],
+    probation:false, active:true,
+    bank:'กรุงไทย', bank_no:'xxx-x-xxxxx-x',
+    note:'คิดตาม shift / สัญญา',
+  },
+];
+
+const OT_OPTIONS = [
+  { val:'normal',   label:'สูตรปกติ (salary ÷ 30 ÷ 9 ÷ 60 × 1.5)' },
+  { val:'flat75',   label:'75 บาท/ชั่วโมง (rate พิเศษ)' },
+  { val:'exempt',   label:'ยกเว้น OT' },
+  { val:'daily_rate', label:'รายวัน' },
+  { val:'contract', label:'ตามสัญญา' },
+];
+
+function getBadgeClass(b) {
+  if (b.includes('OT')) return 'badge-ot';
+  if (b.includes('ยกเว้น')) return 'badge-exempt';
+  if (b.includes('รายวัน')) return 'badge-daily';
+  if (b.includes('Part')) return 'badge-pt';
+  if (b.includes('โปร')) return 'badge-pro';
+  return 'badge-sup';
+}
+
+function renderEmpList() {
+  const list = document.getElementById('empList');
+  list.innerHTML = '';
+
+  EMPS.forEach((emp, idx) => {
+    const row = document.createElement('div');
+    row.className = 'emp-row' + (emp.active ? '' : ' inactive');
+    row.id = `emp-row-${idx}`;
+
+    const initial = emp.nick.substring(0, 2);
+    const badgesHtml = emp.badges.map(b =>
+      `<span class="badge ${getBadgeClass(b)}">${b}</span>`
+    ).join('');
+
+    const otLabel = OT_OPTIONS.find(o => o.val === emp.ot_type)?.label || emp.ot_type;
+
+    row.innerHTML = `
+      <div class="emp-row-top">
+        <div class="emp-avatar" style="background:${emp.color}">${initial}</div>
+        <div class="emp-main">
+          <div class="emp-nick">${emp.nick} <span style="font-size:12px;font-weight:400;color:var(--text-muted);">${emp.code}</span></div>
+          <div class="emp-fullname">${emp.full}</div>
+          <div class="emp-pos">${emp.pos}</div>
+        </div>
+        <div style="font-size:20px;color:var(--text-muted);transition:transform 0.2s;" id="arrow-${idx}">›</div>
+      </div>
+      <div class="badge-row">${badgesHtml}</div>
+      <div class="emp-summary">
+        <div class="sum-item">
+          <div class="sum-item-val">${emp.salary.toLocaleString()}</div>
+          <div class="sum-item-label">${emp.code === 'EMP009' ? '฿/วัน' : '฿/เดือน'}</div>
+        </div>
+        <div class="sum-item">
+          <div class="sum-item-val">${emp.travel > 0 ? emp.travel.toLocaleString() : '—'}</div>
+          <div class="sum-item-label">เดินทาง</div>
+        </div>
+        <div class="sum-item">
+          <div class="sum-item-val">${emp.position_pay > 0 ? emp.position_pay.toLocaleString() : '—'}</div>
+          <div class="sum-item-label">ตำแหน่ง</div>
+        </div>
+      </div>
+
+      <!-- Detail panel (hidden by default) -->
+      <div class="emp-detail" id="detail-${idx}">
+
+        <div class="field-group">
+          <div class="field-group-title">ข้อมูลพื้นฐาน</div>
+          <div class="field-grid">
+            <div class="field">
+              <label>ชื่อเล่น</label>
+              <input type="text" value="${emp.nick}">
+            </div>
+            <div class="field">
+              <label>รหัส</label>
+              <input type="text" value="${emp.code}" readonly style="background:#f9fafb;color:var(--text-muted);">
+            </div>
+          </div>
+          <div class="field" style="margin-top:10px;">
+            <label>ชื่อเต็ม</label>
+            <input type="text" value="${emp.full}">
+          </div>
+          <div class="field" style="margin-top:10px;">
+            <label>ตำแหน่ง</label>
+            <input type="text" value="${emp.pos}">
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">รายได้</div>
+          <div class="field-grid">
+            <div class="field">
+              <label>เงินเดือน (บาท)</label>
+              <input type="number" value="${emp.salary}">
+            </div>
+            <div class="field">
+              <label>OT Rate</label>
+              <select>
+                ${OT_OPTIONS.map(o =>
+                  `<option value="${o.val}" ${emp.ot_type === o.val ? 'selected' : ''}>${o.label}</option>`
+                ).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="field-grid" style="margin-top:10px;">
+            <div class="field">
+              <label>ค่าเดินทาง</label>
+              <input type="number" value="${emp.travel}">
+            </div>
+            <div class="field">
+              <label>ค่าตำแหน่ง</label>
+              <input type="number" value="${emp.position_pay}">
+            </div>
+          </div>
+          ${emp.code === 'EMP007' ? `
+          <div style="background:#fef9ee;border:1px solid #fcd34d;border-radius:8px;padding:8px 10px;font-size:12px;color:#92400e;margin-top:8px;">
+            ⚠️ EMP007: ตำแหน่ง 3,050 แยก 2 บรรทัดในสลิป<br>
+            บรรทัด 1: ค่าตำแหน่ง 1,000 · บรรทัด 2: ช่วยงานศพ+อุ่นซุป 2,050
+          </div>` : ''}
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">ที่พักและสาธารณูปโภค</div>
+          <div class="field-grid-3">
+            <div class="field">
+              <label>ค่าห้อง (฿)</label>
+              <input type="number" value="${emp.room}">
+            </div>
+            <div class="field">
+              <label>ค่าไฟ</label>
+              <input type="number" value="0" placeholder="คำนวณ">
+            </div>
+            <div class="field">
+              <label>ค่าน้ำ</label>
+              <input type="number" value="0" placeholder="คำนวณ">
+            </div>
+          </div>
+          ${emp.code === 'EMP004' ? `
+          <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:8px 10px;font-size:12px;color:#065f46;margin-top:8px;">
+            ✅ EMP004: บริษัทออกค่าห้อง 2,700 — ไม่หักในสลิป
+          </div>` : ''}
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">ธนาคาร</div>
+          <div class="field-grid">
+            <div class="field">
+              <label>ธนาคาร</label>
+              <input type="text" value="${emp.bank}">
+            </div>
+            <div class="field">
+              <label>เลขบัญชี</label>
+              <input type="text" value="${emp.bank_no}">
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">สถานะ</div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">ผ่านโปบาล</div>
+              <div class="toggle-sub">เปิด = นับสิทธิ์เต็ม</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" ${emp.probation ? 'checked' : ''}>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Active</div>
+              <div class="toggle-sub">ปิด = ซ่อนจากฟอร์มบันทึก</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" ${emp.active ? 'checked' : ''}>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        ${emp.note ? `
+        <div style="background:#fdf3eb;border:1px solid #f3c99a;border-radius:8px;padding:10px 12px;font-size:13px;color:#92400e;margin-bottom:14px;">
+          📌 หมายเหตุ: ${emp.note}
+        </div>` : ''}
+
+        <div class="detail-actions">
+          <button class="btn-save-emp" onclick="mockSaveEmp('${emp.code}')">💾 บันทึก</button>
+          <button class="btn-inactive" onclick="mockInactive('${emp.code}')">🚫 ปิดใช้งาน</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;">
+          [WIREFRAME] บันทึกจะ PATCH <code>hr.employee</code> · ต้องผ่าน ไทน์ approve
+        </div>
+      </div>
+    `;
+
+    row.querySelector('.emp-row-top').addEventListener('click', () => toggleDetail(idx));
+    list.appendChild(row);
+  });
+}
+
+function toggleDetail(idx) {
+  const detail = document.getElementById(`detail-${idx}`);
+  const arrow  = document.getElementById(`arrow-${idx}`);
+  const isOpen = detail.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.emp-detail').forEach(d => d.classList.remove('open'));
+  document.querySelectorAll('[id^="arrow-"]').forEach(a => { a.style.transform=''; });
+  if (!isOpen) {
+    detail.classList.add('open');
+    arrow.style.transform = 'rotate(90deg)';
+  }
+}
+
+function mockSaveEmp(code) {
+  alert(`[MOCK] บันทึก ${code} แล้ว\nจริง: PATCH hr.employee WHERE code = '${code}'`);
+}
+function mockInactive(code) {
+  if (confirm(`ปิดใช้งาน ${code}?\nพนักงานจะไม่ปรากฏในฟอร์มบันทึก`)) {
+    alert(`[MOCK] ปิด ${code} แล้ว`);
+  }
+}
+
+renderEmpList();
+</script>
+</body>
+</html>

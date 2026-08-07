@@ -1,0 +1,456 @@
+<!-- WIREFRAME · MOCK DATA · ห้าม apply production · ไทน์ approve ก่อน -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR · Dashboard 28 วัน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #005036;
+    --gold: #D29568;
+    --green-light: #e8f2ed;
+    --gold-light: #fdf3eb;
+    --red: #c0392b;
+    --gray: #6b7280;
+    --gray-light: #f3f4f6;
+    --border: #e5e7eb;
+    --text: #111827;
+    --text-muted: #6b7280;
+    /* status colors */
+    --c-normal:  #bbf7d0; /* เขียว ปกติ */
+    --c-late:    #fef08a; /* เหลือง สาย */
+    --c-absent:  #fecaca; /* แดง ขาด */
+    --c-leave:   #bfdbfe; /* ฟ้า ลามีใบ */
+    --c-noleave: #fed7aa; /* ส้ม ลาไม่มีใบ */
+    --c-holiday: #e5e7eb; /* เทา หยุด */
+    --c-ot:      #a7f3d0; /* เขียวเข้ม มี OT */
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Sarabun', sans-serif; background: #f9fafb; color: var(--text); }
+
+  /* Header */
+  .header {
+    background: var(--green); color: white;
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 200;
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .header-logo {
+    width: 34px; height: 34px; background: var(--gold);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; color: var(--green);
+  }
+  .header h1 { font-size: 17px; font-weight: 600; }
+  .header-period { font-size: 12px; opacity: 0.8; }
+  .btn-gen {
+    background: var(--gold); color: white;
+    border: none; border-radius: 8px;
+    padding: 8px 14px; font-family: 'Sarabun', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    opacity: 0.5;
+  }
+  .btn-gen.ready { opacity: 1; }
+
+  /* Legend */
+  .legend {
+    background: white; border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex; gap: 10px; flex-wrap: wrap;
+    overflow-x: auto;
+  }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; white-space: nowrap; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+  /* Summary cards */
+  .summary-bar {
+    padding: 12px 16px;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .sum-card {
+    background: white; border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 8px; text-align: center;
+  }
+  .sum-val { font-size: 22px; font-weight: 700; color: var(--green); }
+  .sum-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Grid wrapper — horizontal scroll */
+  .grid-wrapper { overflow-x: auto; padding: 0 0 16px 0; }
+
+  /* Attendance grid table */
+  .att-table {
+    border-collapse: collapse;
+    min-width: 900px;
+    width: 100%;
+  }
+  .att-table th {
+    background: var(--green); color: white;
+    font-size: 11px; font-weight: 500;
+    padding: 6px 4px; text-align: center;
+    position: sticky; top: 0;
+  }
+  .att-table th.emp-col { min-width: 80px; text-align: left; padding-left: 8px; }
+  .att-table th.day-col { min-width: 32px; }
+  .att-table td {
+    border: 1px solid var(--border);
+    text-align: center;
+    padding: 0;
+    height: 34px;
+    cursor: pointer;
+  }
+  .att-table td.emp-col {
+    background: white; text-align: left;
+    padding: 6px 8px; min-width: 80px;
+    position: sticky; left: 0;
+    border-right: 2px solid var(--border);
+    z-index: 10;
+  }
+  .emp-name { font-size: 13px; font-weight: 600; }
+  .emp-code-sm { font-size: 10px; color: var(--text-muted); }
+
+  .cell {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600;
+    border-radius: 2px;
+    transition: filter 0.1s;
+  }
+  .cell:hover { filter: brightness(0.9); }
+  .cell.normal  { background: var(--c-normal); color: #166534; }
+  .cell.late    { background: var(--c-late);   color: #854d0e; }
+  .cell.absent  { background: var(--c-absent); color: #991b1b; }
+  .cell.leave   { background: var(--c-leave);  color: #1e40af; }
+  .cell.noleave { background: var(--c-noleave);color: #9a3412; }
+  .cell.holiday { background: var(--c-holiday);color: #6b7280; }
+  .cell.ot      { background: var(--c-ot);     color: #065f46; }
+  .cell.empty   { background: #fafafa; color: #d1d5db; }
+  .cell.today   { outline: 2px solid var(--gold); outline-offset: -2px; }
+
+  /* Footer row */
+  .att-table tr.footer-row td {
+    background: #f0fdf4; font-size: 11px; font-weight: 700;
+    color: var(--green); height: 32px; cursor: default;
+  }
+  .att-table tr.footer-row td.emp-col { background: var(--green); color: white; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 500;
+    align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; border-radius: 20px 20px 0 0;
+    padding: 20px; width: 100%; max-width: 480px;
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .modal-handle {
+    width: 40px; height: 4px; background: var(--border);
+    border-radius: 2px; margin: 0 auto 16px;
+  }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+  .modal-field label { font-size: 13px; color: var(--text-muted); font-weight: 500; display: block; margin-bottom: 4px; }
+  .modal-field { margin-bottom: 12px; }
+  .modal-field select, .modal-field input {
+    width: 100%; border: 1.5px solid var(--border);
+    border-radius: 8px; padding: 10px 12px;
+    font-family: 'Sarabun', sans-serif; font-size: 14px; outline: none;
+  }
+  .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .btn-cancel {
+    border: 1.5px solid var(--border); background: white;
+    border-radius: 10px; padding: 12px;
+    font-family: 'Sarabun', sans-serif; font-size: 15px; cursor: pointer;
+  }
+  .btn-confirm {
+    background: var(--green); color: white;
+    border: none; border-radius: 10px; padding: 12px;
+    font-family: 'Sarabun', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: white; border-top: 1px solid var(--border);
+    display: flex; padding: 8px 0;
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; gap: 3px; padding: 4px 0;
+    cursor: pointer; font-size: 10px; color: var(--text-muted);
+  }
+  .nav-item.active { color: var(--green); }
+  .nav-icon { font-size: 20px; }
+  .pb-nav { padding-bottom: 70px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">NT</div>
+    <div>
+      <div style="font-size:17px;font-weight:600;">Dashboard เงินเดือน</div>
+      <div class="header-period">รอบ 28 มี.ค. – 25 เม.ย. 2569</div>
+    </div>
+  </div>
+  <button class="btn-gen" id="genBtn" title="รอข้อมูลครบ 28 วัน">📄 Generate สลิป</button>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--c-normal)"></div>ปกติ</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--c-ot)"></div>มี OT</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--c-late)"></div>สาย</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--c-absent)"></div>ขาด</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--c-leave)"></div>ลามีใบ</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--c-noleave)"></div>ลาไม่มีใบ</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--c-holiday)"></div>หยุด</div>
+</div>
+
+<!-- Summary -->
+<div class="summary-bar">
+  <div class="sum-card">
+    <div class="sum-val" style="color:#059669;">18</div>
+    <div class="sum-label">วันทำงาน</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-val" style="color:#d97706;">3</div>
+    <div class="sum-label">วันสาย</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-val" style="color:#dc2626;">1</div>
+    <div class="sum-label">ขาด</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-val" style="color:var(--green);">240</div>
+    <div class="sum-label">OT รวม(นาที)</div>
+  </div>
+</div>
+
+<!-- Grid -->
+<div class="grid-wrapper">
+<table class="att-table" id="attTable">
+  <thead>
+    <tr id="headerRow">
+      <th class="emp-col">พนักงาน</th>
+      <!-- Days injected by JS -->
+    </tr>
+  </thead>
+  <tbody id="tableBody"></tbody>
+</table>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalTitle">แก้ไขรายการ</div>
+    <div class="modal-sub" id="modalSub">EMP001 · ใหม่ · 12 เม.ย.</div>
+    <div class="modal-field">
+      <label>ประเภทวัน</label>
+      <select id="modalType">
+        <option value="normal">✅ มาปกติ</option>
+        <option value="late">⚠️ มาสาย</option>
+        <option value="absent">❌ ขาดงาน</option>
+        <option value="leave">🏥 ลามีใบ</option>
+        <option value="noleave">📋 ลาไม่มีใบ</option>
+        <option value="holiday">🏖️ หยุดประจำ</option>
+        <option value="ot">⏰ มี OT</option>
+      </select>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>เวลาเข้า</label>
+        <input type="time" id="modalIn" value="08:30">
+      </div>
+      <div class="modal-field">
+        <label>เวลาออก</label>
+        <input type="time" id="modalOut" value="19:30">
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>หมายเหตุ</label>
+      <input type="text" id="modalNote" placeholder="เช่น ลาเพราะงานศพ...">
+    </div>
+    <div id="modalCalc" style="background:#f0fdf4;border-radius:8px;padding:10px 12px;font-size:13px;color:#065f46;margin-bottom:8px;display:none;"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn-confirm" onclick="saveModal()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<div class="bottom-nav">
+  <div class="nav-item"><div class="nav-icon">📝</div><div>บันทึก</div></div>
+  <div class="nav-item active"><div class="nav-icon">📊</div><div>ภาพรวม</div></div>
+  <div class="nav-item"><div class="nav-icon">👥</div><div>พนักงาน</div></div>
+</div>
+
+<script>
+// Mock data setup
+const EMPS = [
+  { code:'EMP001', nick:'ใหม่',     color:'#D29568' },
+  { code:'EMP002', nick:'แก้ว',     color:'#6b7280' },
+  { code:'EMP003', nick:'อิม',      color:'#7c3aed' },
+  { code:'EMP004', nick:'ชาติ',     color:'#dc2626' },
+  { code:'EMP005', nick:'ส้ม',      color:'#ea580c' },
+  { code:'EMP006', nick:'อุทัย',    color:'#b45309' },
+  { code:'EMP007', nick:'กุ้ง',     color:'#0891b2' },
+  { code:'EMP008', nick:'พร',       color:'#be185d' },
+  { code:'EMP009', nick:'โส',       color:'#065f46' },
+  { code:'EMP010', nick:'แอปเปิ้ล', color:'#1d4ed8' },
+];
+
+const STATUS_TYPES = ['normal','late','absent','leave','noleave','holiday','ot','empty'];
+
+// Generate 28 days from Mar 28
+function genDates() {
+  const dates = [];
+  const start = new Date(2026, 2, 28); // Mar 28
+  for (let i = 0; i < 28; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    dates.push(d);
+  }
+  return dates;
+}
+
+// Random mock status
+function mockStatus(empIdx, dayIdx) {
+  const r = (empIdx * 7 + dayIdx * 13) % 20;
+  const d = genDates()[dayIdx];
+  if (d.getDay() === 0) return 'holiday'; // Sunday
+  if (r === 3) return 'late';
+  if (r === 7) return 'absent';
+  if (r === 11) return 'leave';
+  if (r === 14) return 'noleave';
+  if (r === 17) return 'ot';
+  if (dayIdx >= 25) return 'empty'; // future
+  return 'normal';
+}
+
+const thaiMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const thaiDays = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+
+function buildTable() {
+  const dates = genDates();
+  const headerRow = document.getElementById('headerRow');
+  const body = document.getElementById('tableBody');
+
+  // Header days
+  dates.forEach((d, i) => {
+    const th = document.createElement('th');
+    th.className = 'day-col';
+    th.innerHTML = `<div>${thaiDays[d.getDay()]}</div><div>${d.getDate()}</div>`;
+    if (d.getDay() === 0) th.style.background = '#003828';
+    headerRow.appendChild(th);
+  });
+  // Summary header
+  ['วันทำ','OT(น)','สาย','ขาด'].forEach(h => {
+    const th = document.createElement('th');
+    th.style.minWidth = '44px'; th.style.background = '#003828';
+    th.textContent = h;
+    headerRow.appendChild(th);
+  });
+
+  // Employee rows
+  EMPS.forEach((emp, ei) => {
+    const tr = document.createElement('tr');
+    const empTd = document.createElement('td');
+    empTd.className = 'emp-col';
+    empTd.innerHTML = `<div class="emp-name">${emp.nick}</div><div class="emp-code-sm">${emp.code}</div>`;
+    tr.appendChild(empTd);
+
+    let workDays = 0, otTotal = 0, lateCount = 0, absentCount = 0;
+
+    dates.forEach((d, di) => {
+      const td = document.createElement('td');
+      const status = mockStatus(ei, di);
+      const cell = document.createElement('div');
+      cell.className = `cell ${status}`;
+      const labels = {normal:'✓',late:'สาย',absent:'ขาด',leave:'ลา',noleave:'ลา',holiday:'หยุด',ot:'OT',empty:'·'};
+      cell.textContent = labels[status] || '·';
+      // Today highlight
+      const today = new Date();
+      if (d.getDate() === today.getDate() && d.getMonth() === today.getMonth()) cell.classList.add('today');
+      td.appendChild(cell);
+      td.onclick = () => openModal(emp, d, status, di, ei);
+      tr.appendChild(td);
+
+      if (status === 'normal' || status === 'late' || status === 'ot') workDays++;
+      if (status === 'late') lateCount++;
+      if (status === 'absent' || status === 'noleave') absentCount++;
+      if (status === 'ot') otTotal += 45;
+    });
+
+    // Summary cols
+    [[workDays,''], [otTotal,'#059669'], [lateCount,'#d97706'], [absentCount,'#dc2626']].forEach(([val, color]) => {
+      const td = document.createElement('td');
+      td.style.fontWeight = '700'; td.style.fontSize = '13px';
+      td.style.color = color || 'var(--green)';
+      td.textContent = val;
+      tr.appendChild(td);
+    });
+
+    body.appendChild(tr);
+  });
+
+  // Footer row
+  const foot = document.createElement('tr');
+  foot.className = 'footer-row';
+  const footLabel = document.createElement('td');
+  footLabel.className = 'emp-col';
+  footLabel.textContent = 'รวมทีม';
+  foot.appendChild(footLabel);
+  dates.forEach((d, di) => {
+    const td = document.createElement('td');
+    const workCount = EMPS.filter((_, ei) => {
+      const s = mockStatus(ei, di);
+      return s === 'normal' || s === 'late' || s === 'ot';
+    }).length;
+    td.textContent = di < 25 ? workCount : '—';
+    foot.appendChild(td);
+  });
+  ['—','—','—','—'].forEach(v => {
+    const td = document.createElement('td'); td.textContent = v; foot.appendChild(td);
+  });
+  body.appendChild(foot);
+}
+
+let currentCell = null;
+function openModal(emp, date, status, di, ei) {
+  currentCell = { emp, date, status, di, ei };
+  document.getElementById('modalTitle').textContent = `แก้ไข · ${emp.nick} (${emp.code})`;
+  document.getElementById('modalSub').textContent = `${date.getDate()} ${thaiMonths[date.getMonth()]} ${date.getFullYear() + 543}`;
+  document.getElementById('modalType').value = status;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+}
+
+function saveModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  // In real app: PATCH hr.attendance_log via Supabase
+  alert('[MOCK] บันทึกแล้ว — จริงจะ PATCH hr.attendance_log');
+}
+
+buildTable();
+</script>
+</body>
+</html>
