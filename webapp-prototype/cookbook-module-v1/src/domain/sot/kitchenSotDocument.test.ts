@@ -96,4 +96,25 @@ describe("Kitchen SOT document", () => {
       expect.objectContaining({ field: "recipes[0].blockers" }),
     );
   });
+
+  test("rejects a nested Date instead of accepting it as lossless JSON", () => {
+    const invalidDocument = structuredClone(fixture) as unknown as Record<string, unknown>;
+    const recipes = invalidDocument.recipes as Array<Record<string, unknown>>;
+    recipes[0]!.audit_timestamp = new Date("2026-08-07T00:00:00.000Z");
+
+    expect(() => parseKitchenSotDocument(invalidDocument)).toThrow(
+      expect.objectContaining({ field: "document.recipes[0].audit_timestamp" }),
+    );
+  });
+
+  test("rejects a nested Map instead of accepting it as source values", () => {
+    const invalidDocument = structuredClone(fixture) as unknown as Record<string, unknown>;
+    const recipes = invalidDocument.recipes as Array<Record<string, unknown>>;
+    const items = recipes[0]!.items as Array<Record<string, unknown>>;
+    items[0]!.source_values = new Map([["v1", "75 g"]]);
+
+    expect(() => parseKitchenSotDocument(invalidDocument)).toThrow(
+      expect.objectContaining({ field: "document.recipes[0].items[0].source_values" }),
+    );
+  });
 });
