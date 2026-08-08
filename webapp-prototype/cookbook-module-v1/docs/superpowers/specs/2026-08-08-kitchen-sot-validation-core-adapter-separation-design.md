@@ -16,7 +16,7 @@ Decision ที่รองรับ: [Managed document gateway ADR draft](./202
 - managed backend ไม่ copy business validation ไปเขียนซ้ำ;
 - V4 checksum, V5 transition, deterministic bytes และ stale guard ถูกทดสอบผ่าน interface เดียว;
 - filesystem-specific path/lock/rename logic ไม่หลุดเข้า managed runtime;
-- single-account identity gate และ provider adapter สามารถเสียบเพิ่มโดยไม่แก้ domain validation และไม่ต้องสร้าง role model
+- owner single-account identity gate และ kitchen-device access adapter สามารถเสียบเพิ่มโดยไม่แก้ domain validation และไม่ต้องสร้าง role model; kitchen session semantics ยังรอ D13
 
 ## 2. Current implementation facts
 
@@ -131,7 +131,7 @@ HTTP adapter รับผิดชอบเฉพาะ:
 - exact route และ method allowlist;
 - request-size limit;
 - parse `If-Match` syntax;
-- ตรวจ single-account identity ของ TINE ผ่าน provider adapter;
+- ตรวจ owner single-account identity ของ TINE หรือ kitchen-device credential ตาม fixed surface;
 - owner surface อนุญาต GET/PUT ส่วน kitchen view surface มีเฉพาะ GET และตอบ `METHOD_NOT_ALLOWED` เมื่อ PUT;
 - เรียก gateway;
 - map named error เป็น status และ `{ code }`;
@@ -150,7 +150,7 @@ Error contract ที่ต้องรักษา:
 | `PRECONDITION_REQUIRED` | 428 | ขาด header/body precondition |
 | `WRITE_FAILED` | 500 | persistence ล้มและไม่ยืนยันว่าบันทึกสำเร็จ |
 
-ไม่มี role lookup หรือ permission table. Identity provider อาจจัดการ unauthenticated redirect/401 ที่ edge; application contract เดิมยังใช้ `METHOD_NOT_ALLOWED` เพื่อ fail closed เมื่อ kitchen view surface ถูกเรียกด้วย PUT. Provider-specific auth response ต้องระบุใน implementation plan หลัง D9 ปิด
+ไม่มี role lookup หรือ permission table. Identity provider อาจจัดการ unauthenticated redirect/401 ที่ edge; application contract เดิมยังใช้ `METHOD_NOT_ALLOWED` เพื่อ fail closed เมื่อ kitchen view surface ถูกเรียกด้วย PUT. Provider-specific auth response ต้องระบุหลัง D9 ปิด และ kitchen-device lifetime/renewal ต้องระบุหลัง D13 ปิด
 
 ### 3.4 Filesystem adapter
 
@@ -178,7 +178,7 @@ Managed adapter ในอนาคตต้อง:
 - ไม่มี V4 update/delete operation ใน runtime role;
 - ไม่ log document bytes โดย default
 
-Provider-specific schema, SQL, SDK และ auth integration ยังถูก block โดย D9 แม้ single-account access shape จะตัดสินแล้ว
+Provider-specific schema, SQL, SDK และ auth integration ยังถูก block โดย D9; kitchen-device session configuration และ renewal ถูก block โดย D13
 
 ## 4. Data flow
 
@@ -186,7 +186,7 @@ Provider-specific schema, SQL, SDK และ auth integration ยังถูก
 
 ```text
 HTTP GET V5
-  -> verify TINE single-account session on the selected fixed surface
+  -> verify TINE owner session or D13 kitchen-device session on the selected fixed surface
   -> store.readFrozenSource()
   -> gateway verifies exact V4 SHA and parses V4
   -> store.readCurrentDraft()
@@ -313,18 +313,19 @@ Wave 1–2 เป็น behavior-preserving refactor และเริ่มไ
 
 ### Wave 3 — Managed adapter and production transport
 
-ถูก block จน D9 และ provider/account owner ชัดเจน:
+ถูก block จน D9, D13 และ provider/account owner ชัดเจน:
 
 - provider schema/resources;
 - atomic managed CAS;
 - single-account identity verification โดยไม่มี role model;
+- kitchen-device credential/session lifetime และ renewal mechanism ตาม D13;
 - owner GET/PUT surface และ kitchen GET-only surface;
 - production config ที่ fail closed;
 - isolated staging import
 
 ### Wave 4 — Migration, recovery and actual-device proof
 
-ถูก block จน D10 และ D12 ชัดเจน:
+ถูก block จน D10, D12 และ D13 ชัดเจน:
 
 - exact V4/V5 import;
 - backup/restore and rollback rehearsal;
@@ -365,10 +366,10 @@ Wave 1–2 เป็น behavior-preserving refactor และเริ่มไ
 
 ## 10. Open review questions
 
-คำถามเหล่านี้สำหรับ review หลัง TINE ตอบ D8–D10 และ D12 ไม่ต้องตอบเพื่อเก็บเอกสาร draft:
+คำถามเหล่านี้สำหรับ review หลัง TINE ตอบ D8–D10, D12 และ D13 ไม่ต้องตอบเพื่อเก็บเอกสาร draft:
 
 1. provider ใดเป็นเจ้าของ identity gate, static assets, gateway และ datastore?
-2. provider session บนอุปกรณ์ครัวมีอายุเท่าใดและ TINE re-authenticate อย่างไร?
+2. D13 กำหนด kitchen-device session lifetime เป็นเท่าใด และอุปกรณ์ต่ออายุอย่างไรโดยไม่ต้องมี TINE?
 3. outage mode ต้องมี read-only cached snapshot หรือใช้เอกสารพิมพ์สำรอง?
 4. provider ที่เลือกมี atomic conditional write และ exact byte storage แบบใด?
 5. actual mobile/browser/printer matrix มีรุ่นใดบ้าง?

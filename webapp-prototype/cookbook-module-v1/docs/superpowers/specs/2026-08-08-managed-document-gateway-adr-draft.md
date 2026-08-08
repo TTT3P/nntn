@@ -1,6 +1,6 @@
 # ADR Draft — Managed Document Gateway สำหรับ Cookbook Production
 
-สถานะ: **Partially accepted / D5–D7 ปิดแล้ว; D8–D10 และ D12 ยังรอ**  
+สถานะ: **Partially accepted / D5–D7 ปิดแล้ว; D8–D10, D12 และ D13 ยังรอ**
 วันที่: 2026-08-08  
 ผู้ตัดสิน: TINE  
 ความเสี่ยง: **R2 / สูง**  
@@ -17,7 +17,7 @@ TINE เลือก **ทาง B — managed document gateway** สำหร�
 4. ระยะแรกเก็บ V4/V5 เป็นเอกสารทั้งฉบับ และมี `v5-current` เพียงฉบับเดียว;
 5. revision history, automatic merge และการ normalize สูตรเป็นงานหลัง first draft ครบ ไม่รวมใน decision นี้;
 6. ช่วงพัฒนาและตรวจรับ ผู้ดูและผู้แก้คือ **TINE คนเดียว**;
-7. identity เป็น single-account gate ด้วยวิธีที่ง่ายที่สุดและยังปลอดภัย เช่น email one-time code;
+7. owner identity เป็น single-account gate ด้วยวิธีที่ง่ายที่สุดและยังปลอดภัย เช่น email one-time code;
 8. **ห้ามสร้าง role/permission model ตอนนี้**; ออกแบบ seam ให้เพิ่มภายหลังได้ แต่ห้ามสร้าง role table, role editor หรือ policy engine รอไว้ก่อน;
 9. การปล่อยใช้แบ่งเป็นสองจังหวะ: จังหวะ 1 ครัวอ่าน/พิมพ์เท่านั้น และจังหวะ 2 จึงเปิดให้พนักงานแก้เมื่อมี revision, structural edit ops และระบบสิทธิ์จริง
 
@@ -76,12 +76,12 @@ owner surface
   -> GET + PUT
 
 kitchen view surface
-  -> TINE เปิด session บนอุปกรณ์ครัว
+  -> managed device session ที่ยังรอ D13
   -> Library / Work / Print เท่านั้น
   -> GET only; ไม่มี Recipe Studio และ backend ปฏิเสธ PUT ทุกกรณี
 ```
 
-สอง surface เป็น fixed deployment capabilities ไม่ใช่ระบบ role. ไม่มี role table, user administration หรือ permission editor. Kitchen staff ไม่มี account ในจังหวะ 1; TINE เป็นผู้เริ่ม session บนอุปกรณ์ที่ผ่าน acceptance. Owner และ kitchen surface ต้องแยกด้วย trusted deployment route/hostname policy ไม่ใช่ซ่อนปุ่มหรือเชื่อ `Origin` จาก browser อย่างเดียว
+สอง surface เป็น fixed deployment capabilities ไม่ใช่ระบบ role. ไม่มี role table, user administration หรือ permission editor. Kitchen staff ไม่มี account ในจังหวะ 1. อายุ session ของอุปกรณ์ครัวและวิธีต่ออายุเมื่อ TINE ไม่อยู่ยังเป็น D13; ห้ามถือว่า owner email one-time-code session ตอบโจทย์นี้โดยอัตโนมัติ. Owner และ kitchen surface ต้องแยกด้วย trusted deployment route/hostname policy ไม่ใช่ซ่อนปุ่มหรือเชื่อ `Origin` จาก browser อย่างเดียว
 
 ข้อเสนอนี้เป็น baseline ของ implementation plan จังหวะ 1. หาก TINE ต้องการ anonymous read หรือให้พนักงาน login เอง ต้องแก้ ADR ก่อน execution
 
@@ -146,7 +146,8 @@ Production ต้องเลือก adapter ด้วย explicit configurati
 2. managed gateway เปิดจากมือถือหน้าเตาได้จริงโดยไม่พึ่งเครื่อง TINE;
 3. kitchen view surface ไม่มี Recipe Studio และ `PUT /__cookbook/v5-draft` ถูกปฏิเสธที่ backend;
 4. A5 จากเครื่องพิมพ์จริงในร้านผ่าน ไม่มีข้อความตัด หน้าเปล่า หรือ app UI;
-5. TINE อนุมัติ staging และ deployment แยกหลังเห็นหลักฐานครบ
+5. อุปกรณ์ครัวอ่าน/พิมพ์ต่อได้หลัง session expiry/renewal หนึ่งรอบโดยไม่ต้องให้ TINE ออก OTP หรือมาอยู่หน้าเครื่อง;
+6. TINE อนุมัติ staging และ deployment แยกหลังเห็นหลักฐานครบ
 
 #### จังหวะ 2 — พนักงานแก้ได้
 
@@ -167,8 +168,9 @@ Production ต้องเลือก adapter ด้วย explicit configurati
 | D9 | provider และใครเป็นเจ้าของ account, domain, secret, backup และ recovery | บล็อก cloud resource, staging และ operational handoff |
 | D10 | เมื่อ backend/อินเทอร์เน็ตล่ม ให้ปิด, read-only cache หรือใช้เอกสารพิมพ์สำรอง | บล็อก outage acceptance และ cutover |
 | D12 | อุปกรณ์/เบราว์เซอร์และเครื่องพิมพ์จริงรุ่นใดต้องผ่าน | บล็อก final actual-device GO |
+| D13 | kitchen device session มีอายุเท่าใดและต่ออายุอย่างไรเมื่อ TINE ไม่อยู่ | บล็อก unattended-availability contract, Access configuration และ final GO |
 
-D5–D7 ไม่ใช่ blockers แล้ว. D9 เป็น hard blocker ก่อนสร้าง resource; D10 และ D12 เป็น hard blockers ก่อน final GO. D8 ต้องปิดก่อนยืนยัน concurrency contract แต่ไม่จำเป็นต่อการแยก portable core
+D5–D7 ไม่ใช่ blockers แล้ว. D9 เป็น hard blocker ก่อนสร้าง resource; D10, D12 และ D13 เป็น hard blockers ก่อน final GO. D8 ต้องปิดก่อนยืนยัน concurrency contract แต่ไม่จำเป็นต่อการแยก portable core. D13 ต้องระบุทั้งตัวเลข session lifetime และ renewal path; ห้ามใช้ค่า default ของ provider เป็นคำตอบ
 
 ## 6. Consequences
 
@@ -221,6 +223,7 @@ D5–D7 ไม่ใช่ blockers แล้ว. D9 เป็น hard blocker �
 - **D9:** provider/account/domain, managed resource/schema, secrets, backup owner และ recovery owner
 - **D10:** outage UX, cached-read policy และ cutover/rollback acceptance
 - **D12:** actual mobile/browser/printer matrix และ final evidence
+- **D13:** kitchen-device session lifetime, renewal owner/mechanism และ expiry-cycle evidence ตอน TINE ไม่อยู่
 
 ไม่มีข้อใดอนุญาต cloud/backend/deploy ในรอบเอกสารนี้
 
@@ -233,7 +236,7 @@ D5–D7 ไม่ใช่ blockers แล้ว. D9 เป็น hard blocker �
 ADR ฉบับนี้พร้อมเปลี่ยนจาก `Partially accepted` เป็น `Accepted` เมื่อ:
 
 1. TINE รับหรือแก้ proposed owner/kitchen surface ใน implementation plan;
-2. D8–D10 และ D12 มีคำตอบพร้อม acceptance owner;
+2. D8–D10, D12 และ D13 มีคำตอบพร้อม acceptance owner;
 3. provider และ account owner ถูกเลือก;
 4. independent reviewer ยืนยันว่า decision ไม่เปิดเส้นทางแตะ Stock V1/V2, ไม่ทำให้ V4 เขียนได้ และ kitchen surface เขียน V5 ไม่ได้;
 5. TINE อนุมัติ ADR ฉบับสมบูรณ์และ implementation plan ก่อน coding
