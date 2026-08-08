@@ -2,11 +2,13 @@ import { Link, useLocation, useParams } from "react-router-dom";
 import type { CookbookSnapshot, IngredientLine, RecipeIdentity, RecipeVersion, WorkStage } from "../../domain/cookbook/types";
 import { buildRecipeGraph, dependencyFirstOrder, UnknownRecipeError } from "../../domain/graph/recipeGraph";
 import { evaluateReadiness } from "../../domain/review/readiness";
+import { projectKitchenSotPrintSnapshot } from "../../domain/sot/kitchenSotPrintProjection";
 import { projectWorkDocuments, type ProjectedWorkDocument } from "../../domain/work/workDocuments";
 import { usePrototype } from "../../prototype/PrototypeProvider";
 import { StepMediaEditor } from "../media/StepMediaEditor";
 import { decodeRecipeIdentity, encodeRecipeIdentity } from "../recipe/recipeRoute";
 import { deriveRecipeMediaCoverage } from "../recipe/recipeMediaCoverage";
+import { useOptionalKitchenSotDraft } from "../review/KitchenSotDraftProvider";
 
 const STAGES: WorkStage[] = ["prep", "cook", "service"];
 const STAGE_LABELS: Record<WorkStage, string> = {
@@ -81,20 +83,39 @@ function reachableRecipes(
   return { recipes, root };
 }
 
-function WorkDocumentView({ document, recipe, snapshot }: { document: ProjectedWorkDocument; recipe: RecipeVersion; snapshot: CookbookSnapshot }) {
+// Shared raw readiness is authoritative whenever the Kitchen SOT provider is
+// active. A missing raw identity must not silently become operationally ready.
+// eslint-disable-next-line react-refresh/only-export-components
+export function resolveWorkStageDraft(
+  recipe: RecipeVersion,
+  snapshot: CookbookSnapshot,
+  rawDraftById: ReadonlyMap<RecipeIdentity, boolean> | null,
+): boolean {
+  if (rawDraftById !== null) return rawDraftById.get(recipe.recipeId) ?? true;
+  return evaluateReadiness(
+    recipe,
+    deriveRecipeMediaCoverage(recipe, snapshot).coverage,
+  ).draft;
+}
+
+function WorkDocumentView({
+  document,
+  recipe,
+  snapshot,
+  draft,
+}: {
+  document: ProjectedWorkDocument;
+  recipe: RecipeVersion;
+  snapshot: CookbookSnapshot;
+  draft: boolean;
+}) {
   const media = deriveRecipeMediaCoverage(recipe, snapshot);
-  const readiness = evaluateReadiness(recipe, media.coverage);
-  const documentBlockers = new Set(document.blockers);
-  const readinessOnlyBlockers = readiness.blockers.filter(
-    (blocker) => !documentBlockers.has(blocker),
-  );
 
   return (
     <article aria-labelledby={`work-document-${document.recipeVersionId}-${document.stage}`}>
       <h4 id={`work-document-${document.recipeVersionId}-${document.stage}`}>{document.recipeName}</h4>
-      <p>{readiness.draft ? "DRAFT" : "พร้อมใช้งาน"}</p>
+      <p>{draft ? "DRAFT" : "พร้อมใช้งาน"}</p>
       {document.blockers.length > 0 && <ul aria-label={`ตัวขวางในเอกสารของ ${document.recipeName}`}>{document.blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}</ul>}
-      {readinessOnlyBlockers.length > 0 && <ul aria-label={`ตัวขวางความพร้อมของ ${document.recipeName}`}>{readinessOnlyBlockers.map((blocker) => <li key={blocker}>{blocker}</li>)}</ul>}
       <div aria-label={`สถานะรูปของ ${document.recipeName}`}>
         {media.missingMedia && <p>รูปขั้นตอนไม่ครบ</p>}
         {media.mediaReviewNeeded && <p>รูปต้องตรวจสอบ</p>}
@@ -126,7 +147,8 @@ function WorkDocumentView({ document, recipe, snapshot }: { document: ProjectedW
 export function WorkStagePage() {
   const { recipeId: routeSegment } = useParams();
   const location = useLocation();
-  const { snapshot } = usePrototype();
+  const { snapshot: sessionSnapshot } = usePrototype();
+  const kitchenSotDraft = useOptionalKitchenSotDraft();
   const identity = routeSegment === undefined ? null : decodeRecipeIdentity(routeSegment);
 
   if (identity === null || !routeSegment) {
@@ -147,7 +169,17 @@ export function WorkStagePage() {
   let documents: ProjectedWorkDocument[];
   let recipe: RecipeVersion;
   let documentRecipes: Map<string, RecipeVersion>;
+  let snapshot = sessionSnapshot;
+  let rawDraftById: ReadonlyMap<RecipeIdentity, boolean> | null = null;
   try {
+    if (kitchenSotDraft !== null) {
+      const projection = projectKitchenSotPrintSnapshot(
+        kitchenSotDraft.document,
+        sessionSnapshot,
+      );
+      snapshot = projection.snapshot;
+      rawDraftById = projection.recipeDraftById;
+    }
     const reachable = reachableRecipes(snapshot, identity);
     recipe = reachable.root;
     documentRecipes = new Map(
@@ -157,7 +189,7 @@ export function WorkStagePage() {
     for (const document of documents) {
       const documentRecipe = documentRecipes.get(identityKey(document.recipeId));
       if (!documentRecipe) throw new Error(`Projected recipe missing from snapshot: ${String(document.recipeId)}`);
-      evaluateReadiness(documentRecipe, deriveRecipeMediaCoverage(documentRecipe, snapshot).coverage);
+      resolveWorkStageDraft(documentRecipe, snapshot, rawDraftById);
     }
   } catch (error) {
     if (
@@ -202,7 +234,13 @@ export function WorkStagePage() {
               const documentRecipe = documentRecipes.get(identityKey(document.recipeId));
               if (!documentRecipe) return null;
               return (
-                <WorkDocumentView key={`${typeof document.recipeId}:${String(document.recipeId)}:${document.recipeVersionId}:${stage}`} document={document} recipe={documentRecipe} snapshot={snapshot} />
+                <WorkDocumentView
+                  key={`${typeof document.recipeId}:${String(document.recipeId)}:${document.recipeVersionId}:${stage}`}
+                  document={document}
+                  recipe={documentRecipe}
+                  snapshot={snapshot}
+                  draft={resolveWorkStageDraft(documentRecipe, snapshot, rawDraftById)}
+                />
               );
             })}
           </section>

@@ -10,6 +10,7 @@ import {
 } from "../../domain/sot/kitchenSotDocument";
 import type { KitchenSotEdit } from "../../domain/sot/kitchenSotEdits";
 import { useKitchenSotDraft } from "./KitchenSotDraftProvider";
+import "./recipe-studio.css";
 
 function identityKey(identity: RecipeIdentity): string {
   return typeof identity === "number"
@@ -57,94 +58,124 @@ function ItemEditor({
   const [servingNote, setServingNote] = useState(servingValue);
   const [costBasis, setCostBasis] = useState(costBasisValue);
   const [ownerError, setOwnerError] = useState<string | null>(null);
+  const ownerInputId = useId();
   const ownerErrorId = useId();
+  const servingInputId = useId();
+  const costBasisInputId = useId();
 
   return (
-    <fieldset className="sot-edit-grid">
+    <fieldset className="sot-edit-grid recipe-studio__item-row">
       <legend>{item.item_name}</legend>
-      <p>ค่าที่ใช้แสดง: {item.candidate_text ?? "รอข้อมูล"}</p>
-      <p>แหล่งที่เลือก: {item.selected_source ?? "ยังไม่เลือก"}</p>
-      <p>สถานะการตัดสินใจ: {item.decision_status}</p>
-      <dl aria-label={`หลักฐานต้นทาง — ${item.item_name}`}>
-        {Object.entries(item.source_values).map(([source, value]) => (
-          <div key={source} data-testid="sot-source-evidence">
-            <dt>{source}</dt>
-            <dd><pre>{sourceEvidenceText(value)}</pre></dd>
-          </div>
-        ))}
-      </dl>
+      <p className="recipe-studio__current-value">
+        ตอนนี้ใช้: <strong>{item.candidate_text ?? "ยังรอคำตอบ"}</strong>
+      </p>
       {isOwnerProvenanceIncomplete(item) && (
-        <p className="sot-provenance-warning">ข้อมูลยืนยันเจ้าของไม่ครบ</p>
+        <p className="sot-provenance-warning">ยังรอคำตอบจากทีมครัว</p>
       )}
 
-      <label>
-        ค่าหน้าครัว — {item.item_name}
-        <input
-          disabled={locked}
-          value={owner}
-          aria-invalid={ownerError !== null}
-          aria-describedby={ownerError === null ? undefined : ownerErrorId}
-          onChange={(event) => {
-            setOwner(event.target.value);
-            setOwnerError(null);
-          }}
-          onBlur={() => {
-            if (owner === ownerValue) return;
-            if (owner.trim() === "") {
-              setOwner(ownerValue);
-              setOwnerError("ค่าหน้าครัวต้องไม่ว่าง ระบบคืนค่าเดิมแล้ว");
-              return;
-            }
-            setOwnerError(null);
-            applyEdit({
-              kind: "item-owner-confirmation",
-              recipeId,
-              lineKey: item.line_key,
-              value: owner,
-              confirmedOn: localIsoDate(),
-            });
-          }}
-        />
+      <label className="recipe-studio__primary-question" htmlFor={ownerInputId}>
+        ทีมครัวใช้ {item.item_name} เท่าไร? (ต้องกรอก)
       </label>
+      <input
+        id={ownerInputId}
+        className="recipe-studio__primary-input"
+        disabled={locked}
+        value={owner}
+        aria-invalid={ownerError !== null}
+        aria-describedby={ownerError === null ? undefined : ownerErrorId}
+        onChange={(event) => {
+          setOwner(event.target.value);
+          setOwnerError(null);
+        }}
+        onBlur={() => {
+          if (owner === ownerValue) return;
+          if (owner.trim() === "") {
+            setOwner(ownerValue);
+            setOwnerError("กรอกปริมาณที่ทีมครัวใช้ก่อน ระบบคืนค่าเดิมให้แล้ว");
+            return;
+          }
+          setOwnerError(null);
+          applyEdit({
+            kind: "item-owner-confirmation",
+            recipeId,
+            lineKey: item.line_key,
+            value: owner,
+            confirmedOn: localIsoDate(),
+          });
+        }}
+      />
+      <small className="recipe-studio__field-help">
+        ตัวอย่าง: 30 กรัมต่อจาน · 1 ทัพพี · ครึ่งช้อนโต๊ะ
+      </small>
       {ownerError && <p id={ownerErrorId} role="alert">{ownerError}</p>}
 
-      <label>
-        หมายเหตุปริมาณเสิร์ฟ — {item.item_name}
-        <input
-          disabled={locked}
-          value={servingNote}
-          onChange={(event) => setServingNote(event.target.value)}
-          onBlur={() => {
-            if (servingNote !== servingValue) {
-              applyEdit({
-                kind: "item-serving-note",
-                recipeId,
-                lineKey: item.line_key,
-                value: servingNote,
-              });
-            }
-          }}
-        />
-      </label>
+      <details className="recipe-studio__optional-fields">
+        <summary>ตัวเลือกเพิ่มเติม (ไม่บังคับ)</summary>
+        <div className="recipe-studio__optional-content">
+          <p className="recipe-studio__optional-intro">
+            กรอกส่วนนี้เฉพาะเมื่อปริมาณตอนเสิร์ฟหรือปริมาณที่ใช้คิดต้นทุนต่างจากคำตอบด้านบน
+          </p>
 
-      <label>
-        ฐานต้นทุน — {item.item_name}
-        <input
-          disabled={locked}
-          value={costBasis}
-          onChange={(event) => setCostBasis(event.target.value)}
-          onBlur={() => {
-            if (costBasis !== costBasisValue) {
-              applyEdit({
-                kind: "item-cost-basis",
-                recipeId,
-                lineKey: item.line_key,
-                value: costBasis,
-              });
-            }
-          }}
-        />
-      </label>
+          <div className="recipe-studio__source-context">
+            <p>แหล่งข้อมูลเดิม: {item.selected_source ?? "ยังไม่เลือก"}</p>
+            <p>สถานะเดิม: {item.decision_status}</p>
+            <dl aria-label={`หลักฐานต้นทาง — ${item.item_name}`}>
+              {Object.entries(item.source_values).map(([source, value]) => (
+                <div key={source} data-testid="sot-source-evidence">
+                  <dt>{source}</dt>
+                  <dd><pre>{sourceEvidenceText(value)}</pre></dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="recipe-studio__optional-field">
+            <label htmlFor={servingInputId}>ปริมาณตอนเสิร์ฟ (ไม่บังคับ)</label>
+            <input
+              id={servingInputId}
+              disabled={locked}
+              value={servingNote}
+              onChange={(event) => setServingNote(event.target.value)}
+              onBlur={() => {
+                if (servingNote !== servingValue) {
+                  applyEdit({
+                    kind: "item-serving-note",
+                    recipeId,
+                    lineKey: item.line_key,
+                    value: servingNote,
+                  });
+                }
+              }}
+            />
+            <small className="recipe-studio__field-help">
+              กรอกเมื่อปริมาณที่เสิร์ฟต่างจากคำตอบหลัก
+            </small>
+          </div>
+
+          <div className="recipe-studio__optional-field">
+            <label htmlFor={costBasisInputId}>ปริมาณสำหรับคิดต้นทุน (ไม่บังคับ)</label>
+            <input
+              id={costBasisInputId}
+              disabled={locked}
+              value={costBasis}
+              onChange={(event) => setCostBasis(event.target.value)}
+              onBlur={() => {
+                if (costBasis !== costBasisValue) {
+                  applyEdit({
+                    kind: "item-cost-basis",
+                    recipeId,
+                    lineKey: item.line_key,
+                    value: costBasis,
+                  });
+                }
+              }}
+            />
+            <small className="recipe-studio__field-help">
+              กรอกเมื่อปริมาณที่ใช้คิดต้นทุนต่างจากคำตอบหลัก
+            </small>
+          </div>
+        </div>
+      </details>
     </fieldset>
   );
 }
@@ -207,7 +238,7 @@ function MethodAndYieldEditor({
   }
 
   return (
-    <section className="sot-edit-grid" aria-labelledby="sot-method-title">
+    <section className="sot-edit-grid recipe-studio__section recipe-studio__method-card" aria-labelledby="sot-method-title">
       <h4 id="sot-method-title">วิธีทำและผลผลิต</h4>
       <label>
         วิธีทำจากหน้าครัว
@@ -301,7 +332,7 @@ function BlockerEditor({
   }
 
   return (
-    <li className="sot-blocker">
+    <li className="sot-blocker recipe-studio__blocker-card">
       <p data-testid="sot-blocker">{blocker.message}</p>
       {resolved ? (
         <p>ปิดแล้ว: {blocker.resolved_note} · {blocker.resolved_at}</p>
@@ -360,6 +391,9 @@ function BlockerEditor({
 
 export function KitchenSotFillSurface() {
   const draft = useKitchenSotDraft();
+  const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"all" | "sellable_menu" | "prepared_recipe">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "ready">("all");
   const [selectedKey, setSelectedKey] = useState(() =>
     draft.document.recipes[0] ? identityKey(draft.document.recipes[0].recipe_id) : ""
   );
@@ -367,103 +401,175 @@ export function KitchenSotFillSurface() {
     ({ recipe_id }) => identityKey(recipe_id) === selectedKey,
   ) ?? draft.document.recipes[0];
   const saving = draft.saveState === "saving";
+  const normalizedQuery = query.trim().toLocaleLowerCase("th");
+  const visibleRecipes = draft.document.recipes.filter((recipe) => {
+    const matchesQuery = recipe.recipe_name.toLocaleLowerCase("th").includes(normalizedQuery);
+    const matchesType = typeFilter === "all" || recipe.recipe_type === typeFilter;
+    const recipeIsDraft = isKitchenSotRecipeDraft(recipe);
+    const matchesStatus = statusFilter === "all" ||
+      (statusFilter === "draft" ? recipeIsDraft : !recipeIsDraft);
+    return matchesQuery && matchesType && matchesStatus;
+  });
 
   return (
-    <section className="source-review-page" aria-labelledby="source-review-title">
-      <header>
-        <h2 id="source-review-title">Recipe Studio: ร่าง Kitchen SOT V5</h2>
-        <div className="sot-summary" aria-label="สรุปข้อมูล Kitchen SOT">
-          <p>{draft.summary.recipeCount} สูตร</p>
-          <p>{draft.summary.sellableMenuCount} เมนูขาย + {draft.summary.preparedRecipeCount} สูตรประกอบ</p>
-          <p>{draft.summary.itemFillTargetCount} รายการรอกรอก/เคาะ</p>
-          <p>{draft.summary.blockerCount} ตัวขวาง</p>
-        </div>
+    <section className="recipe-studio" aria-labelledby="source-review-title">
+      <header className="recipe-studio__intro">
+        <h2 id="source-review-title">กรอกสูตรจากทีมครัว</h2>
+        <p>เลือกสูตร แล้วกรอกปริมาณหรือวิธีทำตามคำตอบที่ได้รับ โดยคงหน่วยครัวเดิม</p>
+        <section className="recipe-studio__summary" aria-label="สรุปข้อมูล Kitchen SOT">
+          <span><strong>{draft.summary.recipeCount} สูตร</strong></span>
+          <span>{draft.summary.sellableMenuCount} เมนูขาย + {draft.summary.preparedRecipeCount} สูตรประกอบ</span>
+          <span>{draft.summary.itemFillTargetCount} รายการรอกรอก/เคาะ</span>
+          <span>{draft.summary.blockerCount} ตัวขวาง</span>
+        </section>
       </header>
 
-      <nav aria-label="คิวสูตร Kitchen SOT">
-        <ul>
-          {draft.document.recipes.map((recipe) => {
-            const unresolvedBlockers = recipe.blockers.filter(({ resolved }) => resolved !== true).length;
-            const provenanceIncomplete = recipe.items.some(isOwnerProvenanceIncomplete);
-            return (
-              <li key={identityKey(recipe.recipe_id)}>
-                <button
-                  type="button"
-                  aria-pressed={identityKey(recipe.recipe_id) === identityKey(selectedRecipe?.recipe_id ?? "")}
-                  onClick={() => setSelectedKey(identityKey(recipe.recipe_id))}
-                >
-                  {recipe.recipe_name} · revision {displayString(recipe.recipe_version_id, "ไม่ระบุ")} · {isKitchenSotRecipeDraft(recipe) ? "DRAFT" : "พร้อมจากข้อมูลปัจจุบัน"} · {unresolvedBlockers} ตัวขวางที่ยังไม่จบ{provenanceIncomplete ? " · ข้อมูลยืนยันเจ้าของไม่ครบ" : ""}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-
-      {selectedRecipe && (
-        <article aria-labelledby="selected-review-title">
-          <header>
-            <h3 id="selected-review-title">{selectedRecipe.recipe_name}</h3>
-            <p>revision: {displayString(selectedRecipe.recipe_version_id, "ไม่ระบุ")}</p>
-            <p role="status" aria-label="สถานะสูตร">
-              {isKitchenSotRecipeDraft(selectedRecipe) ? "DRAFT" : "พร้อมจากข้อมูลปัจจุบัน"}
-            </p>
+      <div className="recipe-studio__workspace">
+        <nav className="recipe-studio__queue" aria-label="คิวสูตร Kitchen SOT">
+          <header className="recipe-studio__queue-header">
+            <h3>เลือกสูตร</h3>
+            <p>ค้นหาตามชื่อ แล้วเปิดสูตรที่ต้องการกรอก</p>
           </header>
-
-          <section aria-labelledby="sot-items-title">
-            <h4 id="sot-items-title">วัตถุดิบและหลักฐานที่เลือก</h4>
-            {selectedRecipe.items.map((item) => (
-              <ItemEditor
-                key={JSON.stringify([identityKey(selectedRecipe.recipe_id), item.line_key])}
-                recipeId={selectedRecipe.recipe_id}
-                item={item}
-                applyEdit={draft.applyEdit}
-                locked={saving}
+          <div className="recipe-studio__filters">
+            <label>
+              ค้นหาสูตร
+              <input
+                type="search"
+                value={query}
+                placeholder="ชื่อเมนูหรือสูตรประกอบ"
+                onChange={(event) => setQuery(event.target.value)}
               />
-            ))}
-          </section>
+            </label>
+            <label>
+              ประเภทสูตร
+              <select
+                value={typeFilter}
+                onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)}
+              >
+                <option value="all">ทั้งหมด</option>
+                <option value="sellable_menu">เมนูขาย</option>
+                <option value="prepared_recipe">สูตรประกอบ</option>
+              </select>
+            </label>
+            <label>
+              สถานะ
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}
+              >
+                <option value="all">ทั้งหมด</option>
+                <option value="draft">DRAFT</option>
+                <option value="ready">พร้อมจากข้อมูลปัจจุบัน</option>
+              </select>
+            </label>
+          </div>
+          <ul>
+            {visibleRecipes.map((recipe) => {
+              const unresolvedBlockers = recipe.blockers.filter(({ resolved }) => resolved !== true).length;
+              const provenanceIncomplete = recipe.items.some(isOwnerProvenanceIncomplete);
+              const recipeIsDraft = isKitchenSotRecipeDraft(recipe);
+              return (
+                <li key={identityKey(recipe.recipe_id)}>
+                  <button
+                    type="button"
+                    aria-pressed={identityKey(recipe.recipe_id) === identityKey(selectedRecipe?.recipe_id ?? "")}
+                    onClick={() => setSelectedKey(identityKey(recipe.recipe_id))}
+                  >
+                    <span className="recipe-studio__queue-name">{recipe.recipe_name}</span>
+                    <span className="recipe-studio__queue-meta">
+                      {recipe.recipe_type === "sellable_menu" ? "เมนูขาย" : "สูตรประกอบ"} · revision {displayString(recipe.recipe_version_id, "ไม่ระบุ")}
+                    </span>
+                    <span className={`recipe-studio__queue-status ${recipeIsDraft ? "is-draft" : "is-ready"}`}>
+                      {recipeIsDraft ? "DRAFT" : "พร้อมจากข้อมูลปัจจุบัน"}
+                    </span>
+                    <span className="recipe-studio__queue-meta">
+                      {unresolvedBlockers} ตัวขวางที่ยังไม่จบ{provenanceIncomplete ? " · ยังรอคำตอบจากทีมครัว" : ""}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {visibleRecipes.length === 0 && <p className="recipe-studio__empty">ไม่พบสูตรตามตัวกรอง</p>}
+        </nav>
 
-          <MethodAndYieldEditor
-            key={identityKey(selectedRecipe.recipe_id)}
-            recipe={selectedRecipe}
-            applyEdit={draft.applyEdit}
-            locked={saving}
-          />
+        {selectedRecipe && (
+          <article
+            className="recipe-studio__detail"
+            aria-label={`รายละเอียดสูตร ${selectedRecipe.recipe_name}`}
+          >
+            <header>
+              <p className="recipe-studio__folio-label">
+                แฟ้มสูตรครัว · {selectedRecipe.recipe_type === "sellable_menu" ? "เมนูขาย" : "สูตรประกอบ"}
+              </p>
+              <h3 id="selected-review-title">{selectedRecipe.recipe_name}</h3>
+              <p className="recipe-studio__revision">
+                Revision {displayString(selectedRecipe.recipe_version_id, "ไม่ระบุ")}
+              </p>
+              <p
+                className={`recipe-studio__status ${isKitchenSotRecipeDraft(selectedRecipe) ? "is-draft" : "is-ready"}`}
+                role="status"
+                aria-label="สถานะสูตร"
+              >
+                {isKitchenSotRecipeDraft(selectedRecipe) ? "DRAFT" : "พร้อมจากข้อมูลปัจจุบัน"}
+              </p>
+            </header>
 
-          <section aria-labelledby="sot-blockers-title">
-            <h4 id="sot-blockers-title">ตัวขวางความพร้อม</h4>
-            {selectedRecipe.blockers.length === 0 ? <p>ไม่มีตัวขวาง</p> : (
-              <ul>
-                {selectedRecipe.blockers.map((blocker, blockerIndex) => (
-                  <BlockerEditor
-                    key={JSON.stringify([identityKey(selectedRecipe.recipe_id), blockerIndex])}
-                    recipe={selectedRecipe}
-                    blocker={blocker}
-                    blockerIndex={blockerIndex}
-                    applyEdit={draft.applyEdit}
-                    locked={saving}
-                  />
-                ))}
-              </ul>
-            )}
-          </section>
-        </article>
-      )}
+            <section className="recipe-studio__section" aria-labelledby="sot-items-title">
+              <h4 id="sot-items-title">วัตถุดิบ</h4>
+              {selectedRecipe.items.map((item) => (
+                <ItemEditor
+                  key={JSON.stringify([identityKey(selectedRecipe.recipe_id), item.line_key])}
+                  recipeId={selectedRecipe.recipe_id}
+                  item={item}
+                  applyEdit={draft.applyEdit}
+                  locked={saving}
+                />
+              ))}
+            </section>
 
-      <footer className="sot-save-bar">
-        <button
-          type="button"
-          disabled={!draft.dirty || saving || draft.saveState === "stale"}
-          onClick={() => void draft.save()}
-        >
-          {saving ? "กำลังบันทึก…" : "บันทึกฉบับร่าง V5"}
-        </button>
-        <p role="status" aria-label="สถานะการบันทึก">
-          {saving
-            ? "กำลังบันทึก…"
-            : draft.saveMessage ?? (draft.dirty ? "มีการแก้ไขที่ยังไม่บันทึก" : "ยังไม่มีการแก้ไข")}
-        </p>
-      </footer>
+            <MethodAndYieldEditor
+              key={identityKey(selectedRecipe.recipe_id)}
+              recipe={selectedRecipe}
+              applyEdit={draft.applyEdit}
+              locked={saving}
+            />
+
+            <section className="recipe-studio__section" aria-labelledby="sot-blockers-title">
+              <h4 id="sot-blockers-title">ตัวขวางความพร้อม</h4>
+              {selectedRecipe.blockers.length === 0 ? <p>ไม่มีตัวขวาง</p> : (
+                <ul>
+                  {selectedRecipe.blockers.map((blocker, blockerIndex) => (
+                    <BlockerEditor
+                      key={JSON.stringify([identityKey(selectedRecipe.recipe_id), blockerIndex])}
+                      recipe={selectedRecipe}
+                      blocker={blocker}
+                      blockerIndex={blockerIndex}
+                      applyEdit={draft.applyEdit}
+                      locked={saving}
+                    />
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <footer className="sot-save-bar">
+              <button
+                type="button"
+                disabled={!draft.dirty || saving || draft.saveState === "stale"}
+                onClick={() => void draft.save()}
+              >
+                {saving ? "กำลังบันทึก…" : "บันทึกฉบับร่าง V5"}
+              </button>
+              <p role="status" aria-label="สถานะการบันทึก">
+                {saving
+                  ? "กำลังบันทึก…"
+                  : draft.saveMessage ?? (draft.dirty ? "มีการแก้ไขที่ยังไม่บันทึก" : "ยังไม่มีการแก้ไข")}
+              </p>
+            </footer>
+          </article>
+        )}
+      </div>
     </section>
   );
 }

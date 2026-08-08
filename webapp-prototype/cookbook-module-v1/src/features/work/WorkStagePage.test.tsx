@@ -1,13 +1,24 @@
-import { cleanup, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vitest";
+import type {
+  KitchenSotDraftClient,
+  LoadedKitchenSotDraft,
+} from "../../data/KitchenSotDraftClient";
+import fixture from "../../data/fixtures/first-set.json";
 import type { CookbookSnapshot, RecipeVersion, WorkStage } from "../../domain/cookbook/types";
 import { FixtureCookbookRepository } from "../../data/FixtureCookbookRepository";
+import {
+  parseKitchenSotDocument,
+  type KitchenSotDocument,
+} from "../../domain/sot/kitchenSotDocument";
+import { PrototypeContext, type PrototypeContextValue } from "../../prototype/PrototypeProvider";
 import { makeIngredientLine, makeMediaAsset, makeRecipe, makeSnapshot, makeStepMediaLink, makeWorkStep } from "../../test/builders";
 import { renderWithPrototype } from "../../test/renderWithPrototype";
 import { encodeRecipeIdentity } from "../recipe/recipeRoute";
-import { WorkStagePage } from "./WorkStagePage";
+import { KitchenSotDraftProvider } from "../review/KitchenSotDraftProvider";
+import { resolveWorkStageDraft, WorkStagePage } from "./WorkStagePage";
 
 afterEach(cleanup);
 afterAll(() => vi.restoreAllMocks());
@@ -23,6 +34,59 @@ function renderWork(options: { snapshot: CookbookSnapshot; route: string }) {
     options,
   );
 }
+
+function loadedKitchenSotDraft(document: KitchenSotDocument): LoadedKitchenSotDraft {
+  return {
+    document,
+    origin: "v5-draft",
+    sourcePath: "Operations/CookBook/sot/v4-2026-08-05/source/kitchen-sot-first-set-v2.json",
+    sourceSha256: "a".repeat(64),
+    baseSha256: "b".repeat(64),
+  };
+}
+
+function prototypeContext(snapshot: CookbookSnapshot): PrototypeContextValue {
+  return {
+    snapshot,
+    dirty: false,
+    persistence: "session",
+    dispatch: () => ({ ok: true }),
+    createSessionObjectUrl: () => "blob:unused",
+    releaseSessionObjectUrl: () => undefined,
+    isSessionObjectUrl: () => false,
+  };
+}
+
+function renderWithKitchenSotDocument(
+  document: KitchenSotDocument,
+  route: string,
+  clientOverride?: KitchenSotDraftClient,
+) {
+  const client: KitchenSotDraftClient = clientOverride ?? {
+    load: vi.fn(async () => loadedKitchenSotDraft(document)),
+    save: vi.fn(async (submitted) => ({
+      document: submitted,
+      sha256: "c".repeat(64),
+      base_sha256: "c".repeat(64),
+      generatedAt: submitted.generated_at,
+      path: "Operations/CookBook/sot/v5-draft/kitchen-sot-first-set-v5-draft.json",
+    })),
+  };
+  return render(
+    <PrototypeContext.Provider value={prototypeContext(firstSet)}>
+      <KitchenSotDraftProvider client={client}>
+        <MemoryRouter initialEntries={[route]}>
+          <Routes><Route path="/work/:recipeId" element={<WorkStagePage />} /></Routes>
+        </MemoryRouter>
+      </KitchenSotDraftProvider>
+    </PrototypeContext.Provider>,
+  );
+}
+
+const rawRecipes = parseKitchenSotDocument(fixture).recipes.map((recipe) => ({
+  recipeId: recipe.recipe_id,
+  recipeName: recipe.recipe_name,
+}));
 
 function document(stage: WorkStage, lineKey: string, instruction: string) {
   return {
@@ -51,6 +115,111 @@ function stagedRecipe(overrides: Partial<RecipeVersion> = {}): RecipeVersion {
 }
 
 describe("WorkStagePage", () => {
+  test("uses the loaded V5 candidate text instead of the stale read projection", async () => {
+    const document = parseKitchenSotDocument(fixture);
+    const rice = document.recipes.find(({ recipe_id }) => recipe_id === 165)!.items
+      .find(({ item_name }) => item_name === "ข้าวหอมมะลิหุงสุก")!;
+    rice.candidate_text = "199 กรัม จาก V5";
+
+    renderWithKitchenSotDocument(document, "/work/165?stage=service");
+
+    expect(await screen.findByText("199 กรัม จาก V5")).toBeVisible();
+    expect(screen.queryByText("180 กรัม")).not.toBeInTheDocument();
+    expect(screen.queryByText("72 กรัม")).not.toBeInTheDocument();
+  });
+
+  test.each(rawRecipes)(
+    "opens raw recipe $recipeId ($recipeName) with its mixed identity preserved",
+    async ({ recipeId, recipeName }) => {
+      renderWithKitchenSotDocument(
+        parseKitchenSotDocument(fixture),
+        `/work/${encodeRecipeIdentity(recipeId)}?stage=all`,
+      );
+
+      expect(await screen.findByRole("heading", { level: 2, name: recipeName })).toBeVisible();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    },
+  );
+
+  test("keeps provenance-incomplete recipe 159 DRAFT through the shared raw predicate", async () => {
+    renderWithKitchenSotDocument(parseKitchenSotDocument(fixture), "/work/159?stage=all");
+
+    const article = await screen.findByRole("article", { name: "ข้าวหน้าเนื้อยากินิกุ" });
+    expect(within(article).getByText("DRAFT")).toBeVisible();
+    expect(within(article).queryByText("พร้อมใช้งาน")).not.toBeInTheDocument();
+  });
+
+  test("shows only exact unresolved blocker messages from the raw document", async () => {
+    const document = parseKitchenSotDocument(fixture);
+    const recipe = document.recipes.find(({ recipe_id }) => recipe_id === 164)!;
+    const blocker = recipe.blockers[0]!;
+
+    const unresolved = renderWithKitchenSotDocument(document, "/work/164?stage=prep");
+    expect(await screen.findByText(blocker.message)).toBeVisible();
+    expect(screen.queryByText("สูตรมีตัวขวางที่ยังไม่ปิด")).not.toBeInTheDocument();
+    unresolved.unmount();
+
+    blocker.resolved = true;
+    blocker.resolved_note = "เจ้าของยืนยันแล้ว";
+    blocker.resolved_at = "2026-08-08T00:00:00.000Z";
+    renderWithKitchenSotDocument(document, "/work/164?stage=prep");
+    await screen.findByRole("heading", { level: 2, name: recipe.recipe_name });
+    expect(screen.queryByText(blocker.message)).not.toBeInTheDocument();
+  });
+
+  test.each([2, 160, 9, 161, 162])(
+    "renders missing-method recipe %s as a non-empty DRAFT without invented steps",
+    async (recipeId) => {
+      const document = parseKitchenSotDocument(fixture);
+      const recipe = document.recipes.find(({ recipe_id }) => recipe_id === recipeId)!;
+
+      renderWithKitchenSotDocument(
+        document,
+        `/work/${encodeRecipeIdentity(recipeId)}?stage=all`,
+      );
+
+      const article = await screen.findByRole("article", { name: recipe.recipe_name });
+      expect(within(article).getByText("DRAFT")).toBeVisible();
+      expect(within(article).getAllByRole("row").length).toBeGreaterThan(1);
+      expect(article.querySelector("ol")).toBeNull();
+    },
+  );
+
+  test("renders recipe 162 with four ingredient rows and zero invented steps", async () => {
+    renderWithKitchenSotDocument(parseKitchenSotDocument(fixture), "/work/162?stage=all");
+
+    const article = await screen.findByRole("article", { name: "ผงคั่วพริกเกลือ" });
+    expect(within(article).getAllByRole("row")).toHaveLength(5);
+    expect(article.querySelector("ol")).toBeNull();
+  });
+
+  test("fails closed when a raw readiness map has no entry for a projected recipe", () => {
+    const recipe = stagedRecipe({ blockers: [] });
+    const snapshot = makeSnapshot({ recipes: [recipe] });
+
+    expect(resolveWorkStageDraft(recipe, snapshot, new Map())).toBe(true);
+    expect(resolveWorkStageDraft(recipe, snapshot, new Map([[recipe.recipeId, false]])))
+      .toBe(false);
+  });
+
+  test("fails closed when the raw Kitchen SOT document cannot load", async () => {
+    const client: KitchenSotDraftClient = {
+      load: vi.fn(async () => { throw new Error("RAW_LOAD_FAILED"); }),
+      save: vi.fn(),
+    };
+    renderWithKitchenSotDocument(
+      parseKitchenSotDocument(fixture),
+      "/work/165?stage=service",
+      client,
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "โหลดร่าง Kitchen SOT ไม่สำเร็จ: Error",
+    );
+    expect(screen.queryByRole("heading", { level: 2, name: "ข้าวหน้าเนื้อตุ๋น" }))
+      .not.toBeInTheDocument();
+  });
+
   test.each([
     ["numeric", "/work/404?stage=all"],
     ["encoded string", `/work/${encodeRecipeIdentity("candidate:missing")}?stage=all`],

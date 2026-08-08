@@ -3,8 +3,16 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { FixtureCookbookRepository } from "../../data/FixtureCookbookRepository";
+import type {
+  KitchenSotDraftClient,
+  LoadedKitchenSotDraft,
+} from "../../data/KitchenSotDraftClient";
 import type { CookbookSnapshot } from "../../domain/cookbook/types";
 import { buildMediaIndex, buildPrintPlan } from "../../domain/print/printPlanner";
+import {
+  parseKitchenSotDocument,
+  type KitchenSotDocument,
+} from "../../domain/sot/kitchenSotDocument";
 import { projectWorkDocuments } from "../../domain/work/workDocuments";
 import {
   makeIngredientLine,
@@ -16,6 +24,8 @@ import {
 } from "../../test/builders";
 import { renderWithPrototype } from "../../test/renderWithPrototype";
 import { PrototypeContext, type PrototypeContextValue } from "../../prototype/PrototypeProvider";
+import fixture from "../../data/fixtures/first-set.json";
+import { KitchenSotDraftProvider } from "../review/KitchenSotDraftProvider";
 import { PrintCenterPage } from "./PrintCenterPage";
 import { WorkstationCard } from "./WorkstationCard";
 
@@ -77,11 +87,106 @@ function renderWithRawSnapshot(snapshot: CookbookSnapshot) {
   );
 }
 
+function loadedKitchenSotDraft(document: KitchenSotDocument): LoadedKitchenSotDraft {
+  return {
+    document,
+    origin: "v5-draft",
+    sourcePath: "Operations/CookBook/sot/v4-2026-08-05/source/kitchen-sot-first-set-v2.json",
+    sourceSha256: "a".repeat(64),
+    baseSha256: "b".repeat(64),
+  };
+}
+
+function renderWithKitchenSotDocument(
+  document: KitchenSotDocument,
+  initialRecipeIds: number[],
+) {
+  const client: KitchenSotDraftClient = {
+    load: vi.fn(async () => loadedKitchenSotDraft(document)),
+    save: vi.fn(async (submitted) => ({
+      document: submitted,
+      sha256: "c".repeat(64),
+      base_sha256: "c".repeat(64),
+      generatedAt: submitted.generated_at,
+      path: "Operations/CookBook/sot/v5-draft/kitchen-sot-first-set-v5-draft.json",
+    })),
+  };
+  const context: PrototypeContextValue = {
+    snapshot: firstSet,
+    dirty: false,
+    persistence: "session",
+    dispatch: () => ({ ok: true }),
+    createSessionObjectUrl: () => "blob:unused",
+    releaseSessionObjectUrl: () => undefined,
+    isSessionObjectUrl: () => false,
+  };
+  return render(
+    <PrototypeContext.Provider value={context}>
+      <KitchenSotDraftProvider client={client}>
+        <MemoryRouter><PrintCenterPage initialRecipeIds={initialRecipeIds} /></MemoryRouter>
+      </KitchenSotDraftProvider>
+    </PrototypeContext.Provider>,
+  );
+}
+
 describe("PrintCenterPage", () => {
+  test("uses the loaded V5 raw document instead of the stale read projection", async () => {
+    const document = parseKitchenSotDocument(fixture);
+    const rice = document.recipes.find(({ recipe_id }) => recipe_id === 165)!.items
+      .find(({ item_name }) => item_name === "ข้าวหอมมะลิหุงสุก")!;
+    rice.candidate_text = "199 กรัม จาก V5";
+
+    renderWithKitchenSotDocument(document, [165]);
+
+    expect(await screen.findByText("ข้อมูลสูตร: V5 draft ในเครื่อง")).toBeVisible();
+    expect(screen.getByText("199 กรัม จาก V5")).toBeVisible();
+    expect(screen.queryByText("180 กรัม")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("checkbox")).toHaveLength(18);
+  });
+
+  test("keeps provenance-incomplete recipe 159 DRAFT through the shared raw predicate", async () => {
+    renderWithKitchenSotDocument(parseKitchenSotDocument(fixture), [159]);
+
+    const cards = await screen.findAllByRole("article", { name: /ข้าวหน้าเนื้อยากินิกุ/u });
+    expect(cards.length).toBeGreaterThan(0);
+    for (const card of cards) {
+      expect(within(card).getByText("สถานะสูตร: ฉบับร่าง")).toBeVisible();
+      expect(within(card).queryByText("สถานะสูตร: พร้อมตามเกณฑ์พิมพ์"))
+        .not.toBeInTheDocument();
+    }
+  });
+
+  test("prints each unresolved raw blocker message without rewriting it", async () => {
+    const document = parseKitchenSotDocument(fixture);
+    const message = document.recipes.find(({ recipe_id }) => recipe_id === 164)!.blockers[0]!.message;
+
+    renderWithKitchenSotDocument(document, [164]);
+
+    expect((await screen.findAllByText(message)).length).toBeGreaterThan(0);
+    expect(globalThis.document.querySelectorAll(".workstation-sheet")).toHaveLength(6);
+  });
+
+  test.each([2, 160, 9, 161, 162])(
+    "renders missing-method recipe %s as one printable DRAFT sheet",
+    async (recipeId) => {
+      const document = parseKitchenSotDocument(fixture);
+      const recipe = document.recipes.find(({ recipe_id }) => recipe_id === recipeId)!;
+
+      renderWithKitchenSotDocument(document, [recipeId]);
+
+      const cards = await screen.findAllByRole("article", {
+        name: new RegExp(`${recipe.recipe_name} · ผลิตซอสและของเตรียม`, "u"),
+      });
+      expect(cards).toHaveLength(1);
+      expect(within(cards[0]!).getByText("สถานะสูตร: ฉบับร่าง")).toBeVisible();
+    },
+  );
+
   test("defaults to an automatic A5 workstation recommendation", () => {
     renderWithPrototype(<PrintCenterPage initialRecipeIds={[165]} />, { snapshot: firstSet });
 
     expect(screen.getByText("ตัวอย่าง A5 แนวนอนสำหรับจุดงาน · แนะนำอัตโนมัติ")).toBeVisible();
+    expect(document.querySelectorAll(".workstation-sheet")).toHaveLength(9);
     const sheet = document.querySelector(".workstation-sheet");
     expect(sheet).toHaveAttribute("data-page-name", "workstation");
     expect(sheet).toHaveAttribute("data-sheet-size", "210mm × 148mm");

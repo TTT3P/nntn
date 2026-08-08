@@ -24,9 +24,11 @@ import {
   type WorkstationPage,
 } from "../../domain/print/printPlanner";
 import { evaluateReadiness } from "../../domain/review/readiness";
+import { projectKitchenSotPrintSnapshot } from "../../domain/sot/kitchenSotPrintProjection";
 import { projectWorkDocuments } from "../../domain/work/workDocuments";
 import { usePrototype } from "../../prototype/PrototypeProvider";
 import { deriveRecipeMediaCoverage } from "../recipe/recipeMediaCoverage";
+import { useOptionalKitchenSotDraft } from "../review/KitchenSotDraftProvider";
 import { WorkstationCard } from "./WorkstationCard";
 import "./print.css";
 
@@ -339,6 +341,7 @@ export function PrintCenterPage({
   initialRecipeIds?: number[];
 }) {
   const { snapshot: rawSnapshot } = usePrototype();
+  const kitchenSotDraft = useOptionalKitchenSotDraft();
   const [selectedKeys, setSelectedKeys] = useState<string[]>(() => [
     ...new Set(initialRecipeIds.map(identityKey)),
   ]);
@@ -348,8 +351,18 @@ export function PrintCenterPage({
   const [previewMode, setPreviewMode] = useState<PreviewMode>("draft");
 
   let snapshot: CookbookSnapshot;
+  let rawRecipeDraftById: ReadonlyMap<RecipeIdentity, boolean> | null = null;
   try {
-    snapshot = capturePrintSnapshot(rawSnapshot);
+    if (kitchenSotDraft === null) {
+      snapshot = capturePrintSnapshot(rawSnapshot);
+    } else {
+      const projected = projectKitchenSotPrintSnapshot(
+        kitchenSotDraft.document,
+        rawSnapshot,
+      );
+      snapshot = capturePrintSnapshot(projected.snapshot);
+      rawRecipeDraftById = projected.recipeDraftById;
+    }
   } catch (error) {
     const message = isDuplicateSnapshotError(error)
       ? "พบรหัสสูตรซ้ำในชุดข้อมูลศูนย์การพิมพ์"
@@ -389,9 +402,16 @@ export function PrintCenterPage({
     try {
       const reachable = selectedReachableRecipes(snapshot.recipes, selectedIds);
       for (const recipe of reachable) {
-        const coverage = deriveRecipeMediaCoverage(recipe, snapshot).coverage;
-        const readiness = evaluateReadiness(recipe, coverage);
-        readinessByRecipe.set(identityKey(recipe.recipeId), readiness.draft ? "draft" : "ready");
+        if (rawRecipeDraftById === null) {
+          const coverage = deriveRecipeMediaCoverage(recipe, snapshot).coverage;
+          const readiness = evaluateReadiness(recipe, coverage);
+          readinessByRecipe.set(identityKey(recipe.recipeId), readiness.draft ? "draft" : "ready");
+        } else {
+          readinessByRecipe.set(
+            identityKey(recipe.recipeId),
+            (rawRecipeDraftById.get(recipe.recipeId) ?? true) ? "draft" : "ready",
+          );
+        }
       }
       const printableRecipes = previewMode === "approved"
         ? reachable.filter((recipe) => readinessByRecipe.get(identityKey(recipe.recipeId)) === "ready")
@@ -429,7 +449,13 @@ export function PrintCenterPage({
       <header className="print-center-header">
         <h2 id="print-center-title">ศูนย์การพิมพ์</h2>
         <p>ตัวอย่าง A5 แนวนอนสำหรับจุดงาน · แนะนำอัตโนมัติ</p>
-        <p>ข้อมูลและการแก้ไขในหน้านี้อยู่เฉพาะ session ปัจจุบัน</p>
+        <p>
+          {kitchenSotDraft === null
+            ? "ข้อมูลสูตร: V4 ที่ฝังใน prototype"
+            : kitchenSotDraft.origin === "v5-draft"
+              ? "ข้อมูลสูตร: V5 draft ในเครื่อง"
+              : "ข้อมูลสูตร: V4 ที่ตรวจ checksum แล้ว (fallback)"}
+        </p>
       </header>
 
       <form className="print-controls" onSubmit={(event) => event.preventDefault()}>

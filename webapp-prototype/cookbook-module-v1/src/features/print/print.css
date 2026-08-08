@@ -242,11 +242,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: 1mm 4mm;
-  margin-top: 3mm;
+  margin-top: 2mm;
   padding-top: 2mm;
   border-top: 0.25mm solid #d8cbb9;
   color: #7d392e;
   font-size: 7.5pt;
+  line-height: 1.25;
 }
 
 @media (max-width: 900px) {

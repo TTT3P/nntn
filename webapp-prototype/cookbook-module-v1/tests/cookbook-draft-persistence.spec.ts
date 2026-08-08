@@ -14,6 +14,9 @@ const v5RelativePath =
   "Operations/CookBook/sot/v5-draft/kitchen-sot-first-set-v5-draft.json";
 const derivedFromPath = v4RelativePath;
 const isolatedYield = "ค่าทดสอบใน isolated vault";
+const isolatedOwnerQuantity = "1 ช้อนโต๊ะ จาก V5 ทดสอบ";
+const unresolvedRecipe164Blocker =
+  "แป้งมันฮ่องกง แป้งข้าวโพด และน้ำผสมแป้งใช้เท่าไรในฉบับลายมือสุดท้าย";
 const approvedV4Sha = "09e5d64dc54fcd2103769088310d9028fe8317b11243c70341574465ed246f1d";
 const approvedManifestBytes = Buffer.from(
   `${approvedV4Sha}  source/kitchen-sot-first-set-v2.json\n`,
@@ -101,7 +104,7 @@ function expectCommonObjectKeyOrder(left: unknown, right: unknown, path = "docum
 
 async function openRecipe(page: Page, recipeName: RegExp): Promise<void> {
   await page.goto("./#/source-review");
-  await expect(page.getByRole("heading", { name: "Recipe Studio: ร่าง Kitchen SOT V5" }))
+  await expect(page.getByRole("heading", { name: "กรอกสูตรจากทีมครัว" }))
     .toBeVisible();
   await page.getByRole("button", { name: recipeName }).click();
 }
@@ -153,13 +156,13 @@ test.describe.serial("isolated Cookbook V5 draft persistence", () => {
 
     await page.getByRole("button", { name: /ข้าวหน้าเนื้อยากินิกุ/u }).click();
     await expect(page.getByRole("status", { name: "สถานะสูตร" })).toHaveText("DRAFT");
-    await expect(page.getByText("ข้อมูลยืนยันเจ้าของไม่ครบ", { exact: true })).toBeVisible();
+    await expect(page.getByText("ยังรอคำตอบจากทีมครัว", { exact: true })).toBeVisible();
     await page.close();
 
     const reopened = await browser.newPage();
     await openRecipe(reopened, /ข้าวหน้าเนื้อยากินิกุ/u);
     await expect(reopened.getByRole("status", { name: "สถานะสูตร" })).toHaveText("DRAFT");
-    await expect(reopened.getByText("ข้อมูลยืนยันเจ้าของไม่ครบ", { exact: true })).toBeVisible();
+    await expect(reopened.getByText("ยังรอคำตอบจากทีมครัว", { exact: true })).toBeVisible();
     await reopened.getByRole("button", { name: /ผงคั่วพริกเกลือ/u }).click();
     await expect(reopened.getByLabel("ผลผลิตจากหน้าครัว")).toHaveValue(isolatedYield);
     await reopened.close();
@@ -222,6 +225,63 @@ test.describe.serial("isolated Cookbook V5 draft persistence", () => {
     expect(componentIds(v5)).toEqual(componentIds(v4));
     expect(componentIds(v5).filter(({ type }) => type === "number")).toHaveLength(15);
     expect(componentIds(v5).filter(({ type }) => type === "string")).toHaveLength(3);
+  });
+
+  test("prints the saved V5 quantity and keeps raw DRAFT evidence after reload", async ({ browser }) => {
+    const page = await browser.newPage();
+    await openRecipe(page, /เนื้อตุ๋น \(ราดข้าว\)/u);
+    const ownerQuantity = page.getByLabel("ทีมครัวใช้ แป้งมันฮ่องกง เท่าไร? (ต้องกรอก)");
+    await ownerQuantity.fill(isolatedOwnerQuantity);
+    await ownerQuantity.blur();
+    await page.getByRole("button", { name: "บันทึกฉบับร่าง V5" }).click();
+    await expect(page.getByRole("status", { name: "สถานะการบันทึก" })).toContainText("บันทึกแล้ว");
+
+    await page.goto("./#/print");
+    await expect(page.getByText("ข้อมูลสูตร: V5 draft ในเครื่อง", { exact: true })).toBeVisible();
+    await expect(page.getByRole("checkbox")).toHaveCount(18);
+    await page.getByRole("checkbox", { name: "เนื้อตุ๋น (ราดข้าว) · รหัส 164" }).check();
+    await page.getByRole("combobox", { name: /^จุดงาน/u }).selectOption("prep");
+    const recipe164Cards = page.getByRole("article", {
+      name: /เนื้อตุ๋น \(ราดข้าว\) · ผลิตซอสและของเตรียม/u,
+    });
+    await expect(recipe164Cards.first()).toContainText(isolatedOwnerQuantity);
+    await expect(recipe164Cards.first()).toContainText(unresolvedRecipe164Blocker);
+    await expect(recipe164Cards.first()).toContainText("สถานะสูตร: ฉบับร่าง");
+
+    await page.goto("./#/work/164?stage=prep");
+    const recipe164Work = page.getByRole("article", { name: "เนื้อตุ๋น (ราดข้าว)" });
+    await expect(recipe164Work).toContainText(isolatedOwnerQuantity);
+    await expect(recipe164Work).toContainText(unresolvedRecipe164Blocker);
+    await expect(recipe164Work).toContainText("DRAFT");
+
+    await page.reload();
+    await expect(page.getByRole("heading", {
+      level: 2,
+      name: "เนื้อตุ๋น (ราดข้าว)",
+    })).toBeVisible();
+    await expect(page.getByRole("article", { name: "เนื้อตุ๋น (ราดข้าว)" }))
+      .toContainText(isolatedOwnerQuantity);
+
+    await page.goto("./#/print");
+    await expect(page.getByText("ข้อมูลสูตร: V5 draft ในเครื่อง", { exact: true })).toBeVisible();
+    await page.getByRole("checkbox", { name: "เนื้อตุ๋น (ราดข้าว) · รหัส 164" }).check();
+    await page.getByRole("combobox", { name: /^จุดงาน/u }).selectOption("prep");
+    await expect(page.getByRole("article", {
+      name: /เนื้อตุ๋น \(ราดข้าว\) · ผลิตซอสและของเตรียม/u,
+    }).first()).toContainText(isolatedOwnerQuantity);
+
+    await page.getByRole("checkbox", { name: "ข้าวหน้าเนื้อยากินิกุ · รหัส 159" }).check();
+    await page.getByRole("combobox", { name: /^จุดงาน/u }).selectOption("service");
+    const recipe159Card = page.getByRole("article", {
+      name: /ข้าวหน้าเนื้อยากินิกุ · จัดเสิร์ฟหน้าร้าน/u,
+    }).first();
+    await expect(recipe159Card).toContainText("สถานะสูตร: ฉบับร่าง");
+
+    await page.goto("./#/work/159?stage=service");
+    const recipe159Work = page.getByRole("article", { name: "ข้าวหน้าเนื้อยากินิกุ" });
+    await expect(recipe159Work).toContainText("DRAFT");
+    await expect(recipe159Work).not.toContainText("พร้อมใช้งาน");
+    await page.close();
   });
 
   test("rejects a stale second page and keeps the first page bytes authoritative", async ({ browser }) => {

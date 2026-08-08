@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import fixture from "../../data/fixtures/first-set.json";
@@ -69,14 +69,93 @@ function renderFillSurfaceWithDocument(document: KitchenSotDocument) {
   };
 }
 
-test("renders all real recipes and derives the accepted snapshot counts", async () => {
+test("renders the real recipe set as one operator worksheet", async () => {
   renderFillSurfaceWithDocument(parseKitchenSotDocument(fixture));
 
   expect(await screen.findByText("18 สูตร")).toBeVisible();
+  expect(screen.getByRole("heading", { level: 2, name: "กรอกสูตรจากทีมครัว" })).toBeVisible();
+  expect(screen.getByRole("region", { name: "สรุปข้อมูล Kitchen SOT" }))
+    .toHaveClass("recipe-studio__summary");
+  expect(screen.getByRole("navigation", { name: "คิวสูตร Kitchen SOT" }))
+    .toHaveClass("recipe-studio__queue");
+  expect(screen.getByRole("article", { name: /รายละเอียดสูตร/u }))
+    .toHaveClass("recipe-studio__detail");
+  expect(screen.getByRole("heading", { level: 3, name: "เลือกสูตร" })).toBeVisible();
+  expect(screen.queryByText("SOURCE REVIEW · NO CONVERSION")).not.toBeInTheDocument();
+  expect(screen.queryByText("01")).not.toBeInTheDocument();
   expect(screen.getByText("4 เมนูขาย + 14 สูตรประกอบ")).toBeVisible();
   expect(screen.getByText("16 รายการรอกรอก/เคาะ")).toBeVisible();
   expect(screen.getByText("13 ตัวขวาง")).toBeVisible();
   expect(screen.getAllByRole("button", { name: /revision/u })).toHaveLength(18);
+});
+
+test("filters the visible recipe queue without changing the selected raw recipe", async () => {
+  renderFillSurfaceWithDocument(parseKitchenSotDocument(fixture));
+  const user = userEvent.setup();
+
+  const search = await screen.findByRole("searchbox", { name: "ค้นหาสูตร" });
+  await user.type(search, "ผงคั่วพริกเกลือ");
+
+  expect(screen.getByRole("button", { name: /ผงคั่วพริกเกลือ/u })).toBeVisible();
+  expect(screen.queryByRole("button", { name: /ข้าวหน้าเนื้อยากินิกุ/u })).not.toBeInTheDocument();
+
+  await user.clear(search);
+  await user.click(screen.getByRole("button", { name: /ข้าวหน้าเนื้อยากินิกุ/u }));
+
+  expect(screen.getByRole("heading", { level: 3, name: "ข้าวหน้าเนื้อยากินิกุ" })).toBeVisible();
+  expect(screen.getByRole("status", { name: "สถานะสูตร" })).toHaveTextContent("DRAFT");
+});
+
+test("filters the queue by recipe type and canonical readiness without mutating the summary", async () => {
+  renderFillSurfaceWithDocument(parseKitchenSotDocument(fixture));
+  const user = userEvent.setup();
+  const queue = await screen.findByRole("navigation", { name: "คิวสูตร Kitchen SOT" });
+
+  await user.selectOptions(screen.getByLabelText("ประเภทสูตร"), "prepared_recipe");
+  expect(within(queue).getAllByRole("button", { name: /revision/u })).toHaveLength(14);
+
+  await user.selectOptions(screen.getByLabelText("ประเภทสูตร"), "all");
+  await user.selectOptions(screen.getByLabelText("สถานะ"), "draft");
+  expect(within(queue).getAllByRole("button", { name: /revision/u })).toHaveLength(13);
+  expect(screen.getByText("18 สูตร")).toBeVisible();
+});
+
+test("groups the selected recipe into flat worksheet sections without hiding V5 controls", async () => {
+  const document = parseKitchenSotDocument(fixture);
+  renderFillSurfaceWithDocument(document);
+  const firstItem = document.recipes[0]!.items[0]!;
+
+  expect(await screen.findByText("แฟ้มสูตรครัว · เมนูขาย"))
+    .toHaveClass("recipe-studio__folio-label");
+  expect(await screen.findByRole("status", { name: "สถานะสูตร" }))
+    .toHaveClass("recipe-studio__status", "is-ready");
+  expect(screen.getByRole("heading", { name: "วัตถุดิบ" }).closest("section"))
+    .toHaveClass("recipe-studio__section");
+  expect(screen.getByLabelText(`หลักฐานต้นทาง — ${firstItem.item_name}`).closest("fieldset"))
+    .toHaveClass("recipe-studio__item-row");
+  expect(screen.getByRole("button", { name: "บันทึกฉบับร่าง V5" })).toBeVisible();
+});
+
+test("shows one plain-language kitchen question and keeps optional details closed by default", async () => {
+  const document = parseKitchenSotDocument(fixture);
+  renderFillSurfaceWithDocument(document);
+  const item = document.recipes[0]!.items[0]!;
+
+  const question = await screen.findByLabelText(
+    `ทีมครัวใช้ ${item.item_name} เท่าไร? (ต้องกรอก)`,
+  );
+  const card = question.closest("fieldset");
+  expect(card).not.toBeNull();
+  const itemCard = within(card!);
+
+  expect(question).toBeVisible();
+  expect(itemCard.getByText(/ตอนนี้ใช้:/u)).toBeVisible();
+  expect(itemCard.getByText("ตัวเลือกเพิ่มเติม (ไม่บังคับ)")).toBeVisible();
+  expect(itemCard.getByLabelText("ปริมาณตอนเสิร์ฟ (ไม่บังคับ)")).not.toBeVisible();
+  expect(itemCard.getByLabelText("ปริมาณสำหรับคิดต้นทุน (ไม่บังคับ)")).not.toBeVisible();
+  expect(itemCard.getByLabelText(`หลักฐานต้นทาง — ${item.item_name}`)).not.toBeVisible();
+  expect(itemCard.queryByText(/ค่าหน้าครัว|ฐานต้นทุน|สถานะการตัดสินใจ/u))
+    .not.toBeInTheDocument();
 });
 
 test("shows the derived provenance gap without hardcoding recipe 159", async () => {
@@ -84,8 +163,9 @@ test("shows the derived provenance gap without hardcoding recipe 159", async () 
 
   await view.selectRecipe(159);
 
-  expect(screen.getByText("ข้อมูลยืนยันเจ้าของไม่ครบ")).toBeVisible();
-  expect(screen.getByLabelText("ค่าหน้าครัว — ข้าวญี่ปุ่นหุงสุก")).toHaveValue("");
+  expect(screen.getByText("ยังรอคำตอบจากทีมครัว")).toBeVisible();
+  expect(screen.getByLabelText("ทีมครัวใช้ ข้าวญี่ปุ่นหุงสุก เท่าไร? (ต้องกรอก)"))
+    .toHaveValue("");
   expect(screen.getByRole("status", { name: "สถานะสูตร" })).toHaveTextContent("DRAFT");
 });
 
@@ -153,14 +233,16 @@ test("writes owner-confirmed item fields and optional raw notes only after blur"
   const view = renderFillSurfaceWithDocument(document);
   await view.selectRecipe(164);
 
-  const ownerInput = screen.getByLabelText("ค่าหน้าครัว — แป้งมันฮ่องกง");
+  const ownerInput = screen.getByLabelText("ทีมครัวใช้ แป้งมันฮ่องกง เท่าไร? (ต้องกรอก)");
+  const itemCard = within(ownerInput.closest("fieldset")!);
   expect(ownerInput).toHaveValue("");
   await user.type(ownerInput, "1 ช้อนโต๊ะ");
   expect(view.client.save).not.toHaveBeenCalled();
   await user.tab();
-  await user.type(screen.getByLabelText("หมายเหตุปริมาณเสิร์ฟ — แป้งมันฮ่องกง"), "ใช้ต่อหม้อ");
+  await user.click(itemCard.getByText("ตัวเลือกเพิ่มเติม (ไม่บังคับ)"));
+  await user.type(itemCard.getByLabelText("ปริมาณตอนเสิร์ฟ (ไม่บังคับ)"), "ใช้ต่อหม้อ");
   await user.tab();
-  await user.type(screen.getByLabelText("ฐานต้นทุน — แป้งมันฮ่องกง"), "คิดตามถุงจริง");
+  await user.type(itemCard.getByLabelText("ปริมาณสำหรับคิดต้นทุน (ไม่บังคับ)"), "คิดตามถุงจริง");
   await user.tab();
   await user.click(screen.getByRole("button", { name: "บันทึกฉบับร่าง V5" }));
 
@@ -259,12 +341,13 @@ test("restores a cleared prepopulated owner quantity and reports an accessible e
   const view = renderFillSurfaceWithDocument(document);
   await view.selectRecipe(165);
 
-  const owner = screen.getByLabelText("ค่าหน้าครัว — ข้าวหอมมะลิหุงสุก");
+  const owner = screen.getByLabelText("ทีมครัวใช้ ข้าวหอมมะลิหุงสุก เท่าไร? (ต้องกรอก)");
   expect(owner).toHaveValue("ข้าวหอมมะลิหุงสุก 180 กรัมต่อจาน");
   await user.clear(owner);
   await user.tab();
 
-  expect(screen.getByRole("alert")).toHaveTextContent("ค่าหน้าครัวต้องไม่ว่าง");
+  expect(screen.getByRole("alert"))
+    .toHaveTextContent("กรอกปริมาณที่ทีมครัวใช้ก่อน ระบบคืนค่าเดิมให้แล้ว");
   expect(owner).toHaveValue("ข้าวหอมมะลิหุงสุก 180 กรัมต่อจาน");
   expect(owner).toHaveAttribute("aria-invalid", "true");
   expect(screen.getByRole("button", { name: "บันทึกฉบับร่าง V5" })).toBeDisabled();

@@ -44,7 +44,7 @@ const systemChrome = detectSystemChrome();
 
 export default defineConfig({
   testDir: "./tests",
-  testMatch: "cookbook-draft-persistence.spec.ts",
+  testMatch: ["cookbook-draft-persistence.spec.ts", "recipe-studio-layout.local.ts"],
   fullyParallel: false,
   workers: 1,
   retries: 0,

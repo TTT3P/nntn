@@ -156,6 +156,9 @@ export function WorkstationCard({
       {(readiness === "draft" || hasMissingMedia || hasSampleMedia || hasReviewNeededMedia) && (
         <footer className="workstation-card__warnings" aria-label="คำเตือนชุดพิมพ์">
           {readiness === "draft" && <p>ฉบับร่าง — ข้อมูลวิธีทำ แหล่งข้อมูล หรือรายการขวางยังต้องตรวจ</p>}
+          {readiness === "draft" && page.document.blockers.map((blocker, index) => (
+            <p key={`${String(index)}:${blocker}`}>{blocker}</p>
+          ))}
           {hasMissingMedia && <p>รูปขั้นตอนไม่ครบ — พิมพ์แบบข้อความได้</p>}
           {hasSampleMedia && <p>มีภาพ DEMO — ใช้อ้างอิงเท่านั้น ยังไม่ยืนยัน</p>}
           {hasReviewNeededMedia && <p>มีรูปที่ควรตรวจใหม่</p>}

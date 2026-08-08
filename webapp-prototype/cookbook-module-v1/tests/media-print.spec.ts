@@ -75,6 +75,76 @@ test("loads base-aware DEMO media, preserves step attachment, and fits real A5 c
   expect(await textOnlySteps.locator(".workstation-media").count()).toBe(0);
 });
 
+test("prints the exact long blocker without clipping an A5 SOP", async ({ page }) => {
+  await page.goto("./#/print");
+  await page.getByRole("checkbox", { name: "เนื้อตุ๋น (ราดข้าว) · รหัส 164" }).check();
+  await page.getByRole("combobox", { name: /^จุดงาน/u }).selectOption("prep");
+  await page.getByRole("combobox", { name: /^แม่แบบ/u }).selectOption("station");
+
+  const sheets = page.locator(".workstation-sheet");
+  await expect(sheets).toHaveCount(6);
+  await expect(page.getByText(
+    "แป้งมันฮ่องกง แป้งข้าวโพด และน้ำผสมแป้งใช้เท่าไรในฉบับลายมือสุดท้าย",
+    { exact: true },
+  )).toHaveCount(2);
+  const geometry = await sheets.evaluateAll((elements) => elements.map((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+  })));
+  for (const sheet of geometry) {
+    expect(sheet.scrollWidth).toBe(sheet.clientWidth);
+    expect(sheet.scrollHeight).toBe(sheet.clientHeight);
+  }
+
+  await page.emulateMedia({ media: "print" });
+  await expect(page.locator(".app-header")).toBeHidden();
+  await expect(page.getByRole("region", { name: "Prototype snapshot export" })).toBeHidden();
+  expectPdfPages(
+    await page.pdf({ preferCSSPageSize: true, printBackground: true }),
+    6,
+    210,
+    148,
+  );
+});
+
+test("prints a methodless recipe as one nonblank A5 DRAFT sheet", async ({ page }) => {
+  await page.goto("./#/print");
+  await page.getByRole("checkbox", { name: "ผงคั่วพริกเกลือ · รหัส 162" }).check();
+  await page.getByRole("combobox", { name: /^จุดงาน/u }).selectOption("prep");
+  await page.getByRole("combobox", { name: /^แม่แบบ/u }).selectOption("station");
+
+  const sheet = page.locator(".workstation-sheet");
+  await expect(sheet).toHaveCount(1);
+  await expect(sheet.getByText("สถานะสูตร: ฉบับร่าง", { exact: true })).toBeVisible();
+  await expect(sheet.getByText(
+    "มีสัดส่วนผสมครบ แต่ยังไม่มีขั้นตอนคลุก/เก็บ/ผลผลิต จึงพิมพ์ได้เฉพาะฉบับร่าง",
+    { exact: true },
+  )).toBeVisible();
+  await expect(sheet.locator(".workstation-ingredients tbody tr")).toHaveCount(4);
+  await expect(sheet.locator(".workstation-step")).toHaveCount(0);
+
+  const geometry = await sheet.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+  }));
+  expect(geometry.scrollWidth).toBe(geometry.clientWidth);
+  expect(geometry.scrollHeight).toBe(geometry.clientHeight);
+
+  await page.emulateMedia({ media: "print" });
+  await expect(page.locator(".app-header")).toBeHidden();
+  await expect(page.getByRole("region", { name: "Prototype snapshot export" })).toBeHidden();
+  expectPdfPages(
+    await page.pdf({ preferCSSPageSize: true, printBackground: true }),
+    1,
+    210,
+    148,
+  );
+});
+
 test("keeps every production fixture media sequence in its exact accessible step", async ({ page }) => {
   await page.goto("./#/print");
   for (const name of [

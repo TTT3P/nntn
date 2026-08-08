@@ -1241,7 +1241,17 @@ function paginateCapturedDocument(
 ): WorkstationPage[] {
   const steps = [...documentSnapshot.steps].sort((left, right) => left.order - right.order);
   validateFixedRegionalLayout(documentSnapshot);
-  if (steps.length === 0) return [];
+  if (steps.length === 0) {
+    if (documentSnapshot.blockers.length === 0) return [];
+    validateCombinedPageLayout(documentSnapshot, mediaSnapshot, []);
+    return [{
+      kind: "station",
+      document: cloneDocument(documentSnapshot),
+      blocks: [],
+      partNumber: 1,
+      totalParts: 1,
+    }];
+  }
 
   const capacity = 7;
   const pageBlocks: WorkstationPage["blocks"][] = [];
