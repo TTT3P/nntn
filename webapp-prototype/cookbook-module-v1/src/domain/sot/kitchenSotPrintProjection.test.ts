@@ -54,6 +54,36 @@ describe("projectKitchenSotPrintSnapshot", () => {
     ).toEqual([]);
   });
 
+  test("preserves operational facts verbatim without projecting kitchen cost basis", () => {
+    const document = parseKitchenSotDocument(fixture);
+    const projected = projectKitchenSotPrintSnapshot(document, makeSnapshot());
+
+    const soup = projected.snapshot.recipes.find(({ recipeId }) => recipeId === 2)!;
+    expect(soup.operationalNotes).toEqual([
+      "ใช้น้ำเปล่าประมาณ 50 ลิตร ต่อหม้อเบอร์ 70",
+      "ขอบเขตสูตรนี้เป็นน้ำซุปเท่านั้น ไม่รวมขั้นตอนลงเนื้อ",
+    ]);
+    expect((soup as unknown as Record<string, unknown>).methodDecisionNote).toBe(
+      "DOCX V3 ระบุรายการส่วนผสมแต่ไม่มีลำดับวิธีปรุงน้ำซุป; ตัดวิธีเก่าที่มีขั้นตอนลงเนื้อออกตามขอบเขตที่เจ้าของยืนยัน",
+    );
+
+    const japaneseRice = projected.snapshot.recipes.find(
+      ({ recipeId }) => recipeId === "candidate:prepared:ข้าวญี่ปุ่นหุงสุก",
+    )!;
+    expect((japaneseRice as unknown as Record<string, unknown>).yieldText).toBe(
+      "ข้าวหุงสุก 180 กรัม ต่อข้าวสารดิบ 72 กรัม",
+    );
+
+    const yakinikuRice = projected.snapshot.recipes
+      .find(({ recipeId }) => recipeId === 159)!
+      .lines.find(({ itemName }) => itemName === "ข้าวญี่ปุ่นหุงสุก")!;
+    expect((yakinikuRice as unknown as Record<string, unknown>).servingNote).toBe(
+      "ตักข้าวหุงสุก 180 กรัม",
+    );
+    expect(yakinikuRice).not.toHaveProperty("costBasisText");
+    expect(yakinikuRice).not.toHaveProperty("cost_basis_text");
+  });
+
   test.each([2, 160, 9, 161, 162])(
     "keeps missing-method recipe %s printable as a DRAFT projection",
     (recipeId) => {

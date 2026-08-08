@@ -110,6 +110,10 @@ function WorkDocumentView({
   draft: boolean;
 }) {
   const media = deriveRecipeMediaCoverage(recipe, snapshot);
+  const hasOperationalFacts =
+    document.operationalNotes.length > 0 ||
+    document.yieldText !== null ||
+    document.methodDecisionNote !== null;
 
   return (
     <article aria-labelledby={`work-document-${document.recipeVersionId}-${document.stage}`}>
@@ -121,13 +125,36 @@ function WorkDocumentView({
         {media.mediaReviewNeeded && <p>รูปต้องตรวจสอบ</p>}
         {(media.missingMedia || media.mediaReviewNeeded) && <p>สถานะรูปไม่ทำให้เอกสารเป็น DRAFT</p>}
       </div>
+      {hasOperationalFacts && (
+        <section aria-label={`ข้อมูลใช้งานตามต้นฉบับของ ${document.recipeName}`}>
+          {document.operationalNotes.length > 0 && (
+            <div>
+              <h5>หมายเหตุการใช้งาน</h5>
+              <ul>{document.operationalNotes.map((note, index) => (
+                <li key={`${String(index)}:${note}`} style={{ whiteSpace: "pre-wrap" }}>{note}</li>
+              ))}</ul>
+            </div>
+          )}
+          {document.yieldText !== null && (
+            <p style={{ whiteSpace: "pre-wrap" }}><strong>ผลผลิตตามต้นฉบับ</strong> <span>{document.yieldText}</span></p>
+          )}
+          {document.methodDecisionNote !== null && (
+            <p style={{ whiteSpace: "pre-wrap" }}><strong>ขอบเขตวิธีทำ</strong> <span>{document.methodDecisionNote}</span></p>
+          )}
+        </section>
+      )}
       {document.ingredients.length > 0 && (
         <table>
           <thead><tr><th>วัตถุดิบ</th><th>ปริมาณตามต้นฉบับ</th></tr></thead>
           <tbody>{document.ingredients.map((line) => (
             <tr key={line.lineKey}>
               <th scope="row">{line.itemName}</th>
-              <td style={{ whiteSpace: "pre-wrap" }}>{sourceFact(line) ?? "ไม่ระบุในต้นฉบับ"}</td>
+              <td style={{ whiteSpace: "pre-wrap" }}>
+                <span>{sourceFact(line) ?? "ไม่ระบุในต้นฉบับ"}</span>
+                {document.stage === "service" && line.servingNote !== null && (
+                  <span style={{ display: "block" }}>{line.servingNote}</span>
+                )}
+              </td>
             </tr>
           ))}</tbody>
         </table>

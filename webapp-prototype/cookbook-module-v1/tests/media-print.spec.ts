@@ -40,6 +40,77 @@ test("prints one A5 SOP without app-shell or blank trailing pages", async ({ pag
   );
 });
 
+test("shows exact operational facts on Work and Print without Service cost basis", async ({ page }) => {
+  await page.goto("./#/work/2?stage=all");
+  const soup = page.getByRole("article", { name: "น้ำซุปก๋วยเตี๋ยว V3" });
+  await expect(soup.getByText(
+    "ใช้น้ำเปล่าประมาณ 50 ลิตร ต่อหม้อเบอร์ 70",
+    { exact: true },
+  )).toBeVisible();
+  await expect(soup.getByText(
+    "ขอบเขตสูตรนี้เป็นน้ำซุปเท่านั้น ไม่รวมขั้นตอนลงเนื้อ",
+    { exact: true },
+  )).toBeVisible();
+
+  await page.goto("./#/work/159?stage=service");
+  const service = page.getByRole("article", { name: "ข้าวหน้าเนื้อยากินิกุ" });
+  await expect(service.getByText("ตักข้าวหุงสุก 180 กรัม", { exact: true })).toBeVisible();
+  await expect(service.getByText("ข้าวสารญี่ปุ่นดิบ 72 กรัม", { exact: true })).toHaveCount(0);
+
+  await page.goto("./#/print");
+  await page.getByRole("checkbox", { name: "น้ำซุปก๋วยเตี๋ยว V3 · รหัส 2" }).check();
+  await expect(page.getByRole("article", {
+    name: /น้ำซุปก๋วยเตี๋ยว V3 · ผลิตซอสและของเตรียม/u,
+  })).toHaveCount(2);
+  await expect(page.getByText(
+    "ใช้น้ำเปล่าประมาณ 50 ลิตร ต่อหม้อเบอร์ 70",
+    { exact: true },
+  )).toBeVisible();
+  await expect(page.getByText(
+    "DOCX V3 ระบุรายการส่วนผสมแต่ไม่มีลำดับวิธีปรุงน้ำซุป; ตัดวิธีเก่าที่มีขั้นตอนลงเนื้อออกตามขอบเขตที่เจ้าของยืนยัน",
+    { exact: true },
+  )).toBeVisible();
+
+  const sheets = page.locator(".workstation-sheet");
+  await expect(sheets).toHaveCount(5);
+  const geometry = await sheets.evaluateAll((elements) => elements.map((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+  })));
+  for (const sheet of geometry) {
+    expect(sheet.scrollWidth).toBe(sheet.clientWidth);
+    expect(sheet.scrollHeight).toBe(sheet.clientHeight);
+  }
+});
+
+test("excludes removed dependencies while retaining the same recipe where it is still used", async ({ page }) => {
+  await page.goto("./#/work/156?stage=all");
+  await expect(page.getByRole("heading", { level: 4, name: "ซอสอเนกประสงค์" }))
+    .toHaveCount(0);
+  await expect(page.getByRole("article", { name: "ซอสยากินิกุ" }).locator("tbody tr"))
+    .toHaveCount(11);
+  await expect(page.locator("tbody tr")).toHaveCount(11);
+
+  await page.goto("./#/work/157?stage=all");
+  await expect(page.getByRole("heading", { level: 4, name: "ซอสอเนกประสงค์" }))
+    .toBeVisible();
+  await expect(page.locator("tbody tr")).toHaveCount(14);
+
+  await page.goto("./#/print");
+  const removedRoot = page.getByRole("checkbox", { name: "ซอสยากินิกุ · รหัส 156" });
+  await removedRoot.check();
+  await expect(page.getByRole("article", { name: /ซอสอเนกประสงค์/u })).toHaveCount(0);
+  await expect(page.locator(".workstation-ingredients tbody tr")).toHaveCount(11);
+
+  await removedRoot.uncheck();
+  await page.getByRole("checkbox", { name: "ผัดผัก · รหัส 157" }).check();
+  await expect(page.getByRole("article", { name: /ซอสอเนกประสงค์/u }).first())
+    .toBeVisible();
+  await expect(page.locator(".workstation-ingredients tbody tr")).toHaveCount(14);
+});
+
 test("loads base-aware DEMO media, preserves step attachment, and fits real A5 cards", async ({ page }) => {
   await page.goto("./#/print");
   await page.getByRole("checkbox", { name: "ข้าวหน้าเนื้อตุ๋น · รหัส 165" }).check();
@@ -82,7 +153,7 @@ test("prints the exact long blocker without clipping an A5 SOP", async ({ page }
   await page.getByRole("combobox", { name: /^แม่แบบ/u }).selectOption("station");
 
   const sheets = page.locator(".workstation-sheet");
-  await expect(sheets).toHaveCount(6);
+  await expect(sheets).toHaveCount(7);
   await expect(page.getByText(
     "แป้งมันฮ่องกง แป้งข้าวโพด และน้ำผสมแป้งใช้เท่าไรในฉบับลายมือสุดท้าย",
     { exact: true },
@@ -103,7 +174,7 @@ test("prints the exact long blocker without clipping an A5 SOP", async ({ page }
   await expect(page.getByRole("region", { name: "Prototype snapshot export" })).toBeHidden();
   expectPdfPages(
     await page.pdf({ preferCSSPageSize: true, printBackground: true }),
-    6,
+    7,
     210,
     148,
   );
@@ -118,7 +189,7 @@ test("prints a methodless recipe as one nonblank A5 DRAFT sheet", async ({ page 
   const sheet = page.locator(".workstation-sheet");
   await expect(sheet).toHaveCount(1);
   await expect(sheet.getByText("สถานะสูตร: ฉบับร่าง", { exact: true })).toBeVisible();
-  await expect(sheet.getByText(
+  await expect(sheet.getByLabel("คำเตือนชุดพิมพ์").getByText(
     "มีสัดส่วนผสมครบ แต่ยังไม่มีขั้นตอนคลุก/เก็บ/ผลผลิต จึงพิมพ์ได้เฉพาะฉบับร่าง",
     { exact: true },
   )).toBeVisible();

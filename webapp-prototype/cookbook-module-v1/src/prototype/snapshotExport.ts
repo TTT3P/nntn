@@ -230,6 +230,7 @@ function captureIngredientLine(value: unknown, path: string): IngredientLine {
   const sourceText = nullableString(readField(value, "sourceText", `${path}.sourceText`), `${path}.sourceText`);
   const sourceValue = nullableFiniteNumber(readField(value, "sourceValue", `${path}.sourceValue`), `${path}.sourceValue`);
   const sourceUnit = nullableString(readField(value, "sourceUnit", `${path}.sourceUnit`), `${path}.sourceUnit`);
+  const servingNote = nullableString(readField(value, "servingNote", `${path}.servingNote`), `${path}.servingNote`);
   const decisionStatus = stringValue(readField(value, "decisionStatus", `${path}.decisionStatus`), `${path}.decisionStatus`);
   const selectedSource = nullableString(readField(value, "selectedSource", `${path}.selectedSource`), `${path}.selectedSource`);
   return {
@@ -241,6 +242,7 @@ function captureIngredientLine(value: unknown, path: string): IngredientLine {
     sourceText,
     sourceValue,
     sourceUnit,
+    servingNote,
     decisionStatus,
     selectedSource,
   };
@@ -324,6 +326,11 @@ function captureRecipe(value: unknown, path: string): RecipeVersion {
   const sourceLocators = captureStringArray(readField(value, "sourceLocators", `${path}.sourceLocators`), `${path}.sourceLocators`);
   const lines = captureArray(readField(value, "lines", `${path}.lines`), `${path}.lines`, captureIngredientLine);
   const methodText = nullableString(readField(value, "methodText", `${path}.methodText`), `${path}.methodText`);
+  const methodDecisionNote = nullableString(
+    readField(value, "methodDecisionNote", `${path}.methodDecisionNote`),
+    `${path}.methodDecisionNote`,
+  );
+  const yieldText = nullableString(readField(value, "yieldText", `${path}.yieldText`), `${path}.yieldText`);
   const blockers = captureStringArray(readField(value, "blockers", `${path}.blockers`), `${path}.blockers`);
   const operationalNotes = captureStringArray(
     readField(value, "operationalNotes", `${path}.operationalNotes`),
@@ -359,6 +366,8 @@ function captureRecipe(value: unknown, path: string): RecipeVersion {
     sourceLocators,
     lines,
     methodText,
+    methodDecisionNote,
+    yieldText,
     blockers,
     operationalNotes,
     workDocuments,

@@ -211,6 +211,8 @@ export function buildRecipeGraph(
     if (!dependencies) throw new Error(`Missing graph edges for ${nodeId}`);
 
     for (const line of recipe.lines) {
+      if (line.decisionStatus.startsWith("removed_")) continue;
+
       if (line.itemKind === "prepared_recipe") {
         if (
           line.componentRecipeId === null ||

@@ -97,7 +97,31 @@ export function WorkstationCard({
         </div>
       </header>
 
-      <div className="workstation-card__body">
+      <div
+        className={page.blocks.length === 0
+          ? "workstation-card__body workstation-card__body--without-steps"
+          : "workstation-card__body"}
+      >
+        {(page.document.operationalNotes.length > 0 ||
+          page.document.yieldText !== null ||
+          page.document.methodDecisionNote !== null) && (
+          <section
+            className="workstation-facts"
+            aria-label={`ข้อมูลใช้งานตามต้นฉบับของ ${page.document.recipeName}`}
+          >
+            {page.document.operationalNotes.length > 0 && (
+              <ul>{page.document.operationalNotes.map((note, index) => (
+                <li key={`${String(index)}:${note}`}>{note}</li>
+              ))}</ul>
+            )}
+            {page.document.yieldText !== null && (
+              <p><strong>ผลผลิตตามต้นฉบับ</strong> <span>{page.document.yieldText}</span></p>
+            )}
+            {page.document.methodDecisionNote !== null && (
+              <p><strong>ขอบเขตวิธีทำ</strong> <span>{page.document.methodDecisionNote}</span></p>
+            )}
+          </section>
+        )}
         {page.document.ingredients.length > 0 && (
           <table className="workstation-ingredients">
             <thead>
@@ -107,7 +131,12 @@ export function WorkstationCard({
               {page.document.ingredients.map((line) => (
                 <tr key={line.lineKey}>
                   <th scope="row">{line.itemName}</th>
-                  <td>{sourceFact(line)}</td>
+                  <td>
+                    <span>{sourceFact(line)}</span>
+                    {page.document.stage === "service" && line.servingNote !== null && (
+                      <span className="workstation-ingredient__serving-note">{line.servingNote}</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

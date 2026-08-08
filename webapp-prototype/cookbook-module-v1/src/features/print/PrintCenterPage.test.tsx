@@ -144,6 +144,23 @@ describe("PrintCenterPage", () => {
     expect(screen.getAllByRole("checkbox")).toHaveLength(18);
   });
 
+  test("does not print a removed dependency but still prints the same recipe where it remains active", async () => {
+    const removed = renderWithKitchenSotDocument(
+      parseKitchenSotDocument(fixture),
+      [156],
+    );
+
+    await screen.findByText("ข้อมูลสูตร: V5 draft ในเครื่อง");
+    expect(screen.queryByRole("article", { name: /ซอสอเนกประสงค์/u }))
+      .not.toBeInTheDocument();
+    removed.unmount();
+
+    renderWithKitchenSotDocument(parseKitchenSotDocument(fixture), [157]);
+
+    expect(await screen.findByRole("article", { name: /ซอสอเนกประสงค์/u }))
+      .toBeVisible();
+  });
+
   test("keeps provenance-incomplete recipe 159 DRAFT through the shared raw predicate", async () => {
     renderWithKitchenSotDocument(parseKitchenSotDocument(fixture), [159]);
 
@@ -163,11 +180,45 @@ describe("PrintCenterPage", () => {
     renderWithKitchenSotDocument(document, [164]);
 
     expect((await screen.findAllByText(message)).length).toBeGreaterThan(0);
-    expect(globalThis.document.querySelectorAll(".workstation-sheet")).toHaveLength(6);
+    expect(globalThis.document.querySelectorAll(".workstation-sheet")).toHaveLength(7);
+  });
+
+  test("prints recipe 2 operational facts and method scope verbatim", async () => {
+    renderWithKitchenSotDocument(parseKitchenSotDocument(fixture), [2]);
+
+    const cards = await screen.findAllByRole("article", {
+      name: /น้ำซุปก๋วยเตี๋ยว V3 · ผลิตซอสและของเตรียม/u,
+    });
+    expect(cards).toHaveLength(2);
+    expect(screen.getByText("ใช้น้ำเปล่าประมาณ 50 ลิตร ต่อหม้อเบอร์ 70"))
+      .toBeVisible();
+    expect(screen.getByText("ขอบเขตสูตรนี้เป็นน้ำซุปเท่านั้น ไม่รวมขั้นตอนลงเนื้อ"))
+      .toBeVisible();
+    expect(screen.getByText(
+      "DOCX V3 ระบุรายการส่วนผสมแต่ไม่มีลำดับวิธีปรุงน้ำซุป; ตัดวิธีเก่าที่มีขั้นตอนลงเนื้อออกตามขอบเขตที่เจ้าของยืนยัน",
+    )).toBeVisible();
+    for (const card of cards) {
+      expect(card.querySelector(".workstation-card__body"))
+        .toHaveClass("workstation-card__body--without-steps");
+    }
+  });
+
+  test("prints Service serving notes without exposing kitchen cost basis", async () => {
+    renderWithKitchenSotDocument(parseKitchenSotDocument(fixture), [159]);
+
+    const cards = await screen.findAllByRole("article", {
+      name: /ข้าวหน้าเนื้อยากินิกุ · จัดเสิร์ฟหน้าร้าน/u,
+    });
+    expect(cards.length).toBeGreaterThan(0);
+    expect(within(cards[0]!).getByText("ตักข้าวหุงสุก 180 กรัม")).toBeVisible();
+    for (const card of cards) {
+      expect(within(card).queryByText("ข้าวสารญี่ปุ่นดิบ 72 กรัม")).not.toBeInTheDocument();
+      expect(card).not.toHaveTextContent("ฐานต้นทุนต่อที่");
+    }
   });
 
   test.each([2, 160, 9, 161, 162])(
-    "renders missing-method recipe %s as one printable DRAFT sheet",
+    "renders missing-method recipe %s as printable DRAFT sheets",
     async (recipeId) => {
       const document = parseKitchenSotDocument(fixture);
       const recipe = document.recipes.find(({ recipe_id }) => recipe_id === recipeId)!;
@@ -177,7 +228,7 @@ describe("PrintCenterPage", () => {
       const cards = await screen.findAllByRole("article", {
         name: new RegExp(`${recipe.recipe_name} · ผลิตซอสและของเตรียม`, "u"),
       });
-      expect(cards).toHaveLength(1);
+      expect(cards).toHaveLength(recipeId === 2 ? 2 : 1);
       expect(within(cards[0]!).getByText("สถานะสูตร: ฉบับร่าง")).toBeVisible();
     },
   );
@@ -186,7 +237,7 @@ describe("PrintCenterPage", () => {
     renderWithPrototype(<PrintCenterPage initialRecipeIds={[165]} />, { snapshot: firstSet });
 
     expect(screen.getByText("ตัวอย่าง A5 แนวนอนสำหรับจุดงาน · แนะนำอัตโนมัติ")).toBeVisible();
-    expect(document.querySelectorAll(".workstation-sheet")).toHaveLength(9);
+    expect(document.querySelectorAll(".workstation-sheet")).toHaveLength(10);
     const sheet = document.querySelector(".workstation-sheet");
     expect(sheet).toHaveAttribute("data-page-name", "workstation");
     expect(sheet).toHaveAttribute("data-sheet-size", "210mm × 148mm");

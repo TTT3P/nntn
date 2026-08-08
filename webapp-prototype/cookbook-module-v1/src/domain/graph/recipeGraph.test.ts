@@ -135,6 +135,15 @@ describe("recipe graph", () => {
     }
   });
 
+  test("excludes a removed component while retaining the same component where it is still used", () => {
+    const removedGraph = buildRecipeGraph(fixtures, [156]);
+    const activeGraph = buildRecipeGraph(fixtures, [157]);
+
+    expect(nodeIdForRecipe(removedGraph, 14)).toBeUndefined();
+    expect(nodeIdForRecipe(activeGraph, 14)).toBe("recipe:14");
+    expect(activeGraph.edges.get("recipe:157")).toContain("recipe:14");
+  });
+
   test("returns a cycle named by recipe instead of recursing forever", () => {
     const recipeA = makeRecipe({
       recipeId: 1,

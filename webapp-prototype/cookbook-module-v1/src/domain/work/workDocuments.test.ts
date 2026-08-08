@@ -9,6 +9,7 @@ import {
   MissingWorkIngredientLineKeyError,
   projectWorkDocuments,
   scaleIngredientLine,
+  type ProjectedWorkDocument,
 } from "./workDocuments";
 
 const repository = new FixtureCookbookRepository();
@@ -25,8 +26,9 @@ function recipeWithStages(): RecipeVersion {
     sourceValue: 2,
     sourceUnit: "ช้อนชา",
   });
+  Object.assign(line, { servingNote: "ตักตามต้นฉบับ 2 ช้อนชา" });
 
-  return makeRecipe({
+  const recipe = makeRecipe({
     recipeId: "recipe:staged",
     recipeVersionId: "staged-v1",
     name: "สูตรหลายขั้น",
@@ -53,6 +55,12 @@ function recipeWithStages(): RecipeVersion {
       },
     },
   });
+  Object.assign(recipe, {
+    yieldText: "ผลผลิตตามต้นฉบับ 1 หม้อ",
+    methodDecisionNote: "ขอบเขตวิธีตามต้นฉบับ",
+  });
+  recipe.operationalNotes = ["หมายเหตุหนึ่งหม้อตามต้นฉบับ"];
+  return recipe;
 }
 
 describe("projectWorkDocuments", () => {
@@ -62,6 +70,10 @@ describe("projectWorkDocuments", () => {
     ["ingredient name", (recipe: RecipeVersion) => { recipe.lines[0]!.itemName = [] as never; }],
     ["source text", (recipe: RecipeVersion) => { recipe.lines[0]!.sourceText = {} as never; }],
     ["source unit", (recipe: RecipeVersion) => { recipe.lines[0]!.sourceUnit = [] as never; }],
+    ["serving note", (recipe: RecipeVersion) => { recipe.lines[0]!.servingNote = {} as never; }],
+    ["operational note", (recipe: RecipeVersion) => { recipe.operationalNotes = [42 as never]; }],
+    ["method decision note", (recipe: RecipeVersion) => { recipe.methodDecisionNote = [] as never; }],
+    ["yield text", (recipe: RecipeVersion) => { recipe.yieldText = {} as never; }],
     ["step id", (recipe: RecipeVersion) => { recipe.workDocuments.prep!.steps[0]!.stepId = undefined as never; }],
     ["instruction", (recipe: RecipeVersion) => { recipe.workDocuments.prep!.steps[0]!.instruction = {} as never; }],
     ["step order", (recipe: RecipeVersion) => { recipe.workDocuments.prep!.steps[0]!.order = "1" as never; }],
@@ -77,6 +89,7 @@ describe("projectWorkDocuments", () => {
 
   test.each([
     ["blockers collection", (recipe: RecipeVersion) => { recipe.blockers = {} as never; }],
+    ["operational notes collection", (recipe: RecipeVersion) => { recipe.operationalNotes = {} as never; }],
     ["ingredient collection", (recipe: RecipeVersion) => { recipe.lines = undefined as never; }],
     ["step collection", (recipe: RecipeVersion) => { recipe.workDocuments.prep!.steps = {} as never; }],
   ] as const)("names malformed projected render collections: %s", (_label, corrupt) => {
@@ -110,6 +123,29 @@ describe("projectWorkDocuments", () => {
       ["service", "recipe:staged"],
       ["service", "recipe:second"],
     ]);
+  });
+
+  test("projects operational facts by stage without rewriting source strings", () => {
+    const documents = projectWorkDocuments([recipeWithStages()], {
+      stage: "all",
+      multiplier: 1,
+    }) as Array<ProjectedWorkDocument & Record<string, unknown>>;
+
+    const prep = documents.find(({ stage }) => stage === "prep")!;
+    const cook = documents.find(({ stage }) => stage === "cook")!;
+    const service = documents.find(({ stage }) => stage === "service")!;
+
+    for (const document of [prep, cook]) {
+      expect(document.operationalNotes).toEqual(["หมายเหตุหนึ่งหม้อตามต้นฉบับ"]);
+      expect(document.yieldText).toBe("ผลผลิตตามต้นฉบับ 1 หม้อ");
+      expect(document.methodDecisionNote).toBe("ขอบเขตวิธีตามต้นฉบับ");
+    }
+    expect(service.operationalNotes).toEqual([]);
+    expect(service.yieldText).toBeNull();
+    expect(service.methodDecisionNote).toBe("ขอบเขตวิธีตามต้นฉบับ");
+    expect((service.ingredients[0] as unknown as Record<string, unknown>).servingNote).toBe(
+      "ตักตามต้นฉบับ 2 ช้อนชา",
+    );
   });
 
   test.each<WorkStage>(["prep", "cook", "service"])(

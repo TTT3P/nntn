@@ -52,6 +52,14 @@ function requiredBoolean(field: string, value: JsonValue | undefined): boolean {
   return value;
 }
 
+function nullableString(field: string, value: JsonValue | undefined): string | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string") {
+    throw new InvalidKitchenSotPrintFieldError(field, value);
+  }
+  return value;
+}
+
 function requiredStringArray(field: string, value: JsonValue | undefined): string[] {
   if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
     throw new InvalidKitchenSotPrintFieldError(field, value);
@@ -97,6 +105,7 @@ function mapItem(recipeIndex: number, itemIndex: number, item: KitchenSotItem): 
     sourceText: item.candidate_text,
     sourceValue: null,
     sourceUnit: null,
+    servingNote: nullableString(`${field}.serving_note`, item.serving_note),
     decisionStatus: item.decision_status,
     selectedSource: item.selected_source,
   };
@@ -163,6 +172,8 @@ function mapRecipe(recipe: KitchenSotRecipe, recipeIndex: number): RecipeVersion
     ),
     lines: recipe.items.map((item, itemIndex) => mapItem(recipeIndex, itemIndex, item)),
     methodText: recipe.method_candidate_text,
+    methodDecisionNote: recipe.method_decision_note,
+    yieldText: recipe.yield_candidate_text,
     blockers: recipe.blockers
       .filter(({ resolved }) => resolved !== true)
       .map(({ message }) => message),

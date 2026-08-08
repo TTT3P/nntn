@@ -15,6 +15,9 @@ export interface ProjectedWorkDocument extends WorkDocument {
   ingredients: IngredientLine[];
   multiplier: number;
   blockers: string[];
+  operationalNotes: string[];
+  methodDecisionNote: string | null;
+  yieldText: string | null;
 }
 
 export class InvalidWorkMultiplierError extends Error {
@@ -281,6 +284,14 @@ function requireArray(recipeId: RecipeIdentity, field: string, value: unknown): 
   }
 }
 
+function requireNullableString(
+  recipeId: RecipeIdentity,
+  field: string,
+  value: unknown,
+): asserts value is string | null {
+  if (value !== null) requireString(recipeId, field, value);
+}
+
 function validateProjectionInputs(recipe: RecipeVersion, document: WorkDocument): void {
   requireString(recipe.recipeId, "recipeVersionId", recipe.recipeVersionId);
   requireString(recipe.recipeId, "recipeName", recipe.name);
@@ -288,6 +299,12 @@ function validateProjectionInputs(recipe: RecipeVersion, document: WorkDocument)
   for (const blocker of recipe.blockers) {
     requireString(recipe.recipeId, "blockers[]", blocker);
   }
+  requireArray(recipe.recipeId, "operationalNotes", recipe.operationalNotes);
+  for (const note of recipe.operationalNotes) {
+    requireString(recipe.recipeId, "operationalNotes[]", note);
+  }
+  requireNullableString(recipe.recipeId, "methodDecisionNote", recipe.methodDecisionNote);
+  requireNullableString(recipe.recipeId, "yieldText", recipe.yieldText);
   requireArray(recipe.recipeId, "lines", recipe.lines);
   requireArray(recipe.recipeId, "ingredientLineKeys", document.ingredientLineKeys);
   for (const lineKey of document.ingredientLineKeys) {
@@ -313,6 +330,11 @@ function validateProjectedDocument(document: ProjectedWorkDocument): void {
   for (const blocker of document.blockers) {
     requireString(document.recipeId, "blockers[]", blocker);
   }
+  for (const note of document.operationalNotes) {
+    requireString(document.recipeId, "operationalNotes[]", note);
+  }
+  requireNullableString(document.recipeId, "methodDecisionNote", document.methodDecisionNote);
+  requireNullableString(document.recipeId, "yieldText", document.yieldText);
   for (const ingredient of document.ingredients) {
     requireString(document.recipeId, `ingredients[${ingredient.lineKey}].itemName`, ingredient.itemName);
     if (ingredient.sourceText !== null) {
@@ -321,6 +343,11 @@ function validateProjectedDocument(document: ProjectedWorkDocument): void {
     if (ingredient.sourceUnit !== null) {
       requireString(document.recipeId, `ingredients[${ingredient.lineKey}].sourceUnit`, ingredient.sourceUnit);
     }
+    requireNullableString(
+      document.recipeId,
+      `ingredients[${ingredient.lineKey}].servingNote`,
+      ingredient.servingNote,
+    );
   }
   for (const step of document.steps) {
     requireString(document.recipeId, "steps[].stepId", step.stepId);
@@ -425,6 +452,9 @@ function projectStage(
       ingredients: resolveIngredients(recipe, document, stage, multiplier),
       multiplier,
       blockers: [...recipe.blockers],
+      operationalNotes: stage === "service" ? [] : [...recipe.operationalNotes],
+      methodDecisionNote: recipe.methodDecisionNote,
+      yieldText: stage === "service" ? null : recipe.yieldText,
     };
     validateProjectedDocument(projectedDocument);
     projected.push(projectedDocument);

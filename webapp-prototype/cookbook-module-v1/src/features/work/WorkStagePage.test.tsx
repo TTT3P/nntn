@@ -167,6 +167,67 @@ describe("WorkStagePage", () => {
     expect(screen.queryByText(blocker.message)).not.toBeInTheDocument();
   });
 
+  test("shows recipe 2 operational facts and method scope verbatim", async () => {
+    renderWithKitchenSotDocument(parseKitchenSotDocument(fixture), "/work/2?stage=all");
+
+    const article = await screen.findByRole("article", { name: "น้ำซุปก๋วยเตี๋ยว V3" });
+    expect(within(article).getByText("ใช้น้ำเปล่าประมาณ 50 ลิตร ต่อหม้อเบอร์ 70"))
+      .toBeVisible();
+    expect(within(article).getByText("ขอบเขตสูตรนี้เป็นน้ำซุปเท่านั้น ไม่รวมขั้นตอนลงเนื้อ"))
+      .toBeVisible();
+    expect(within(article).getByText(
+      "DOCX V3 ระบุรายการส่วนผสมแต่ไม่มีลำดับวิธีปรุงน้ำซุป; ตัดวิธีเก่าที่มีขั้นตอนลงเนื้อออกตามขอบเขตที่เจ้าของยืนยัน",
+    )).toBeVisible();
+  });
+
+  test("excludes a removed dependency document while retaining an active use of the same recipe", async () => {
+    const removed = renderWithKitchenSotDocument(
+      parseKitchenSotDocument(fixture),
+      "/work/156?stage=all",
+    );
+
+    await screen.findByRole("heading", { level: 2, name: "ซอสยากินิกุ" });
+    expect(screen.queryByRole("heading", { level: 4, name: "ซอสอเนกประสงค์" }))
+      .not.toBeInTheDocument();
+    expect(removed.container.querySelectorAll("tbody tr")).toHaveLength(11);
+    expect(screen.queryByRole("row", { name: /ซอสอเนกประสงค์/u }))
+      .not.toBeInTheDocument();
+    removed.unmount();
+
+    const active = renderWithKitchenSotDocument(
+      parseKitchenSotDocument(fixture),
+      "/work/157?stage=all",
+    );
+
+    expect(await screen.findByRole("heading", { level: 4, name: "ซอสอเนกประสงค์" }))
+      .toBeVisible();
+    expect(active.container.querySelectorAll("tbody tr")).toHaveLength(14);
+  });
+
+  test("shows exact prep yield and method note for Japanese rice", async () => {
+    const recipeId = encodeRecipeIdentity("candidate:prepared:ข้าวญี่ปุ่นหุงสุก");
+    renderWithKitchenSotDocument(
+      parseKitchenSotDocument(fixture),
+      `/work/${recipeId}?stage=prep`,
+    );
+
+    const article = await screen.findByRole("article", { name: "ข้าวญี่ปุ่นหุงสุก" });
+    expect(within(article).getByText("ข้าวหุงสุก 180 กรัม ต่อข้าวสารดิบ 72 กรัม"))
+      .toBeVisible();
+    expect(within(article).getByText(
+      "เรียบเรียงจากคำบอกของครัวเท่าที่ได้รับ โดยไม่เติมเวลา โปรแกรมหม้อ หรือวิธีพักข้าว",
+    )).toBeVisible();
+  });
+
+  test("shows exact Service serving note while excluding kitchen cost basis", async () => {
+    renderWithKitchenSotDocument(parseKitchenSotDocument(fixture), "/work/159?stage=service");
+
+    const article = await screen.findByRole("article", { name: "ข้าวหน้าเนื้อยากินิกุ" });
+    expect(within(article).getByText("ตักข้าวหุงสุก 180 กรัม")).toBeVisible();
+    expect(within(article).queryByText("ข้าวสารญี่ปุ่นดิบ 72 กรัม")).not.toBeInTheDocument();
+    expect(article).not.toHaveTextContent("ฐานต้นทุนต่อที่");
+  });
+
   test.each([2, 160, 9, 161, 162])(
     "renders missing-method recipe %s as a non-empty DRAFT without invented steps",
     async (recipeId) => {

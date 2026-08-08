@@ -91,6 +91,7 @@ function captureIngredient(value: unknown): IngredientLine {
     sourceText: line.sourceText as string | null,
     sourceValue: line.sourceValue as number | null,
     sourceUnit: line.sourceUnit as string | null,
+    servingNote: line.servingNote as string | null,
     decisionStatus: line.decisionStatus as string,
     selectedSource: line.selectedSource as string | null,
   };
@@ -142,6 +143,8 @@ function captureRecipe(value: unknown): RecipeVersion {
     sourceLocators: requireArray(recipe.sourceLocators).map((locator) => locator as string),
     lines: requireArray(recipe.lines).map(captureIngredient),
     methodText: recipe.methodText as string | null,
+    methodDecisionNote: recipe.methodDecisionNote as string | null,
+    yieldText: recipe.yieldText as string | null,
     blockers: requireArray(recipe.blockers).map((blocker) => blocker as string),
     operationalNotes: requireArray(recipe.operationalNotes).map((note) => note as string),
     workDocuments,
@@ -276,6 +279,7 @@ function plannerErrorMessage(error: unknown): string {
     const sectionLabels = {
       header: "หัวเอกสาร",
       ingredients: "วัตถุดิบ",
+      operational_facts: "ข้อมูลใช้งานตามต้นฉบับ",
       media_metadata: "รายละเอียดรูป",
       combined: "องค์ประกอบรวม",
     } as const;

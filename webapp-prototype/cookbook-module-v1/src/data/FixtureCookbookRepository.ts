@@ -29,6 +29,7 @@ interface FixtureItem {
   candidate_text: string | null;
   source_value?: number | null;
   source_unit?: string | null;
+  serving_note?: string | null;
   decision_status: string;
   selected_source: string | null;
 }
@@ -50,6 +51,8 @@ interface FixtureRecipe {
   source_locators: string[];
   items: FixtureItem[];
   method_candidate_text: string | null;
+  method_decision_note: string | null;
+  yield_candidate_text: string | null;
   blockers: Array<{ code: string; message: string }>;
   operational_notes: string[];
   work_documents: Partial<Record<WorkStage, FixtureWorkDocument>>;
@@ -153,6 +156,7 @@ function mapLine(item: FixtureItem): IngredientLine {
     sourceText: item.candidate_text,
     sourceValue: item.source_value ?? null,
     sourceUnit: item.source_unit ?? null,
+    servingNote: item.serving_note ?? null,
     decisionStatus: item.decision_status,
     selectedSource: item.selected_source,
   };
@@ -199,6 +203,8 @@ function mapRecipe(recipe: FixtureRecipe): RecipeVersion {
     sourceLocators: [...recipe.source_locators],
     lines: recipe.items.map(mapLine),
     methodText: recipe.method_candidate_text,
+    methodDecisionNote: recipe.method_decision_note,
+    yieldText: recipe.yield_candidate_text,
     blockers: recipe.blockers.map((blocker) => blocker.message),
     operationalNotes: [...recipe.operational_notes],
     workDocuments: mapWorkDocuments(

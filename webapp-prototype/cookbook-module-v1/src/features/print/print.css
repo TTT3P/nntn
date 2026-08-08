@@ -164,6 +164,43 @@
   padding-top: 4mm;
 }
 
+.workstation-card__body--without-steps .workstation-ingredients {
+  grid-column: 1 / -1;
+}
+
+.workstation-card__body--without-steps {
+  padding-top: 2mm;
+}
+
+.workstation-facts {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 1mm;
+  padding: 1.5mm 2mm;
+  border: 0.2mm solid #d8cbb9;
+  background: #fbf8f2;
+  font-size: 8.5pt;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.workstation-facts ul,
+.workstation-facts p {
+  margin: 0;
+}
+
+.workstation-facts ul {
+  padding-left: 5mm;
+}
+
+.workstation-ingredient__serving-note {
+  display: block;
+  margin-top: 0.6mm;
+  color: #5b4328;
+  font-weight: 700;
+}
+
 .workstation-ingredients {
   width: 100%;
   min-width: 0;

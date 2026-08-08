@@ -12,6 +12,7 @@ export interface IngredientLine {
   sourceText: string | null;
   sourceValue: number | null;
   sourceUnit: string | null;
+  servingNote: string | null;
   decisionStatus: string;
   selectedSource: string | null;
 }
@@ -40,6 +41,8 @@ export interface RecipeVersion {
   sourceLocators: string[];
   lines: IngredientLine[];
   methodText: string | null;
+  methodDecisionNote: string | null;
+  yieldText: string | null;
   blockers: string[];
   operationalNotes: string[];
   workDocuments: Partial<Record<WorkStage, WorkDocument>>;

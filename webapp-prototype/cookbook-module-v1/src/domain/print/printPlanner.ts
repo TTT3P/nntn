@@ -208,6 +208,7 @@ export class UnpageableStepError extends Error {
 export type UnpageableDocumentSection =
   | "header"
   | "ingredients"
+  | "operational_facts"
   | "media_metadata"
   | "combined";
 
@@ -300,6 +301,7 @@ function snapshotIngredient(value: unknown): unknown {
     sourceText: value.sourceText,
     sourceValue: value.sourceValue,
     sourceUnit: value.sourceUnit,
+    servingNote: value.servingNote,
     decisionStatus: value.decisionStatus,
     selectedSource: value.selectedSource,
   };
@@ -333,6 +335,9 @@ function snapshotDocument(
     steps: snapshotArray(value.steps, snapshotStep),
     multiplier: value.multiplier,
     blockers: snapshotArray(value.blockers),
+    operationalNotes: snapshotArray(value.operationalNotes),
+    methodDecisionNote: value.methodDecisionNote,
+    yieldText: value.yieldText,
   };
 }
 
@@ -527,6 +532,7 @@ function validateIngredient(document: unknown, value: unknown, index: number): v
     invalidDocument(document, `${context}.sourceValue`, value.sourceValue);
   }
   if (!isNullableString(value.sourceUnit)) invalidDocument(document, `${context}.sourceUnit`, value.sourceUnit);
+  if (!isNullableString(value.servingNote)) invalidDocument(document, `${context}.servingNote`, value.servingNote);
   if (typeof value.decisionStatus !== "string") invalidDocument(document, `${context}.decisionStatus`, value.decisionStatus);
   if (!isNullableString(value.selectedSource)) invalidDocument(document, `${context}.selectedSource`, value.selectedSource);
 }
@@ -542,6 +548,11 @@ function validateProjectedDocument(value: unknown): asserts value is ProjectedWo
   if (!Array.isArray(value.ingredients)) invalidDocument(value, "ingredients", value.ingredients);
   value.ingredients.forEach((ingredient, index) => validateIngredient(value, ingredient, index));
   validateStringArray(value, "blockers", value.blockers);
+  validateStringArray(value, "operationalNotes", value.operationalNotes);
+  if (!isNullableString(value.methodDecisionNote)) {
+    invalidDocument(value, "methodDecisionNote", value.methodDecisionNote);
+  }
+  if (!isNullableString(value.yieldText)) invalidDocument(value, "yieldText", value.yieldText);
   if (!Number.isSafeInteger(value.multiplier) || (value.multiplier as number) < 1) {
     invalidDocument(value, "multiplier", value.multiplier);
   }
@@ -641,6 +652,7 @@ function cloneIngredient(line: IngredientLine): IngredientLine {
     sourceText: line.sourceText,
     sourceValue: line.sourceValue,
     sourceUnit: line.sourceUnit,
+    servingNote: line.servingNote,
     decisionStatus: line.decisionStatus,
     selectedSource: line.selectedSource,
   };
@@ -667,6 +679,9 @@ function cloneDocument(document: ProjectedWorkDocument): ProjectedWorkDocument {
     steps: document.steps.map(cloneStep),
     multiplier: document.multiplier,
     blockers: document.blockers.map((blocker) => blocker),
+    operationalNotes: document.operationalNotes.map((note) => note),
+    methodDecisionNote: document.methodDecisionNote,
+    yieldText: document.yieldText,
   };
 }
 
@@ -799,12 +814,9 @@ function rejectSingleLineLayoutControl(value: string, field: string): void {
   }
 }
 
-function stepInstructionDisplayWidth(value: string): number {
+function multilineDisplayWidth(value: string, field: string): number {
   if (hasUnsafeMultilineLayoutControl(value)) {
-    throw new InvalidPrintInputError(
-      "document.steps.instruction.layout_control",
-      "<layout-control>",
-    );
+    throw new InvalidPrintInputError(field, "<layout-control>");
   }
   const lines = value.split(HARD_LINE_BREAK);
   const lineWidths = lines.map((line) => {
@@ -824,6 +836,13 @@ function stepInstructionDisplayWidth(value: string): number {
   );
 }
 
+function stepInstructionDisplayWidth(value: string): number {
+  return multilineDisplayWidth(
+    value,
+    "document.steps.instruction.layout_control",
+  );
+}
+
 function sourceFactText(line: IngredientLine): string {
   if (line.sourceText !== null) return line.sourceText;
   if (line.sourceValue !== null && line.sourceUnit !== null) {
@@ -834,8 +853,25 @@ function sourceFactText(line: IngredientLine): string {
   return "ไม่ระบุในต้นฉบับ";
 }
 
-function sourceFactDisplayWidth(line: IngredientLine): number {
-  return renderedDisplayWidth(sourceFactText(line));
+function servingNoteDisplayWidth(
+  document: ProjectedWorkDocument,
+  line: IngredientLine,
+): number {
+  if (document.stage !== "service" || line.servingNote === null) {
+    return 0;
+  }
+  return multilineDisplayWidth(
+    line.servingNote,
+    "document.ingredients.servingNote.layout_control",
+  );
+}
+
+function operationalFactStrings(document: ProjectedWorkDocument): string[] {
+  return [
+    ...document.operationalNotes,
+    ...(document.yieldText === null ? [] : [document.yieldText]),
+    ...(document.methodDecisionNote === null ? [] : [document.methodDecisionNote]),
+  ];
 }
 
 const REGIONAL_LAYOUT_CAPACITY = {
@@ -845,6 +881,7 @@ const REGIONAL_LAYOUT_CAPACITY = {
   ingredientSourceFactDisplayWidth: 48,
   ingredientRowDisplayWidth: 96,
   ingredientRegionDisplayWidth: 300,
+  operationalFactsDisplayWidth: 480,
   mediaCount: 3,
   mediaCaptionDisplayWidth: 121,
   mediaAltTextDisplayWidth: 80,
@@ -897,8 +934,12 @@ function validateFixedRegionalLayout(document: ProjectedWorkDocument): void {
       factText,
       "document.ingredients.sourceFact.layout_control",
     );
+    const sourceDisplayWidth = renderedDisplayWidth(factText);
+    const factDisplayWidth = Math.max(
+      sourceDisplayWidth,
+      servingNoteDisplayWidth(document, line),
+    );
     const itemDisplayWidth = renderedDisplayWidth(line.itemName);
-    const factDisplayWidth = renderedDisplayWidth(factText);
     if (itemDisplayWidth > REGIONAL_LAYOUT_CAPACITY.ingredientItemDisplayWidth) {
       throwRegionalLayoutError(
         document,
@@ -932,6 +973,23 @@ function validateFixedRegionalLayout(document: ProjectedWorkDocument): void {
       "ingredients",
       regionDisplayWidth,
       REGIONAL_LAYOUT_CAPACITY.ingredientRegionDisplayWidth,
+    );
+  }
+
+
+  const operationalFactsDisplayWidth = operationalFactStrings(document).reduce(
+    (total, fact) => total + multilineDisplayWidth(
+      fact,
+      "document.operationalFacts.layout_control",
+    ),
+    0,
+  );
+  if (operationalFactsDisplayWidth > REGIONAL_LAYOUT_CAPACITY.operationalFactsDisplayWidth) {
+    throwRegionalLayoutError(
+      document,
+      "operational_facts",
+      operationalFactsDisplayWidth,
+      REGIONAL_LAYOUT_CAPACITY.operationalFactsDisplayWidth,
     );
   }
 }
@@ -1025,9 +1083,24 @@ function ingredientLayoutUnits(document: ProjectedWorkDocument): number {
     (total, line) => total + 1 + Math.max(
       1,
       Math.ceil(
-        (renderedDisplayWidth(line.itemName) + sourceFactDisplayWidth(line)) /
+        (renderedDisplayWidth(line.itemName) +
+          renderedDisplayWidth(sourceFactText(line)) +
+          servingNoteDisplayWidth(document, line)) /
           DISPLAY_CELLS_PER_LAYOUT_UNIT,
       ),
+    ),
+    0,
+  );
+}
+
+function operationalFactsLayoutUnits(document: ProjectedWorkDocument): number {
+  return operationalFactStrings(document).reduce(
+    (total, fact) => total + Math.max(
+      1,
+      Math.ceil(multilineDisplayWidth(
+        fact,
+        "document.operationalFacts.layout_control",
+      ) / 80),
     ),
     0,
   );
@@ -1090,6 +1163,7 @@ function combinedPageLayout(
   const contributions = {
     header: Math.max(1, Math.ceil(renderedDisplayWidth(document.recipeName) / 40)),
     ingredients: ingredientLayoutUnits(document),
+    operational_facts: operationalFactsLayoutUnits(document),
     steps: stepLayoutUnits(document, media, blocks),
     media_metadata: mediaMetadataUnits(media, blocks),
   };
@@ -1097,10 +1171,11 @@ function combinedPageLayout(
     fixedChromeAndWarningUnits +
     contributions.header +
     contributions.ingredients +
+    contributions.operational_facts +
     contributions.steps +
     contributions.media_metadata;
 
-  const dominant = (["header", "ingredients", "media_metadata"] as const)
+  const dominant = (["header", "ingredients", "operational_facts", "media_metadata"] as const)
     .reduce((largest, section) =>
       contributions[section] > contributions[largest] ? section : largest,
     );
@@ -1242,15 +1317,45 @@ function paginateCapturedDocument(
   const steps = [...documentSnapshot.steps].sort((left, right) => left.order - right.order);
   validateFixedRegionalLayout(documentSnapshot);
   if (steps.length === 0) {
-    if (documentSnapshot.blockers.length === 0) return [];
+    if (
+      documentSnapshot.blockers.length === 0 &&
+      documentSnapshot.operationalNotes.length === 0 &&
+      documentSnapshot.yieldText === null &&
+      documentSnapshot.methodDecisionNote === null
+    ) return [];
+    const fullLayout = combinedPageLayout(documentSnapshot, mediaSnapshot, []);
+    if (fullLayout.contentUnits <= fullLayout.capacity) {
+      return [{
+        kind: "station",
+        document: cloneDocument(documentSnapshot),
+        blocks: [],
+        partNumber: 1,
+        totalParts: 1,
+      }];
+    }
+
+    const hasFacts = operationalFactStrings(documentSnapshot).length > 0;
+    if (documentSnapshot.ingredients.length > 0 && hasFacts) {
+      const ingredientsDocument = cloneDocument(documentSnapshot);
+      ingredientsDocument.operationalNotes = [];
+      ingredientsDocument.methodDecisionNote = null;
+      ingredientsDocument.yieldText = null;
+      const factsDocument = cloneDocument(documentSnapshot);
+      factsDocument.ingredientLineKeys = [];
+      factsDocument.ingredients = [];
+      validateCombinedPageLayout(ingredientsDocument, mediaSnapshot, []);
+      validateCombinedPageLayout(factsDocument, mediaSnapshot, []);
+      return [ingredientsDocument, factsDocument].map((document, index) => ({
+        kind: "station" as const,
+        document,
+        blocks: [],
+        partNumber: index + 1,
+        totalParts: 2,
+      }));
+    }
+
     validateCombinedPageLayout(documentSnapshot, mediaSnapshot, []);
-    return [{
-      kind: "station",
-      document: cloneDocument(documentSnapshot),
-      blocks: [],
-      partNumber: 1,
-      totalParts: 1,
-    }];
+    throw new Error("unreachable print layout validation");
   }
 
   const capacity = 7;

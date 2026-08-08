@@ -292,6 +292,91 @@ describe("buildPrintPlan", () => {
     expect(documents).toEqual(original);
   });
 
+  test("snapshots operational facts and keeps a facts-only document printable", () => {
+    const document = makeProjectedWorkDocument({
+      steps: [],
+      ingredients: [],
+      ingredientLineKeys: [],
+      operationalNotes: ["ใช้น้ำต่อหม้อเบอร์ 70"],
+      yieldText: "ผลผลิต 50 ลิตร",
+      methodDecisionNote: "ไม่รวมขั้นตอนลงเนื้อ",
+    });
+    const original = structuredClone(document);
+
+    const plan = buildPrintPlan([document], buildMediaIndex(makeSnapshot()), {
+      template: "station",
+      stage: "prep",
+      multiplier: 1,
+    });
+
+    expect(plan).toHaveLength(1);
+    const page = plan[0];
+    if (page.kind !== "station") throw new Error("expected station page");
+    expect(page.document.operationalNotes).toEqual(["ใช้น้ำต่อหม้อเบอร์ 70"]);
+    expect(page.document.yieldText).toBe("ผลผลิต 50 ลิตร");
+    expect(page.document.methodDecisionNote).toBe("ไม่รวมขั้นตอนลงเนื้อ");
+
+    page.document.operationalNotes[0] = "changed";
+    expect(document).toEqual(original);
+  });
+
+  test("moves long source facts to a continuation sheet instead of clipping a full ingredient card", () => {
+    const ingredients = Array.from({ length: 14 }, (_, index) => ({
+      ...makeProjectedWorkDocument().ingredients[0]!,
+      lineKey: `soup-${String(index + 1)}`,
+      itemName: `วัตถุดิบซุป ${String(index + 1)}`,
+      sourceText: `${String(index + 1)} กรัม`,
+    }));
+    const document = makeProjectedWorkDocument({
+      recipeId: 2,
+      recipeVersionId: "soup-v3",
+      recipeName: "น้ำซุปก๋วยเตี๋ยว V3",
+      ingredientLineKeys: ingredients.map(({ lineKey }) => lineKey),
+      ingredients,
+      steps: [],
+      blockers: ["ยังไม่มีลำดับวิธีปรุงน้ำซุป"],
+      operationalNotes: [
+        "ใช้น้ำเปล่าประมาณ 50 ลิตร ต่อหม้อเบอร์ 70",
+        "ขอบเขตสูตรนี้เป็นน้ำซุปเท่านั้น ไม่รวมขั้นตอนลงเนื้อ",
+      ],
+      methodDecisionNote: "DOCX V3 ระบุรายการส่วนผสมแต่ไม่มีลำดับวิธีปรุงน้ำซุป; ตัดวิธีเก่าที่มีขั้นตอนลงเนื้อออกตามขอบเขตที่เจ้าของยืนยัน",
+    });
+
+    const pages = paginateWorkDocument(document, buildMediaIndex(makeSnapshot()));
+
+    expect(pages).toHaveLength(2);
+    expect(pages.map(({ partNumber, totalParts }) => [partNumber, totalParts])).toEqual([
+      [1, 2],
+      [2, 2],
+    ]);
+    expect(pages[0]!.document.ingredients).toHaveLength(14);
+    expect(pages[0]!.document.operationalNotes).toEqual([]);
+    expect(pages[0]!.document.methodDecisionNote).toBeNull();
+    expect(pages[1]!.document.ingredients).toEqual([]);
+    expect(pages[1]!.document.operationalNotes).toEqual(document.operationalNotes);
+    expect(pages[1]!.document.methodDecisionNote).toBe(document.methodDecisionNote);
+  });
+
+  test.each([
+    ["operationalNotes[]", { operationalNotes: [42] }],
+    ["methodDecisionNote", { methodDecisionNote: [] }],
+    ["yieldText", { yieldText: {} }],
+    ["ingredients[test-line-1].servingNote", {
+      ingredients: [{ ...makeProjectedWorkDocument().ingredients[0], servingNote: 180 }],
+    }],
+  ] as const)("rejects malformed projected operational fact %s", (field, overrides) => {
+    const document = { ...makeProjectedWorkDocument(), ...overrides } as never;
+
+    expect(() => buildPrintPlan([document], buildMediaIndex(makeSnapshot()), {
+      template: "station",
+      stage: "prep",
+      multiplier: 1,
+    })).toThrowError(expect.objectContaining({
+      name: "InvalidPrintDocumentError",
+      field,
+    }));
+  });
+
   test("snapshots settings and document stage getters once before selection", () => {
     const document = makeProjectedWorkDocument();
     const reads = { template: 0, stage: 0, multiplier: 0, documentStage: 0 };

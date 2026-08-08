@@ -159,7 +159,7 @@ try {
   await page.goto(`${origin}/nntn-cookbook/tests/print-layout-harness.html?case=normal`);
   await page.locator(".workstation-sheet").first().waitFor();
   const a5SheetCount = await page.locator(".workstation-sheet").count();
-  assert(a5SheetCount === 9, `A5 print preview: expected 9 logical sheets, got ${a5SheetCount}`);
+  assert(a5SheetCount === 10, `A5 print preview: expected 10 logical sheets, got ${a5SheetCount}`);
   await page.emulateMedia({ media: "print" });
   assert(await page.locator(".print-center-header").evaluate((element) => getComputedStyle(element).display) === "none", "A5 print media must hide the page header");
   assert(await page.locator(".print-controls").evaluate((element) => getComputedStyle(element).display) === "none", "A5 print media must hide print controls");

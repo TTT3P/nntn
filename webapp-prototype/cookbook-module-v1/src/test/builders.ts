@@ -20,6 +20,7 @@ export function makeIngredientLine(
     sourceText: "1 ช้อนชา",
     sourceValue: null,
     sourceUnit: null,
+    servingNote: null,
     decisionStatus: "confirmed",
     selectedSource: "TEST",
     ...overrides,
@@ -49,6 +50,8 @@ export function makeRecipe(
     sourceLocators: ["TEST"],
     lines: [],
     methodText: "1. ทำตามขั้นตอนทดสอบ",
+    methodDecisionNote: null,
+    yieldText: null,
     blockers: [],
     operationalNotes: [],
     workDocuments: {},
@@ -70,6 +73,9 @@ export function makeProjectedWorkDocument(
     steps: [makeWorkStep()],
     multiplier: 1,
     blockers: [],
+    operationalNotes: [],
+    methodDecisionNote: null,
+    yieldText: null,
     ...overrides,
   };
 }
