@@ -715,9 +715,45 @@ function renumberMeatBlocks() {
   })
 }
 
+// Pre-submit safety net (2026-08-10 short-ship bug class): renderMeatChips() renders
+// one `.lot-chip.selected` per bag in meatSel[n].selectedBags, scoped under #meat-blocks
+// (the bag-picker modal reuses the same class name but lives outside #meat-blocks, so it
+// doesn't interfere here). If a future silent state wipe desyncs the DOM from what's about
+// to be sent to the RPC, this trips instead of quietly submitting a smaller bag list.
+function checkMeatBagInvariant(allBagIds) {
+  const domChipCount = document.querySelectorAll('#meat-blocks .lot-chip.selected').length
+  return domChipCount === allBagIds.length
+}
+
 function onMeatItemChange(n) {
   const sel = document.getElementById(`mb-sku-${n}`)
   const itemId = sel.value
+  const prevItemId = meatSel[n].itemId
+
+  // No-op re-fire guard — makeSearchable's pick() dispatches a 'change' event on
+  // EVERY option pick, including re-picking the value that's already selected
+  // (stray click / mobile touch re-tap on the custom dropdown). Without this guard
+  // that silently wiped selectedBags with zero warning — confirmed root cause of the
+  // 2026-08-10 short-ship (10 delivered vs 15 packed, 5 bags vanished with no error).
+  if (itemId === prevItemId) return
+
+  // Real SKU change while bags are already selected → confirm before wiping,
+  // same UX pattern as the Form-vs-Draft mismatch confirm() used elsewhere in this file.
+  if (prevItemId && meatSel[n].selectedBags.size > 0) {
+    const count = meatSel[n].selectedBags.size
+    if (!confirm(`เปลี่ยนรายการ (รายการที่ ${n}) จะล้างถุงที่เลือกไว้ ${count} ถุง — ยืนยัน?`)) {
+      // Revert both the underlying <select> and the visible search-input text
+      // (makeSearchable renders a separate text input over the hidden native select).
+      sel.value = prevItemId
+      const searchInput = document.getElementById(`mb-sku-${n}-search`)
+      if (searchInput) {
+        const prevOpt = Array.from(sel.options).find(o => o.value === prevItemId)
+        searchInput.value = prevOpt ? prevOpt.text : ''
+      }
+      return
+    }
+  }
+
   meatSel[n].itemId = itemId
   meatSel[n].selectedBags = new Set()
   document.getElementById(`mb-chips-${n}`).innerHTML = ''
@@ -2625,6 +2661,12 @@ async function submitDelivery() {
     Object.values(meatSel).forEach(s => s.selectedBags.forEach(id => allBagIds.push(Number(id))))
   }
   // meat is optional — allow non-meat only delivery
+
+  if (!checkMeatBagInvariant(allBagIds)) {
+    const domChipCount = document.querySelectorAll('#meat-blocks .lot-chip.selected').length
+    alert(`❌ ตรวจพบข้อมูลไม่ตรงกัน — หยุดส่งออกเพื่อความปลอดภัย\n\nถุงที่แสดงบนหน้าจอ: ${domChipCount} ถุง\nถุงที่กำลังจะส่งจริง: ${allBagIds.length} ถุง\n\nกรุณารีเฟรชหน้าแล้วเลือกถุงใหม่ (อย่าส่งออกจากสถานะนี้)`)
+    _release(); return
+  }
 
   // Collect + validate non-meat rows — ใช้ querySelectorAll แทน index loop
   const nmWithdrawals = []
