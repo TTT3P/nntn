@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:local-draft": "playwright test --config playwright.local.config.ts tests/cookbook-draft-persistence.spec.ts",
+    "test:ingredients:inputs": "node scripts/verify-ingredient-migration-inputs.mjs",
     "test:prepare:local-draft": "node scripts/prepare-cookbook-test-vault.mjs",
     "typecheck": "tsc -b --pretty false",
     "preview": "vite preview"
