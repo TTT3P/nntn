@@ -1,13 +1,7 @@
 import { describe, expect, test } from "vitest";
 import source from "../../../../outputs/nntn-cookbook-import/NNTN-Kitchen-Cookbook-Import-v1.json";
-import catalogJson from "../../data/catalog/recipe-catalog-85.json";
-import crosswalkJson from "../../data/catalog/v5-recipe-crosswalk.json";
 import firstSetFixture from "../../data/fixtures/first-set.json";
 import { makeCookbookV6Document, makeSourceManifest } from "../../test/ingredientBuilders";
-import { withOwnerConfirmedEggRecipe } from "../../test/ownerConfirmedEggRecipe";
-import { parseRecipeCatalog } from "../catalog/recipeCatalog";
-import { migrateV5ToV6 } from "../cookbookV6/migrateV5ToV6";
-import { parseCookbookV6 } from "../cookbookV6/parseCookbookV6";
 import { parseKitchenSotDocument } from "../sot/kitchenSotDocument";
 import {
   inspectLegacyIngredientSnapshot,
@@ -36,6 +30,7 @@ describe("legacy ingredient staging", () => {
       source_status: "รอตรวจ",
       ingredient_id: 9,
       cost_per_unit_v1: 0.05,
+      supplier_evidence: { labels: ["ฉลากเดิม", "Lot A"] },
     };
     const input = { ingredients: [unusualIngredient], recipes: [], recipe_items: [] };
     const manifest = makeSourceManifest({ ingredient: 1, recipe: 0, recipe_line: 0 });
@@ -44,11 +39,63 @@ describe("legacy ingredient staging", () => {
     const batch = stageLegacyIngredientSnapshot(input, manifest);
 
     expect(batch.records[0]!.raw).toEqual(input.ingredients[0]);
-    expect(batch.records[0]!.raw).toBe(input.ingredients[0]);
+    expect(batch.records[0]!.raw).not.toBe(input.ingredients[0]);
     expect(batch.records[0]!.sourceSha256).toBe(manifest.sha256);
     expect(batch.records[0]!.sourceRecordId).toBe("ingredient:9");
     expect(JSON.stringify(batch.records[0]!.raw)).toBe(before);
     expect(JSON.stringify(unusualIngredient)).toBe(before);
+  });
+
+  test("isolates frozen staged raw evidence from caller mutation in both directions", () => {
+    const ingredient = {
+      ingredient_id: 9,
+      ingredient_name: "น้ำปลา",
+      cost_per_unit_v1: null,
+      evidence: { labels: ["ฉลากเดิม"] },
+    };
+    const input = { ingredients: [ingredient], recipes: [], recipe_items: [] };
+    const batch = stageLegacyIngredientSnapshot(
+      input,
+      makeSourceManifest({ ingredient: 1, recipe: 0, recipe_line: 0 }),
+    );
+    const stagedRaw = batch.records[0]!.raw as typeof ingredient;
+
+    expect(() => {
+      stagedRaw.evidence.labels[0] = "แก้ staging";
+    }).toThrow(TypeError);
+    expect(ingredient.evidence.labels[0]).toBe("ฉลากเดิม");
+
+    ingredient.ingredient_name = "แก้ source";
+    ingredient.evidence.labels[0] = "ฉลากใหม่";
+    expect(stagedRaw.ingredient_name).toBe("น้ำปลา");
+    expect(stagedRaw.evidence.labels[0]).toBe("ฉลากเดิม");
+  });
+
+  test("freezes every exposed staging container and keeps line views distinct", () => {
+    const input = {
+      ingredients: [],
+      recipes: [{ recipe_id: 7 }],
+      recipe_items: [{ item_id: 11, recipe_id: 7, item_kind: "direct_ingredient", ingredient_id: 9 }],
+    };
+    const batch = stageLegacyIngredientSnapshot(
+      input,
+      makeSourceManifest({ ingredient: 0, recipe: 1, recipe_line: 1 }),
+    );
+
+    expect(Object.isFrozen(batch)).toBe(true);
+    expect([
+      batch.records,
+      batch.ingredients,
+      batch.recipes,
+      batch.lines,
+      batch.directLines,
+      batch.componentLines,
+    ].every(Object.isFrozen)).toBe(true);
+    expect(batch.records.every(Object.isFrozen)).toBe(true);
+    expect(batch.lines).not.toBe(batch.directLines);
+    expect(() => {
+      (batch.directLines as unknown[]).push(batch.lines[0]);
+    }).toThrow(TypeError);
   });
 
   test("is idempotent for the same manifest and source identities", () => {
@@ -139,29 +186,37 @@ describe("Cookbook V6 first-set staging", () => {
     expect(batch.records).toHaveLength(1);
     expect(batch.directLines).toHaveLength(1);
     expect(batch.componentLines).toHaveLength(0);
-    expect(batch.records[0]!.raw).toBe(document.recipes[0]!.ingredients[0]);
+    expect(batch.records[0]!.raw).toEqual(document.recipes[0]!.ingredients[0]);
+    expect(batch.records[0]!.raw).not.toBe(document.recipes[0]!.ingredients[0]);
     expect(batch.records[0]!.sourceRecordId).toBe(
       'recipe_line:["recipe:แกงเนื้อ","line:น้ำปลา"]',
     );
     expect(batch.records.every((record) => record.sourceSha256 === manifest.sha256)).toBe(true);
+    expect(batch.lines).not.toBe(batch.directLines);
+
+    const stagedRaw = batch.records[0]!.raw as typeof document.recipes[0]["ingredients"][0];
+    expect(() => {
+      stagedRaw.name = "แก้ staging";
+    }).toThrow(TypeError);
+    expect(document.recipes[0]!.ingredients[0]!.name).toBe("น้ำปลา");
+
+    document.recipes[0]!.ingredients[0]!.name = "แก้ source";
+    expect(stagedRaw.name).toBe("น้ำปลา");
   });
 
   test("preserves the approved 108-line first-set inventory", () => {
-    const documentWithLaterOwnerAddition = migrateV5ToV6({
-      catalog: parseRecipeCatalog(catalogJson),
-      v5: withOwnerConfirmedEggRecipe(parseKitchenSotDocument(firstSetFixture)),
-      crosswalk: crosswalkJson,
-      v5Sha256: "9da9f445d7757990af873eb89a47e103399cf5d81428423d02f4281d8ae637e7",
-      catalogSha256: "9aa666169fc04774ba735894553d0a8f984f566f2004cbb2a315240cf0a00d66",
-      generatedAt: "2026-08-10T00:00:00.000Z",
-    });
-    const document = parseCookbookV6({
-      ...documentWithLaterOwnerAddition,
-      recipes: documentWithLaterOwnerAddition.recipes.map((recipe) =>
-        recipe.lineage.sourceRecipeId === 18
-          ? { ...recipe, ingredients: [], methodSteps: [], workDocuments: {} }
-          : recipe),
-    });
+    const firstSet = parseKitchenSotDocument(firstSetFixture);
+    const document = {
+      recipes: firstSet.recipes.map((recipe) => ({
+        recipeId: String(recipe.recipe_id),
+        ingredients: recipe.items.map((line) => ({
+          lineId: line.line_key,
+          name: line.item_name,
+          kind: line.item_kind === "prepared_recipe" ? "prepared_recipe" as const : "ingredient" as const,
+          sourceDisplayText: line.candidate_text,
+        })),
+      })),
+    };
     const manifest = makeSourceManifest(
       { recipe_line: 108, direct_line: 108 },
       { manifestId: "first-set", sha256: "e".repeat(64) },

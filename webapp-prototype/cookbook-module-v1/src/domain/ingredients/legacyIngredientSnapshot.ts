@@ -1,4 +1,3 @@
-import type { CookbookV6Document } from "../cookbookV6/types";
 import type { LegacySourceRecord, SourceManifest } from "./types";
 
 interface LegacyIngredient {
@@ -32,20 +31,48 @@ export interface LegacyStagingBatch {
   readonly componentLines: readonly LegacySourceRecord[];
 }
 
+export interface CookbookV6StagingLine {
+  readonly lineId: string;
+  readonly kind: string;
+}
+
+export interface CookbookV6StagingRecipe {
+  readonly recipeId: string;
+  readonly ingredients: readonly CookbookV6StagingLine[];
+}
+
+export interface CookbookV6StagingDocument {
+  readonly recipes: readonly CookbookV6StagingRecipe[];
+}
+
+function cloneAndFreezeJson(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return Object.freeze(value.map(cloneAndFreezeJson));
+  }
+  if (value !== null && typeof value === "object") {
+    const clone: Record<string, unknown> = {};
+    for (const key of Object.keys(value)) {
+      clone[key] = cloneAndFreezeJson((value as Record<string, unknown>)[key]);
+    }
+    return Object.freeze(clone);
+  }
+  return value;
+}
+
 function stageRecord(
   raw: unknown,
   manifest: SourceManifest,
   recordType: LegacySourceRecord["recordType"],
   sourceRecordId: string,
 ): LegacySourceRecord {
-  return {
+  return Object.freeze({
     stagingId: `${manifest.sha256}:${recordType}:${sourceRecordId}`,
     manifestId: manifest.manifestId,
     sourceSha256: manifest.sha256,
     recordType,
     sourceRecordId,
-    raw,
-  };
+    raw: cloneAndFreezeJson(raw),
+  });
 }
 
 function assertUnique(records: readonly LegacySourceRecord[]): void {
@@ -72,9 +99,25 @@ function batchFrom({
   directLines,
   componentLines,
 }: Omit<LegacyStagingBatch, "records">): LegacyStagingBatch {
-  const records = [...ingredients, ...recipes, ...lines];
+  const frozenIngredients = Object.freeze([...ingredients]);
+  const frozenRecipes = Object.freeze([...recipes]);
+  const frozenLines = Object.freeze([...lines]);
+  const frozenDirectLines = Object.freeze([...directLines]);
+  const frozenComponentLines = Object.freeze([...componentLines]);
+  const records = Object.freeze([
+    ...frozenIngredients,
+    ...frozenRecipes,
+    ...frozenLines,
+  ]);
   assertUnique(records);
-  return { records, ingredients, recipes, lines, directLines, componentLines };
+  return Object.freeze({
+    records,
+    ingredients: frozenIngredients,
+    recipes: frozenRecipes,
+    lines: frozenLines,
+    directLines: frozenDirectLines,
+    componentLines: frozenComponentLines,
+  });
 }
 
 export function stageLegacyIngredientSnapshot(
@@ -104,7 +147,7 @@ export function stageLegacyIngredientSnapshot(
 }
 
 export function stageCookbookV6FirstSet(
-  document: CookbookV6Document,
+  document: CookbookV6StagingDocument,
   manifest: SourceManifest,
 ): LegacyStagingBatch {
   const directLines = document.recipes.flatMap((recipe) =>

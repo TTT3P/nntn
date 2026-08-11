@@ -1,4 +1,3 @@
-import type { CookbookV6Document } from "../domain/cookbookV6/types";
 import type { IngredientMasterSnapshot, SourceManifest } from "../domain/ingredients/types";
 
 export type InvalidIngredientMasterScenario =
@@ -26,7 +25,7 @@ export function makeSourceManifest(
   };
 }
 
-export function makeCookbookV6Document(): CookbookV6Document {
+export function makeCookbookV6Document() {
   return {
     schemaVersion: "6.0.0",
     generatedAt: "2026-08-11T00:00:00.000Z",
