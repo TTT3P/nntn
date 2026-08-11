@@ -175,7 +175,7 @@ try {
   assert(a5SheetCount === 10, `A5 print preview: expected 10 logical sheets, got ${a5SheetCount}`);
   await page.emulateMedia({ media: "print" });
   assert(await page.locator(".print-center-header").evaluate((element) => getComputedStyle(element).display) === "none", "A5 print media must hide the page header");
-  assert(await page.locator(".print-controls").evaluate((element) => getComputedStyle(element).display) === "none", "A5 print media must hide print controls");
+  assert(await page.locator(".print-sidebar").evaluate((element) => getComputedStyle(element).display) === "none", "A5 print media must hide the print sidebar");
   const a5Pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
   assertPdfPageBoxes(a5Pdf, a5SheetCount, 210, 148, "A5 print PDF");
   await page.emulateMedia({ media: "screen" });
@@ -220,7 +220,7 @@ try {
   }
   await page.emulateMedia({ media: "print" });
   assert(await page.locator(".print-center-header").evaluate((element) => getComputedStyle(element).display) === "none", "A4 two-up print media must hide the page header");
-  assert(await page.locator(".print-controls").evaluate((element) => getComputedStyle(element).display) === "none", "A4 two-up print media must hide print controls");
+  assert(await page.locator(".print-sidebar").evaluate((element) => getComputedStyle(element).display) === "none", "A4 two-up print media must hide the print sidebar");
   const twoUpPdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
   assertPdfPageBoxes(twoUpPdf, 3, 210, 297, "A4 two-up print PDF");
   await page.emulateMedia({ media: "screen" });
