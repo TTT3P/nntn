@@ -89,7 +89,7 @@ test("uses the complete Cookbook flow on desktop and iPhone 15 Pro Max width", a
   await strictBrowserBoundary.drain();
 });
 
-test("keeps recipe workstage controls usable without overflow on desktop and 430px width", async ({ page }) => {
+test("keeps recipe workstage controls usable without overflow on desktop, notebook, and 430px width", async ({ page }) => {
   await page.goto("./#/recipes/RCP-021/edit");
   const stageHeading = page.getByRole("heading", { name: "จุดงานและการพิมพ์" });
   await expect(stageHeading).toBeVisible();
@@ -100,6 +100,12 @@ test("keeps recipe workstage controls usable without overflow on desktop and 430
     .locator("label");
   const methodStageSelects = page.getByLabel(/จุดงานของขั้นตอน ขั้นตอน/u);
 
+  await expectNoHorizontalOverflow(page);
+  await expectMinimumTargetSize(stageCheckboxTargets);
+  await expectMinimumTargetSize(methodStageSelects);
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await stageHeading.scrollIntoViewIfNeeded();
   await expectNoHorizontalOverflow(page);
   await expectMinimumTargetSize(stageCheckboxTargets);
   await expectMinimumTargetSize(methodStageSelects);
