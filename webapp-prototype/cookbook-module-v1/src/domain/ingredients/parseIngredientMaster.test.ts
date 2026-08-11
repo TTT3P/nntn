@@ -200,6 +200,90 @@ describe("parseIngredientMaster", () => {
     expect(parseIngredientMaster(snapshot).recipeLineLinks).toHaveLength(2);
   });
 
+  test.each([
+    ["generic ingredient link", (snapshot: ReturnType<typeof makeIngredientMasterSnapshot>) => {
+      const link = snapshot.recipeLineLinks[0]!;
+      if (link.state !== "ingredient") throw new Error("invalid test fixture");
+      link.requiredSpecificationId = null;
+    }],
+    ["inactive historical specification", (snapshot: ReturnType<typeof makeIngredientMasterSnapshot>) => {
+      snapshot.specifications[0]!.status = "inactive";
+    }],
+    ["unapproved historical specification", (snapshot: ReturnType<typeof makeIngredientMasterSnapshot>) => {
+      snapshot.specifications.push({
+        ...structuredClone(snapshot.specifications[0]!),
+        specificationId: "spec-oyster-sauce-approved-alternative",
+      });
+      snapshot.specifications[0]!.approvalState = "pending";
+    }],
+    ["component link", (snapshot: ReturnType<typeof makeIngredientMasterSnapshot>) => {
+      snapshot.recipeLineLinks = [{
+        state: "component",
+        recipeId: "recipe-opaque-001",
+        lineId: "line-opaque-001",
+        componentRecipeId: "component-recipe-opaque-001",
+        historicalLabel: "Prepared oyster sauce",
+      }];
+    }],
+    ["unmapped historical link", (snapshot: ReturnType<typeof makeIngredientMasterSnapshot>) => {
+      snapshot.recipeLineLinks = [{
+        state: "unmapped",
+        recipeId: "recipe-opaque-001",
+        lineId: "line-opaque-001",
+        sourceRecordId: "legacy-line-opaque-001",
+        reason: "No approved identity",
+        historicalLabel: "Unknown sauce",
+      }];
+    }],
+  ] as const)("delegates recipe-line policy: accepts %s", (_scenario, mutate) => {
+    const snapshot = makeIngredientMasterSnapshot();
+    mutate(snapshot);
+
+    expect(() => parseIngredientMaster(snapshot)).not.toThrow();
+  });
+
+  test.each([
+    ["unknown ingredient", (snapshot: ReturnType<typeof makeIngredientMasterSnapshot>) => {
+      const link = snapshot.recipeLineLinks[0]!;
+      if (link.state !== "ingredient") throw new Error("invalid test fixture");
+      link.ingredientId = "missing-ingredient";
+      link.requiredSpecificationId = null;
+    }],
+    ["unknown specification", (snapshot: ReturnType<typeof makeIngredientMasterSnapshot>) => {
+      const link = snapshot.recipeLineLinks[0]!;
+      if (link.state !== "ingredient") throw new Error("invalid test fixture");
+      link.requiredSpecificationId = "missing-specification";
+    }],
+    ["specification belonging to another ingredient", (
+      snapshot: ReturnType<typeof makeIngredientMasterSnapshot>,
+    ) => {
+      snapshot.ingredients.push({
+        ingredientId: "ing-other",
+        primaryName: "Other ingredient",
+        category: "other",
+        status: "active",
+        costingState: "not_costed",
+      });
+      snapshot.specifications.push({
+        specificationId: "spec-other",
+        ingredientId: "ing-other",
+        label: "Other specification",
+        attributes: {},
+        status: "active",
+        approvalState: "approved",
+      });
+      const link = snapshot.recipeLineLinks[0]!;
+      if (link.state !== "ingredient") throw new Error("invalid test fixture");
+      link.requiredSpecificationId = "spec-other";
+    }],
+  ] as const)("delegates recipe-line policy: rejects %s", (_scenario, mutate) => {
+    const snapshot = makeIngredientMasterSnapshot();
+    mutate(snapshot);
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
+  });
+
   test("rejects raw arrays with enumerable extra properties", () => {
     const snapshot = makeIngredientMasterSnapshot();
     const raw = ["kept"];
