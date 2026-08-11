@@ -105,3 +105,26 @@ The browser harness used its existing approved system path `/Applications/Google
 ## Concerns
 
 - Completion is blocked only on fresh Chrome-capable execution of the five sequential browser/persistence gates. Unit/static/domain behavior and immutable artifacts are verified; no browser, shadow-read cutover, rollback, production migration, release, or deployment claim is made.
+
+## Browser verification recovery checkpoint
+
+The parent controller proved that a managed Playwright browser server can launch outside this sandbox and that the repository's Playwright 1.62 client can connect when the websocket handshake carries the caller-supplied compatible User-Agent. The recovery change adds no endpoint or version constant: operators may opt in with `PLAYWRIGHT_WS_ENDPOINT` and, when required by the server, `PLAYWRIGHT_WS_USER_AGENT`.
+
+- `tests/print-layout.browser.mjs` and `tests/snapshot-export.browser.mjs` now call `chromium.connect` only when a non-empty endpoint is supplied. With no endpoint, their prior system-browser `chromium.launch` path is unchanged.
+- `playwright.config.ts` and `playwright.local.config.ts` expose the same opt-in through Playwright Test `use.connectOptions`; `playwright.v6.local.config.ts` inherits the local `use` object unchanged.
+- The optional User-Agent becomes exactly one websocket handshake header. Blank/absent User-Agent adds no header.
+- No endpoint, token, Playwright version, browser path, assertion exception, retry, or timeout was hardcoded or weakened.
+
+Strict TDD recovery evidence:
+
+```text
+npm focused wrapper: exit 255 before Vitest output
+direct RED: 1 file; 2 failed / 2 passed; exit 1
+direct GREEN: 1 file; 4 passed / 4; exit 0
+scoped ESLint: exit 0
+TypeScript: exit 0
+both standalone harness syntax checks: exit 0
+full git diff --check: exit 0
+```
+
+Browser gates were intentionally not run in this worker. The parent controller owns launching the ephemeral managed endpoint and running the five gates sequentially with these opt-in variables.

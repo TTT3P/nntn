@@ -41,6 +41,16 @@ function detectSystemChrome(): string | undefined {
 }
 
 const systemChrome = detectSystemChrome();
+const wsEndpoint = env.PLAYWRIGHT_WS_ENDPOINT;
+const wsUserAgent = env.PLAYWRIGHT_WS_USER_AGENT;
+const connectOptions = wsEndpoint === undefined || wsEndpoint.length === 0
+  ? undefined
+  : {
+      wsEndpoint,
+      ...(wsUserAgent === undefined || wsUserAgent.length === 0
+        ? {}
+        : { headers: { "User-Agent": wsUserAgent } }),
+    };
 
 export default defineConfig({
   testDir: "./tests",
@@ -63,6 +73,7 @@ export default defineConfig({
   use: {
     baseURL: `http://${host}:${String(port)}${appBase}`,
     viewport: { width: 1440, height: 1000 },
+    ...(connectOptions === undefined ? {} : { connectOptions }),
     ...(systemChrome === undefined ? {} : { launchOptions: { executablePath: systemChrome } }),
   },
 });

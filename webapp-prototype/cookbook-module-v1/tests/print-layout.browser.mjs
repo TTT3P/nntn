@@ -11,6 +11,22 @@ const systemBrowsers = [
   "/Applications/Chromium.app/Contents/MacOS/Chromium",
 ].filter((candidate) => typeof candidate === "string" && existsSync(candidate));
 
+async function connectOrLaunchBrowser() {
+  const wsEndpoint = process.env.PLAYWRIGHT_WS_ENDPOINT;
+  if (typeof wsEndpoint === "string" && wsEndpoint.length > 0) {
+    const userAgent = process.env.PLAYWRIGHT_WS_USER_AGENT;
+    return chromium.connect(wsEndpoint, {
+      ...(typeof userAgent === "string" && userAgent.length > 0
+        ? { headers: { "User-Agent": userAgent } }
+        : {}),
+    });
+  }
+  return chromium.launch({
+    headless: true,
+    ...(systemBrowsers[0] ? { executablePath: systemBrowsers[0] } : {}),
+  });
+}
+
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
@@ -49,10 +65,7 @@ await server.listen();
 
 let browser;
 try {
-  browser = await chromium.launch({
-    headless: true,
-    ...(systemBrowsers[0] ? { executablePath: systemBrowsers[0] } : {}),
-  });
+  browser = await connectOrLaunchBrowser();
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const browserSession = await page.context().newCDPSession(page);
   await browserSession.send("Network.enable");
