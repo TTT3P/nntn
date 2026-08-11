@@ -317,7 +317,7 @@
 
 .print-set-alternatives button,
 .print-collection__bulk-actions button {
-  min-height: 2.4rem;
+  min-height: 2.75rem;
   padding: .45rem .65rem;
   border: 1px solid #d7c590;
   border-radius: .55rem;
@@ -327,6 +327,13 @@
   font-size: .75rem;
   font-weight: 800;
   cursor: pointer;
+}
+
+.print-set-alternatives button[aria-pressed="true"] {
+  border-color: var(--cb-green);
+  color: var(--cb-green);
+  background: var(--cb-green-soft, #edf5ee);
+  box-shadow: inset 0 0 0 1px var(--cb-green);
 }
 
 .print-collection-disclosure {
@@ -411,7 +418,7 @@
 }
 
 .print-collection__bulk-actions button {
-  min-height: 2rem;
+  min-height: 2.75rem;
   padding-block: .3rem;
 }
 
@@ -422,7 +429,7 @@
 }
 
 .print-collection label {
-  min-height: 2.5rem;
+  min-height: 2.75rem;
   padding: .48rem .38rem;
   display: flex;
   align-items: start;

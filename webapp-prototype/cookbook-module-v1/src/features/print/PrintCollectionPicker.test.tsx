@@ -1,11 +1,25 @@
+// @ts-expect-error -- Vitest runs in Node, while the browser tsconfig intentionally excludes Node types.
+import { readFileSync } from "node:fs";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { makeRecipe } from "../../test/builders";
 import { buildPrintCollections } from "./printCollections";
 import { PrintCollectionPicker } from "./PrintCollectionPicker";
 
-afterEach(cleanup);
+const printStyles = readFileSync("src/features/print/print.css", "utf8");
+
+beforeEach(() => {
+  const style = document.createElement("style");
+  style.dataset.testStyles = "print";
+  style.textContent = printStyles.slice(printStyles.indexOf(".print-center-page"));
+  document.head.append(style);
+});
+
+afterEach(() => {
+  cleanup();
+  document.querySelector('style[data-test-styles="print"]')?.remove();
+});
 
 const collections = buildPrintCollections([
   { ...makeRecipe({ recipeId: "SAUCE-A", name: "ซอส ก" }), category: "ซอสและน้ำจิ้ม" },
@@ -16,6 +30,7 @@ const collections = buildPrintCollections([
 function pickerProps() {
   return {
     collections,
+    activeMode: "manual" as const,
     activeCollectionKey: null,
     selectedRecipeKeys: [] as string[],
     onChooseCollection: vi.fn(),
@@ -28,6 +43,30 @@ function pickerProps() {
 }
 
 describe("PrintCollectionPicker", () => {
+  test("exposes exactly one selected print-set action for collection, daily, and manual modes", () => {
+    const props = pickerProps();
+    const view = render(<PrintCollectionPicker {...props} />);
+
+    function selectedActions() {
+      return screen.getAllByRole("button").filter((button) => (
+        button.getAttribute("aria-pressed") === "true"
+      ));
+    }
+
+    expect(screen.getByRole("button", { name: "เลือกสูตรเอง" })).toHaveAttribute("aria-pressed", "true");
+    expect(selectedActions()).toHaveLength(1);
+
+    view.rerender(<PrintCollectionPicker {...props} activeMode="daily" />);
+    expect(screen.getByRole("button", { name: "ชุดงานวันนี้" })).toHaveAttribute("aria-pressed", "true");
+    expect(selectedActions()).toHaveLength(1);
+
+    view.rerender(
+      <PrintCollectionPicker {...props} activeMode="collection" activeCollectionKey="sauce" />,
+    );
+    expect(screen.getByRole("button", { name: "พิมพ์ทั้งหมวด ซอสและน้ำจิ้ม 2 สูตร" })).toHaveAttribute("aria-pressed", "true");
+    expect(selectedActions()).toHaveLength(1);
+  });
+
   test("offers all seven collection actions with derived counts and disables empty collections", async () => {
     const user = userEvent.setup();
     const props = pickerProps();
@@ -52,6 +91,7 @@ describe("PrintCollectionPicker", () => {
     render(
       <PrintCollectionPicker
         {...props}
+        activeMode="collection"
         activeCollectionKey="sauce"
         selectedRecipeKeys={['string:"SAUCE-A"']}
       />,
@@ -78,5 +118,33 @@ describe("PrintCollectionPicker", () => {
 
     expect(screen.getByText("ไม่พบสูตรที่ค้นหา")).toBeVisible();
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+  });
+
+  test("keeps every new compact selection control at least 44 pixels tall", () => {
+    render(
+      <PrintCollectionPicker
+        {...pickerProps()}
+        activeMode="collection"
+        activeCollectionKey="sauce"
+      />,
+    );
+
+    const controls = [
+      screen.getByRole("button", { name: "ชุดงานวันนี้" }),
+      screen.getByRole("button", { name: "เลือกสูตรเอง" }),
+      screen.getByRole("button", { name: "เลือกทั้งหมด ซอสและน้ำจิ้ม" }),
+      screen.getByRole("button", { name: "เอาออกทั้งหมด ซอสและน้ำจิ้ม" }),
+      screen.getByRole("checkbox", { name: "ซอส ก" }).closest("label"),
+      screen.getByRole("checkbox", { name: "ซอส ข" }).closest("label"),
+    ];
+
+    for (const control of controls) {
+      expect(control).not.toBeNull();
+      const minHeight = getComputedStyle(control!).minHeight;
+      const pixels = minHeight.endsWith("rem")
+        ? Number.parseFloat(minHeight) * 16
+        : Number.parseFloat(minHeight);
+      expect(pixels).toBeGreaterThanOrEqual(44);
+    }
   });
 });

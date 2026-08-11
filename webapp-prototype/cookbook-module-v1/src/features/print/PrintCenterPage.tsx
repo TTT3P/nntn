@@ -533,6 +533,7 @@ export function PrintCenterPage({
           <div className="print-sidebar__scroll">
             <PrintCollectionPicker
               collections={collections}
+              activeMode={printSetMode.kind}
               activeCollectionKey={printSetMode.kind === "collection" ? printSetMode.collectionKey : null}
               selectedRecipeKeys={selectedKeys}
               onChooseCollection={chooseCollection}

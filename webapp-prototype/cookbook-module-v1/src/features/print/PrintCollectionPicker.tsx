@@ -1,9 +1,11 @@
 import { useState } from "react";
 import type { RecipeIdentity } from "../../domain/cookbook/types";
 import type { PrintCollection, PrintCollectionKey } from "./printCollections";
+import type { PrintSetMode } from "./printSetProjection";
 
 export interface PrintCollectionPickerProps {
   collections: PrintCollection[];
+  activeMode: PrintSetMode["kind"];
   activeCollectionKey: PrintCollectionKey | null;
   selectedRecipeKeys: readonly string[];
   onChooseCollection(collectionKey: PrintCollectionKey): void;
@@ -29,6 +31,7 @@ function recipeChoiceLabel(recipe: PrintCollection["recipes"][number]): string {
 
 export function PrintCollectionPicker({
   collections,
+  activeMode,
   activeCollectionKey,
   selectedRecipeKeys,
   onChooseCollection,
@@ -58,7 +61,7 @@ export function PrintCollectionPicker({
             type="button"
             key={collection.key}
             aria-label={`พิมพ์ทั้งหมวด ${collection.label} ${collection.recipes.length} สูตร`}
-            aria-pressed={activeCollectionKey === collection.key}
+            aria-pressed={activeMode === "collection" && activeCollectionKey === collection.key}
             disabled={collection.recipes.length === 0}
             onClick={() => onChooseCollection(collection.key)}
           >
@@ -70,8 +73,20 @@ export function PrintCollectionPicker({
       </div>
 
       <div className="print-set-alternatives">
-        <button type="button" onClick={onChooseDaily}>ชุดงานวันนี้</button>
-        <button type="button" onClick={onChooseManual}>เลือกสูตรเอง</button>
+        <button
+          type="button"
+          aria-pressed={activeMode === "daily"}
+          onClick={onChooseDaily}
+        >
+          ชุดงานวันนี้
+        </button>
+        <button
+          type="button"
+          aria-pressed={activeMode === "manual"}
+          onClick={onChooseManual}
+        >
+          เลือกสูตรเอง
+        </button>
       </div>
 
       <div className="print-collection-disclosure">
