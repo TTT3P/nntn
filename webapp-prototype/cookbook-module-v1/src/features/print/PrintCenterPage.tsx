@@ -13,7 +13,6 @@ import type {
   WorkStage,
   WorkStep,
 } from "../../domain/cookbook/types";
-import { buildRecipeGraph, dependencyFirstOrder } from "../../domain/graph/recipeGraph";
 import {
   buildMediaIndex,
   buildPrintPlan,
@@ -33,6 +32,7 @@ import { decodeRecipeIdentity } from "../recipe/recipeRoute";
 import { useOptionalKitchenSotDraft } from "../review/KitchenSotDraftProvider";
 import { CookbookBooklet } from "./CookbookBooklet";
 import { buildPrintCollections } from "./printCollections";
+import { projectPrintSet } from "./printSetProjection";
 import { WorkstationCard } from "./WorkstationCard";
 import { useOptionalCookbookDocument } from "../cookbook/CookbookDocumentProvider";
 import "./print.css";
@@ -271,20 +271,6 @@ function isStandardError(error: unknown): error is Error {
   }
 }
 
-function selectedReachableRecipes(
-  recipes: RecipeVersion[],
-  selectedIds: RecipeIdentity[],
-): RecipeVersion[] {
-  const graph = buildRecipeGraph(recipes, selectedIds);
-  const recipesByIdentity = new Map(recipes.map((recipe) => [identityKey(recipe.recipeId), recipe]));
-  return dependencyFirstOrder(graph).flatMap((nodeId) => {
-    const recipeId = graph.nodes.get(nodeId)?.recipeId;
-    if (recipeId === null || recipeId === undefined) return [];
-    const recipe = recipesByIdentity.get(identityKey(recipeId));
-    return recipe === undefined ? [] : [recipe];
-  });
-}
-
 function pageKey(page: WorkstationPage): string {
   const document = page.document;
   return [
@@ -456,9 +442,10 @@ export function PrintCenterPage({
 
   if (selectedIds.length > 0 && (outputIntent === "booklet" || multiplierValid)) {
     try {
-      const includedRecipes = dependencyPolicy === "include"
-        ? selectedReachableRecipes(snapshot.recipes, selectedIds)
-        : selectedRecipes;
+      const includedRecipes = projectPrintSet(snapshot.recipes, selectedIds, {
+        kind: "manual",
+        dependencyPolicy,
+      }).fullRecipes;
       for (const recipe of includedRecipes) {
         if (rawRecipeDraftById === null) {
           const coverage = deriveRecipeMediaCoverage(recipe, snapshot).coverage;
