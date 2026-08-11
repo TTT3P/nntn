@@ -616,10 +616,10 @@ export function PrintCenterPage({
 
             {outputIntent !== "booklet" && (
               <details className="print-advanced">
-                <summary>ตั้งค่าใบงานเพิ่มเติม</summary>
+                <summary>ตั้งค่าการพิมพ์เพิ่มเติม</summary>
                 <div className="print-control-grid">
                   <label>
-                    จุดงาน
+                    จุดงานที่จะพิมพ์
                     <select value={stage} onChange={(event) => setStage(event.target.value as WorkStage | "all")}>
                       <option value="all">ทุกจุดงาน</option>
                       <option value="prep">เตรียม</option>
@@ -628,7 +628,7 @@ export function PrintCenterPage({
                     </select>
                   </label>
                   <label>
-                    แม่แบบ
+                    รูปแบบกระดาษ
                     <select value={template} onChange={(event) => {
                       const nextTemplate = event.target.value as PrintTemplate;
                       setTemplate(nextTemplate);
@@ -640,7 +640,7 @@ export function PrintCenterPage({
                     </select>
                   </label>
                   <label>
-                    ตัวคูณการผลิต
+                    <span id="print-multiplier-label">จำนวนรอบการผลิต</span>
                     <input
                       type="number"
                       min="1"
@@ -649,15 +649,17 @@ export function PrintCenterPage({
                       disabled={stage === "service"}
                       value={stage === "service" ? "1" : multiplierText}
                       aria-invalid={!multiplierValid}
-                      aria-describedby={!multiplierValid ? "print-multiplier-error" : undefined}
+                      aria-labelledby="print-multiplier-label"
+                      aria-describedby={`print-multiplier-help${!multiplierValid ? " print-multiplier-error" : ""}`}
                       onChange={(event) => setMultiplierText(event.target.value)}
                     />
+                    <small id="print-multiplier-help">จำนวนรอบจะแสดงบนใบงานที่รองรับ ปริมาณข้อความเดิมไม่เปลี่ยนอัตโนมัติ</small>
                   </label>
                   <label>
-                    ชุดที่ต้องการพิมพ์
+                    แสดงสูตรสถานะ
                     <select value={previewMode} onChange={(event) => setPreviewMode(event.target.value as PreviewMode)}>
-                      <option value="draft">ข้อมูลทั้งหมด</option>
-                      <option value="approved">เฉพาะสูตรพร้อมใช้</option>
+                      <option value="draft">ทุกสถานะ (รวมรอข้อมูล)</option>
+                      <option value="approved">เฉพาะพร้อมใช้</option>
                     </select>
                   </label>
                 </div>
@@ -666,10 +668,10 @@ export function PrintCenterPage({
 
             {outputIntent === "booklet" && (
               <label className="print-booklet-status">
-                ชุดที่ต้องการพิมพ์
+                แสดงสูตรสถานะ
                 <select value={previewMode} onChange={(event) => setPreviewMode(event.target.value as PreviewMode)}>
-                  <option value="draft">ข้อมูลทั้งหมด</option>
-                  <option value="approved">เฉพาะสูตรพร้อมใช้</option>
+                  <option value="draft">ทุกสถานะ (รวมรอข้อมูล)</option>
+                  <option value="approved">เฉพาะพร้อมใช้</option>
                 </select>
               </label>
             )}

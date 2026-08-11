@@ -570,6 +570,32 @@ describe("PrintCenterPage", () => {
     expect(sheet).toHaveAttribute("data-sheet-size", "210mm × 148mm");
   });
 
+  test("explains the advanced print controls with Recipe Editor terminology", async () => {
+    const user = userEvent.setup();
+    renderWithPrototype(<PrintCenterPage initialRecipeIds={[165]} />, { snapshot: firstSet });
+
+    const advancedSummary = screen.getByText("ตั้งค่าการพิมพ์เพิ่มเติม");
+    await user.click(advancedSummary);
+    const advancedSettings = advancedSummary.closest("details");
+    expect(advancedSettings).not.toBeNull();
+    expect(screen.getByRole("combobox", { name: "จุดงานที่จะพิมพ์" })).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "รูปแบบกระดาษ" })).toBeVisible();
+    const multiplier = screen.getByRole("spinbutton", { name: "จำนวนรอบการผลิต" });
+    expect(multiplier).toBeVisible();
+    expect(multiplier).toHaveAccessibleDescription(
+      "จำนวนรอบจะแสดงบนใบงานที่รองรับ ปริมาณข้อความเดิมไม่เปลี่ยนอัตโนมัติ",
+    );
+    expect(screen.getByRole("combobox", { name: "แสดงสูตรสถานะ" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "ทุกสถานะ (รวมรอข้อมูล)" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "เฉพาะพร้อมใช้" })).toBeVisible();
+
+    const advancedControls = within(advancedSettings!);
+    expect(advancedControls.queryByRole("combobox", { name: "จุดงาน" })).not.toBeInTheDocument();
+    expect(advancedControls.queryByRole("combobox", { name: "แม่แบบ" })).not.toBeInTheDocument();
+    expect(advancedControls.queryByRole("spinbutton", { name: "ตัวคูณการผลิต" })).not.toBeInTheDocument();
+    expect(advancedControls.queryByRole("combobox", { name: "ชุดที่ต้องการพิมพ์" })).not.toBeInTheDocument();
+  });
+
   test("uses name-first multi-selection and disables printing with no selection", async () => {
     const user = userEvent.setup();
     renderWithPrototype(<PrintCenterPage />, {
@@ -596,7 +622,7 @@ describe("PrintCenterPage", () => {
     const user = userEvent.setup();
     renderWithPrototype(<PrintCenterPage initialRecipeIds={[165]} />, { snapshot: firstSet });
 
-    await user.selectOptions(screen.getByLabelText("จุดงาน"), "service");
+    await user.selectOptions(screen.getByLabelText("จุดงานที่จะพิมพ์"), "service");
 
     expect(screen.getAllByText("จัดเสิร์ฟหน้าร้าน").length).toBeGreaterThan(0);
     expect(screen.queryByText("ผลิตซอสและของเตรียม")).not.toBeInTheDocument();
@@ -608,15 +634,15 @@ describe("PrintCenterPage", () => {
       snapshot: makeSnapshot({ recipes: [serviceRecipe()] }),
     });
 
-    await user.clear(screen.getByLabelText("ตัวคูณการผลิต"));
-    await user.type(screen.getByLabelText("ตัวคูณการผลิต"), "5");
+    await user.clear(screen.getByLabelText("จำนวนรอบการผลิต"));
+    await user.type(screen.getByLabelText("จำนวนรอบการผลิต"), "5");
     expect(screen.getByText("ตัวคูณ 1 · ต่อหนึ่งเสิร์ฟ")).toBeVisible();
     expect(screen.getByText("180 กรัม")).toBeVisible();
     expect(screen.queryByText("72 กรัม")).not.toBeInTheDocument();
 
-    await user.selectOptions(screen.getByLabelText("จุดงาน"), "service");
-    expect(screen.getByLabelText("ตัวคูณการผลิต")).toHaveValue(1);
-    expect(screen.getByLabelText("ตัวคูณการผลิต")).toBeDisabled();
+    await user.selectOptions(screen.getByLabelText("จุดงานที่จะพิมพ์"), "service");
+    expect(screen.getByLabelText("จำนวนรอบการผลิต")).toHaveValue(1);
+    expect(screen.getByLabelText("จำนวนรอบการผลิต")).toBeDisabled();
   });
 
   test("reports an accessible multiplier error and does not render a mixed preview", async () => {
@@ -625,8 +651,8 @@ describe("PrintCenterPage", () => {
       snapshot: makeSnapshot({ recipes: [serviceRecipe()] }),
     });
 
-    await user.clear(screen.getByLabelText("ตัวคูณการผลิต"));
-    await user.type(screen.getByLabelText("ตัวคูณการผลิต"), "1.5");
+    await user.clear(screen.getByLabelText("จำนวนรอบการผลิต"));
+    await user.type(screen.getByLabelText("จำนวนรอบการผลิต"), "1.5");
 
     expect(screen.getByRole("alert")).toHaveTextContent("ตัวคูณต้องเป็นจำนวนเต็มตั้งแต่ 1 ขึ้นไป");
     expect(document.querySelector(".workstation-sheet, .two-up-sheet")).toBeNull();
@@ -884,7 +910,7 @@ describe("PrintCenterPage", () => {
       snapshot: makeSnapshot({ recipes }),
     });
 
-    await user.selectOptions(screen.getByLabelText("แม่แบบ"), "two-up");
+    await user.selectOptions(screen.getByLabelText("รูปแบบกระดาษ"), "two-up");
 
     const sheets = Array.from(document.querySelectorAll(".two-up-sheet"));
     expect(sheets).toHaveLength(2);
@@ -935,7 +961,7 @@ describe("PrintCenterPage", () => {
       snapshot: makeSnapshot({ recipes }),
     });
 
-    await user.selectOptions(screen.getByLabelText("แม่แบบ"), "two-up");
+    await user.selectOptions(screen.getByLabelText("รูปแบบกระดาษ"), "two-up");
 
     expect(consoleError.mock.calls.flat().join(" ")).not.toContain("same key");
     consoleError.mockRestore();
@@ -948,7 +974,7 @@ describe("PrintCenterPage", () => {
     });
 
     expect(screen.getByText("ตรวจทานก่อนพิมพ์")).toBeVisible();
-    await user.selectOptions(screen.getByLabelText("ชุดที่ต้องการพิมพ์"), "approved");
+    await user.selectOptions(screen.getByLabelText("แสดงสูตรสถานะ"), "approved");
     expect(screen.getByText("พร้อมพิมพ์")).toBeVisible();
     expect(screen.queryByText("อนุมัติแล้ว")).not.toBeInTheDocument();
   });
