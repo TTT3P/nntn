@@ -85,6 +85,7 @@ describe("applyCookbookV6Edits", () => {
     }]);
 
     expect(edited.recipes[0]?.workDocuments.cook?.ingredientLineIds).toEqual([]);
+    expect(edited.recipes[0]?.workDocuments.cook?.stepIds).toEqual(["mix"]);
     expect(edited.recipes[0]?.workDocuments.prep?.ingredientLineIds).toEqual(["egg"]);
     expect(edited.recipes[0]?.workDocuments.service?.ingredientLineIds).toEqual(["egg"]);
     expect(edited.recipes[0]?.ingredients[0]).toEqual(original.recipes[0]?.ingredients[0]);
