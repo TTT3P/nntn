@@ -233,10 +233,13 @@ The same staged batch and decision set are imported twice. The replay reports ev
 - TypeScript: npm wrapper exit `255`; direct fallback exit `0`, no diagnostics.
 - Production build: npm wrapper exit `255`; direct TypeScript and Vite exits `0`; 69 modules transformed.
 - Full `git diff --check`: exit `0` before documentation closure.
-- `test:browser`: npm wrapper exit `255`; direct harness exit `1` before tests because installed Google Chrome 151.0.7922.108 aborted with `SIGABRT`. A direct isolated-profile Chrome probe also exited `134`; no alternate approved Chromium binary is installed. No browser assertion or configuration was weakened.
-- Downstream browser-export and Playwright gates were not run after that stop-on-first-failure environment gate. This is a verification-environment gap, not evidence of a passed browser/cutover gate.
+- `test:browser`: local system Chrome still exits `134`, but the generic opt-in managed-browser connection ran the unchanged layout assertions with exit `0`.
+- `test:browser:export`: managed-browser direct run exit `0`.
+- Default Playwright E2E: managed-browser direct run exit `0`, 31/31 passed.
+- Isolated V5 middleware persistence: managed-browser direct run exit `0`, 3/3 passed. The gate proves low-noise V4-to-V5 save/reload, a second sequential save with prior-edit preservation, and stale dual-writer rejection with authoritative first-writer bytes.
+- Isolated V6 editor persistence: managed-browser direct run exit `0`, 1/1 passed.
 
-The npm `255` behavior is the known controller wrapper limitation recorded in the migration-core ledger; direct local binaries provide the executable unit/static evidence. Browser evidence remains explicitly incomplete until rerun in the existing Chrome-capable harness environment.
+The npm `255` behavior is the known controller wrapper limitation recorded in the migration-core ledger; direct local binaries provide the executable unit/static evidence. The five browser/persistence gates ran sequentially on the current ERP worktree overlay through an ephemeral managed-browser endpoint. No endpoint, token, retry, timeout, or assertion exception is hardcoded, and the absent-endpoint local launch path remains unchanged.
 
 ### Design acceptance audit
 
