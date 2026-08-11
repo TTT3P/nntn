@@ -146,6 +146,11 @@ export interface ReconciliationDecision {
   action: ReconciliationAction;
 }
 
+export type RecipeLineDecisionEvidence = ReconciliationDecision & {
+  recipeId: string;
+  lineId: string;
+};
+
 export interface IngredientMasterSnapshot {
   schemaVersion: "1.0.0";
   generatedAt: string;
