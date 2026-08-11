@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation, unit/static verification, documentation, immutable-artifact verification, and all five sequential browser/persistence gates are complete. Task 8 is ready for scoped code review; no Food Cost, backend, production migration, or deployment claim is made.
+Implementation, unit/static verification, documentation, immutable-artifact verification, and all five sequential browser/persistence gates are complete. The ERP/V6 prerequisite closure is committed and the V6 isolated-vault cleanup is hardened against symlink redirection. Task 8 is ready for final scoped review; no Food Cost, backend, production migration, or deployment claim is made.
 
 ## Changed files
 
@@ -86,7 +86,7 @@ The immutable V1 verifier npm wrapper exited `255`; direct `node scripts/verify-
 | Gate | npm exit | Direct/result |
 | --- | ---: | --- |
 | Immutable input verifier | 255 | exit 0; exact receipt above |
-| Full Vitest | 255 | exit 0; 53 files / 1062 tests |
+| Full Vitest | 255 | clean-checkout direct run exit 0; 55 files / 1068 tests |
 | ESLint | 255 | exit 0; no diagnostics |
 | TypeScript | 255 | exit 0; no diagnostics |
 | Production build | 255 | direct TypeScript exit 0; Vite exit 0; 69 modules |
@@ -149,15 +149,15 @@ real V6: 96775abb92580182e4c9b4bb324d199a8bf4bb043b572170e379276119031695
 
 The real V4, V5, and V6 artifacts were not mutated by the isolated gates.
 
-## ERP worktree artifact identity
+## Clean checkpoint identity
 
-The browser evidence belongs to the current approved ERP worktree overlay, not to the Ingredient Master commit range in isolation. Immediately before this documentation-only receipt update, that artifact was:
+The prerequisite ERP shell, V6 document/runtime, aligned gates, and isolated test-vault preparation are committed in two explicit Cookbook-only checkpoints:
 
 ```text
-HEAD: 3dc507e73fa4e6572e12376f4a9d86b0540de7ed
-tracked diff SHA-256: c3072c1ec540002fbd0e17fb5d5d84e3248010efdc9a1273ba21d903a66a5d5b
-Cookbook untracked content-manifest SHA-256: adadfa97f4e5506fe914d21577634dcec314c0c91ca5ed354225ed07017d10a3
-status-porcelain SHA-256: 592f56f16b7787843198fe68a8b9721ccdb8a040ddfe53704a3214a9012a4757
+ERP/V6 product baseline: be0a5d59459c0b889d71ce4d7ecb606c920c8022
+V6 vault-cleanup hardening: 4c199e0125fadebb24df96307f3983f67d19846c
 ```
 
-The status receipt excludes `.playwright-mcp/` runtime screenshots/session noise. This distinction is intentional: execution authority permitted only Ingredient Master task-scoped commits while requiring preservation of the pre-existing ERP UI/V6 work. A future approved ERP checkpoint commit is required before the same evidence is reproducible from a clean checkout of `HEAD` alone.
+A detached clean checkout of `4c199e0` passed 55 files / 1068 unit tests, ESLint, TypeScript, production build (69 modules), and `git diff --check`. The five sequential browser/persistence gates were then rerun on the leader worktree with the same committed runtime/config/gate files: layout exit 0, export exit 0, default E2E 31/31, isolated V5 3/3, and isolated V6 1/1. Remaining dirty paths are documentation/provenance work plus one legacy Source Review test; they do not supply the committed ERP runtime or any of the five gate files.
+
+The checkpoint excludes `.playwright-mcp/`, cache artifacts, real vault data, Stock V1/V2, auth, Supabase, production, and deployment files.

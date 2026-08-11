@@ -228,7 +228,7 @@ The same staged batch and decision set are imported twice. The replay reports ev
 
 - Input verifier: npm wrapper exit `255`; direct verifier exit `0` with the V1 receipt above.
 - Focused tracer: RED direct exit `1` (final intended RED: 1 failed / 3 passed because the inventory report function was absent); GREEN direct exit `0`, 1 file / 4 tests.
-- Full Vitest: npm wrapper exit `255`; direct fallback exit `0`, 53 files / 1062 tests.
+- Full Vitest: npm wrapper exit `255`; clean-checkout direct fallback exit `0`, 55 files / 1068 tests.
 - ESLint: npm wrapper exit `255`; direct fallback exit `0`, no diagnostics.
 - TypeScript: npm wrapper exit `255`; direct fallback exit `0`, no diagnostics.
 - Production build: npm wrapper exit `255`; direct TypeScript and Vite exits `0`; 69 modules transformed.
@@ -239,7 +239,7 @@ The same staged batch and decision set are imported twice. The replay reports ev
 - Isolated V5 middleware persistence: managed-browser direct run exit `0`, 3/3 passed. The gate proves low-noise V4-to-V5 save/reload, a second sequential save with prior-edit preservation, and stale dual-writer rejection with authoritative first-writer bytes.
 - Isolated V6 editor persistence: managed-browser direct run exit `0`, 1/1 passed.
 
-The npm `255` behavior is the known controller wrapper limitation recorded in the migration-core ledger; direct local binaries provide the executable unit/static evidence. The five browser/persistence gates ran sequentially on the current ERP worktree overlay through an ephemeral managed-browser endpoint. No endpoint, token, retry, timeout, or assertion exception is hardcoded, and the absent-endpoint local launch path remains unchanged.
+The npm `255` behavior is the known controller wrapper limitation recorded in the migration-core ledger; direct local binaries provide the executable unit/static evidence. ERP/V6 prerequisite closure is committed at `be0a5d5`, and symlink-safe isolated V6 vault preparation is committed at `4c199e0`. A detached clean checkout of `4c199e0` passed the full unit/static/build gates. The five browser/persistence gates then ran sequentially against the same committed runtime/config/gate files through an ephemeral managed-browser endpoint. No endpoint, token, retry, timeout, or assertion exception is hardcoded, and the absent-endpoint local launch path remains unchanged.
 
 ### Design acceptance audit
 
