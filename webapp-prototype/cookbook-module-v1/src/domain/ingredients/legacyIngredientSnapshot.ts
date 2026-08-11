@@ -1,18 +1,137 @@
+import type { CookbookV6Document } from "../cookbookV6/types";
+import type { LegacySourceRecord, SourceManifest } from "./types";
+
 interface LegacyIngredient {
   readonly ingredient_id: number;
   readonly cost_per_unit_v1: number | null;
 }
 
+interface LegacyRecipe {
+  readonly recipe_id: number;
+}
+
 interface LegacyRecipeItem {
+  readonly item_id: number;
   readonly recipe_id: number;
   readonly item_kind: string;
   readonly ingredient_id: number | null;
 }
 
-interface LegacyIngredientSource {
+export interface LegacyIngredientSource {
   readonly ingredients: readonly LegacyIngredient[];
-  readonly recipes: readonly unknown[];
+  readonly recipes: readonly LegacyRecipe[];
   readonly recipe_items: readonly LegacyRecipeItem[];
+}
+
+export interface LegacyStagingBatch {
+  readonly records: readonly LegacySourceRecord[];
+  readonly ingredients: readonly LegacySourceRecord[];
+  readonly recipes: readonly LegacySourceRecord[];
+  readonly lines: readonly LegacySourceRecord[];
+  readonly directLines: readonly LegacySourceRecord[];
+  readonly componentLines: readonly LegacySourceRecord[];
+}
+
+function stageRecord(
+  raw: unknown,
+  manifest: SourceManifest,
+  recordType: LegacySourceRecord["recordType"],
+  sourceRecordId: string,
+): LegacySourceRecord {
+  return {
+    stagingId: `${manifest.sha256}:${recordType}:${sourceRecordId}`,
+    manifestId: manifest.manifestId,
+    sourceSha256: manifest.sha256,
+    recordType,
+    sourceRecordId,
+    raw,
+  };
+}
+
+function assertUnique(records: readonly LegacySourceRecord[]): void {
+  const stagingIds = new Set<string>();
+  for (const record of records) {
+    if (stagingIds.has(record.stagingId)) throw new Error("DUPLICATE_SOURCE_IDENTITY");
+    stagingIds.add(record.stagingId);
+  }
+}
+
+function assertExpectedCounts(
+  manifest: SourceManifest,
+  actualCounts: Readonly<Record<string, number>>,
+): void {
+  for (const [recordType, expected] of Object.entries(manifest.expectedCounts)) {
+    if (actualCounts[recordType] !== expected) throw new Error("SOURCE_COUNT_MISMATCH");
+  }
+}
+
+function batchFrom({
+  ingredients,
+  recipes,
+  lines,
+  directLines,
+  componentLines,
+}: Omit<LegacyStagingBatch, "records">): LegacyStagingBatch {
+  const records = [...ingredients, ...recipes, ...lines];
+  assertUnique(records);
+  return { records, ingredients, recipes, lines, directLines, componentLines };
+}
+
+export function stageLegacyIngredientSnapshot(
+  source: LegacyIngredientSource,
+  manifest: SourceManifest,
+): LegacyStagingBatch {
+  const ingredients = source.ingredients.map((ingredient) =>
+    stageRecord(ingredient, manifest, "ingredient", `ingredient:${ingredient.ingredient_id}`));
+  const recipes = source.recipes.map((recipe) =>
+    stageRecord(recipe, manifest, "recipe", `recipe:${recipe.recipe_id}`));
+  const lines = source.recipe_items.map((line) =>
+    stageRecord(line, manifest, "recipe_line", `recipe_line:${line.item_id}`));
+  const directLines = lines.filter((_, index) =>
+    source.recipe_items[index]!.item_kind === "direct_ingredient");
+  const componentLines = lines.filter((_, index) =>
+    source.recipe_items[index]!.item_kind === "prepared_recipe");
+  const batch = batchFrom({ ingredients, recipes, lines, directLines, componentLines });
+
+  assertExpectedCounts(manifest, {
+    ingredient: ingredients.length,
+    recipe: recipes.length,
+    recipe_line: lines.length,
+    direct_line: directLines.length,
+    component_line: componentLines.length,
+  });
+  return batch;
+}
+
+export function stageCookbookV6FirstSet(
+  document: CookbookV6Document,
+  manifest: SourceManifest,
+): LegacyStagingBatch {
+  const directLines = document.recipes.flatMap((recipe) =>
+    recipe.ingredients
+      .filter(({ kind }) => kind === "ingredient")
+      .map((line) => stageRecord(
+        line,
+        manifest,
+        "recipe_line",
+        `recipe_line:${JSON.stringify([recipe.recipeId, line.lineId])}`,
+      )));
+  const batch = batchFrom({
+    ingredients: [],
+    recipes: [],
+    lines: directLines,
+    directLines,
+    componentLines: [],
+  });
+
+  assertExpectedCounts(manifest, {
+    ingredient: 0,
+    recipe: 0,
+    recipe_line: directLines.length,
+    direct_line: directLines.length,
+    component_line: 0,
+  });
+  return batch;
 }
 
 export function inspectLegacyIngredientSnapshot(source: LegacyIngredientSource) {

@@ -1,4 +1,5 @@
-import type { IngredientMasterSnapshot } from "../domain/ingredients/types";
+import type { CookbookV6Document } from "../domain/cookbookV6/types";
+import type { IngredientMasterSnapshot, SourceManifest } from "../domain/ingredients/types";
 
 export type InvalidIngredientMasterScenario =
   | "duplicate ingredientId"
@@ -9,19 +10,107 @@ export type InvalidIngredientMasterScenario =
   | "cost observation references missing specification"
   | "costable ingredient has no approved specification";
 
+export function makeSourceManifest(
+  expectedCounts: Record<string, number>,
+  overrides: Partial<SourceManifest> = {},
+): SourceManifest {
+  return {
+    manifestId: "manifest-v1",
+    sourcePath: "fixtures/ingredient-source.json",
+    sha256: "a".repeat(64),
+    byteLength: 1024,
+    extractedAt: "2026-08-11T00:00:00.000Z",
+    sourcePolicy: "immutable-input-receipt",
+    expectedCounts,
+    ...overrides,
+  };
+}
+
+export function makeCookbookV6Document(): CookbookV6Document {
+  return {
+    schemaVersion: "6.0.0",
+    generatedAt: "2026-08-11T00:00:00.000Z",
+    derivedFrom: {
+      v5Path: "fixtures/first-set-v5.json",
+      v5Sha256: "b".repeat(64),
+      catalogSha256: "c".repeat(64),
+    },
+    recipes: [{
+      recipeId: "recipe:แกงเนื้อ",
+      code: null,
+      name: "แกงเนื้อ",
+      kind: "prepared_recipe",
+      category: "แกง",
+      active: true,
+      reviewState: "confirmed",
+      sourceLocators: [],
+      yieldText: "",
+      operationalNotes: [],
+      methodDecisionNote: "",
+      ingredients: [{
+        lineId: "line:น้ำปลา",
+        name: "น้ำปลา",
+        kind: "ingredient",
+        amountText: "1",
+        unitText: "ช้อนโต๊ะ",
+        sourceDisplayText: "1 ช้อนโต๊ะ",
+        ingredientId: null,
+        componentRecipeId: null,
+        servingNote: "",
+        costBasisText: "",
+        decisionStatus: "pending",
+        selectedSource: null,
+        active: true,
+      }, {
+        lineId: "line:น้ำซุป",
+        name: "น้ำซุป",
+        kind: "prepared_recipe",
+        amountText: "100",
+        unitText: "ml",
+        sourceDisplayText: "100 ml",
+        ingredientId: null,
+        componentRecipeId: "recipe:น้ำซุป",
+        servingNote: "",
+        costBasisText: "",
+        decisionStatus: "pending",
+        selectedSource: null,
+        active: true,
+      }],
+      methodSteps: [],
+      blockers: [],
+      workDocuments: {},
+      parentRecipeIds: [],
+      lineage: { source: "v5", sourceRecipeId: 1 },
+    }, {
+      recipeId: "recipe:น้ำซุป",
+      code: null,
+      name: "น้ำซุป",
+      kind: "prepared_recipe",
+      category: "ซุป",
+      active: true,
+      reviewState: "confirmed",
+      sourceLocators: [],
+      yieldText: "",
+      operationalNotes: [],
+      methodDecisionNote: "",
+      ingredients: [],
+      methodSteps: [],
+      blockers: [],
+      workDocuments: {},
+      parentRecipeIds: ["recipe:แกงเนื้อ"],
+      lineage: { source: "v5", sourceRecipeId: 2 },
+    }],
+  };
+}
+
 export function makeIngredientMasterSnapshot(): IngredientMasterSnapshot {
   return {
     schemaVersion: "1.0.0",
     generatedAt: "2026-08-11T00:00:00.000Z",
-    sourceManifests: [{
-      manifestId: "manifest-v1",
-      sourcePath: "fixtures/ingredient-master.json",
-      sha256: "a".repeat(64),
-      byteLength: 1024,
-      extractedAt: "2026-08-11T00:00:00.000Z",
-      sourcePolicy: "immutable-input-receipt",
-      expectedCounts: { ingredient: 1, recipe: 1, recipe_line: 1 },
-    }],
+    sourceManifests: [makeSourceManifest(
+      { ingredient: 1, recipe: 1, recipe_line: 1 },
+      { sourcePath: "fixtures/ingredient-master.json" },
+    )],
     legacySourceRecords: [{
       stagingId: "staging-ingredient-1",
       manifestId: "manifest-v1",
