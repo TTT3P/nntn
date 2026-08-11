@@ -147,4 +147,27 @@ describe("PrintCollectionPicker", () => {
       expect(pixels).toBeGreaterThanOrEqual(44);
     }
   });
+
+  test("keeps interactive collection counts and help text at least 12 pixels", () => {
+    const view = render(
+      <PrintCollectionPicker
+        {...pickerProps()}
+        activeMode="collection"
+        activeCollectionKey="sauce"
+      />,
+    );
+
+    const compactText = view.container.querySelectorAll(
+      ".print-collection-actions span, .print-collection-actions small, .print-collection summary em",
+    );
+    expect(compactText.length).toBeGreaterThan(0);
+
+    for (const text of compactText) {
+      const fontSize = getComputedStyle(text).fontSize;
+      const pixels = fontSize.endsWith("rem")
+        ? Number.parseFloat(fontSize) * 16
+        : Number.parseFloat(fontSize);
+      expect(pixels).toBeGreaterThanOrEqual(12);
+    }
+  });
 });

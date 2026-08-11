@@ -298,14 +298,14 @@
 
 .print-collection-actions span {
   color: var(--cb-brass, #8b6726);
-  font-size: .72rem;
+  font-size: .75rem;
   font-weight: 900;
 }
 
 .print-collection-actions small {
   grid-column: 1 / -1;
   color: var(--cb-muted);
-  font-size: .68rem;
+  font-size: .75rem;
 }
 
 .print-set-alternatives {
@@ -403,7 +403,7 @@
 .print-collection summary > span { color: #748078; font-size: 1.2rem; transition: transform .15s ease; }
 .print-collection[open] summary > span { transform: rotate(90deg); }
 .print-collection summary strong { min-width: 0; overflow-wrap: anywhere; font-size: .84rem; }
-.print-collection summary em { min-width: 1.75rem; padding: .15rem .4rem; border-radius: 999px; color: #546158; background: #e9eeea; font-size: .72rem; font-style: normal; text-align: center; }
+.print-collection summary em { min-width: 1.75rem; padding: .15rem .4rem; border-radius: 999px; color: #546158; background: #e9eeea; font-size: .75rem; font-style: normal; text-align: center; }
 
 .print-collection__body {
   padding: .15rem .45rem .5rem;
