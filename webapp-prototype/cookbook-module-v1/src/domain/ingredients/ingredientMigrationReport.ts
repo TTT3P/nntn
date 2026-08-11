@@ -141,7 +141,7 @@ function sourceClosureFailure(): never {
 }
 
 function validCount(value: unknown): value is number {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
 function verifySourceClosure(
@@ -164,6 +164,35 @@ function verifySourceClosure(
     manifestIds.map((manifestId) => [manifestId, { mapped: 0, unmapped: 0 }]),
   );
 
+  for (const manifestId of manifestIds) {
+    const expected = expectedBySource[manifestId];
+    const manifest = manifests.get(manifestId)!;
+    const manifestDirect = manifest.expectedCounts.direct_line;
+    const manifestComponent = manifest.expectedCounts.component_line;
+    const manifestTotal = manifest.expectedCounts.recipe_line;
+    if (expected === undefined ||
+      !validCount(expected.direct) ||
+      !validCount(expected.component) ||
+      !validCount(expected.total) ||
+      !validCount(manifestDirect) ||
+      !validCount(manifestComponent) ||
+      !validCount(manifestTotal)) {
+      sourceClosureFailure();
+    }
+
+    const expectedSum = expected.direct + expected.component;
+    const manifestSum = manifestDirect + manifestComponent;
+    if (!Number.isSafeInteger(expectedSum) ||
+      !Number.isSafeInteger(manifestSum) ||
+      expectedSum !== expected.total ||
+      manifestSum !== manifestTotal ||
+      expected.direct !== manifestDirect ||
+      expected.component !== manifestComponent ||
+      expected.total !== manifestTotal) {
+      sourceClosureFailure();
+    }
+  }
+
   for (const link of snapshot.recipeLineLinks) {
     const manifest = manifests.get(link.decisionEvidence.manifestId);
     if (manifest === undefined || manifest.sha256 !== link.decisionEvidence.sourceSha256) {
@@ -181,24 +210,8 @@ function verifySourceClosure(
 
   for (const manifestId of manifestIds) {
     const expected = expectedBySource[manifestId];
-    const manifest = manifests.get(manifestId)!;
-    if (expected === undefined ||
-      !validCount(expected.direct) ||
-      !validCount(expected.component) ||
-      !validCount(expected.total) ||
-      expected.direct + expected.component !== expected.total ||
-      !validCount(manifest.expectedCounts.direct_line) ||
-      !validCount(manifest.expectedCounts.component_line) ||
-      !validCount(manifest.expectedCounts.recipe_line) ||
-      manifest.expectedCounts.direct_line + manifest.expectedCounts.component_line !==
-        manifest.expectedCounts.recipe_line ||
-      expected.direct !== manifest.expectedCounts.direct_line ||
-      expected.component !== manifest.expectedCounts.component_line ||
-      expected.total !== manifest.expectedCounts.recipe_line) {
-      sourceClosureFailure();
-    }
     const counts = observed.get(manifestId)!;
-    if (counts.mapped + counts.unmapped !== expected.direct) sourceClosureFailure();
+    if (counts.mapped + counts.unmapped !== expected!.direct) sourceClosureFailure();
   }
 
   return Object.fromEntries([...manifestIds].sort(compareText).map((manifestId) => {

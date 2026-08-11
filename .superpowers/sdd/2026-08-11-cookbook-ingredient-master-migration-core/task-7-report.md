@@ -190,3 +190,64 @@ GREEN focused total: **48 passed, 0 failed**.
 
 - No blocking concerns.
 - Report closure intentionally counts ingredient, component-reclassified, and unmapped recipe-link states against the manifest's direct-line inventory. Source component lines remain represented by the separate authoritative `component_line` count and are not recipe relink outputs.
+
+---
+
+## Fix Round 2/5 — Safe-integer Count Integrity
+
+### Finding resolved
+
+- Replaced integer-only count acceptance with `Number.isSafeInteger` for all caller `expectedBySource` direct/component/total counts and all authoritative manifest `direct_line`/`component_line`/`recipe_line` counts used by report closure.
+- Safe-integer validation now completes before recipe-link iteration and before direct-plus-component arithmetic.
+- After operand validation, each sum is independently required to remain a safe integer before comparison with total. IEEE-754 rounding cannot make an unsafe or overflowing receipt appear internally consistent.
+- Existing source closure, unresolved proposal regeneration, resolved redirect reporting, exact export, and CAS behavior remain unchanged.
+
+### Strict TDD evidence
+
+RED before production repair:
+
+```bash
+./node_modules/.bin/vitest run --config vite.config.ts \
+  src/domain/ingredients/ingredientMigrationReport.test.ts --reporter=verbose
+```
+
+```text
+Test Files 1 failed (1)
+Tests 6 failed | 13 passed (19)
+
+All six unsafe caller/manifest direct, component, and total cases reached the poisoned
+recipe-link getter instead of failing source-count validation first.
+```
+
+Focused GREEN:
+
+```bash
+./node_modules/.bin/vitest run --config vite.config.ts \
+  src/domain/ingredients/ingredientMigrationReport.test.ts \
+  src/data/ingredients/InMemoryIngredientMasterStore.test.ts \
+  src/domain/ingredients/reconciliation.test.ts --reporter=verbose
+```
+
+```text
+Test Files 3 passed (3)
+Tests 55 passed (55)
+```
+
+RED total: **6 failed behavioral tests**.
+GREEN focused total: **55 passed, 0 failed**.
+
+### Boundary evidence
+
+- Rejects unsafe caller direct, component, and total independently before recipe-link access.
+- Rejects unsafe authoritative manifest direct, component, and total independently before recipe-link access.
+- Accepts `direct = 0`, `component = Number.MAX_SAFE_INTEGER`, `total = Number.MAX_SAFE_INTEGER`, proving the inclusive safe boundary when arithmetic remains safe.
+
+### Fix files
+
+- `webapp-prototype/cookbook-module-v1/src/domain/ingredients/ingredientMigrationReport.ts`
+- `webapp-prototype/cookbook-module-v1/src/domain/ingredients/ingredientMigrationReport.test.ts`
+- `.superpowers/sdd/2026-08-11-cookbook-ingredient-master-migration-core/task-7-report.md`
+
+### Concerns
+
+- No blocking concerns.

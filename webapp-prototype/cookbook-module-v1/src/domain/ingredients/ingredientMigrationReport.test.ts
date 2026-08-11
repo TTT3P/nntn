@@ -251,6 +251,66 @@ describe("buildIngredientMigrationReport", () => {
     })).toThrow("INGREDIENT_MIGRATION_SOURCE_CLOSURE_FAILED");
   });
 
+  test.each([
+    ["caller direct", "direct"],
+    ["caller component", "component"],
+    ["caller total", "total"],
+  ] as const)("rejects unsafe %s count before reading recipe links", (_label, field) => {
+    const snapshot = makeReportSnapshot();
+    Object.defineProperty(snapshot, "recipeLineLinks", {
+      get: () => {
+        throw new Error("RECIPE_LINKS_ACCESSED_BEFORE_COUNT_VALIDATION");
+      },
+    });
+    const counts = { direct: 3, component: 0, total: 3 };
+    counts[field] = Number.MAX_SAFE_INTEGER + 1;
+
+    expect(() => buildIngredientMigrationReport(snapshot, { "manifest-v1": counts }))
+      .toThrow("INGREDIENT_MIGRATION_SOURCE_CLOSURE_FAILED");
+  });
+
+  test.each([
+    ["manifest direct", "direct_line"],
+    ["manifest component", "component_line"],
+    ["manifest total", "recipe_line"],
+  ] as const)("rejects unsafe %s count before reading recipe links", (_label, field) => {
+    const snapshot = makeReportSnapshot();
+    snapshot.sourceManifests[0]!.expectedCounts[field] = Number.MAX_SAFE_INTEGER + 1;
+    Object.defineProperty(snapshot, "recipeLineLinks", {
+      get: () => {
+        throw new Error("RECIPE_LINKS_ACCESSED_BEFORE_COUNT_VALIDATION");
+      },
+    });
+
+    expect(() => buildIngredientMigrationReport(snapshot, {
+      "manifest-v1": { direct: 3, component: 0, total: 3 },
+    })).toThrow("INGREDIENT_MIGRATION_SOURCE_CLOSURE_FAILED");
+  });
+
+  test("accepts the MAX_SAFE_INTEGER boundary when the count sum remains safe", () => {
+    const snapshot = makeReportSnapshot();
+    snapshot.recipeLineLinks = [];
+    snapshot.sourceManifests[0]!.expectedCounts.direct_line = 0;
+    snapshot.sourceManifests[0]!.expectedCounts.component_line = Number.MAX_SAFE_INTEGER;
+    snapshot.sourceManifests[0]!.expectedCounts.recipe_line = Number.MAX_SAFE_INTEGER;
+
+    const report = buildIngredientMigrationReport(snapshot, {
+      "manifest-v1": {
+        direct: 0,
+        component: Number.MAX_SAFE_INTEGER,
+        total: Number.MAX_SAFE_INTEGER,
+      },
+    });
+
+    expect(report.sourceCounts["manifest-v1"]).toEqual({
+      direct: 0,
+      component: Number.MAX_SAFE_INTEGER,
+      total: Number.MAX_SAFE_INTEGER,
+      mapped: 0,
+      unmapped: 0,
+    });
+  });
+
   test("verifies a valid multi-source report independently by manifest", () => {
     const snapshot = makeReportSnapshot();
     snapshot.sourceManifests.push({
