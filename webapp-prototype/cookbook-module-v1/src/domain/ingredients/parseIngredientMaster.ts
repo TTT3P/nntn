@@ -17,6 +17,9 @@ import type {
   UsableYieldEvidence,
 } from "./types.ts";
 
+// Keep hostile transport input below the browser call-stack limit while returning the domain error.
+const MAX_RAW_DEPTH = 256;
+
 function invalid(): never {
   throw new Error("INVALID_INGREDIENT_MASTER_SNAPSHOT");
 }
@@ -77,7 +80,12 @@ function numberRecord(value: unknown): Record<string, number> {
   return Object.fromEntries(Object.entries(record).map(([key, entry]) => [key, nonNegativeNumber(entry)]));
 }
 
-function jsonTransportValue(value: unknown, ancestors = new WeakSet<object>()): unknown {
+function jsonTransportValue(
+  value: unknown,
+  ancestors = new WeakSet<object>(),
+  depth = 0,
+): unknown {
+  if (depth > MAX_RAW_DEPTH) return invalid();
   if (value === null || typeof value === "string" || typeof value === "boolean") return value;
   if (typeof value === "number") return Number.isFinite(value) ? value : invalid();
   if (typeof value !== "object") return invalid();
@@ -86,10 +94,11 @@ function jsonTransportValue(value: unknown, ancestors = new WeakSet<object>()): 
   ancestors.add(value);
   try {
     if (Array.isArray(value)) {
+      if (Reflect.ownKeys(value).length !== value.length + 1) invalid();
       const copy: unknown[] = [];
       for (let index = 0; index < value.length; index += 1) {
         if (!Object.prototype.hasOwnProperty.call(value, index)) invalid();
-        copy.push(jsonTransportValue(value[index], ancestors));
+        copy.push(jsonTransportValue(value[index], ancestors, depth + 1));
       }
       return copy;
     }
@@ -98,7 +107,7 @@ function jsonTransportValue(value: unknown, ancestors = new WeakSet<object>()): 
     if (prototype !== Object.prototype && prototype !== null) invalid();
     if (Reflect.ownKeys(value).length !== Object.keys(value).length) invalid();
     return Object.fromEntries(Object.entries(value).map(([key, entry]) =>
-      [key, jsonTransportValue(entry, ancestors)]));
+      [key, jsonTransportValue(entry, ancestors, depth + 1)]));
   } finally {
     ancestors.delete(value);
   }

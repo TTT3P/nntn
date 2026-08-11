@@ -199,4 +199,44 @@ describe("parseIngredientMaster", () => {
 
     expect(parseIngredientMaster(snapshot).recipeLineLinks).toHaveLength(2);
   });
+
+  test("rejects raw arrays with enumerable extra properties", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    const raw = ["kept"];
+    Object.assign(raw, { extra: "discarded" });
+    snapshot.legacySourceRecords[0]!.raw = raw;
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
+  });
+
+  test("rejects raw arrays with non-enumerable extra properties", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    const raw = ["kept"];
+    Object.defineProperty(raw, "extra", { value: "discarded", enumerable: false });
+    snapshot.legacySourceRecords[0]!.raw = raw;
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
+  });
+
+  test("rejects raw arrays with symbol properties", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    const raw = ["kept"];
+    Object.defineProperty(raw, Symbol("extra"), { value: "discarded", enumerable: true });
+    snapshot.legacySourceRecords[0]!.raw = raw;
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
+  });
+
+  test("rejects 20,000-level raw evidence with the domain error instead of RangeError", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    let raw: unknown = "leaf";
+    for (let depth = 0; depth < 20_000; depth += 1) raw = [raw];
+    snapshot.legacySourceRecords[0]!.raw = raw;
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
+  });
 });
