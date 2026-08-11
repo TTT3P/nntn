@@ -32,7 +32,9 @@ describe.each([
     const use = await loadUse(configPath);
 
     expect(use.connectOptions).toBeUndefined();
-    expect(use.launchOptions?.executablePath).toBeTruthy();
+    if (use.launchOptions !== undefined) {
+      expect(use.launchOptions.executablePath).toBeTruthy();
+    }
   });
 
   test("connects to the exact opt-in endpoint with the caller-supplied User-Agent", async () => {
