@@ -148,3 +148,16 @@ real V6: 96775abb92580182e4c9b4bb324d199a8bf4bb043b572170e379276119031695
 ```
 
 The real V4, V5, and V6 artifacts were not mutated by the isolated gates.
+
+## ERP worktree artifact identity
+
+The browser evidence belongs to the current approved ERP worktree overlay, not to the Ingredient Master commit range in isolation. Immediately before this documentation-only receipt update, that artifact was:
+
+```text
+HEAD: 3dc507e73fa4e6572e12376f4a9d86b0540de7ed
+tracked diff SHA-256: c3072c1ec540002fbd0e17fb5d5d84e3248010efdc9a1273ba21d903a66a5d5b
+Cookbook untracked content-manifest SHA-256: adadfa97f4e5506fe914d21577634dcec314c0c91ca5ed354225ed07017d10a3
+status-porcelain SHA-256: 592f56f16b7787843198fe68a8b9721ccdb8a040ddfe53704a3214a9012a4757
+```
+
+The status receipt excludes `.playwright-mcp/` runtime screenshots/session noise. This distinction is intentional: execution authority permitted only Ingredient Master task-scoped commits while requiring preservation of the pre-existing ERP UI/V6 work. A future approved ERP checkpoint commit is required before the same evidence is reproducible from a clean checkout of `HEAD` alone.
