@@ -13,6 +13,7 @@ test("finds the Thai menu, opens its related recipes, and previews the 180 gram 
     .getByRole("link", { name: "เนื้อตุ๋น (ราดข้าว)", exact: true })).toBeVisible();
 
   await page.goto("./#/print");
+  await page.getByRole("searchbox", { name: "ค้นหาสูตร" }).fill("RCP-071");
   await page.getByRole("checkbox", { name: "ข้าวหน้าเนื้อตุ๋น · RCP-071" }).check();
   await page.locator("details.print-advanced > summary").click();
   await page.getByRole("combobox", { name: /^จุดงาน/u }).selectOption("service");

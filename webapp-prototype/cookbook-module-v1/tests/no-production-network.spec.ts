@@ -40,7 +40,9 @@ test("keeps normal Cookbook browsing and printing on the isolated loopback servi
     "ข้าวหน้าเนื้อยากินิกุ · RCP-069",
     "ข้าวขยำเนื้อแดดเดียว · RCP-021",
   ]) {
+    await page.getByRole("searchbox", { name: "ค้นหาสูตร" }).fill(name);
     await page.getByRole("checkbox", { name }).check();
+    await page.getByRole("searchbox", { name: "ค้นหาสูตร" }).fill("");
   }
   await page.getByRole("button", { name: /^A4 สูตรเต็ม/u }).click();
   await page.locator("details.print-advanced > summary").click();
