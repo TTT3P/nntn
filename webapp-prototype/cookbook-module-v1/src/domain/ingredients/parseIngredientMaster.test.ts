@@ -89,4 +89,114 @@ describe("parseIngredientMaster", () => {
     expect(() => parseIngredientMaster(malformed))
       .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
   });
+
+  test("rejects a legacy source record with no own raw field", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    delete (snapshot.legacySourceRecords[0] as Partial<typeof snapshot.legacySourceRecords[number]>).raw;
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
+  });
+
+  test.each([
+    ["undefined", undefined],
+    ["function", () => "not JSON"],
+    ["symbol", Symbol("not JSON")],
+    ["bigint", 1n],
+    ["non-finite nested number", { nested: Number.NaN }],
+  ])("rejects %s raw evidence", (_scenario, raw) => {
+    const snapshot = makeIngredientMasterSnapshot();
+    snapshot.legacySourceRecords[0]!.raw = raw;
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
+  });
+
+  test("rejects cyclic raw evidence", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    const raw: { self?: unknown } = {};
+    raw.self = raw;
+    snapshot.legacySourceRecords[0]!.raw = raw;
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
+  });
+
+  test("copies raw evidence instead of aliasing the parser input", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    const raw = { nested: { label: "original" }, ordered: ["first", "second"] };
+    snapshot.legacySourceRecords[0]!.raw = raw;
+
+    const parsed = parseIngredientMaster(snapshot);
+    raw.nested.label = "mutated";
+    raw.ordered.push("third");
+
+    expect(parsed.legacySourceRecords[0]!.raw).toEqual({
+      nested: { label: "original" },
+      ordered: ["first", "second"],
+    });
+  });
+
+  test("rejects a legacy source hash that differs from its manifest", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    snapshot.legacySourceRecords[0]!.sourceSha256 = "b".repeat(64);
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
+  });
+
+  test("rejects a reconciliation decision source hash that differs from its manifest", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    snapshot.reconciliationDecisions[0]!.sourceSha256 = "b".repeat(64);
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
+  });
+
+  test("rejects a reconciliation decision with no matching composite source record", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    snapshot.reconciliationDecisions[0]!.sourceRecordId = "missing-source-record";
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
+  });
+
+  test("rejects a redirect whose decision is missing", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    snapshot.ingredients.push({
+      ingredientId: "ing-oyster-sauce-legacy",
+      primaryName: "Legacy oyster sauce",
+      category: "seasoning",
+      status: "inactive",
+      costingState: "not_costed",
+    });
+    snapshot.redirects.push({
+      redirectId: "redirect-oyster-sauce-legacy",
+      fromIngredientId: "ing-oyster-sauce-legacy",
+      toIngredientId: "ing-oyster-sauce",
+      decisionId: "missing-decision",
+    });
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
+  });
+
+  test("accepts distinct recipe-line identity pairs containing NUL", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    snapshot.recipeLineLinks = [{
+      state: "component",
+      recipeId: "recipe\u0000part",
+      lineId: "line",
+      componentRecipeId: "component-recipe-1",
+      historicalLabel: "first",
+    }, {
+      state: "component",
+      recipeId: "recipe",
+      lineId: "part\u0000line",
+      componentRecipeId: "component-recipe-2",
+      historicalLabel: "second",
+    }];
+
+    expect(parseIngredientMaster(snapshot).recipeLineLinks).toHaveLength(2);
+  });
 });

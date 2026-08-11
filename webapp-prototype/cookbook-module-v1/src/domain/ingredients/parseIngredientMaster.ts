@@ -77,6 +77,33 @@ function numberRecord(value: unknown): Record<string, number> {
   return Object.fromEntries(Object.entries(record).map(([key, entry]) => [key, nonNegativeNumber(entry)]));
 }
 
+function jsonTransportValue(value: unknown, ancestors = new WeakSet<object>()): unknown {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? value : invalid();
+  if (typeof value !== "object") return invalid();
+  if (ancestors.has(value)) return invalid();
+
+  ancestors.add(value);
+  try {
+    if (Array.isArray(value)) {
+      const copy: unknown[] = [];
+      for (let index = 0; index < value.length; index += 1) {
+        if (!Object.prototype.hasOwnProperty.call(value, index)) invalid();
+        copy.push(jsonTransportValue(value[index], ancestors));
+      }
+      return copy;
+    }
+
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) invalid();
+    if (Reflect.ownKeys(value).length !== Object.keys(value).length) invalid();
+    return Object.fromEntries(Object.entries(value).map(([key, entry]) =>
+      [key, jsonTransportValue(entry, ancestors)]));
+  } finally {
+    ancestors.delete(value);
+  }
+}
+
 function parseIngredient(value: unknown): CookbookIngredient {
   const record = recordValue(value);
   const costingState = record.costingState;
@@ -149,13 +176,14 @@ function parseLegacySourceRecord(value: unknown): LegacySourceRecord {
   const record = recordValue(value);
   const recordType = record.recordType;
   if (recordType !== "ingredient" && recordType !== "recipe" && recordType !== "recipe_line") invalid();
+  if (!Object.prototype.hasOwnProperty.call(record, "raw")) invalid();
   return {
     stagingId: identity(record.stagingId),
     manifestId: identity(record.manifestId),
     sourceSha256: sha256(record.sourceSha256),
     recordType,
     sourceRecordId: identity(record.sourceRecordId),
-    raw: record.raw,
+    raw: jsonTransportValue(record.raw),
   };
 }
 
@@ -290,20 +318,26 @@ function assertUnique<T>(records: T[], id: (record: T) => string): void {
 }
 
 function validateReferences(snapshot: IngredientMasterSnapshot): void {
-  const manifestIds = new Set(snapshot.sourceManifests.map(({ manifestId }) => manifestId));
+  const manifests = new Map(snapshot.sourceManifests.map((manifest) => [manifest.manifestId, manifest]));
   const ingredientIds = new Set(snapshot.ingredients.map(({ ingredientId }) => ingredientId));
   const specificationIds = new Set(snapshot.specifications.map(({ specificationId }) => specificationId));
+  const decisionIds = new Set(snapshot.reconciliationDecisions.map(({ decisionId }) => decisionId));
+  const sourceRecordKeys = new Set(snapshot.legacySourceRecords.map(({ manifestId, sourceSha256, sourceRecordId }) =>
+    JSON.stringify([manifestId, sourceSha256, sourceRecordId])));
 
-  if (snapshot.legacySourceRecords.some(({ manifestId }) => !manifestIds.has(manifestId))) invalid();
+  if (snapshot.legacySourceRecords.some(({ manifestId, sourceSha256 }) =>
+    manifests.get(manifestId)?.sha256 !== sourceSha256)) invalid();
   if (snapshot.specifications.some(({ ingredientId }) => !ingredientIds.has(ingredientId))) invalid();
   if (snapshot.aliases.some(({ ingredientId }) => !ingredientIds.has(ingredientId))) invalid();
-  if (snapshot.redirects.some(({ fromIngredientId, toIngredientId }) =>
-    !ingredientIds.has(fromIngredientId) || !ingredientIds.has(toIngredientId))) invalid();
+  if (snapshot.redirects.some(({ fromIngredientId, toIngredientId, decisionId }) =>
+    !ingredientIds.has(fromIngredientId) || !ingredientIds.has(toIngredientId) || !decisionIds.has(decisionId))) invalid();
   if (snapshot.mappings.some(({ specificationId }) => !specificationIds.has(specificationId))) invalid();
   if (snapshot.unitConversions.some(({ specificationId }) => !specificationIds.has(specificationId))) invalid();
   if (snapshot.usableYields.some(({ specificationId }) => !specificationIds.has(specificationId))) invalid();
   if (snapshot.costObservations.some(({ specificationId }) => !specificationIds.has(specificationId))) invalid();
-  if (snapshot.reconciliationDecisions.some(({ manifestId }) => !manifestIds.has(manifestId))) invalid();
+  if (snapshot.reconciliationDecisions.some(({ manifestId, sourceSha256, sourceRecordId }) =>
+    manifests.get(manifestId)?.sha256 !== sourceSha256 ||
+    !sourceRecordKeys.has(JSON.stringify([manifestId, sourceSha256, sourceRecordId])))) invalid();
 
   const specificationById = new Map(snapshot.specifications.map((specification) =>
     [specification.specificationId, specification]));
@@ -342,7 +376,13 @@ function validateStableIds(snapshot: IngredientMasterSnapshot): void {
   assertUnique(snapshot.usableYields, ({ yieldEvidenceId }) => yieldEvidenceId);
   assertUnique(snapshot.costObservations, ({ observationId }) => observationId);
   assertUnique(snapshot.reconciliationDecisions, ({ decisionId }) => decisionId);
-  assertUnique(snapshot.recipeLineLinks, ({ recipeId, lineId }) => `${recipeId}\u0000${lineId}`);
+  const lineIdsByRecipe = new Map<string, Set<string>>();
+  for (const { recipeId, lineId } of snapshot.recipeLineLinks) {
+    const lineIds = lineIdsByRecipe.get(recipeId) ?? new Set<string>();
+    if (lineIds.has(lineId)) invalid();
+    lineIds.add(lineId);
+    lineIdsByRecipe.set(recipeId, lineIds);
+  }
 }
 
 export function parseIngredientMaster(value: unknown): IngredientMasterSnapshot {
