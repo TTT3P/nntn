@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation, unit/static verification, documentation, and immutable-artifact verification are complete. The first browser gate is blocked by the controller's Chrome launch environment; downstream browser gates remain unexecuted under the required stop-on-first-failure policy until a Chrome-capable controller supplies fresh evidence.
+Implementation, unit/static verification, documentation, immutable-artifact verification, and all five sequential browser/persistence gates are complete. Task 8 is ready for scoped code review; no Food Cost, backend, production migration, or deployment claim is made.
 
 ## Changed files
 
@@ -11,6 +11,7 @@ Implementation, unit/static verification, documentation, and immutable-artifact 
 - `webapp-prototype/cookbook-module-v1/docs/research/2026-08-11-ingredient-cost-source-audit.md` — appended Task 8 receipts and boundaries; preserved all pre-existing untracked content.
 - `webapp-prototype/cookbook-module-v1/docs/HANDOFF.md` — Task 8-only appended section; pre-task dirty content preserved and excluded from staging.
 - `webapp-prototype/cookbook-module-v1/README.md` — Task 8-only appended section; pre-task dirty content preserved and excluded from staging.
+- `webapp-prototype/cookbook-module-v1/tests/cookbook-draft-persistence.spec.ts` — replaced the deleted legacy Source Review UI dependency with direct isolated V5 middleware save/reload/CAS coverage.
 - `.superpowers/sdd/2026-08-11-cookbook-ingredient-master-migration-core/task-8-report.md`
 
 ## Implementation
@@ -90,9 +91,15 @@ The immutable V1 verifier npm wrapper exited `255`; direct `node scripts/verify-
 | TypeScript | 255 | exit 0; no diagnostics |
 | Production build | 255 | direct TypeScript exit 0; Vite exit 0; 69 modules |
 | Full `git diff --check` | n/a | exit 0 before docs closure |
-| Browser layout harness | 255 | exit 1 before tests; system Chrome SIGABRT |
+| Browser layout harness | 255 | managed-browser direct run exit 0 |
+| Browser export harness | 255 | managed-browser direct run exit 0 |
+| Default Playwright E2E | 255 | managed-browser direct run exit 0; 31/31 passed |
+| Isolated V5 persistence | 255 | managed-browser direct run exit 0; 3/3 passed |
+| Isolated V6 persistence | 255 | managed-browser direct run exit 0; 1/1 passed |
 
-The browser harness used its existing approved system path `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome` (version 151.0.7922.108), temporary Playwright profile, and existing configuration. A raw isolated-profile Chrome probe also exited `134` without creating a profile. No alternate approved Chromium or bundled Playwright browser is installed. Assertions and configuration were not weakened. Per the required sequential stop, browser export, default Playwright, local-draft Playwright, and V6 Playwright have not been run in this controller after the layout gate failed.
+The local system Chrome launch still exits `134` in this controller, so the browser gates used the generic opt-in managed-browser connection documented below. No assertion, retry, or timeout was weakened. During recovery, the default E2E gate exposed stale selectors after the approved ERP UI work and one real print regression: the application shell produced an extra leading Letter page. The selectors were aligned to the current UI, and print CSS now hides the application shell. A focused rerun passed 19/19 before the full default suite passed 31/31.
+
+The isolated V5 gate also exposed that its old test drove `#/source-review`, a route deliberately removed by the current router. The gate now exercises the V5 middleware contract directly instead of restoring obsolete UI. It proves first V4-to-V5 low-noise save and reload, a second sequential valid save that preserves prior edits and document shape, and stale dual-writer rejection with `409 STALE_DRAFT` while the first writer's bytes remain authoritative.
 
 ## Boundaries and remaining work
 
@@ -104,7 +111,8 @@ The browser harness used its existing approved system path `/Applications/Google
 
 ## Concerns
 
-- Completion is blocked only on fresh Chrome-capable execution of the five sequential browser/persistence gates. Unit/static/domain behavior and immutable artifacts are verified; no browser, shadow-read cutover, rollback, production migration, release, or deployment claim is made.
+- The five browser/persistence gates are green through the managed-browser opt-in because local system Chrome still aborts in this sandbox. The absent-env local launch path remains unchanged.
+- No shadow-read cutover, rollback, production migration, release, or deployment claim is made.
 
 ## Browser verification recovery checkpoint
 
@@ -127,4 +135,16 @@ both standalone harness syntax checks: exit 0
 full git diff --check: exit 0
 ```
 
-Browser gates were intentionally not run in this worker. The parent controller owns launching the ephemeral managed endpoint and running the five gates sequentially with these opt-in variables.
+The parent controller launched the ephemeral managed endpoint and ran the five gates sequentially with these opt-in variables. Final evidence was: browser layout exit 0, browser export exit 0, default E2E 31/31, isolated V5 3/3, and isolated V6 1/1.
+
+## Final immutable-artifact receipt
+
+After all five browser/persistence gates and the V5 test adaptation:
+
+```text
+V4 SHA256SUMS: 5/5 OK
+real V5: 9da9f445d7757990af873eb89a47e103399cf5d81428423d02f4281d8ae637e7
+real V6: 96775abb92580182e4c9b4bb324d199a8bf4bb043b572170e379276119031695
+```
+
+The real V4, V5, and V6 artifacts were not mutated by the isolated gates.
