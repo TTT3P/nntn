@@ -181,7 +181,7 @@ try {
   await page.emulateMedia({ media: "screen" });
 
   await page.goto(`${origin}/nntn-cookbook/tests/print-layout-harness.html?case=two-up`);
-  await page.getByLabel("แม่แบบ").selectOption("two-up");
+  await page.getByRole("button", { name: /^A4 สูตรเต็ม/ }).click();
   await page.locator(".two-up-sheet").first().waitFor();
   const twoUpGeometry = await page.locator(".two-up-sheet").evaluateAll((sheets) => sheets.map((sheet) => ({
     boundingWidth: sheet.getBoundingClientRect().width,
