@@ -39,10 +39,21 @@ export interface IngredientRedirect {
   decisionId: string;
 }
 
+export interface RecipeLineEvidence {
+  recipeId: string;
+  lineId: string;
+  historicalLabel: string;
+  amountText: string;
+  unitText: string;
+  sourceDisplayText: string;
+  servingNote: string;
+  decisionEvidence: RecipeLineDecisionEvidence;
+}
+
 export type RecipeLineLink =
-  | { state: "ingredient"; recipeId: string; lineId: string; ingredientId: string; requiredSpecificationId: string | null; historicalLabel: string }
-  | { state: "component"; recipeId: string; lineId: string; componentRecipeId: string; historicalLabel: string }
-  | { state: "unmapped"; recipeId: string; lineId: string; sourceRecordId: string; reason: string; historicalLabel: string };
+  | RecipeLineEvidence & { state: "ingredient"; ingredientId: string; requiredSpecificationId: string | null }
+  | RecipeLineEvidence & { state: "component"; componentRecipeId: string }
+  | RecipeLineEvidence & { state: "unmapped"; sourceRecordId: string; reason: string };
 
 export interface SourceManifest {
   manifestId: string;

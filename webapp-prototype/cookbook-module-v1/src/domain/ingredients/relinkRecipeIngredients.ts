@@ -37,6 +37,7 @@ export type RecipeRelinkDecision = RecipeLineDecisionEvidence;
 
 export interface RecipeRelinkDecisionSet {
   readonly sourceSha256: string;
+  readonly sourceManifest: DirectLineClosureManifest;
   readonly decisions: readonly RecipeRelinkDecision[];
   readonly ingredients: readonly {
     readonly ingredientId: string;
@@ -53,14 +54,22 @@ export interface RecipeRelinkDecisionSet {
 }
 
 export type RecipeRelinkIssueCode =
+  | "DUPLICATE_ACTIVE_SOURCE_LINE"
+  | "DUPLICATE_INGREDIENT_ID"
+  | "DUPLICATE_RECIPE_ID"
   | "DUPLICATE_RELINK_DECISION"
+  | "DUPLICATE_RELINK_DECISION_ID"
+  | "DUPLICATE_SPECIFICATION_ID"
+  | "HISTORICAL_ONLY_RELINK_DECISION"
   | "INACTIVE_INGREDIENT_REPLACEMENT_REQUIRED"
   | "INACTIVE_SPECIFICATION_REPLACEMENT_REQUIRED"
   | "INVALID_COMPONENT_PAYLOAD"
   | "INVALID_RELINK_ACTION"
+  | "INVALID_RELINK_ACTION_PAYLOAD"
   | "MISSING_COMPONENT_RECIPE"
   | "MISSING_RELINK_DECISION"
   | "SOURCE_REVISION_MISMATCH"
+  | "SOURCE_MANIFEST_MISMATCH"
   | "SPECIFICATION_INGREDIENT_MISMATCH"
   | "UNAPPROVED_RELINK_DECISION"
   | "UNAPPROVED_SPECIFICATION"
@@ -79,13 +88,13 @@ export interface RecipeRelinkIssue {
   readonly componentRecipeId?: string;
 }
 
-export type RelinkedRecipeLine = RecipeLineLink & {
-  amountText: string;
-  unitText: string;
-  sourceDisplayText: string;
-  servingNote: string;
-  decisionEvidence: RecipeRelinkDecision;
-};
+export type RelinkedRecipeLine = RecipeLineLink;
+
+export interface DirectLineClosureManifest {
+  readonly manifestId: string;
+  readonly sourceSha256: string;
+  readonly directLineCount: number;
+}
 
 export interface RecipeRelinkResult {
   readonly links: RelinkedRecipeLine[];
@@ -156,6 +165,35 @@ function commonLink(
   };
 }
 
+function duplicateValues(values: readonly string[]): Set<string> {
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+  for (const value of values) {
+    if (seen.has(value)) duplicates.add(value);
+    seen.add(value);
+  }
+  return duplicates;
+}
+
+function hasExactKeys(value: object, allowed: readonly string[]): boolean {
+  const keys = Reflect.ownKeys(value);
+  return keys.length === allowed.length && keys.every((entry) =>
+    typeof entry === "string" && allowed.includes(entry));
+}
+
+function actionHasExactKeys(action: RecipeRelinkDecision["action"]): boolean {
+  switch (action.type) {
+    case "link_ingredient":
+      return hasExactKeys(action, ["type", "ingredientId", "requiredSpecificationId"]);
+    case "link_component_recipe":
+      return hasExactKeys(action, ["type", "componentRecipeId"]);
+    case "mark_unmapped":
+      return hasExactKeys(action, ["type", "reason"]);
+    default:
+      return false;
+  }
+}
+
 export function relinkRecipeIngredients(
   document: RelinkRecipeDocument,
   decisionSet: RecipeRelinkDecisionSet,
@@ -174,6 +212,52 @@ export function relinkRecipeIngredients(
   const fatalIssues: RecipeRelinkIssue[] = [];
   const decisionByLine = new Map<string, RecipeRelinkDecision>();
   const consumedDecisionIds = new Set<string>();
+
+  if (decisionSet.sourceManifest.sourceSha256 !== decisionSet.sourceSha256) {
+    fatalIssues.push(issue("SOURCE_MANIFEST_MISMATCH", decisionSet.sourceSha256, "", ""));
+  }
+  for (const duplicate of duplicateValues(
+    decisionSet.decisions.map(({ decisionId }) => decisionId),
+  )) {
+    const decision = decisionSet.decisions.find(({ decisionId }) => decisionId === duplicate)!;
+    fatalIssues.push(issue("DUPLICATE_RELINK_DECISION_ID", decision.sourceSha256,
+      decision.recipeId, decision.lineId, decision));
+  }
+  for (const duplicate of duplicateValues(
+    decisionSet.ingredients.map(({ ingredientId }) => ingredientId),
+  )) {
+    fatalIssues.push(issue("DUPLICATE_INGREDIENT_ID", decisionSet.sourceSha256, "", "",
+      undefined, { ingredientId: duplicate }));
+  }
+  for (const duplicate of duplicateValues(
+    decisionSet.specifications.map(({ specificationId }) => specificationId),
+  )) {
+    fatalIssues.push(issue("DUPLICATE_SPECIFICATION_ID", decisionSet.sourceSha256, "", "",
+      undefined, { specificationId: duplicate }));
+  }
+  for (const duplicate of duplicateValues(document.recipes.map(({ recipeId }) => recipeId))) {
+    fatalIssues.push(issue("DUPLICATE_RECIPE_ID", decisionSet.sourceSha256, duplicate, ""));
+  }
+  const activeDirectLineKeys = document.recipes.flatMap((recipe) =>
+    recipe.active
+      ? recipe.ingredients
+        .filter(({ kind, active }) => kind === "ingredient" && active)
+        .map(({ lineId }) => key(decisionSet.sourceSha256, recipe.recipeId, lineId))
+      : []);
+  for (const duplicate of duplicateValues(activeDirectLineKeys)) {
+    const [, recipeId, lineId] = JSON.parse(duplicate) as [string, string, string];
+    fatalIssues.push(issue("DUPLICATE_ACTIVE_SOURCE_LINE", decisionSet.sourceSha256,
+      recipeId, lineId));
+  }
+  for (const decision of decisionSet.decisions) {
+    if (decision.manifestId !== decisionSet.sourceManifest.manifestId) {
+      fatalIssues.push(issue("SOURCE_MANIFEST_MISMATCH", decision.sourceSha256,
+        decision.recipeId, decision.lineId, decision));
+    }
+  }
+
+  sortIssues(fatalIssues);
+  if (fatalIssues.length > 0) throw new RecipeRelinkError(fatalIssues);
 
   for (const decision of decisionSet.decisions) {
     const decisionKey = key(decision.sourceSha256, decision.recipeId, decision.lineId);
@@ -209,7 +293,11 @@ export function relinkRecipeIngredients(
         sourceLine.lineId,
       ));
       if (!recipe.active || !sourceLine.active) {
-        if (decision !== undefined) consumedDecisionIds.add(decision.decisionId);
+        if (decision !== undefined) {
+          consumedDecisionIds.add(decision.decisionId);
+          issues.push(issue("HISTORICAL_ONLY_RELINK_DECISION", decisionSet.sourceSha256,
+            recipe.recipeId, sourceLine.lineId, decision));
+        }
         continue;
       }
       if (decision === undefined) {
@@ -236,6 +324,11 @@ export function relinkRecipeIngredients(
 
       const common = commonLink(recipe.recipeId, sourceLine, decision);
       const action = decision.action;
+      if (!actionHasExactKeys(action)) {
+        fatalIssues.push(issue("INVALID_RELINK_ACTION_PAYLOAD", decisionSet.sourceSha256,
+          recipe.recipeId, sourceLine.lineId, decision));
+        continue;
+      }
       if (action.type === "link_ingredient") {
         const ingredient = ingredients.get(action.ingredientId);
         if (ingredient === undefined) {
@@ -284,14 +377,6 @@ export function relinkRecipeIngredients(
       }
 
       if (action.type === "link_component_recipe") {
-        const payload = action as typeof action & Record<string, unknown>;
-        if (Object.prototype.hasOwnProperty.call(payload, "ingredientId") ||
-          Object.prototype.hasOwnProperty.call(payload, "requiredSpecificationId")) {
-          fatalIssues.push(issue("INVALID_COMPONENT_PAYLOAD", decisionSet.sourceSha256,
-            recipe.recipeId, sourceLine.lineId, decision,
-            { componentRecipeId: action.componentRecipeId }));
-          continue;
-        }
         if (!recipeIds.has(action.componentRecipeId)) {
           fatalIssues.push(issue("MISSING_COMPONENT_RECIPE", decisionSet.sourceSha256,
             recipe.recipeId, sourceLine.lineId, decision,
@@ -336,11 +421,31 @@ export function relinkRecipeIngredients(
   sortIssues(fatalIssues);
   if (fatalIssues.length > 0) throw new RecipeRelinkError(fatalIssues);
   sortIssues(issues);
+  const actualClosure = {
+    manifestId: decisionSet.sourceManifest.manifestId,
+    sourceSha256: document.derivedFrom.v5Sha256,
+    directLineCount: activeDirectLineKeys.length,
+  };
+  assertManifestDirectLineClosure(decisionSet.sourceManifest, actualClosure, links);
   return { links, sourceLines, issues };
 }
 
 export function assertDirectLineClosure(expected: number, links: RecipeLineLink[]): void {
-  if (links.length !== expected || new Set(links.map((link) => `${link.recipeId}:${link.lineId}`)).size !== expected) {
+  if (links.length !== expected || new Set(links.map((link) =>
+    JSON.stringify([link.recipeId, link.lineId]))).size !== expected) {
     throw new Error("RECIPE_LINE_CLOSURE_FAILED");
   }
+}
+
+export function assertManifestDirectLineClosure(
+  expected: DirectLineClosureManifest,
+  actual: DirectLineClosureManifest,
+  links: RecipeLineLink[],
+): void {
+  if (expected.manifestId !== actual.manifestId ||
+    expected.sourceSha256 !== actual.sourceSha256 ||
+    expected.directLineCount !== actual.directLineCount) {
+    throw new Error("RECIPE_LINE_CLOSURE_FAILED");
+  }
+  assertDirectLineClosure(expected.directLineCount, links);
 }

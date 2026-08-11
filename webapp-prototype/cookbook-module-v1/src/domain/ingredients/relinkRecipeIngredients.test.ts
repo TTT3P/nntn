@@ -4,6 +4,7 @@ import firstSetSource from "../../data/fixtures/first-set.json";
 import type { RecipeLineLink, ReconciliationAction } from "./types";
 import {
   assertDirectLineClosure,
+  assertManifestDirectLineClosure,
   RecipeRelinkError,
   relinkRecipeIngredients,
   type RecipeRelinkDecision,
@@ -84,6 +85,11 @@ function decisionSet(
 ): RecipeRelinkDecisionSet {
   return {
     sourceSha256: SHA,
+    sourceManifest: {
+      manifestId: "manifest-first-set",
+      sourceSha256: SHA,
+      directLineCount: decisions.filter(({ approvalState }) => approvalState === "approved").length,
+    },
     decisions,
     ingredients: [{
       ingredientId: "ing-oyster",
@@ -141,6 +147,23 @@ describe("relinkRecipeIngredients", () => {
     expect(new Set(result.links.map(({ recipeId, lineId }) => `${recipeId}:${lineId}`)))
       .toHaveLength(3);
     expect(result.issues).toEqual([]);
+  });
+
+  test("rejects duplicate active source tuples before one decision can create duplicate links", () => {
+    const document = documentWith([
+      line("line-duplicate", "ซอสหอยนางรม"),
+      line("line-duplicate", "ซอสหอยนางรมซ้ำ"),
+    ]);
+    const approved = decision("line-duplicate", {
+      type: "link_ingredient",
+      ingredientId: "ing-oyster",
+      requiredSpecificationId: null,
+    });
+
+    expect(errorIssues(() => relinkRecipeIngredients(
+      document,
+      decisionSet([approved]),
+    )).map(({ code }) => code)).toEqual(["DUPLICATE_ACTIVE_SOURCE_LINE"]);
   });
 
   test("never converts display-name equality into identity without an explicit approved decision", () => {
@@ -207,11 +230,96 @@ describe("relinkRecipeIngredients", () => {
     expect(errorIssues(() => relinkRecipeIngredients(
       document,
       decisionSet([withIngredientId]),
-    )).map(({ code }) => code)).toEqual(["INVALID_COMPONENT_PAYLOAD"]);
+    )).map(({ code }) => code)).toEqual(["INVALID_RELINK_ACTION_PAYLOAD"]);
     expect(errorIssues(() => relinkRecipeIngredients(
       document,
       decisionSet([missingRecipe]),
     )).map(({ code }) => code)).toEqual(["MISSING_COMPONENT_RECIPE"]);
+  });
+
+  test.each([
+    ["ingredient", {
+      type: "link_ingredient",
+      ingredientId: "ing-oyster",
+      requiredSpecificationId: null,
+      componentRecipeId: "recipe-component",
+    }],
+    ["component", {
+      type: "link_component_recipe",
+      componentRecipeId: "recipe-component",
+      reason: "contradictory",
+    }],
+    ["unmapped", {
+      type: "mark_unmapped",
+      reason: "owner left unmapped",
+      ingredientId: "ing-oyster",
+    }],
+  ])("rejects contradictory or extra runtime keys on %s actions", (_label, action) => {
+    const document = documentWith([line("line-payload", "source")]);
+    const forged = decision(
+      "line-payload",
+      action as unknown as ReconciliationAction,
+    );
+
+    expect(errorIssues(() => relinkRecipeIngredients(
+      document,
+      decisionSet([forged]),
+    )).map(({ code }) => code)).toEqual(["INVALID_RELINK_ACTION_PAYLOAD"]);
+  });
+
+  test.each([
+    ["decision ID", (set: RecipeRelinkDecisionSet) => ({
+      ...set,
+      decisions: [
+        decision("line-one", { type: "mark_unmapped", reason: "one" }, {
+          decisionId: "decision-duplicate",
+        }),
+        decision("line-two", { type: "mark_unmapped", reason: "two" }, {
+          decisionId: "decision-duplicate",
+        }),
+      ],
+    }), "DUPLICATE_RELINK_DECISION_ID"],
+    ["ingredient ID", (set: RecipeRelinkDecisionSet) => ({
+      ...set,
+      ingredients: [...set.ingredients, { ...set.ingredients[0]! }],
+    }), "DUPLICATE_INGREDIENT_ID"],
+    ["specification ID", (set: RecipeRelinkDecisionSet) => ({
+      ...set,
+      specifications: [...set.specifications, { ...set.specifications[0]! }],
+    }), "DUPLICATE_SPECIFICATION_ID"],
+  ] as const)("rejects duplicate %s before building lookup maps", (_label, mutate, code) => {
+    const document = documentWith([
+      line("line-one", "one"),
+      line("line-two", "two"),
+    ]);
+    const set = decisionSet([
+      decision("line-one", { type: "mark_unmapped", reason: "one" }),
+      decision("line-two", { type: "mark_unmapped", reason: "two" }),
+    ]);
+
+    expect(errorIssues(() => relinkRecipeIngredients(document, mutate(set)))
+      .map(({ code: actual }) => actual)).toContain(code);
+  });
+
+  test("rejects duplicate recipe/component lookup IDs before resolving component actions", () => {
+    const document = documentWith([line("line-component", "prepared")]);
+    const duplicateRecipeDocument: RelinkRecipeDocument = {
+      ...document,
+      recipes: [...document.recipes, {
+        recipeId: "recipe-component",
+        active: true,
+        ingredients: [],
+      }],
+    };
+    const approved = decision("line-component", {
+      type: "link_component_recipe",
+      componentRecipeId: "recipe-component",
+    });
+
+    expect(errorIssues(() => relinkRecipeIngredients(
+      duplicateRecipeDocument,
+      decisionSet([approved]),
+    )).map(({ code }) => code)).toEqual(["DUPLICATE_RECIPE_ID"]);
   });
 
   test("preserves recipe evidence and historical label byte-exact after a master rename", () => {
@@ -292,6 +400,35 @@ describe("relinkRecipeIngredients", () => {
     expect(result.sourceLines[1]!.line).not.toBe(inactive);
   });
 
+  test("reports a rejected decision for an inactive line as historical-only, not consumed", () => {
+    const inactive = line("line-removed", "ฉลากประวัติ ", { active: false });
+    const historicalDecision = decision("line-removed", {
+      type: "link_ingredient",
+      ingredientId: "ing-oyster",
+      requiredSpecificationId: null,
+    }, { approvalState: "rejected" });
+
+    const result = relinkRecipeIngredients(
+      documentWith([inactive]),
+      decisionSet([historicalDecision], {
+        sourceManifest: {
+          manifestId: "manifest-first-set",
+          sourceSha256: SHA,
+          directLineCount: 0,
+        },
+      }),
+    );
+
+    expect(result.links).toEqual([]);
+    expect(result.issues).toEqual([{
+      code: "HISTORICAL_ONLY_RELINK_DECISION",
+      sourceSha256: SHA,
+      recipeId: "recipe-main",
+      lineId: "line-removed",
+      decisionId: "decision:line-removed",
+    }]);
+  });
+
   test("does not mutate the recipe document, decisions, or master lookup", () => {
     const document = documentWith([line("line-oyster", "ซอสหอยนางรม")]);
     const decisions = decisionSet([decision("line-oyster", {
@@ -308,16 +445,41 @@ describe("relinkRecipeIngredients", () => {
     expect(JSON.stringify(document)).toBe(beforeDocument);
     expect(JSON.stringify(decisions)).toBe(beforeDecisions);
   });
+
+  test("enforces the manifest-bound active-line count before returning a relink result", () => {
+    const document = documentWith([line("line-oyster", "ซอสหอยนางรม")]);
+    const approved = decision("line-oyster", {
+      type: "link_ingredient",
+      ingredientId: "ing-oyster",
+      requiredSpecificationId: null,
+    });
+    const decisions = decisionSet([approved], {
+      sourceManifest: {
+        manifestId: "manifest-first-set",
+        sourceSha256: SHA,
+        directLineCount: 2,
+      },
+    });
+
+    expect(() => relinkRecipeIngredients(document, decisions))
+      .toThrow("RECIPE_LINE_CLOSURE_FAILED");
+  });
 });
 
 function closureLink(recipeId: string, lineId: string): RecipeLineLink {
+  const reason = "closure evidence only";
   return {
     state: "unmapped",
     recipeId,
     lineId,
     sourceRecordId: `source:${lineId}`,
-    reason: "closure evidence only",
+    reason,
     historicalLabel: "",
+    amountText: "",
+    unitText: "",
+    sourceDisplayText: "",
+    servingNote: "",
+    decisionEvidence: decision(lineId, { type: "mark_unmapped", reason }, { recipeId, lineId }),
   };
 }
 
@@ -351,5 +513,45 @@ describe("assertDirectLineClosure", () => {
     expect(() => assertDirectLineClosure(109, laterManifestLinks)).not.toThrow();
     expect(() => assertDirectLineClosure(108, [...baseline.slice(0, -1), baseline[0]!]))
       .toThrow("RECIPE_LINE_CLOSURE_FAILED");
+  });
+
+  test("uses collision-safe tuple identity when recipe and line IDs contain colons", () => {
+    const distinct = [
+      closureLink("recipe:a", "line"),
+      closureLink("recipe", "a:line"),
+    ];
+
+    expect(() => assertDirectLineClosure(2, distinct)).not.toThrow();
+  });
+
+  test("binds closure to manifest ID, source SHA, and count", () => {
+    const baseline = firstSetSource.recipes.flatMap((recipe) => recipe.items
+      .filter(({ item_kind }) => item_kind === "direct_ingredient")
+      .map(({ line_key }) => closureLink(String(recipe.recipe_id), line_key)));
+    const expected = {
+      manifestId: "first-set-v1",
+      sourceSha256: "1".repeat(64),
+      directLineCount: 108,
+    };
+    const later = [...baseline, closureLink("recipe-new", "line-new")];
+
+    expect(() => assertManifestDirectLineClosure(expected, {
+      ...expected,
+      directLineCount: 109,
+    }, later)).toThrow("RECIPE_LINE_CLOSURE_FAILED");
+    expect(() => assertManifestDirectLineClosure(expected, {
+      manifestId: "first-set-v2",
+      sourceSha256: "2".repeat(64),
+      directLineCount: 109,
+    }, later)).toThrow("RECIPE_LINE_CLOSURE_FAILED");
+    expect(() => assertManifestDirectLineClosure({
+      manifestId: "first-set-v2",
+      sourceSha256: "2".repeat(64),
+      directLineCount: 109,
+    }, {
+      manifestId: "first-set-v2",
+      sourceSha256: "2".repeat(64),
+      directLineCount: 109,
+    }, later)).not.toThrow();
   });
 });

@@ -220,6 +220,28 @@ export function makeIngredientMasterSnapshot(): IngredientMasterSnapshot {
       ingredientId: "ing-oyster-sauce",
       requiredSpecificationId: "spec-oyster-sauce-standard",
       historicalLabel: "Oyster sauce 10 g",
+      amountText: "10",
+      unitText: "g",
+      sourceDisplayText: "10 g",
+      servingNote: "",
+      decisionEvidence: {
+        decisionId: "decision-link-oyster-sauce",
+        proposalId: "proposal-link-oyster-sauce",
+        manifestId: "manifest-v1",
+        sourceSha256: "a".repeat(64),
+        sourceRecordId: "legacy-oyster-sauce",
+        recipeId: "recipe-opaque-001",
+        lineId: "line-opaque-001",
+        decidedBy: "operator-opaque-001",
+        decidedAt: "2026-08-11T00:00:00.000Z",
+        note: "Confirmed existing ingredient",
+        approvalState: "approved",
+        action: {
+          type: "link_ingredient",
+          ingredientId: "ing-oyster-sauce",
+          requiredSpecificationId: "spec-oyster-sauce-standard",
+        },
+      },
     }],
   };
 }

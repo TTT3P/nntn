@@ -105,3 +105,94 @@ Both commands exited `0` with no diagnostics.
 - Relinked outputs intentionally carry richer preservation/evidence fields as an intersection over the existing transport `RecipeLineLink`. The current Ingredient Master parser predates Task 6 and serializes only its original minimal link fields. A later export/persistence integration must explicitly adopt the richer Task 6 result if it needs those fields inside `IngredientMasterSnapshot`; Task 6 does not expand parser ownership.
 - `decisionSet` is deliberately a narrow explicit envelope containing the source SHA, recipe-line decisions, and current ingredient/specification lookup. It does not choose a repository, persistence model, or physical schema.
 - Fatal validation returns no partial relink result. Inactive identity is the only warning class returned alongside a valid historical link.
+
+---
+
+## Fix Round 1/5 — Authoritative Relink Integrity
+
+### Findings resolved
+
+1. **Duplicate active source tuples and derived closure:** relinking now detects duplicate active `(recipeId, lineId)` tuples before decision indexing and fails with a deterministic issue. Successful relinking also enforces derived active-direct-line closure internally, so a single decision cannot produce duplicate active links.
+2. **Authoritative preservation round-trip:** `RecipeLineLink` now owns `amountText`, `unitText`, `sourceDisplayText`, `servingNote`, `historicalLabel`, and complete `decisionEvidence` as required first-class fields for all three states. `parseIngredientMaster` parses these fields fail-closed, validates decision tuple/action agreement, rejects unknown link/evidence/action keys, and preserves the values through repeated snapshot serialization.
+3. **Exact action payloads:** every active relink action must contain exactly its allowed runtime keys. Ingredient actions reject component fields, component actions reject ingredient/specification or unrelated fields, and unmapped actions reject linkage fields. Contradictory or extra payloads fail instead of being partially read.
+4. **No last-entry-wins lookup:** duplicate decision IDs, Ingredient IDs, Specification IDs, recipe/component lookup IDs, decision tuples, and active source tuples are rejected before map construction or lookup.
+5. **Inactive decision disposition:** inactive source lines remain cloned source evidence and create no dependency. A matching rejected/stale decision is not silently treated as an applied active decision; it is reported deterministically as `HISTORICAL_ONLY_RELINK_DECISION`. Wrong-revision decisions remain unused/fatal.
+6. **Collision-safe manifest closure:** closure identities now use JSON tuple encoding, eliminating colon concatenation collisions. Added `DirectLineClosureManifest` and `assertManifestDirectLineClosure(expected, actual, links)`, binding manifest ID, source SHA, and count. `relinkRecipeIngredients` requires a source-manifest receipt and invokes this closure gate with its derived active-line count before returning.
+
+No database, UI, Food Cost, Stock, Supabase, auth, dependency, persistence, deployment, or untracked Cookbook V6/catalog/egg artifact was added or read by the fixtures.
+
+### RED evidence
+
+All six finding groups were reproduced together before production repair:
+
+```bash
+./node_modules/.bin/vitest run \
+  src/domain/ingredients/relinkRecipeIngredients.test.ts \
+  src/domain/ingredients/parseIngredientMaster.test.ts --reporter=verbose
+```
+
+```text
+Test Files 2 failed (2)
+Tests 12 failed | 53 passed (65)
+
+Failures covered:
+- authoritative recipe-link fields stripped by parser;
+- duplicate active source tuple accepted;
+- ingredient/component/unmapped contradictory payloads accepted;
+- duplicate decision/ingredient/specification/recipe lookup IDs accepted;
+- rejected inactive-line decision silently consumed;
+- colon tuple collision and absent manifest-bound closure helper.
+exit 1
+```
+
+### GREEN evidence
+
+Focused relink plus authoritative parser:
+
+```text
+Test Files 2 passed (2)
+Tests 66 passed (66)
+exit 0
+```
+
+Task 1–6 domain regression gate after the finding fixes:
+
+```text
+Test Files 6 passed (6)
+Tests 161 passed (161)
+exit 0
+```
+
+Static and integrity gates:
+
+```bash
+./node_modules/.bin/tsc -b --pretty false
+./node_modules/.bin/eslint \
+  src/domain/ingredients/relinkRecipeIngredients.ts \
+  src/domain/ingredients/relinkRecipeIngredients.test.ts \
+  src/domain/ingredients/types.ts \
+  src/domain/ingredients/parseIngredientMaster.ts \
+  src/domain/ingredients/parseIngredientMaster.test.ts \
+  src/domain/ingredients/ingredientPolicy.test.ts \
+  src/test/ingredientBuilders.ts
+/opt/homebrew/bin/git diff --check -- <seven finding-related source/test files plus report>
+```
+
+All commands exited `0` with no diagnostics after the final verification run.
+
+### Fix files
+
+- `src/domain/ingredients/relinkRecipeIngredients.ts`
+- `src/domain/ingredients/relinkRecipeIngredients.test.ts`
+- `src/domain/ingredients/types.ts`
+- `src/domain/ingredients/parseIngredientMaster.ts`
+- `src/domain/ingredients/parseIngredientMaster.test.ts`
+- `src/domain/ingredients/ingredientPolicy.test.ts` — authoritative-link fixture fields only
+- `src/test/ingredientBuilders.ts` — authoritative-link fixture fields only
+- `.superpowers/sdd/2026-08-11-cookbook-ingredient-master-migration-core/task-6-report.md`
+
+### Concerns
+
+- No blocking concerns.
+- Manifest-bound closure compares an approved expected receipt to an independently supplied/derived actual receipt; changing a count under the prior receipt fails. A later source inventory must publish and use a new manifest ID, source SHA, and count receipt together.
+- The local readonly Cookbook V6 structural boundary remains unchanged and self-contained; this fix does not depend on the pre-existing untracked Cookbook V6 types file.

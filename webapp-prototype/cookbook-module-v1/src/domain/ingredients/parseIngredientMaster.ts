@@ -36,6 +36,12 @@ function recordValue(value: unknown): Record<string, unknown> {
   return isRecord(value) ? value : invalid();
 }
 
+function exactKeys(record: Record<string, unknown>, allowed: readonly string[]): void {
+  const keys = Reflect.ownKeys(record);
+  if (keys.length !== allowed.length || keys.some((key) =>
+    typeof key !== "string" || !allowed.includes(key))) invalid();
+}
+
 function stringValue(value: unknown): string {
   return typeof value === "string" ? value : invalid();
 }
@@ -370,35 +376,106 @@ export function parseReconciliationDecision(value: unknown): ReconciliationDecis
   };
 }
 
+function parseRecipeLineDecisionEvidence(value: unknown) {
+  const record = recordValue(value);
+  exactKeys(record, [
+    "decisionId",
+    "proposalId",
+    "manifestId",
+    "sourceSha256",
+    "sourceRecordId",
+    "recipeId",
+    "lineId",
+    "decidedBy",
+    "decidedAt",
+    "note",
+    "approvalState",
+    "action",
+  ]);
+  const decision = parseReconciliationDecision(record);
+  const action = recordValue(record.action);
+  switch (action.type) {
+    case "link_ingredient":
+      exactKeys(action, ["type", "ingredientId", "requiredSpecificationId"]);
+      break;
+    case "link_component_recipe":
+      exactKeys(action, ["type", "componentRecipeId"]);
+      break;
+    case "mark_unmapped":
+      exactKeys(action, ["type", "reason"]);
+      break;
+    default:
+      return invalid();
+  }
+  return {
+    ...decision,
+    recipeId: identity(record.recipeId),
+    lineId: identity(record.lineId),
+  };
+}
+
 function parseRecipeLineLink(value: unknown): RecipeLineLink {
   const record = recordValue(value);
+  const evidence = {
+    recipeId: identity(record.recipeId),
+    lineId: identity(record.lineId),
+    historicalLabel: stringValue(record.historicalLabel),
+    amountText: stringValue(record.amountText),
+    unitText: stringValue(record.unitText),
+    sourceDisplayText: stringValue(record.sourceDisplayText),
+    servingNote: stringValue(record.servingNote),
+    decisionEvidence: parseRecipeLineDecisionEvidence(record.decisionEvidence),
+  };
+  if (evidence.decisionEvidence.recipeId !== evidence.recipeId ||
+    evidence.decisionEvidence.lineId !== evidence.lineId) invalid();
+  const commonKeys = [
+    "state",
+    "recipeId",
+    "lineId",
+    "historicalLabel",
+    "amountText",
+    "unitText",
+    "sourceDisplayText",
+    "servingNote",
+    "decisionEvidence",
+  ];
   switch (record.state) {
-    case "ingredient":
+    case "ingredient": {
+      exactKeys(record, [...commonKeys, "ingredientId", "requiredSpecificationId"]);
+      const action = evidence.decisionEvidence.action;
+      if (action.type !== "link_ingredient" ||
+        action.ingredientId !== record.ingredientId ||
+        action.requiredSpecificationId !== record.requiredSpecificationId) invalid();
       return {
         state: "ingredient",
-        recipeId: identity(record.recipeId),
-        lineId: identity(record.lineId),
+        ...evidence,
         ingredientId: identity(record.ingredientId),
         requiredSpecificationId: nullableIdentity(record.requiredSpecificationId),
-        historicalLabel: stringValue(record.historicalLabel),
       };
-    case "component":
+    }
+    case "component": {
+      exactKeys(record, [...commonKeys, "componentRecipeId"]);
+      const action = evidence.decisionEvidence.action;
+      if (action.type !== "link_component_recipe" ||
+        action.componentRecipeId !== record.componentRecipeId) invalid();
       return {
         state: "component",
-        recipeId: identity(record.recipeId),
-        lineId: identity(record.lineId),
+        ...evidence,
         componentRecipeId: identity(record.componentRecipeId),
-        historicalLabel: stringValue(record.historicalLabel),
       };
-    case "unmapped":
+    }
+    case "unmapped": {
+      exactKeys(record, [...commonKeys, "sourceRecordId", "reason"]);
+      const action = evidence.decisionEvidence.action;
+      if (action.type !== "mark_unmapped" || action.reason !== record.reason ||
+        evidence.decisionEvidence.sourceRecordId !== record.sourceRecordId) invalid();
       return {
         state: "unmapped",
-        recipeId: identity(record.recipeId),
-        lineId: identity(record.lineId),
+        ...evidence,
         sourceRecordId: identity(record.sourceRecordId),
         reason: stringValue(record.reason),
-        historicalLabel: stringValue(record.historicalLabel),
       };
+    }
     default:
       return invalid();
   }

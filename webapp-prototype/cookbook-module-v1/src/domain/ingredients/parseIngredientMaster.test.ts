@@ -40,6 +40,34 @@ describe("parseIngredientMaster", () => {
     expect(second).toBe(first);
   });
 
+  test("round-trips authoritative recipe relink evidence byte-exact", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    const link = snapshot.recipeLineLinks[0]! as typeof snapshot.recipeLineLinks[number] &
+      Record<string, unknown>;
+    link.amountText = " 15.0 ";
+    link.unitText = "กรัม ";
+    link.sourceDisplayText = " 15.0 กรัม ";
+    link.servingNote = " ห้ามตัดช่องว่าง ";
+    link.decisionEvidence = {
+      ...structuredClone(snapshot.reconciliationDecisions[0]!),
+      recipeId: link.recipeId,
+      lineId: link.lineId,
+    };
+    const parsed = parseIngredientMaster(snapshot);
+    const expected = JSON.stringify(parsed.recipeLineLinks);
+    const roundTrip = parseIngredientMaster(JSON.parse(JSON.stringify(parsed)));
+
+    expect(parsed.recipeLineLinks[0]).toMatchObject({
+      amountText: " 15.0 ",
+      unitText: "กรัม ",
+      sourceDisplayText: " 15.0 กรัม ",
+      servingNote: " ห้ามตัดช่องว่าง ",
+      historicalLabel: "Oyster sauce 10 g",
+      decisionEvidence: link.decisionEvidence,
+    });
+    expect(JSON.stringify(roundTrip.recipeLineLinks)).toBe(expected);
+  });
+
   test("preserves opaque string identities without normalization", () => {
     const snapshot = makeIngredientMasterSnapshot();
     snapshot.ingredients[0]!.ingredientId = "  opaque ingredient id  ";
@@ -52,6 +80,10 @@ describe("parseIngredientMaster", () => {
     }
     action.ingredientId = "  opaque ingredient id  ";
     link.ingredientId = "  opaque ingredient id  ";
+    if (link.decisionEvidence.action.type !== "link_ingredient") {
+      throw new Error("invalid test fixture");
+    }
+    link.decisionEvidence.action.ingredientId = "  opaque ingredient id  ";
 
     expect(parseIngredientMaster(snapshot).ingredients[0]!.ingredientId)
       .toBe("  opaque ingredient id  ");
@@ -183,18 +215,40 @@ describe("parseIngredientMaster", () => {
 
   test("accepts distinct recipe-line identity pairs containing NUL", () => {
     const snapshot = makeIngredientMasterSnapshot();
+    const base = snapshot.recipeLineLinks[0]!;
     snapshot.recipeLineLinks = [{
       state: "component",
       recipeId: "recipe\u0000part",
       lineId: "line",
       componentRecipeId: "component-recipe-1",
       historicalLabel: "first",
+      amountText: base.amountText,
+      unitText: base.unitText,
+      sourceDisplayText: base.sourceDisplayText,
+      servingNote: base.servingNote,
+      decisionEvidence: {
+        ...structuredClone(base.decisionEvidence),
+        recipeId: "recipe\u0000part",
+        lineId: "line",
+        action: { type: "link_component_recipe", componentRecipeId: "component-recipe-1" },
+      },
     }, {
       state: "component",
       recipeId: "recipe",
       lineId: "part\u0000line",
       componentRecipeId: "component-recipe-2",
       historicalLabel: "second",
+      amountText: base.amountText,
+      unitText: base.unitText,
+      sourceDisplayText: base.sourceDisplayText,
+      servingNote: base.servingNote,
+      decisionEvidence: {
+        ...structuredClone(base.decisionEvidence),
+        decisionId: "decision-component-2",
+        recipeId: "recipe",
+        lineId: "part\u0000line",
+        action: { type: "link_component_recipe", componentRecipeId: "component-recipe-2" },
+      },
     }];
 
     expect(parseIngredientMaster(snapshot).recipeLineLinks).toHaveLength(2);
@@ -205,6 +259,10 @@ describe("parseIngredientMaster", () => {
       const link = snapshot.recipeLineLinks[0]!;
       if (link.state !== "ingredient") throw new Error("invalid test fixture");
       link.requiredSpecificationId = null;
+      if (link.decisionEvidence.action.type !== "link_ingredient") {
+        throw new Error("invalid test fixture");
+      }
+      link.decisionEvidence.action.requiredSpecificationId = null;
     }],
     ["inactive historical specification", (snapshot: ReturnType<typeof makeIngredientMasterSnapshot>) => {
       snapshot.specifications[0]!.status = "inactive";
@@ -217,15 +275,28 @@ describe("parseIngredientMaster", () => {
       snapshot.specifications[0]!.approvalState = "pending";
     }],
     ["component link", (snapshot: ReturnType<typeof makeIngredientMasterSnapshot>) => {
+      const base = snapshot.recipeLineLinks[0]!;
       snapshot.recipeLineLinks = [{
         state: "component",
         recipeId: "recipe-opaque-001",
         lineId: "line-opaque-001",
         componentRecipeId: "component-recipe-opaque-001",
         historicalLabel: "Prepared oyster sauce",
+        amountText: base.amountText,
+        unitText: base.unitText,
+        sourceDisplayText: base.sourceDisplayText,
+        servingNote: base.servingNote,
+        decisionEvidence: {
+          ...structuredClone(base.decisionEvidence),
+          action: {
+            type: "link_component_recipe",
+            componentRecipeId: "component-recipe-opaque-001",
+          },
+        },
       }];
     }],
     ["unmapped historical link", (snapshot: ReturnType<typeof makeIngredientMasterSnapshot>) => {
+      const base = snapshot.recipeLineLinks[0]!;
       snapshot.recipeLineLinks = [{
         state: "unmapped",
         recipeId: "recipe-opaque-001",
@@ -233,6 +304,15 @@ describe("parseIngredientMaster", () => {
         sourceRecordId: "legacy-line-opaque-001",
         reason: "No approved identity",
         historicalLabel: "Unknown sauce",
+        amountText: base.amountText,
+        unitText: base.unitText,
+        sourceDisplayText: base.sourceDisplayText,
+        servingNote: base.servingNote,
+        decisionEvidence: {
+          ...structuredClone(base.decisionEvidence),
+          sourceRecordId: "legacy-line-opaque-001",
+          action: { type: "mark_unmapped", reason: "No approved identity" },
+        },
       }];
     }],
   ] as const)("delegates recipe-line policy: accepts %s", (_scenario, mutate) => {

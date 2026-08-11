@@ -181,12 +181,23 @@ describe("validateRecipeLineLink", () => {
 
   test("accepts component identity as a distinct discriminated state", () => {
     const snapshot = makeIngredientMasterSnapshot();
+    const base = snapshot.recipeLineLinks[0]!;
     const link: RecipeLineLink = {
       state: "component",
       recipeId: "recipe-001",
       lineId: "line-001",
       componentRecipeId: "component-recipe-001",
       historicalLabel: "Prepared stock",
+      amountText: base.amountText,
+      unitText: base.unitText,
+      sourceDisplayText: base.sourceDisplayText,
+      servingNote: base.servingNote,
+      decisionEvidence: {
+        ...structuredClone(base.decisionEvidence),
+        recipeId: "recipe-001",
+        lineId: "line-001",
+        action: { type: "link_component_recipe", componentRecipeId: "component-recipe-001" },
+      },
     };
 
     expect(validateRecipeLineLink(link, snapshot)).toEqual([]);
@@ -194,6 +205,7 @@ describe("validateRecipeLineLink", () => {
 
   test("reports an evidenced unmapped state as not costable", () => {
     const snapshot = makeIngredientMasterSnapshot();
+    const base = snapshot.recipeLineLinks[0]!;
     const link: RecipeLineLink = {
       state: "unmapped",
       recipeId: "recipe-001",
@@ -201,6 +213,17 @@ describe("validateRecipeLineLink", () => {
       sourceRecordId: "legacy-line-001",
       reason: "No approved identity",
       historicalLabel: "Unknown sauce",
+      amountText: base.amountText,
+      unitText: base.unitText,
+      sourceDisplayText: base.sourceDisplayText,
+      servingNote: base.servingNote,
+      decisionEvidence: {
+        ...structuredClone(base.decisionEvidence),
+        sourceRecordId: "legacy-line-001",
+        recipeId: "recipe-001",
+        lineId: "line-001",
+        action: { type: "mark_unmapped", reason: "No approved identity" },
+      },
     };
 
     expect(validateRecipeLineLink(link, snapshot).map(({ code }) => code))
