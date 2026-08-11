@@ -41,7 +41,7 @@ Fresh focused run:
 - A4 evidence: 2 logical DOM sheets and 2 PDF MediaBoxes at 210 × 297 mm; every sheet had exact client/scroll dimensions.
 - Product shell, mobile header, Print Center controls, and proof header were hidden in print media.
 
-Legacy actual-App tests were updated to use the visible search/disclosure flow before locating recipe checkboxes. No control was exposed artificially, and existing content, clipping, MediaBox, blank-tail, removed-dependency, or cost assertions were weakened.
+Legacy actual-App tests were updated to use the visible search/disclosure flow before locating recipe checkboxes. No control was exposed artificially, and existing content, clipping, MediaBox, blank-tail, removed-dependency, or cost assertions were not weakened.
 
 ## Verification record
 
