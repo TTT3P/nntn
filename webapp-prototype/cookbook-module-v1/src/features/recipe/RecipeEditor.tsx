@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import type { CookbookV6Edit } from "../../domain/cookbookV6/editCookbookV6";
 import type { CookbookV6IngredientLine, CookbookV6MethodStep, CookbookV6Recipe } from "../../domain/cookbookV6/types";
 import { useCookbookDocument } from "../cookbook/CookbookDocumentProvider";
+import { STANDARD_PRINT_COLLECTIONS } from "../print/printCollections";
 import { CUSTOM_INGREDIENT_UNIT, normalizeSelectedUnit, STANDARD_INGREDIENT_UNITS } from "./ingredientUnits";
 import { decodeRecipeIdentity, encodeRecipeIdentity } from "./recipeRoute";
 import "./recipe-editor.css";
@@ -19,6 +20,12 @@ type RecipeDraft = Omit<CookbookV6Recipe, "ingredients" | "methodSteps"> & {
   ingredients: IngredientDraft[];
   methodSteps: MethodDraft[];
 };
+
+const STANDARD_CATEGORY_OPTIONS = STANDARD_PRINT_COLLECTIONS.flatMap((collection) => (
+  collection.key === "unassigned" || collection.category === null
+    ? []
+    : [{ label: collection.label, value: collection.category }]
+));
 
 let localSequence = 0;
 
@@ -214,6 +221,9 @@ export function RecipeEditor() {
   const componentRecipes = useMemo(() => cookbook.document.recipes
     .filter((recipe) => recipe.active && recipe.recipeId !== sourceRecipe?.recipeId && (recipe.kind === "prepared_recipe" || recipe.kind === "sub_recipe"))
     .sort((left, right) => left.name.localeCompare(right.name, "th")), [cookbook.document.recipes, sourceRecipe?.recipeId]);
+  const hasLegacyCategory = draft !== null
+    && draft.category.trim() !== ""
+    && !STANDARD_CATEGORY_OPTIONS.some(({ value }) => value === draft.category);
 
   if (sourceRecipe === undefined || draft === null) {
     return <section role="alert"><h1>ไม่พบสูตรอาหาร</h1><Link to="/recipes">กลับไปสูตรอาหาร</Link></section>;
@@ -279,7 +289,11 @@ export function RecipeEditor() {
         <label>ประเภทสูตร<select value={draft.kind} onChange={(event) => change((current) => ({ ...current, kind: event.target.value as CookbookV6Recipe["kind"] }))}>
           <option value="sellable_menu">เมนูขาย</option><option value="prepared_recipe">สูตรเตรียม</option><option value="sub_recipe">สูตรย่อย</option>
         </select></label>
-        <label>หมวดหมู่<input value={draft.category} onChange={(event) => change((current) => ({ ...current, category: event.target.value }))} /></label>
+        <label>หมวดหมู่<select value={draft.category} onChange={(event) => change((current) => ({ ...current, category: event.target.value }))}>
+          <option value="">ยังไม่จัดหมวด</option>
+          {hasLegacyCategory && <option value={draft.category}>{draft.category}</option>}
+          {STANDARD_CATEGORY_OPTIONS.map(({ label, value }) => <option key={value} value={value}>{label}</option>)}
+        </select></label>
         <label>ผลผลิต<input value={draft.yieldText} onChange={(event) => change((current) => ({ ...current, yieldText: event.target.value }))} placeholder="เช่น 1 หม้อ หรือ 10 ที่" /></label>
         <label className="recipe-editor__toggle"><input type="checkbox" checked={draft.active} onChange={(event) => change((current) => ({ ...current, active: event.target.checked }))} />เปิดใช้งานสูตร</label>
         <label className="recipe-editor__wide">หมายเหตุหน้าครัว<textarea value={draft.operationalNotes.join("\n")} onChange={(event) => change((current) => ({ ...current, operationalNotes: event.target.value.split("\n") }))} /></label>

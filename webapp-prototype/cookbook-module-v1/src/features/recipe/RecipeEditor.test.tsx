@@ -17,7 +17,7 @@ const v6Document: CookbookV6Document = {
     code: "RCP-011",
     name: "ข้าวเนื้อสับคั่วน้ำปลาไข่ข้น",
     kind: "sellable_menu",
-    category: "เมนูข้าว",
+    category: "หมวดเดิมจากระบบเก่า",
     active: true,
     reviewState: "",
     sourceLocators: [],
@@ -131,6 +131,19 @@ function renderEditor(save = vi.fn<CookbookDocumentClient["save"]>(async (submit
   );
   return { save };
 }
+
+test("preserves a legacy category until a standard print collection is selected", async () => {
+  const user = userEvent.setup();
+  renderEditor();
+
+  const category = await screen.findByRole("combobox", { name: "หมวดหมู่" });
+  expect(category).toHaveValue("หมวดเดิมจากระบบเก่า");
+  expect(within(category).getByRole("option", { name: "หมวดเดิมจากระบบเก่า" })).toBeVisible();
+
+  await user.selectOptions(category, "ซอสและน้ำจิ้ม");
+
+  expect(category).toHaveValue("ซอสและน้ำจิ้ม");
+});
 
 test("fills a blank recipe with an ingredient, a standard unit and a method step", async () => {
   const user = userEvent.setup();
@@ -267,7 +280,7 @@ test("blocks cancel and other SPA links while changes are unsaved", async () => 
   const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
   renderEditor();
   await screen.findByRole("heading", { name: "แก้ไขสูตร" });
-  await user.type(screen.getByLabelText("หมวดหมู่"), "ใหม่");
+  await user.selectOptions(screen.getByLabelText("หมวดหมู่"), "ซอสและน้ำจิ้ม");
 
   await user.click(screen.getByRole("link", { name: "ยกเลิก" }));
   expect(screen.getByRole("heading", { name: "แก้ไขสูตร" })).toBeVisible();
@@ -286,7 +299,7 @@ test("restores HashRouter history when Back or Forward is rejected", async () =>
   const go = vi.spyOn(window.history, "go").mockImplementation(() => undefined);
   renderEditor();
   await screen.findByRole("heading", { name: "แก้ไขสูตร" });
-  await user.type(screen.getByLabelText("หมวดหมู่"), "ใหม่");
+  await user.selectOptions(screen.getByLabelText("หมวดหมู่"), "ซอสและน้ำจิ้ม");
 
   window.dispatchEvent(new PopStateEvent("popstate", { state: { idx: -1 } }));
 

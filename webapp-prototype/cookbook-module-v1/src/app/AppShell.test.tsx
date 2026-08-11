@@ -22,6 +22,7 @@ test("renders the production Cookbook navigation without internal language", () 
   expect(screen.getByRole("link", { name: "สูตรเตรียม" })).toHaveAttribute("href", "/recipes?kind=prepared_recipe");
   expect(screen.getByRole("link", { name: "ใบงานครัว" })).toHaveAttribute("href", "/recipes?mode=work");
   expect(screen.getByRole("link", { name: "ศูนย์พิมพ์" })).toHaveAttribute("href", "/print");
+  expect(screen.getByRole("link", { name: "จัดการสูตร" })).toHaveAttribute("href", "/recipes?mode=manage");
   expect(screen.getByRole("link", { name: "สาขาและเมนู" })).toHaveAttribute("href", "/branches");
   expect(screen.getByRole("link", { name: "Measurement Knowledge" })).toHaveAttribute("href", "/knowledge");
   expect(screen.getByRole("link", { name: "ตั้งค่า" })).toHaveAttribute("href", "/settings");
@@ -37,6 +38,7 @@ test.each([
   ["/work/RCP-021?stage=all", "ใบงานครัว"],
   ["/recipes?kind=prepared_recipe", "สูตรเตรียม"],
   ["/print", "ศูนย์พิมพ์"],
+  ["/recipes?mode=manage", "จัดการสูตร"],
   ["/branches", "สาขาและเมนู"],
   ["/knowledge", "Measurement Knowledge"],
   ["/settings", "ตั้งค่า"],
