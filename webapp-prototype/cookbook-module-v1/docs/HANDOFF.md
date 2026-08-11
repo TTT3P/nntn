@@ -203,3 +203,70 @@ Still gated after this Work-stage GO:
 - production/network-backed persistence, auth, Supabase, deployment, Stock V1/V2 integration, or production-data mutation;
 - Safari/Firefox compatibility and physical kitchen acceptance beyond the recorded Chrome evidence; and
 - any commit, which still requires a separate explicit TINE instruction.
+
+## Ingredient Master migration core handoff — 2026-08-11
+
+Implemented boundary: immutable source staging; deterministic review proposals; explicit owner-decision records; isolated transactional publish; discriminated ingredient/component/unmapped recipe relinks; evidence-state migration reports; exact deterministic JSON export; and an owned in-memory compare-and-swap seam. This boundary contains no Food Cost calculation, reconciliation UI, physical database, production adapter, auth, Stock write, cloud resource, cutover, rollback, or deployment.
+
+### Source and artifact receipts
+
+- Immutable V1 verifier: SHA-256 `473975a555da7b1e67f2357ac0dbb0d65af6cc6f36d6095eededa376e6537a94`; 138 ingredients, 101 recipes, 519 lines, 426 direct, 93 component.
+- Read-only V1 inventory: two missing prices; 44 direct lines / 39 recipes / 16 absent ingredient IDs. No 426-decision set was generated.
+- Current first-set receipt: exactly 108 unresolved direct lines with `ingredientId: null`; no owner decisions were manufactured.
+- Before-test V4 `SHA256SUMS.txt`: 5/5 entries OK; manifest SHA-256 `9b289542a031c0d5652a09d876a09a027e0838a2196f8bcb6315d47aa0090b70`.
+- Before-test real V5: present at `Operations/CookBook/sot/v5-draft/kitchen-sot-first-set-v5-draft.json`, 168732 bytes, SHA-256 `9da9f445d7757990af873eb89a47e103399cf5d81428423d02f4281d8ae637e7`.
+- Before-test current real V6: present at `Operations/CookBook/sot/v6-draft/kitchen-cookbook-v6-draft.json`, 182093 bytes, SHA-256 `96775abb92580182e4c9b4bb324d199a8bf4bb043b572170e379276119031695`.
+- After-test receipts are byte-identical: V4 remains 5/5 with manifest SHA `9b289542a031c0d5652a09d876a09a027e0838a2196f8bcb6315d47aa0090b70`; real V5 remains `9da9f445d7757990af873eb89a47e103399cf5d81428423d02f4281d8ae637e7`; current real V6 remains `96775abb92580182e4c9b4bb324d199a8bf4bb043b572170e379276119031695`, with the same paths, presence, and byte lengths.
+
+### Tracer and exact-output evidence
+
+`ingredientMigrationTracer.test.ts` exercises stage → propose → decide → publish → relink → report → exact export → CAS with generic oyster sauce, exact Mae Krua, unrefined versus white sugar, two Stock packages mapped to one specification, historical inactive-specification labeling, missing price, explicit unmapped legacy identity, and cooked rice as a Component Recipe. It proves raw input JSON is unchanged and recursively rejects derived Food Cost/total/margin keys.
+
+The same staged batch and decision set are imported twice. The replay reports every decision as already applied, adds zero canonical records, produces identical exact-export bytes and an identical migration report. Exact parse/export round-trip bytes match. CAS advances to `rev-1`, rejects a stale writer with `STALE_INGREDIENT_MASTER`, and leaves the first writer's bytes authoritative.
+
+### Fresh gates
+
+- Input verifier: npm wrapper exit `255`; direct verifier exit `0` with the V1 receipt above.
+- Focused tracer: RED direct exit `1` (final intended RED: 1 failed / 3 passed because the inventory report function was absent); GREEN direct exit `0`, 1 file / 4 tests.
+- Full Vitest: npm wrapper exit `255`; direct fallback exit `0`, 53 files / 1062 tests.
+- ESLint: npm wrapper exit `255`; direct fallback exit `0`, no diagnostics.
+- TypeScript: npm wrapper exit `255`; direct fallback exit `0`, no diagnostics.
+- Production build: npm wrapper exit `255`; direct TypeScript and Vite exits `0`; 69 modules transformed.
+- Full `git diff --check`: exit `0` before documentation closure.
+- `test:browser`: npm wrapper exit `255`; direct harness exit `1` before tests because installed Google Chrome 151.0.7922.108 aborted with `SIGABRT`. A direct isolated-profile Chrome probe also exited `134`; no alternate approved Chromium binary is installed. No browser assertion or configuration was weakened.
+- Downstream browser-export and Playwright gates were not run after that stop-on-first-failure environment gate. This is a verification-environment gap, not evidence of a passed browser/cutover gate.
+
+The npm `255` behavior is the known controller wrapper limitation recorded in the migration-core ledger; direct local binaries provide the executable unit/static evidence. Browser evidence remains explicitly incomplete until rerun in the existing Chrome-capable harness environment.
+
+### Design acceptance audit
+
+| Acceptance | Evidence / gate |
+| ---: | --- |
+| 1 | `verify-ingredient-migration-inputs.mjs`; tracer raw-before/raw-after JSON equality; post-run artifact hashes below. |
+| 2 | `ingredientMigrationTracer.test.ts` — `reports the full V1 evidence without manufacturing owner decisions`. |
+| 3 | Same read-only V1 inventory test: 44 lines / 39 recipes / 16 IDs remain explicit evidence. |
+| 4 | Same V1 inventory test plus tracer `MISSING_PRICE_EVIDENCE`; no zero price is synthesized. |
+| 5 | `relinkRecipeIngredients.test.ts` — `proves the frozen 108-line first-set baseline without dropped or duplicated lines`; Task 8 separately proves the real receipt remains 108 unresolved lines. |
+| 6 | `relinkRecipeIngredients.test.ts` — frozen 426- and 108-line closure tests; tracer source closure reports mapped + unmapped = direct. |
+| 7 | Tracer cooked-rice component assertion and `creates exactly one ingredient, component, or explicit-unmapped state per active direct line`. |
+| 8 | Parser/publisher specification invariants plus tracer approved explicit specifications; no synthetic default. |
+| 9 | `relinkRecipeIngredients.test.ts` — `never converts display-name equality into identity without an explicit approved decision`. |
+| 10 | `ingredientPolicy.test.ts` exact-metric and unsupported-conversion cases. |
+| 11 | `publishIngredientMaster.test.ts` — `imports legacy price and 100-percent yield only as pending evidence`. |
+| 12 | `ingredientPolicy.test.ts` generic-line costing-specification requirement; calculation selection remains a #26 gate. |
+| 13 | Relink historical-label/inactive tests and exact export; production rollback selection remains a #31 gate. |
+| 14 | Parser mapping-cardinality tests plus tracer two-package/one-specification assertion. |
+| 15 | `ingredientPolicy.test.ts` deterministic effective/recorded/stable-ID observation selection; eligibility and staleness remain #26 gates. |
+| 16 | `ingredientMigrationReport.test.ts` exact export and Task 8 exact parse/export byte equality. |
+| 17 | Tracer double-import test and publisher replay/idempotency tests. |
+| 18 | Read-only verifier, raw-input equality, isolated fixtures/in-memory CAS, and unchanged-artifact hash gate. No current-data mutation path exists in the tracer. |
+| 19 | `NOT EXECUTED — blocked by #31` |
+| 20 | `NOT EXECUTED — blocked by #31` |
+
+### Explicit remaining work
+
+- #26: costing-specification selection, eligible observation policy, stale-price threshold, recursive component Food Cost, rounding, portion/batch totals, margin, and missing-cost presentation.
+- #28: owner reconciliation queue, bulk review, Ingredient Master CRUD, aliases/inactive workflow, and product-facing exports.
+- #31: physical backend/schema/adapter, durable revision/CAS boundary, live read-only price refresh, shadow-read comparison, adapter cutover, rollback selector, auth, and deployment.
+
+No Ingredient Master record was published to a real database. Task 8 did not access or change Stock V1/V2, Supabase, auth, cloud, deployment, MAW, CROO, or production data. Do not claim Food Cost, production migration, shadow-read browser cutover, rollback, release, or deployment complete from this handoff.

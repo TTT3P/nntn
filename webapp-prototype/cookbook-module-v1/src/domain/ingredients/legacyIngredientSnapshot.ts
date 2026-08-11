@@ -45,6 +45,22 @@ export interface CookbookV6StagingDocument {
   readonly recipes: readonly CookbookV6StagingRecipe[];
 }
 
+export interface LegacyIngredientInventoryReport {
+  readonly sourceCounts: {
+    readonly v1: {
+      readonly direct: number;
+      readonly component: number;
+      readonly total: number;
+    };
+  };
+  readonly missingPrices: readonly { readonly ingredientId: number }[];
+  readonly unmappedLegacyReferences: {
+    readonly lines: number;
+    readonly recipes: number;
+    readonly ingredientIds: number;
+  };
+}
+
 function cloneAndFreezeJson(value: unknown): unknown {
   if (Array.isArray(value)) {
     return Object.freeze(value.map(cloneAndFreezeJson));
@@ -208,5 +224,38 @@ export function inspectLegacyIngredientSnapshot(source: LegacyIngredientSource) 
     absentIngredientIds: new Set(absentLines.map(({ ingredient_id }) => ingredient_id)).size,
     affectedRecipes: new Set(absentLines.map(({ recipe_id }) => recipe_id)).size,
     affectedDirectLines: absentLines.length,
+  };
+}
+
+export function buildLegacyIngredientInventoryReport(
+  source: LegacyIngredientSource,
+): LegacyIngredientInventoryReport {
+  const ingredientIds = new Set(source.ingredients.map(({ ingredient_id }) => ingredient_id));
+  const directLines = source.recipe_items.filter(
+    ({ item_kind }) => item_kind === "direct_ingredient",
+  );
+  const componentLines = source.recipe_items.filter(
+    ({ item_kind }) => item_kind === "prepared_recipe",
+  );
+  const absentLines = directLines.filter(
+    ({ ingredient_id }) => ingredient_id !== null && !ingredientIds.has(ingredient_id),
+  );
+
+  return {
+    sourceCounts: {
+      v1: {
+        direct: directLines.length,
+        component: componentLines.length,
+        total: source.recipe_items.length,
+      },
+    },
+    missingPrices: source.ingredients
+      .filter(({ cost_per_unit_v1 }) => cost_per_unit_v1 === null)
+      .map(({ ingredient_id }) => ({ ingredientId: ingredient_id })),
+    unmappedLegacyReferences: {
+      lines: absentLines.length,
+      recipes: new Set(absentLines.map(({ recipe_id }) => recipe_id)).size,
+      ingredientIds: new Set(absentLines.map(({ ingredient_id }) => ingredient_id)).size,
+    },
   };
 }

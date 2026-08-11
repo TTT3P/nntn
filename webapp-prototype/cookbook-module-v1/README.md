@@ -46,3 +46,16 @@ npm run preview -- --host 127.0.0.1
 Browser evidence for V1 is empirical Chrome-only evidence. Playwright uses `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` when supplied, otherwise detects common system Chrome/Chromium locations and only falls back to Playwright's bundled browser when one is already available. The test commands do not install or download a browser.
 
 See [docs/HANDOFF.md](docs/HANDOFF.md) for scope, source precedence, limitations, and the separately gated future Supabase boundary.
+
+## Ingredient Master migration core
+
+The repository now contains a transport-neutral, test-first Ingredient Master migration core under `src/domain/ingredients/`. It can stage immutable source evidence, produce review proposals, record explicit decisions, publish an isolated canonical snapshot, relink recipe lines, report missing evidence, export exact JSON, and exercise an in-memory compare-and-swap store. The tracer is intentionally local and read-only with respect to real Cookbook artifacts:
+
+```bash
+npm run test:ingredients:inputs
+npm test -- src/domain/ingredients/ingredientMigrationTracer.test.ts
+```
+
+The verified V1 inventory is 426 direct plus 93 component lines (519 total), including two missing prices and 44 lines across 39 recipes referencing 16 absent ingredient IDs. The current first set remains exactly 108 unresolved direct lines; the migration core does not manufacture owner decisions for either source.
+
+This is not a Food Cost calculator, reconciliation UI, database migration, production cutover, rollback, or deployment. Those boundaries remain with issues #26, #28, and #31. No Ingredient Master records have been published to a real database, and the migration-core work does not access or write Stock V1/V2, Supabase, auth, cloud, deployment, MAW, or CROO.
