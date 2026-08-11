@@ -13,8 +13,8 @@ const v6Document: CookbookV6Document = {
   generatedAt: "2026-08-10T00:00:00.000Z",
   derivedFrom: { v5Path: "draft.json", v5Sha256: "a".repeat(64), catalogSha256: "b".repeat(64) },
   recipes: [{
-    recipeId: "RCP-011",
-    code: "RCP-011",
+    recipeId: "RCP-010",
+    code: "RCP-010",
     name: "ข้าวเนื้อสับคั่วน้ำปลาไข่ข้น",
     kind: "sellable_menu",
     category: "หมวดเดิมจากระบบเก่า",
@@ -28,6 +28,65 @@ const v6Document: CookbookV6Document = {
     methodSteps: [],
     blockers: [],
     workDocuments: {},
+    parentRecipeIds: [],
+    lineage: { source: "catalog", sourceRecipeId: null },
+  }, {
+    recipeId: "RCP-011",
+    code: "RCP-011",
+    name: "ข้าวหน้าเนื้อ",
+    kind: "sellable_menu",
+    category: "เมนูข้าว",
+    active: true,
+    reviewState: "",
+    sourceLocators: [],
+    yieldText: "1 จาน",
+    operationalNotes: [],
+    methodDecisionNote: "",
+    ingredients: [{
+      lineId: "rice",
+      name: "ข้าวสวย",
+      kind: "ingredient",
+      amountText: "1",
+      unitText: "ถ้วย",
+      sourceDisplayText: "1 ถ้วย",
+      ingredientId: "ING-RICE",
+      componentRecipeId: null,
+      servingNote: "",
+      costBasisText: "",
+      decisionStatus: "",
+      selectedSource: null,
+      active: true,
+    }, {
+      lineId: "beef",
+      name: "เนื้อวัว",
+      kind: "ingredient",
+      amountText: "120",
+      unitText: "กรัม",
+      sourceDisplayText: "120 กรัม",
+      ingredientId: "ING-BEEF",
+      componentRecipeId: null,
+      servingNote: "",
+      costBasisText: "",
+      decisionStatus: "",
+      selectedSource: null,
+      active: true,
+    }],
+    methodSteps: [{
+      stepId: "wash",
+      stage: "prep",
+      instruction: "ล้างข้าว",
+      order: 1,
+    }, {
+      stepId: "stir",
+      stage: "cook",
+      instruction: "ผัดเนื้อ",
+      order: 2,
+    }],
+    blockers: [],
+    workDocuments: {
+      prep: { stage: "prep", scalable: true, ingredientLineIds: ["rice"], stepIds: ["wash"] },
+      cook: { stage: "cook", scalable: false, ingredientLineIds: ["rice", "beef"], stepIds: ["stir"] },
+    },
     parentRecipeIds: [],
     lineage: { source: "catalog", sourceRecipeId: null },
   }, {
@@ -112,7 +171,7 @@ function renderEditor(save = vi.fn<CookbookDocumentClient["save"]>(async (submit
   base_sha256: "d".repeat(64),
   generatedAt: submitted.generatedAt,
   path: "draft.json",
-})), recipeId = "RCP-011") {
+})), recipeId = "RCP-010") {
   const client: CookbookDocumentClient = {
     load: vi.fn(async () => ({ document: v6Document, baseSha256: "c".repeat(64), origin: "synthesized" as const, path: "draft.json" })),
     save,
@@ -145,6 +204,62 @@ test("preserves a legacy category until a standard print collection is selected"
   expect(category).toHaveValue("ซอสและน้ำจิ้ม");
 });
 
+test("shows current workstage counts and saves ingredient print membership", async () => {
+  const user = userEvent.setup();
+  const { save } = renderEditor(undefined, "RCP-011");
+
+  expect(await screen.findByText("ใช้จัดกลุ่มสูตรในศูนย์พิมพ์ ไม่ได้กำหนดจุดงาน")).toBeVisible();
+  expect(screen.getByRole("heading", { name: "จุดงานและการพิมพ์" })).toBeVisible();
+  expect(screen.getByText("วัตถุดิบ 1 รายการ · ขั้นตอน 1 ขั้น")).toBeVisible();
+
+  const riceStages = screen.getByRole("group", { name: "พิมพ์วัตถุดิบนี้ในใบงาน รายการ 1" });
+  const prep = within(riceStages).getByRole("checkbox", { name: "เตรียม" });
+  const cook = within(riceStages).getByRole("checkbox", { name: "ปรุง" });
+  const service = within(riceStages).getByRole("checkbox", { name: "จัดเสิร์ฟ" });
+  expect(prep).toBeChecked();
+  expect(cook).toBeChecked();
+  expect(service).not.toBeChecked();
+
+  await user.click(prep);
+  await user.click(cook);
+  expect(within(riceStages).getByText("ยังไม่อยู่ในใบงาน — รายการนี้จะไม่ถูกพิมพ์")).toBeVisible();
+  await user.click(service);
+  expect(screen.getByText("วัตถุดิบ 0 รายการ · ขั้นตอน 1 ขั้น")).toBeVisible();
+  expect(screen.getByText("วัตถุดิบ 1 รายการ · ขั้นตอน 1 ขั้น")).toBeVisible();
+  expect(screen.getByText("วัตถุดิบ 1 รายการ · ขั้นตอน 0 ขั้น")).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "บันทึกสูตร" }));
+
+  const savedRecipe = vi.mocked(save).mock.calls[0]![0].recipes.find(({ recipeId }) => recipeId === "RCP-011");
+  expect(savedRecipe?.workDocuments.prep?.ingredientLineIds).not.toContain("rice");
+  expect(savedRecipe?.workDocuments.cook?.ingredientLineIds).not.toContain("rice");
+  expect(savedRecipe?.workDocuments.service?.ingredientLineIds).toEqual(["rice"]);
+});
+
+test("requires an explicit workstage for a new method step", async () => {
+  const user = userEvent.setup();
+  const { save } = renderEditor(undefined, "RCP-011");
+
+  const firstStage = await screen.findByLabelText("จุดงานของขั้นตอน ขั้นตอน 1");
+  expect(firstStage).toHaveValue("prep");
+  expect(screen.getByText("ขั้นตอนนี้จะพิมพ์ในใบงาน “เตรียม”")).toBeVisible();
+
+  await user.click(screen.getByRole("button", { name: "เพิ่มขั้นตอน" }));
+  await user.type(screen.getByLabelText("วิธีทำ ขั้นตอน 3"), "จัดใส่จาน");
+  const newStage = screen.getByLabelText("จุดงานของขั้นตอน ขั้นตอน 3");
+  expect(newStage).toHaveValue("");
+  await user.click(screen.getByRole("button", { name: "บันทึกสูตร" }));
+
+  expect(screen.getByRole("alert")).toHaveTextContent("เลือกจุดงานของขั้นตอนที่ 3");
+  expect(save).not.toHaveBeenCalled();
+
+  await user.selectOptions(newStage, "service");
+  expect(screen.getByText("ขั้นตอนนี้จะพิมพ์ในใบงาน “จัดเสิร์ฟ”")).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "บันทึกสูตร" }));
+
+  const savedRecipe = vi.mocked(save).mock.calls[0]![0].recipes.find(({ recipeId }) => recipeId === "RCP-011");
+  expect(savedRecipe?.methodSteps[2]).toMatchObject({ instruction: "จัดใส่จาน", stage: "service" });
+});
+
 test("fills a blank recipe with an ingredient, a standard unit and a method step", async () => {
   const user = userEvent.setup();
   const { save } = renderEditor();
@@ -156,6 +271,7 @@ test("fills a blank recipe with an ingredient, a standard unit and a method step
   await user.selectOptions(screen.getByLabelText("หน่วย รายการ 1"), "ช้อนโต๊ะ");
   await user.click(screen.getByRole("button", { name: "เพิ่มขั้นตอน" }));
   await user.type(screen.getByLabelText("วิธีทำ ขั้นตอน 1"), "ตั้งกระทะให้ร้อน");
+  await user.selectOptions(screen.getByLabelText("จุดงานของขั้นตอน ขั้นตอน 1"), "prep");
   await user.click(screen.getByRole("button", { name: "บันทึกสูตร" }));
 
   expect(save).toHaveBeenCalledTimes(1);

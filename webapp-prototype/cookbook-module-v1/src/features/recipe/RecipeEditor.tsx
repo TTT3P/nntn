@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { CookbookV6Edit } from "../../domain/cookbookV6/editCookbookV6";
-import type { CookbookV6IngredientLine, CookbookV6MethodStep, CookbookV6Recipe } from "../../domain/cookbookV6/types";
+import type { CookbookV6IngredientLine, CookbookV6MethodStep, CookbookV6Recipe, CookbookV6Stage } from "../../domain/cookbookV6/types";
 import { useCookbookDocument } from "../cookbook/CookbookDocumentProvider";
 import { STANDARD_PRINT_COLLECTIONS } from "../print/printCollections";
 import { CUSTOM_INGREDIENT_UNIT, normalizeSelectedUnit, STANDARD_INGREDIENT_UNITS } from "./ingredientUnits";
@@ -12,9 +12,13 @@ type IngredientDraft = CookbookV6IngredientLine & {
   removed: boolean;
   unitSelection: string;
   customUnit: string;
+  workStages: CookbookV6Stage[];
 };
 
-type MethodDraft = CookbookV6MethodStep & { removed: boolean };
+type MethodDraft = Omit<CookbookV6MethodStep, "stage"> & {
+  stage: CookbookV6Stage | "";
+  removed: boolean;
+};
 
 type RecipeDraft = Omit<CookbookV6Recipe, "ingredients" | "methodSteps"> & {
   ingredients: IngredientDraft[];
@@ -26,6 +30,12 @@ const STANDARD_CATEGORY_OPTIONS = STANDARD_PRINT_COLLECTIONS.flatMap((collection
     ? []
     : [{ label: collection.label, value: collection.category }]
 ));
+
+const WORK_STAGE_OPTIONS: { value: CookbookV6Stage; label: string }[] = [
+  { value: "prep", label: "เตรียม" },
+  { value: "cook", label: "ปรุง" },
+  { value: "service", label: "จัดเสิร์ฟ" },
+];
 
 let localSequence = 0;
 
@@ -42,10 +52,30 @@ function unitDraft(unitText: string) {
   };
 }
 
+function ingredientWorkStages(recipe: CookbookV6Recipe, lineId: string): CookbookV6Stage[] {
+  return WORK_STAGE_OPTIONS.flatMap(({ value }) => (
+    recipe.workDocuments[value]?.ingredientLineIds.includes(lineId) ? [value] : []
+  ));
+}
+
+function defaultIngredientWorkStages(recipe: Pick<CookbookV6Recipe, "workDocuments">): CookbookV6Stage[] {
+  const stages = WORK_STAGE_OPTIONS.flatMap(({ value }) => recipe.workDocuments[value] === undefined ? [] : [value]);
+  return stages.length === 1 ? stages : [];
+}
+
+function sameStages(left: readonly CookbookV6Stage[], right: readonly CookbookV6Stage[]): boolean {
+  return [...left].sort().join("|") === [...right].sort().join("|");
+}
+
 function toDraft(recipe: CookbookV6Recipe): RecipeDraft {
   return {
     ...structuredClone(recipe),
-    ingredients: recipe.ingredients.map((line) => ({ ...structuredClone(line), removed: false, ...unitDraft(line.unitText) })),
+    ingredients: recipe.ingredients.map((line) => ({
+      ...structuredClone(line),
+      removed: false,
+      ...unitDraft(line.unitText),
+      workStages: ingredientWorkStages(recipe, line.lineId),
+    })),
     methodSteps: recipe.methodSteps.map((step) => ({ ...structuredClone(step), removed: false })),
   };
 }
@@ -92,6 +122,15 @@ function buildEdits(original: CookbookV6Recipe, draft: RecipeDraft): CookbookV6E
           active: line.active,
         },
       });
+      const originalStages = ingredientWorkStages(original, line.lineId);
+      if (!sameStages(originalStages, line.workStages)) {
+        edits.push({
+          type: "ingredient-work-stages-update",
+          recipeId: original.recipeId,
+          lineId: line.lineId,
+          stages: line.workStages,
+        });
+      }
     } else {
       edits.push({
         type: "ingredient-add",
@@ -112,6 +151,7 @@ function buildEdits(original: CookbookV6Recipe, draft: RecipeDraft): CookbookV6E
           selectedSource: null,
           active: line.active,
         },
+        workStages: line.workStages,
       });
     }
     previousLineId = line.lineId;
@@ -127,7 +167,7 @@ function buildEdits(original: CookbookV6Recipe, draft: RecipeDraft): CookbookV6E
     }
   }
   for (const step of draft.methodSteps) {
-    if (step.removed) continue;
+    if (step.removed || step.stage === "") continue;
     if (originalStepIds.has(step.stepId)) {
       edits.push({
         type: "method-update",
@@ -224,6 +264,8 @@ export function RecipeEditor() {
   const hasLegacyCategory = draft !== null
     && draft.category.trim() !== ""
     && !STANDARD_CATEGORY_OPTIONS.some(({ value }) => value === draft.category);
+  const visibleLines = draft?.ingredients.filter((line) => !line.removed && line.active) ?? [];
+  const visibleSteps = draft?.methodSteps.filter((step) => !step.removed) ?? [];
 
   if (sourceRecipe === undefined || draft === null) {
     return <section role="alert"><h1>ไม่พบสูตรอาหาร</h1><Link to="/recipes">กลับไปสูตรอาหาร</Link></section>;
@@ -269,6 +311,8 @@ export function RecipeEditor() {
     }
     if (visibleLines.some((line) => line.name.trim() === "")) return setValidationMessage("กรุณาระบุชื่อวัตถุดิบที่เพิ่ม");
     if (visibleSteps.some((step) => step.instruction.trim() === "")) return setValidationMessage("กรุณาระบุวิธีทำในขั้นตอนที่เพิ่ม");
+    const blankStageIndex = currentDraft.methodSteps.findIndex((step) => !step.removed && step.stage === "");
+    if (blankStageIndex >= 0) return setValidationMessage(`เลือกจุดงานของขั้นตอนที่ ${blankStageIndex + 1}`);
     cookbook.applyEdits(buildEdits(currentSource, currentDraft));
     setSubmitted(true);
     await cookbook.save();
@@ -289,14 +333,30 @@ export function RecipeEditor() {
         <label>ประเภทสูตร<select value={draft.kind} onChange={(event) => change((current) => ({ ...current, kind: event.target.value as CookbookV6Recipe["kind"] }))}>
           <option value="sellable_menu">เมนูขาย</option><option value="prepared_recipe">สูตรเตรียม</option><option value="sub_recipe">สูตรย่อย</option>
         </select></label>
-        <label>หมวดหมู่<select value={draft.category} onChange={(event) => change((current) => ({ ...current, category: event.target.value }))}>
+        <div className="recipe-editor__field-help"><label>หมวดหมู่<select value={draft.category} onChange={(event) => change((current) => ({ ...current, category: event.target.value }))}>
           <option value="">ยังไม่จัดหมวด</option>
           {hasLegacyCategory && <option value={draft.category}>{draft.category}</option>}
           {STANDARD_CATEGORY_OPTIONS.map(({ label, value }) => <option key={value} value={value}>{label}</option>)}
-        </select></label>
+        </select></label><p>ใช้จัดกลุ่มสูตรในศูนย์พิมพ์ ไม่ได้กำหนดจุดงาน</p></div>
         <label>ผลผลิต<input value={draft.yieldText} onChange={(event) => change((current) => ({ ...current, yieldText: event.target.value }))} placeholder="เช่น 1 หม้อ หรือ 10 ที่" /></label>
         <label className="recipe-editor__toggle"><input type="checkbox" checked={draft.active} onChange={(event) => change((current) => ({ ...current, active: event.target.checked }))} />เปิดใช้งานสูตร</label>
         <label className="recipe-editor__wide">หมายเหตุหน้าครัว<textarea value={draft.operationalNotes.join("\n")} onChange={(event) => change((current) => ({ ...current, operationalNotes: event.target.value.split("\n") }))} /></label>
+      </section>
+
+      <section className="content-panel recipe-editor__work-summary">
+        <div className="recipe-editor__section-heading"><div><h2>จุดงานและการพิมพ์</h2><p>กำหนดว่าวัตถุดิบและขั้นตอนใดจะอยู่ในใบงานแต่ละจุด เมื่อเลือกจุดงานในศูนย์พิมพ์ ระบบจะแสดงเฉพาะรายการที่กำหนดไว้ที่นี่</p></div></div>
+        <div className="recipe-editor__stage-ledger" aria-live="polite">
+          {WORK_STAGE_OPTIONS.map(({ value, label }) => {
+            const ingredientCount = visibleLines.filter((line) => line.workStages.includes(value)).length;
+            const stepCount = visibleSteps.filter((step) => step.stage === value).length;
+            return <div className="recipe-editor__stage-row" key={value}>
+              <strong>{label}</strong>
+              {ingredientCount === 0 && stepCount === 0
+                ? <span>ยังไม่มีรายการในใบงานนี้</span>
+                : <span>วัตถุดิบ {ingredientCount} รายการ · ขั้นตอน {stepCount} ขั้น</span>}
+            </div>;
+          })}
+        </div>
       </section>
 
       <section className="content-panel">
@@ -305,7 +365,7 @@ export function RecipeEditor() {
           ingredients: [...current.ingredients, {
             lineId: nextId("ingredient"), name: "", kind: "ingredient", amountText: "", unitText: "", sourceDisplayText: "",
             ingredientId: null, componentRecipeId: null, servingNote: "", costBasisText: "", decisionStatus: "", selectedSource: null,
-            active: true, removed: false, unitSelection: "", customUnit: "",
+            active: true, removed: false, unitSelection: "", customUnit: "", workStages: defaultIngredientWorkStages(current),
           }],
         }))}>เพิ่มวัตถุดิบ</button></div>
         <div className="recipe-editor__list">{draft.ingredients.map((line, index) => {
@@ -331,6 +391,17 @@ export function RecipeEditor() {
                 <option value="">เลือกสูตรเตรียม</option>
                 {componentRecipes.map((recipe) => <option key={recipe.recipeId} value={recipe.recipeId}>{recipe.name}{recipe.active ? "" : " (ปิดใช้งาน)"}</option>)}
               </select></label>}
+              <fieldset className="recipe-editor__stage-membership" aria-label={`พิมพ์วัตถุดิบนี้ในใบงาน รายการ ${number}`}>
+                <legend>พิมพ์วัตถุดิบนี้ในใบงาน</legend>
+                <div>{WORK_STAGE_OPTIONS.map(({ value, label }) => <label key={value}>
+                  <input type="checkbox" checked={line.workStages.includes(value)} onChange={(event) => patchIngredient(index, {
+                    workStages: event.target.checked
+                      ? [...line.workStages, value]
+                      : line.workStages.filter((stage) => stage !== value),
+                  })} />{label}
+                </label>)}</div>
+                {line.workStages.length === 0 && <p>ยังไม่อยู่ในใบงาน — รายการนี้จะไม่ถูกพิมพ์</p>}
+              </fieldset>
               <label className="recipe-editor__toggle"><input type="checkbox" checked={line.active} onChange={(event) => patchIngredient(index, { active: event.target.checked })} />ใช้งานวัตถุดิบ รายการ {number}</label>
               <div className="editor-row__actions">
                 <button type="button" aria-label={`ย้ายวัตถุดิบรายการ ${number} ขึ้น`} disabled={index === 0} onClick={() => change((current) => ({ ...current, ingredients: moveItem(current.ingredients, index, index - 1) }))}>ขึ้น</button>
@@ -345,7 +416,7 @@ export function RecipeEditor() {
       <section className="content-panel">
         <div className="recipe-editor__section-heading"><div><h2>วิธีทำ</h2><p>เรียงตามลำดับที่พนักงานต้องทำจริง</p></div><button type="button" onClick={() => change((current) => ({
           ...current,
-          methodSteps: [...current.methodSteps, { stepId: nextId("method"), stage: "prep", instruction: "", order: current.methodSteps.length + 1, removed: false }],
+          methodSteps: [...current.methodSteps, { stepId: nextId("method"), stage: "", instruction: "", order: current.methodSteps.length + 1, removed: false }],
         }))}>เพิ่มขั้นตอน</button></div>
         <div className="recipe-editor__list">{draft.methodSteps.map((step, index) => {
           const number = index + 1;
@@ -353,7 +424,11 @@ export function RecipeEditor() {
             <legend>ขั้นตอน {number}</legend>
             {step.removed ? <><p>รอลบเมื่อบันทึก</p><button type="button" onClick={() => patchMethod(index, { removed: false })}>เลิกทำ</button></> : <>
               <label className="recipe-editor__wide">วิธีทำ ขั้นตอน {number}<textarea value={step.instruction} onChange={(event) => patchMethod(index, { instruction: event.target.value })} /></label>
-              <label>จุดงาน ขั้นตอน {number}<select value={step.stage} onChange={(event) => patchMethod(index, { stage: event.target.value as MethodDraft["stage"] })}><option value="prep">เตรียม</option><option value="cook">ปรุง</option><option value="service">จัดเสิร์ฟ</option></select></label>
+              <div className="recipe-editor__method-stage">
+                <label htmlFor={`method-stage-${step.stepId}`}>จุดงานของขั้นตอน ขั้นตอน {number}</label>
+                <select id={`method-stage-${step.stepId}`} value={step.stage} onChange={(event) => patchMethod(index, { stage: event.target.value as MethodDraft["stage"] })}><option value="">เลือกจุดงาน</option>{WORK_STAGE_OPTIONS.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select>
+                {step.stage !== "" && <p>ขั้นตอนนี้จะพิมพ์ในใบงาน “{WORK_STAGE_OPTIONS.find(({ value }) => value === step.stage)?.label}”</p>}
+              </div>
               <div className="editor-row__actions">
                 <button type="button" aria-label={`ย้ายขั้นตอน ${number} ขึ้น`} disabled={index === 0} onClick={() => change((current) => ({ ...current, methodSteps: moveItem(current.methodSteps, index, index - 1) }))}>ขึ้น</button>
                 <button type="button" aria-label={`ย้ายขั้นตอน ${number} ลง`} disabled={index === draft.methodSteps.length - 1} onClick={() => change((current) => ({ ...current, methodSteps: moveItem(current.methodSteps, index, index + 1) }))}>ลง</button>
