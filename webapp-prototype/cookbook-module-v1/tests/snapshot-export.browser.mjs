@@ -63,7 +63,7 @@ try {
   });
 
   await page.goto(`${origin}/nntn-cookbook/`);
-  await page.getByRole("heading", { name: "คลังสูตรอาหาร" }).waitFor();
+  await page.getByRole("heading", { name: "ภาพรวม Cookbook" }).waitFor();
   const [download] = await Promise.all([
     page.waitForEvent("download"),
     page.getByRole("button", { name: "Export prototype snapshot" }).click(),
