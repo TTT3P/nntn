@@ -60,6 +60,19 @@ describe("buildPrintCollections", () => {
       .toEqual([1, 2, 3]);
   });
 
+  test.each([
+    [1, "1"],
+    ["1", 1],
+  ])("uses the recipe ID type to break equal-name ties for input order %j", (firstId, secondId) => {
+    const collections = buildPrintCollections([
+      { ...makeRecipe({ recipeId: firstId, name: "ก ซอส", kind: "prepared_recipe" }), category: "ซอสและน้ำจิ้ม" },
+      { ...makeRecipe({ recipeId: secondId, name: "ก ซอส", kind: "prepared_recipe" }), category: "ซอสและน้ำจิ้ม" },
+    ]);
+
+    expect(collections.find(({ key }) => key === "sauce")?.recipes.map(({ recipeId }) => recipeId))
+      .toEqual([1, "1"]);
+  });
+
   test("exposes the controlled catalog with exact category mappings", () => {
     expect(STANDARD_PRINT_COLLECTIONS).toEqual([
       { key: "menu", label: "เมนูอาหาร", category: "เมนูอาหาร" },

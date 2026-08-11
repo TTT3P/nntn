@@ -31,10 +31,18 @@ export const STANDARD_PRINT_COLLECTIONS: readonly PrintCollectionDefinition[] = 
   { key: "unassigned", label: "ยังไม่จัดหมวด", category: null },
 ];
 
+function stableRecipeIdentity(recipeId: RecipeVersion["recipeId"]): string {
+  return `${typeof recipeId}:${String(recipeId)}`;
+}
+
 function compareRecipes(left: RecipeVersion, right: RecipeVersion): number {
   const byName = left.name.localeCompare(right.name, "th");
   if (byName !== 0) return byName;
-  return String(left.recipeId).localeCompare(String(right.recipeId), "th");
+  const leftIdentity = stableRecipeIdentity(left.recipeId);
+  const rightIdentity = stableRecipeIdentity(right.recipeId);
+  if (leftIdentity < rightIdentity) return -1;
+  if (leftIdentity > rightIdentity) return 1;
+  return 0;
 }
 
 export function recipePrintCollectionKey(recipe: RecipeVersion): PrintCollectionKey {
