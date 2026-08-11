@@ -258,11 +258,15 @@ describe("PrintCenterPage", () => {
 
     await user.click(screen.getByRole("button", { name: "พิมพ์ทั้งหมวด เมนูอาหาร 2 สูตร" }));
 
-    expect(screen.queryByRole("article", { name: "ข้าวญี่ปุ่นหุงสุก" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("article", { name: /^ข้าวญี่ปุ่นหุงสุก ·/u })).not.toBeInTheDocument();
     expect(screen.getAllByText("ข้าวญี่ปุ่นหุงสุก · RCP-RICE")).toHaveLength(2);
-    expect(screen.getByText("เมนูอาหาร", { selector: ".print-proof__header span" })).toBeVisible();
-    expect(screen.getByText("อ้างอิงสูตรนอกหมวด 1 สูตร")).toBeVisible();
-    expect(screen.getByText("ไม่มีเอกสารซ้ำ")).toBeVisible();
+    const proof = document.querySelector<HTMLElement>(".print-proof__header");
+    expect(proof).not.toBeNull();
+    expect(within(proof!).getByText("เมนูอาหาร")).toBeVisible();
+    expect(within(proof!).getByText("2 สูตร")).toBeVisible();
+    expect(within(proof!).getByText("2 แผ่น")).toBeVisible();
+    expect(within(proof!).getByText("อ้างอิงสูตรนอกหมวด 1 สูตร")).toBeVisible();
+    expect(within(proof!).getByText("ไม่มีเอกสารซ้ำ")).toBeVisible();
   });
 
   test("expands a daily proof set to one full shared dependency without duplicates or cost text", async () => {
@@ -275,9 +279,14 @@ describe("PrintCenterPage", () => {
     await user.click(screen.getByRole("checkbox", { name: "เมนูข้าว A · RCP-MENU-A" }));
     await user.click(screen.getByRole("checkbox", { name: "เมนูข้าว B · RCP-MENU-B" }));
 
-    expect(screen.getAllByRole("article", { name: /ข้าวญี่ปุ่นหุงสุก/u })).toHaveLength(1);
-    expect(screen.getByText("อ้างอิงสูตรนอกหมวด 0 สูตร")).toBeVisible();
-    expect(screen.getByText("ไม่มีเอกสารซ้ำ")).toBeVisible();
+    expect(screen.getAllByRole("article", { name: /^ข้าวญี่ปุ่นหุงสุก ·/u })).toHaveLength(1);
+    const proof = document.querySelector<HTMLElement>(".print-proof__header");
+    expect(proof).not.toBeNull();
+    expect(within(proof!).getByText("ชุดเลือกเอง")).toBeVisible();
+    expect(within(proof!).getByText("2 สูตร")).toBeVisible();
+    expect(within(proof!).getByText("3 แผ่น")).toBeVisible();
+    expect(within(proof!).getByText("อ้างอิงสูตรนอกหมวด 0 สูตร")).toBeVisible();
+    expect(within(proof!).getByText("ไม่มีเอกสารซ้ำ")).toBeVisible();
     expect(view.container).not.toHaveTextContent(/cost|ต้นทุน/iu);
   });
 
@@ -715,6 +724,7 @@ describe("PrintCenterPage", () => {
 
     expect(screen.getByRole("heading", { name: "สร้างตัวอย่างพิมพ์ไม่ได้" })).toBeVisible();
     expect(screen.getByRole("alert")).toHaveTextContent("ขั้นตอนยาวเกินพื้นที่ A5");
+    expect(screen.queryByText("ไม่มีเอกสารซ้ำ")).not.toBeInTheDocument();
     expect(document.querySelector(".workstation-sheet, .two-up-sheet")).toBeNull();
     expect(screen.getByRole("heading", { name: "ศูนย์การพิมพ์" })).toBeVisible();
   });

@@ -102,6 +102,28 @@ function clippedEmojiIngredientRegionScenario() {
   return makeSnapshot({ recipes: [serviceRecipe({ ingredients })] });
 }
 
+function componentReferenceScenario(count) {
+  const ingredients = Array.from({ length: count }, (_, index) => makeIngredientLine({
+    lineKey: `component-${index + 1}`,
+    itemName: `สูตรประกอบ ${index + 1}`,
+    itemKind: "prepared_recipe",
+    ingredientId: null,
+    componentRecipeId: "RCP-COMPONENT",
+    sourceText: `${index + 1} กรัม`,
+  }));
+  return makeSnapshot({
+    recipes: [
+      serviceRecipe({ ingredients }),
+      makeRecipe({
+        recipeId: "RCP-COMPONENT",
+        recipeVersionId: "browser-component-v1",
+        name: "สูตรประกอบกลาง",
+        kind: "prepared_recipe",
+      }),
+    ],
+  });
+}
+
 function combinedWideScenario(plusOneUnit) {
   const ingredients = ingredientRows(7);
   const recipe = serviceRecipe({
@@ -229,6 +251,12 @@ async function scenarioFor(name) {
   if (name === "ingredient-emoji-overflow-rejected") {
     return {
       snapshot: clippedEmojiIngredientRegionScenario(),
+      initialRecipeIds: [165],
+    };
+  }
+  if (name === "component-reference-7" || name === "component-reference-overflow-rejected") {
+    return {
+      snapshot: componentReferenceScenario(name === "component-reference-7" ? 7 : 15),
       initialRecipeIds: [165],
     };
   }

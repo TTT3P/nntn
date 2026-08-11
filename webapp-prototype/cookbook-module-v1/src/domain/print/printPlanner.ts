@@ -2,6 +2,7 @@ import type {
   CookbookSnapshot,
   IngredientLine,
   MediaAsset,
+  RecipeIdentity,
   StepMediaLink,
   WorkStep,
   WorkStage,
@@ -9,6 +10,7 @@ import type {
 import type { ProjectedWorkDocument } from "../work/workDocuments";
 
 export type PrintTemplate = "auto" | "station" | "two-up";
+export type ComponentLabelResolver = (componentRecipeId: RecipeIdentity) => string | null;
 
 export interface PrintSettings {
   template: PrintTemplate;
@@ -866,6 +868,33 @@ function servingNoteDisplayWidth(
   );
 }
 
+type ResolvedComponentLabels = ReadonlyMap<string, string>;
+
+function resolveComponentLabels(
+  document: ProjectedWorkDocument,
+  componentLabelFor?: ComponentLabelResolver,
+): ResolvedComponentLabels {
+  const labels = new Map<string, string>();
+  if (componentLabelFor === undefined) return labels;
+  for (const line of document.ingredients) {
+    if (line.componentRecipeId === null) continue;
+    const label: unknown = componentLabelFor(line.componentRecipeId);
+    if (label === null) continue;
+    if (typeof label !== "string") {
+      throw new InvalidPrintInputError(
+        "document.ingredients.componentReference",
+        label,
+      );
+    }
+    rejectSingleLineLayoutControl(
+      label,
+      "document.ingredients.componentReference.layout_control",
+    );
+    labels.set(line.lineKey, label);
+  }
+  return labels;
+}
+
 function operationalFactStrings(document: ProjectedWorkDocument): string[] {
   return [
     ...document.operationalNotes,
@@ -889,6 +918,7 @@ const REGIONAL_LAYOUT_CAPACITY = {
   mediaRegionDisplayWidth: 480,
   mediaFixedLabelAllowance: 24,
 } as const;
+const COMPACT_REFERENCE_LINES_PER_LAYOUT_UNIT = 2;
 
 function throwRegionalLayoutError(
   document: ProjectedWorkDocument,
@@ -899,7 +929,10 @@ function throwRegionalLayoutError(
   throw new UnpageableDocumentError(document, section, contentUnits, capacity);
 }
 
-function validateFixedRegionalLayout(document: ProjectedWorkDocument): void {
+function validateFixedRegionalLayout(
+  document: ProjectedWorkDocument,
+  componentLabels: ResolvedComponentLabels,
+): void {
   rejectSingleLineLayoutControl(
     document.recipeName,
     "document.recipeName.layout_control",
@@ -940,11 +973,22 @@ function validateFixedRegionalLayout(document: ProjectedWorkDocument): void {
       servingNoteDisplayWidth(document, line),
     );
     const itemDisplayWidth = renderedDisplayWidth(line.itemName);
+    const componentDisplayWidth = renderedDisplayWidth(
+      componentLabels.get(line.lineKey) ?? "",
+    );
     if (itemDisplayWidth > REGIONAL_LAYOUT_CAPACITY.ingredientItemDisplayWidth) {
       throwRegionalLayoutError(
         document,
         "ingredients",
         itemDisplayWidth,
+        REGIONAL_LAYOUT_CAPACITY.ingredientItemDisplayWidth,
+      );
+    }
+    if (componentDisplayWidth > REGIONAL_LAYOUT_CAPACITY.ingredientItemDisplayWidth) {
+      throwRegionalLayoutError(
+        document,
+        "ingredients",
+        componentDisplayWidth,
         REGIONAL_LAYOUT_CAPACITY.ingredientItemDisplayWidth,
       );
     }
@@ -1078,19 +1122,30 @@ function validateMediaRegionalLayout(
   );
 }
 
-function ingredientLayoutUnits(document: ProjectedWorkDocument): number {
-  return document.ingredients.reduce(
-    (total, line) => total + 1 + Math.max(
-      1,
-      Math.ceil(
-        (renderedDisplayWidth(line.itemName) +
-          renderedDisplayWidth(sourceFactText(line)) +
-          servingNoteDisplayWidth(document, line)) /
-          DISPLAY_CELLS_PER_LAYOUT_UNIT,
-      ),
-    ),
+function ingredientLayoutUnits(
+  document: ProjectedWorkDocument,
+  componentLabels: ResolvedComponentLabels,
+): number {
+  const ingredientUnits = document.ingredients.reduce(
+    (total, line) => {
+      const componentLabel = componentLabels.get(line.lineKey);
+      return total + 1 + Math.max(
+        1,
+        Math.ceil(
+          (renderedDisplayWidth(line.itemName) +
+            (componentLabel === undefined ? 0 : renderedDisplayWidth(componentLabel)) +
+            renderedDisplayWidth(sourceFactText(line)) +
+            servingNoteDisplayWidth(document, line)) /
+            DISPLAY_CELLS_PER_LAYOUT_UNIT,
+        ),
+      );
+    },
     0,
   );
+  const compactReferenceLineUnits = Math.ceil(
+    componentLabels.size / COMPACT_REFERENCE_LINES_PER_LAYOUT_UNIT,
+  );
+  return ingredientUnits + compactReferenceLineUnits;
 }
 
 function operationalFactsLayoutUnits(document: ProjectedWorkDocument): number {
@@ -1153,6 +1208,7 @@ function combinedPageLayout(
   document: ProjectedWorkDocument,
   media: MediaIndex,
   blocks: WorkstationPage["blocks"],
+  componentLabels: ResolvedComponentLabels,
 ): {
   capacity: number;
   contentUnits: number;
@@ -1162,7 +1218,7 @@ function combinedPageLayout(
   const fixedChromeAndWarningUnits = 4;
   const contributions = {
     header: Math.max(1, Math.ceil(renderedDisplayWidth(document.recipeName) / 40)),
-    ingredients: ingredientLayoutUnits(document),
+    ingredients: ingredientLayoutUnits(document, componentLabels),
     operational_facts: operationalFactsLayoutUnits(document),
     steps: stepLayoutUnits(document, media, blocks),
     media_metadata: mediaMetadataUnits(media, blocks),
@@ -1188,8 +1244,9 @@ function validateCombinedPageLayout(
   document: ProjectedWorkDocument,
   media: MediaIndex,
   blocks: WorkstationPage["blocks"],
+  componentLabels: ResolvedComponentLabels,
 ): void {
-  const layout = combinedPageLayout(document, media, blocks);
+  const layout = combinedPageLayout(document, media, blocks, componentLabels);
   if (layout.contentUnits <= layout.capacity) return;
 
   throw new UnpageableDocumentError(
@@ -1313,9 +1370,11 @@ export function buildMediaIndex(snapshot: CookbookSnapshot): MediaIndex {
 function paginateCapturedDocument(
   documentSnapshot: ProjectedWorkDocument,
   mediaSnapshot: MediaIndex,
+  componentLabelFor?: ComponentLabelResolver,
 ): WorkstationPage[] {
   const steps = [...documentSnapshot.steps].sort((left, right) => left.order - right.order);
-  validateFixedRegionalLayout(documentSnapshot);
+  const componentLabels = resolveComponentLabels(documentSnapshot, componentLabelFor);
+  validateFixedRegionalLayout(documentSnapshot, componentLabels);
   if (steps.length === 0) {
     if (
       documentSnapshot.blockers.length === 0 &&
@@ -1323,7 +1382,7 @@ function paginateCapturedDocument(
       documentSnapshot.yieldText === null &&
       documentSnapshot.methodDecisionNote === null
     ) return [];
-    const fullLayout = combinedPageLayout(documentSnapshot, mediaSnapshot, []);
+    const fullLayout = combinedPageLayout(documentSnapshot, mediaSnapshot, [], componentLabels);
     if (fullLayout.contentUnits <= fullLayout.capacity) {
       return [{
         kind: "station",
@@ -1343,8 +1402,8 @@ function paginateCapturedDocument(
       const factsDocument = cloneDocument(documentSnapshot);
       factsDocument.ingredientLineKeys = [];
       factsDocument.ingredients = [];
-      validateCombinedPageLayout(ingredientsDocument, mediaSnapshot, []);
-      validateCombinedPageLayout(factsDocument, mediaSnapshot, []);
+      validateCombinedPageLayout(ingredientsDocument, mediaSnapshot, [], componentLabels);
+      validateCombinedPageLayout(factsDocument, mediaSnapshot, [], new Map());
       return [ingredientsDocument, factsDocument].map((document, index) => ({
         kind: "station" as const,
         document,
@@ -1354,7 +1413,7 @@ function paginateCapturedDocument(
       }));
     }
 
-    validateCombinedPageLayout(documentSnapshot, mediaSnapshot, []);
+    validateCombinedPageLayout(documentSnapshot, mediaSnapshot, [], componentLabels);
     throw new Error("unreachable print layout validation");
   }
 
@@ -1391,6 +1450,7 @@ function paginateCapturedDocument(
       documentSnapshot,
       mediaSnapshot,
       candidateBlocks,
+      componentLabels,
     );
     const candidateMediaLayout = mediaRegionalLayout(mediaSnapshot, candidateBlocks);
     if (
@@ -1404,7 +1464,7 @@ function paginateCapturedDocument(
       currentWeight = 0;
     }
     validateMediaRegionalLayout(documentSnapshot, mediaSnapshot, [block]);
-    validateCombinedPageLayout(documentSnapshot, mediaSnapshot, [block]);
+    validateCombinedPageLayout(documentSnapshot, mediaSnapshot, [block], componentLabels);
     currentBlocks.push(block);
     currentWeight += weight;
     if (currentWeight >= capacity) {
@@ -1417,7 +1477,7 @@ function paginateCapturedDocument(
 
   for (const blocks of pageBlocks) {
     validateMediaRegionalLayout(documentSnapshot, mediaSnapshot, blocks);
-    validateCombinedPageLayout(documentSnapshot, mediaSnapshot, blocks);
+    validateCombinedPageLayout(documentSnapshot, mediaSnapshot, blocks, componentLabels);
   }
 
   const totalParts = pageBlocks.length;
@@ -1433,19 +1493,21 @@ function paginateCapturedDocument(
 function paginateWorkDocumentInternal(
   document: ProjectedWorkDocument,
   media: MediaIndex,
+  componentLabelFor?: ComponentLabelResolver,
 ): WorkstationPage[] {
   const capturedDocument = snapshotDocument(document);
   validateProjectedDocument(capturedDocument);
   const mediaSnapshot = normalizeMediaIndex(media);
-  return paginateCapturedDocument(capturedDocument, mediaSnapshot);
+  return paginateCapturedDocument(capturedDocument, mediaSnapshot, componentLabelFor);
 }
 
 export function paginateWorkDocument(
   document: ProjectedWorkDocument,
   media: MediaIndex,
+  componentLabelFor?: ComponentLabelResolver,
 ): WorkstationPage[] {
   try {
-    return paginateWorkDocumentInternal(document, media);
+    return paginateWorkDocumentInternal(document, media, componentLabelFor);
   } catch (error) {
     if (isPlannerError(error)) throw error;
     throw new InvalidPrintDocumentError(undefined, "document", document);
@@ -1479,6 +1541,7 @@ function buildPrintPlanInternal(
   documents: ProjectedWorkDocument[],
   media: MediaIndex,
   settings: PrintSettings,
+  componentLabelFor?: ComponentLabelResolver,
 ): PrintPage[] {
   if (!Array.isArray(documents)) {
     throw new InvalidPrintInputError("documents", documents);
@@ -1536,7 +1599,7 @@ function buildPrintPlanInternal(
           );
         }
       }
-      return paginateCapturedDocument(printDocument, mediaSnapshot);
+      return paginateCapturedDocument(printDocument, mediaSnapshot, componentLabelFor);
     });
 
   if (template === "station") return stationPages;
@@ -1552,9 +1615,10 @@ export function buildPrintPlan(
   documents: ProjectedWorkDocument[],
   media: MediaIndex,
   settings: PrintSettings,
+  componentLabelFor?: ComponentLabelResolver,
 ): PrintPage[] {
   try {
-    return buildPrintPlanInternal(documents, media, settings);
+    return buildPrintPlanInternal(documents, media, settings, componentLabelFor);
   } catch (error) {
     if (isPlannerError(error)) throw error;
     throw new InvalidPrintInputError("printPlan", error);

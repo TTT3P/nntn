@@ -480,6 +480,59 @@ describe("buildPrintPlan", () => {
 });
 
 describe("paginateWorkDocument", () => {
+  test("budgets resolved component references as a second ingredient line", () => {
+    const ingredients = Array.from({ length: 15 }, (_, index) => ({
+      ...makeProjectedWorkDocument().ingredients[0],
+      lineKey: `component-${index + 1}`,
+      componentRecipeId: "RCP-COMPONENT",
+    }));
+    const documentWith = (count: number) => makeProjectedWorkDocument({
+      ingredientLineKeys: ingredients.slice(0, count).map((line) => line.lineKey),
+      ingredients: ingredients.slice(0, count),
+    });
+    const componentLabelFor = () => "สูตรประกอบ · RCP-COMPONENT";
+    const media = buildMediaIndex(makeSnapshot());
+
+    expect(paginateWorkDocument(documentWith(7), media, componentLabelFor)).toHaveLength(1);
+    expect(() => paginateWorkDocument(documentWith(15), media, componentLabelFor))
+      .toThrowError(expect.objectContaining({
+        name: "UnpageableDocumentError",
+        section: "ingredients",
+      }));
+  });
+
+  test("validates the exact resolved component label before accepting a page", () => {
+    const ingredient = {
+      ...makeProjectedWorkDocument().ingredients[0],
+      componentRecipeId: "RCP-COMPONENT",
+    };
+    const document = makeProjectedWorkDocument({ ingredients: [ingredient] });
+    const media = buildMediaIndex(makeSnapshot());
+
+    expect(paginateWorkDocument(
+      document,
+      media,
+      () => `${"😀".repeat(21)}ก`,
+    )).toHaveLength(1);
+    expect(() => paginateWorkDocument(
+      document,
+      media,
+      () => `${"😀".repeat(21)}กก`,
+    )).toThrowError(expect.objectContaining({
+      name: "UnpageableDocumentError",
+      section: "ingredients",
+    }));
+    expect(() => paginateWorkDocument(
+      document,
+      media,
+      () => "สูตรประกอบ\nRCP-COMPONENT",
+    )).toThrowError(expect.objectContaining({
+      name: "InvalidPrintInputError",
+      field: "document.ingredients.componentReference.layout_control",
+      value: "<layout-control>",
+    }));
+  });
+
   test.each([
     ["wide emoji", `${"😀".repeat(53)}ก`, `${"😀".repeat(53)}กก`],
     ["CJK wide characters", "漢".repeat(80), `${"漢".repeat(80)}ก`],

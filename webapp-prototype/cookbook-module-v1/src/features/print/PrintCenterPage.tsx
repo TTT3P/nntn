@@ -481,7 +481,7 @@ export function PrintCenterPage({
           template,
           stage,
           multiplier: parsedMultiplier,
-        });
+        }, componentLabelFor);
       }
     } catch (error) {
       planningError = plannerErrorMessage(error);
