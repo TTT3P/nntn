@@ -188,27 +188,80 @@ function sourceKey(record: Pick<LegacySourceRecord, "manifestId" | "sourceSha256
   return JSON.stringify([record.manifestId, record.sourceSha256, record.sourceRecordId]);
 }
 
+function fullSourceKey(
+  record: Pick<LegacySourceRecord, "manifestId" | "sourceSha256" | "recordType" | "sourceRecordId">,
+): string {
+  return JSON.stringify([
+    record.manifestId,
+    record.sourceSha256,
+    record.recordType,
+    record.sourceRecordId,
+  ]);
+}
+
+function stagingIdentity(record: LegacySourceRecord): string {
+  return typeof record.stagingId === "string" && record.stagingId.trim().length > 0
+    ? `staging:${record.stagingId}`
+    : `source:${fullSourceKey(record)}`;
+}
+
 function validateBulkEvidence(
   bulk: BulkDecisionEvidence | undefined,
   snapshot: IngredientMasterSnapshot,
+  proposal: ReconciliationProposal,
 ): void {
   if (bulk === undefined) return;
   if (bulk.records.length < 2 || bulk.comparisonFields.length === 0 ||
     bulk.comparisonFields.some((field) => field.trim().length === 0)) invalid();
 
-  const stagedKeys = new Set(snapshot.legacySourceRecords.map(sourceKey));
+  const recordsByStagingId = new Map<string, LegacySourceRecord>();
+  const recordsBySourceKey = new Map<string, LegacySourceRecord>();
+  for (const canonical of snapshot.legacySourceRecords) {
+    if (typeof canonical.stagingId === "string" && canonical.stagingId.trim().length > 0) {
+      if (recordsByStagingId.has(canonical.stagingId)) invalid();
+      recordsByStagingId.set(canonical.stagingId, canonical);
+    }
+    const canonicalSourceKey = fullSourceKey(canonical);
+    if (recordsBySourceKey.has(canonicalSourceKey)) invalid();
+    recordsBySourceKey.set(canonicalSourceKey, canonical);
+  }
+
+  const proposalRecordType = proposal.evidence.find(({ label }) => label === "record_type")?.value;
+  const proposalSource = snapshot.legacySourceRecords.find((record) =>
+    record.manifestId === proposal.manifestId &&
+    record.sourceSha256 === proposal.sourceSha256 &&
+    record.recordType === proposalRecordType &&
+    record.sourceRecordId === proposal.sourceRecordId);
+  if (proposalSource === undefined) invalid();
+
+  const resolvedIdentities = new Set<string>();
   let comparison: string | undefined;
-  for (const record of bulk.records) {
-    if (!stagedKeys.has(sourceKey(record))) invalid();
-    const raw = rawRecord(record);
+  for (const supplied of bulk.records) {
+    const canonical = typeof supplied.stagingId === "string" && supplied.stagingId.trim().length > 0
+      ? recordsByStagingId.get(supplied.stagingId)
+      : recordsBySourceKey.get(fullSourceKey(supplied));
+    if (canonical === undefined ||
+      canonical.manifestId !== supplied.manifestId ||
+      canonical.sourceSha256 !== supplied.sourceSha256 ||
+      canonical.recordType !== supplied.recordType ||
+      canonical.sourceRecordId !== supplied.sourceRecordId ||
+      JSON.stringify(canonical.raw) !== JSON.stringify(supplied.raw)) invalid();
+
+    const identity = stagingIdentity(canonical);
+    if (resolvedIdentities.has(identity)) invalid();
+    resolvedIdentities.add(identity);
+
+    const raw = rawRecord(canonical);
     if (raw === null) invalid();
+    if (bulk.comparisonFields.some((field) =>
+      !Object.prototype.hasOwnProperty.call(raw, field))) invalid();
     const current = JSON.stringify(bulk.comparisonFields.map((field) => ({
-      present: Object.prototype.hasOwnProperty.call(raw, field),
       value: raw[field],
     })));
     if (comparison !== undefined && current !== comparison) invalid();
     comparison = current;
   }
+  if (!resolvedIdentities.has(stagingIdentity(proposalSource))) invalid();
 }
 
 function validateRedirect(
@@ -292,7 +345,7 @@ export function recordReconciliationDecision(
   if (!matchingSource || !matchingManifest) invalid();
 
   validateAction(input.action, input);
-  validateBulkEvidence(input.bulk, input.snapshot);
+  validateBulkEvidence(input.bulk, input.snapshot, proposal);
 
   return {
     decisionId: input.decisionId,

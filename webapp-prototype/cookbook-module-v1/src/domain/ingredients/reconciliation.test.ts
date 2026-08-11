@@ -417,4 +417,143 @@ describe("recordReconciliationDecision", () => {
     expect(proposal).toEqual(beforeProposal);
     expect(input).toEqual(beforeInput);
   });
+
+  test("rejects forged caller raw even when canonical source keys are valid", () => {
+    const first = sourceRecord("legacy-oyster-sauce", "ingredient", {
+      ingredient_name: "Oyster sauce",
+      brand: "Mae Krua",
+    });
+    const second = sourceRecord("legacy-oyster-sauce-2", "ingredient", {
+      ingredient_name: "Oyster sauce",
+      brand: "Heinz",
+    });
+    const forgedSecond = {
+      ...second,
+      raw: { ingredient_name: "Oyster sauce", brand: "Mae Krua" },
+    };
+    const snapshot = snapshotWithRecords([first, second]);
+    const proposal = buildReconciliationQueue(makeLegacyStagingBatch([first, second]), snapshot)
+      .find(({ sourceRecordId, actionType }) =>
+        sourceRecordId === first.sourceRecordId && actionType === "link_ingredient")!;
+
+    expect(() => recordReconciliationDecision(proposal, validDecisionInput({
+      type: "link_ingredient",
+      ingredientId: "ing-oyster-sauce",
+      requiredSpecificationId: "spec-oyster-sauce-standard",
+    }, snapshot, {
+      proposalId: proposal.proposalId,
+      bulk: {
+        records: [first, forgedSecond],
+        comparisonFields: ["ingredient_name", "brand"],
+      },
+    }))).toThrow("INVALID_RECONCILIATION_DECISION");
+  });
+
+  test("rejects caller record-type substitution for a staged identity", () => {
+    const first = sourceRecord("legacy-oyster-sauce", "ingredient", {
+      ingredient_name: "Oyster sauce",
+      brand: "Mae Krua",
+    });
+    const second = sourceRecord("legacy-oyster-sauce-2", "ingredient", {
+      ingredient_name: "Oyster sauce",
+      brand: "Mae Krua",
+    });
+    const substitutedSecond = { ...second, recordType: "recipe_line" as const };
+    const snapshot = snapshotWithRecords([first, second]);
+    const proposal = buildReconciliationQueue(makeLegacyStagingBatch([first, second]), snapshot)
+      .find(({ sourceRecordId, actionType }) =>
+        sourceRecordId === first.sourceRecordId && actionType === "link_ingredient")!;
+
+    expect(() => recordReconciliationDecision(proposal, validDecisionInput({
+      type: "link_ingredient",
+      ingredientId: "ing-oyster-sauce",
+      requiredSpecificationId: "spec-oyster-sauce-standard",
+    }, snapshot, {
+      proposalId: proposal.proposalId,
+      bulk: {
+        records: [first, substitutedSecond],
+        comparisonFields: ["ingredient_name", "brand"],
+      },
+    }))).toThrow("INVALID_RECONCILIATION_DECISION");
+  });
+
+  test("rejects bulk comparison when a declared field is absent", () => {
+    const first = sourceRecord("legacy-oyster-sauce", "ingredient", {
+      ingredient_name: "Oyster sauce",
+    });
+    const second = sourceRecord("legacy-oyster-sauce-2", "ingredient", {
+      ingredient_name: "Oyster sauce",
+    });
+    const snapshot = snapshotWithRecords([first, second]);
+    const proposal = buildReconciliationQueue(makeLegacyStagingBatch([first, second]), snapshot)
+      .find(({ sourceRecordId, actionType }) =>
+        sourceRecordId === first.sourceRecordId && actionType === "link_ingredient")!;
+
+    expect(() => recordReconciliationDecision(proposal, validDecisionInput({
+      type: "link_ingredient",
+      ingredientId: "ing-oyster-sauce",
+      requiredSpecificationId: "spec-oyster-sauce-standard",
+    }, snapshot, {
+      proposalId: proposal.proposalId,
+      bulk: {
+        records: [first, second],
+        comparisonFields: ["ingredient_name", "brand"],
+      },
+    }))).toThrow("INVALID_RECONCILIATION_DECISION");
+  });
+
+  test("rejects duplicate staged identities in one bulk decision", () => {
+    const first = sourceRecord("legacy-oyster-sauce", "ingredient", {
+      ingredient_name: "Oyster sauce",
+      brand: "Mae Krua",
+    });
+    const snapshot = snapshotWithRecords([first]);
+    const proposal = buildReconciliationQueue(makeLegacyStagingBatch([first]), snapshot)
+      .find(({ actionType }) => actionType === "link_ingredient")!;
+
+    expect(() => recordReconciliationDecision(proposal, validDecisionInput({
+      type: "link_ingredient",
+      ingredientId: "ing-oyster-sauce",
+      requiredSpecificationId: "spec-oyster-sauce-standard",
+    }, snapshot, {
+      proposalId: proposal.proposalId,
+      bulk: {
+        records: [first, first],
+        comparisonFields: ["ingredient_name", "brand"],
+      },
+    }))).toThrow("INVALID_RECONCILIATION_DECISION");
+  });
+
+  test("rejects bulk membership that omits the proposal source", () => {
+    const proposalSource = sourceRecord("legacy-oyster-sauce", "ingredient", {
+      ingredient_name: "Oyster sauce",
+      brand: "Mae Krua",
+    });
+    const second = sourceRecord("legacy-oyster-sauce-2", "ingredient", {
+      ingredient_name: "Oyster sauce",
+      brand: "Mae Krua",
+    });
+    const third = sourceRecord("legacy-oyster-sauce-3", "ingredient", {
+      ingredient_name: "Oyster sauce",
+      brand: "Mae Krua",
+    });
+    const snapshot = snapshotWithRecords([proposalSource, second, third]);
+    const proposal = buildReconciliationQueue(
+      makeLegacyStagingBatch([proposalSource, second, third]),
+      snapshot,
+    ).find(({ sourceRecordId, actionType }) =>
+      sourceRecordId === proposalSource.sourceRecordId && actionType === "link_ingredient")!;
+
+    expect(() => recordReconciliationDecision(proposal, validDecisionInput({
+      type: "link_ingredient",
+      ingredientId: "ing-oyster-sauce",
+      requiredSpecificationId: "spec-oyster-sauce-standard",
+    }, snapshot, {
+      proposalId: proposal.proposalId,
+      bulk: {
+        records: [second, third],
+        comparisonFields: ["ingredient_name", "brand"],
+      },
+    }))).toThrow("INVALID_RECONCILIATION_DECISION");
+  });
 });
