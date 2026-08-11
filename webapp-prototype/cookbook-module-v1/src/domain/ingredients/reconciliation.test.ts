@@ -112,6 +112,19 @@ describe("buildReconciliationQueue", () => {
     }
   });
 
+  test("accepts the authoritative records projection without fake staging partitions", () => {
+    const record = sourceRecord("ingredient:records-only", "ingredient", {
+      ingredient_name: "Oyster sauce",
+    });
+    const snapshot = snapshotWithRecords([record]);
+
+    const proposals = buildReconciliationQueue({ records: [record] }, snapshot);
+
+    expect(proposals.some(({ actionType, suggestedTargetId }) =>
+      actionType === "merge_redirect" && suggestedTargetId === "ing-oyster-sauce"))
+      .toBe(true);
+  });
+
   test.each([
     ["exact primary name", { ingredient_name: "Oyster sauce" }],
     ["exact alias", { ingredient_name: "ซอสหอยนางรม" }],

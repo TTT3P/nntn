@@ -153,7 +153,7 @@ function proposalFor(
 }
 
 export function buildReconciliationQueue(
-  batch: LegacyStagingBatch,
+  batch: Pick<LegacyStagingBatch, "records">,
   snapshot: IngredientMasterSnapshot,
 ): ReconciliationProposal[] {
   const proposals = batch.records

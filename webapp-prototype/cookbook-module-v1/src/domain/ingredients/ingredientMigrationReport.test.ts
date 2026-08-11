@@ -1,20 +1,34 @@
 import { describe, expect, test } from "vitest";
 import { makeIngredientMasterSnapshot } from "../../test/ingredientBuilders";
 import { parseIngredientMaster } from "./parseIngredientMaster";
-import type { IngredientMasterSnapshot, RecipeLineLink, ReconciliationDecision } from "./types";
+import type {
+  IngredientMasterSnapshot,
+  LegacySourceRecord,
+  RecipeLineLink,
+  ReconciliationDecision,
+} from "./types";
 import {
   buildIngredientMigrationReport,
   serializeIngredientMaster,
 } from "./ingredientMigrationReport";
 
-function addSourceRecord(snapshot: IngredientMasterSnapshot, sourceRecordId: string, raw: unknown): void {
+const SHA_V1 = "a".repeat(64);
+const SHA_V2 = "b".repeat(64);
+
+function addSourceRecord(
+  snapshot: IngredientMasterSnapshot,
+  sourceRecordId: string,
+  raw: unknown,
+  overrides: Partial<LegacySourceRecord> = {},
+): void {
   snapshot.legacySourceRecords.push({
     stagingId: `staging-${sourceRecordId}`,
     manifestId: "manifest-v1",
-    sourceSha256: "a".repeat(64),
+    sourceSha256: SHA_V1,
     recordType: "recipe_line",
     sourceRecordId,
     raw,
+    ...overrides,
   });
 }
 
@@ -23,18 +37,20 @@ function addDecision(
   decisionId: string,
   sourceRecordId: string,
   action: ReconciliationDecision["action"],
+  overrides: Partial<ReconciliationDecision> = {},
 ): ReconciliationDecision {
   const decision: ReconciliationDecision = {
     decisionId,
     proposalId: `proposal-${decisionId}`,
     manifestId: "manifest-v1",
-    sourceSha256: "a".repeat(64),
+    sourceSha256: SHA_V1,
     sourceRecordId,
     decidedBy: "operator-opaque-001",
     decidedAt: "2026-08-11T00:00:00.000Z",
     note: "Owner-reviewed report fixture",
     approvalState: "approved",
     action,
+    ...overrides,
   };
   snapshot.reconciliationDecisions.push(decision);
   return decision;
@@ -52,6 +68,13 @@ function makeReportSnapshot(): IngredientMasterSnapshot {
   const snapshot = structuredClone(makeIngredientMasterSnapshot());
   snapshot.unitConversions = [];
   snapshot.usableYields = [];
+  snapshot.sourceManifests[0]!.expectedCounts = {
+    ingredient: 1,
+    recipe: 1,
+    direct_line: 3,
+    component_line: 0,
+    recipe_line: 3,
+  };
 
   snapshot.ingredients.push({
     ingredientId: "ing-missing-price",
@@ -122,11 +145,13 @@ function makeReportSnapshot(): IngredientMasterSnapshot {
     decisionEvidence: linkEvidence(unmappedDecision, "recipe-opaque-003", "line-unmapped"),
   });
 
-  addSourceRecord(snapshot, "legacy-duplicate", { label: "Duplicate oyster sauce" });
+  addSourceRecord(snapshot, "legacy-duplicate", { name: "Oyster sauce" });
   const duplicateDecision = addDecision(snapshot, "decision-duplicate", "legacy-duplicate", {
     type: "merge_redirect",
     fromIngredientId: "ing-duplicate-candidate",
     toIngredientId: "ing-oyster-sauce",
+  }, {
+    proposalId: `${SHA_V1}:recipe_line:legacy-duplicate:merge_redirect`,
   });
   snapshot.redirects.push({
     redirectId: "redirect-duplicate",
@@ -149,7 +174,12 @@ describe("buildIngredientMigrationReport", () => {
       "line-missing-price",
     ]);
     expect(report.unmapped.map(({ lineId }) => lineId)).toEqual(["line-unmapped"]);
-    expect(report.duplicateCandidates.map(({ redirectId }) => redirectId))
+    expect(report.duplicateCandidates).toMatchObject([{
+      sourceRecordId: "legacy-oyster-sauce",
+      actionType: "merge_redirect",
+      suggestedTargetId: "ing-oyster-sauce",
+    }]);
+    expect(report.resolvedDuplicates.map(({ redirectId }) => redirectId))
       .toEqual(["redirect-duplicate"]);
     expect(report.inactive).toContainEqual({
       recordType: "ingredient",
@@ -183,6 +213,94 @@ describe("buildIngredientMigrationReport", () => {
       unmapped: 1,
     });
     expect(report.missingPrices.every((entry) => !("price" in entry))).toBe(true);
+  });
+
+  test.each([
+    ["unknown expected source", {
+      "manifest-v1": { direct: 3, component: 0, total: 3 },
+      ghost: { direct: 0, component: 0, total: 0 },
+    }],
+    ["missing expected source", {}],
+    ["negative count", { "manifest-v1": { direct: -1, component: 0, total: -1 } }],
+    ["fractional count", { "manifest-v1": { direct: 2.5, component: 0.5, total: 3 } }],
+    ["inconsistent total", { "manifest-v1": { direct: 3, component: 1, total: 3 } }],
+    ["count mismatch with manifest", {
+      "manifest-v1": { direct: 2, component: 0, total: 2 },
+    }],
+  ])("rejects %s instead of copying unverified accounting", (_label, expectedBySource) => {
+    expect(() => buildIngredientMigrationReport(makeReportSnapshot(), expectedBySource))
+      .toThrow("INGREDIENT_MIGRATION_SOURCE_CLOSURE_FAILED");
+  });
+
+  test("rejects recipe links whose decision evidence names an unknown manifest", () => {
+    const snapshot = makeReportSnapshot();
+    snapshot.recipeLineLinks[0]!.decisionEvidence.manifestId = "manifest-ghost";
+
+    expect(() => buildIngredientMigrationReport(snapshot, {
+      "manifest-v1": { direct: 3, component: 0, total: 3 },
+    })).toThrow("INGREDIENT_MIGRATION_SOURCE_CLOSURE_FAILED");
+  });
+
+  test.each([2, 4])("rejects observed direct-line closure against authoritative count %s", (direct) => {
+    const snapshot = makeReportSnapshot();
+    snapshot.sourceManifests[0]!.expectedCounts.direct_line = direct;
+    snapshot.sourceManifests[0]!.expectedCounts.recipe_line = direct;
+
+    expect(() => buildIngredientMigrationReport(snapshot, {
+      "manifest-v1": { direct, component: 0, total: direct },
+    })).toThrow("INGREDIENT_MIGRATION_SOURCE_CLOSURE_FAILED");
+  });
+
+  test("verifies a valid multi-source report independently by manifest", () => {
+    const snapshot = makeReportSnapshot();
+    snapshot.sourceManifests.push({
+      ...structuredClone(snapshot.sourceManifests[0]!),
+      manifestId: "manifest-v2",
+      sha256: SHA_V2,
+      sourcePath: "fixtures/second-source.json",
+      expectedCounts: {
+        ingredient: 0,
+        recipe: 1,
+        direct_line: 1,
+        component_line: 0,
+        recipe_line: 1,
+      },
+    });
+    addSourceRecord(snapshot, "legacy-v2-unmapped", { name: "Unknown V2" }, {
+      stagingId: "staging-v2-unmapped",
+      manifestId: "manifest-v2",
+      sourceSha256: SHA_V2,
+    });
+    const decision = addDecision(snapshot, "decision-v2-unmapped", "legacy-v2-unmapped", {
+      type: "mark_unmapped",
+      reason: "No approved identity in source two",
+    }, {
+      manifestId: "manifest-v2",
+      sourceSha256: SHA_V2,
+    });
+    snapshot.recipeLineLinks.push({
+      state: "unmapped",
+      recipeId: "recipe-v2",
+      lineId: "line-v2-unmapped",
+      sourceRecordId: "legacy-v2-unmapped",
+      reason: "No approved identity in source two",
+      historicalLabel: "Unknown V2",
+      amountText: "1",
+      unitText: "piece",
+      sourceDisplayText: "1 piece",
+      servingNote: "",
+      decisionEvidence: linkEvidence(decision, "recipe-v2", "line-v2-unmapped"),
+    });
+
+    const report = buildIngredientMigrationReport(snapshot, {
+      "manifest-v1": { direct: 3, component: 0, total: 3 },
+      "manifest-v2": { direct: 1, component: 0, total: 1 },
+    });
+
+    expect(report.sourceCounts).toEqual({
+      "manifest-v1": { direct: 3, component: 0, total: 3, mapped: 2, unmapped: 1 },
+      "manifest-v2": { direct: 1, component: 0, total: 1, mapped: 0, unmapped: 1 },
+    });
   });
 });
 

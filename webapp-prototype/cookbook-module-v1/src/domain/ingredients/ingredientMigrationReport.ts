@@ -4,9 +4,11 @@ import {
   validateYieldEvidence,
 } from "./ingredientPolicy";
 import { parseIngredientMaster } from "./parseIngredientMaster";
+import { buildReconciliationQueue } from "./reconciliation";
 import type {
   IngredientMasterSnapshot,
   RecipeLineLink,
+  ReconciliationProposal,
 } from "./types";
 
 export interface ExpectedSourceCounts {
@@ -36,7 +38,7 @@ export interface UnmappedMigrationLine {
   reason: string;
 }
 
-export interface DuplicateCandidate {
+export interface ResolvedDuplicate {
   redirectId: string;
   fromIngredientId: string;
   toIngredientId: string;
@@ -75,7 +77,8 @@ export interface IngredientMigrationReport {
   sourceCounts: Record<string, MigrationSourceCounts>;
   mapped: MappedMigrationLine[];
   unmapped: UnmappedMigrationLine[];
-  duplicateCandidates: DuplicateCandidate[];
+  duplicateCandidates: ReconciliationProposal[];
+  resolvedDuplicates: ResolvedDuplicate[];
   inactive: InactiveMigrationRecord[];
   missingPrices: MissingPriceEvidence[];
   missingConversions: MissingConversionEvidence[];
@@ -133,28 +136,100 @@ function mappedLine(link: Exclude<RecipeLineLink, { state: "unmapped" }>): Mappe
   };
 }
 
-function buildSourceCounts(
-  links: readonly RecipeLineLink[],
+function sourceClosureFailure(): never {
+  throw new Error("INGREDIENT_MIGRATION_SOURCE_CLOSURE_FAILED");
+}
+
+function validCount(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
+
+function verifySourceClosure(
+  snapshot: IngredientMasterSnapshot,
   expectedBySource: ExpectedBySource,
 ): Record<string, MigrationSourceCounts> {
-  return Object.fromEntries(Object.keys(expectedBySource).sort(compareText).map((source) => {
-    const expected = expectedBySource[source]!;
-    const sourceLinks = links.filter(({ decisionEvidence }) =>
-      decisionEvidence.manifestId === source);
-    return [source, {
-      direct: expected.direct,
-      component: expected.component,
-      total: expected.total,
-      mapped: sourceLinks.filter(({ state }) => state !== "unmapped").length,
-      unmapped: sourceLinks.filter(({ state }) => state === "unmapped").length,
-    }];
+  const manifestIds = snapshot.sourceManifests.map(({ manifestId }) => manifestId);
+  const manifestIdSet = new Set(manifestIds);
+  const expectedIds = Object.keys(expectedBySource);
+  if (manifestIdSet.size !== manifestIds.length ||
+    expectedIds.length !== manifestIds.length ||
+    expectedIds.some((manifestId) => !manifestIdSet.has(manifestId))) {
+    sourceClosureFailure();
+  }
+
+  const manifests = new Map(snapshot.sourceManifests.map((manifest) =>
+    [manifest.manifestId, manifest]));
+  const seenLinksByManifest = new Map<string, Set<string>>();
+  const observed = new Map<string, { mapped: number; unmapped: number }>(
+    manifestIds.map((manifestId) => [manifestId, { mapped: 0, unmapped: 0 }]),
+  );
+
+  for (const link of snapshot.recipeLineLinks) {
+    const manifest = manifests.get(link.decisionEvidence.manifestId);
+    if (manifest === undefined || manifest.sha256 !== link.decisionEvidence.sourceSha256) {
+      sourceClosureFailure();
+    }
+    const identity = JSON.stringify([link.recipeId, link.lineId]);
+    const seen = seenLinksByManifest.get(manifest.manifestId) ?? new Set<string>();
+    if (seen.has(identity)) sourceClosureFailure();
+    seen.add(identity);
+    seenLinksByManifest.set(manifest.manifestId, seen);
+    const counts = observed.get(manifest.manifestId)!;
+    if (link.state === "unmapped") counts.unmapped += 1;
+    else counts.mapped += 1;
+  }
+
+  for (const manifestId of manifestIds) {
+    const expected = expectedBySource[manifestId];
+    const manifest = manifests.get(manifestId)!;
+    if (expected === undefined ||
+      !validCount(expected.direct) ||
+      !validCount(expected.component) ||
+      !validCount(expected.total) ||
+      expected.direct + expected.component !== expected.total ||
+      !validCount(manifest.expectedCounts.direct_line) ||
+      !validCount(manifest.expectedCounts.component_line) ||
+      !validCount(manifest.expectedCounts.recipe_line) ||
+      manifest.expectedCounts.direct_line + manifest.expectedCounts.component_line !==
+        manifest.expectedCounts.recipe_line ||
+      expected.direct !== manifest.expectedCounts.direct_line ||
+      expected.component !== manifest.expectedCounts.component_line ||
+      expected.total !== manifest.expectedCounts.recipe_line) {
+      sourceClosureFailure();
+    }
+    const counts = observed.get(manifestId)!;
+    if (counts.mapped + counts.unmapped !== expected.direct) sourceClosureFailure();
+  }
+
+  return Object.fromEntries([...manifestIds].sort(compareText).map((manifestId) => {
+    const expected = expectedBySource[manifestId]!;
+    const counts = observed.get(manifestId)!;
+    return [manifestId, { ...expected, ...counts }];
   }));
+}
+
+function unresolvedDuplicateCandidates(
+  snapshot: IngredientMasterSnapshot,
+): ReconciliationProposal[] {
+  const proposals = buildReconciliationQueue({ records: snapshot.legacySourceRecords }, snapshot);
+  return proposals.filter((proposal) =>
+    proposal.actionType === "merge_redirect" &&
+    proposal.suggestedTargetId !== null &&
+    !snapshot.reconciliationDecisions.some((decision) =>
+      decision.approvalState === "approved" &&
+      decision.proposalId === proposal.proposalId &&
+      decision.manifestId === proposal.manifestId &&
+      decision.sourceSha256 === proposal.sourceSha256 &&
+      decision.sourceRecordId === proposal.sourceRecordId &&
+      decision.action.type === "merge_redirect" &&
+      decision.action.toIngredientId === proposal.suggestedTargetId));
 }
 
 export function buildIngredientMigrationReport(
   input: IngredientMasterSnapshot,
   expectedBySource: ExpectedBySource,
 ): IngredientMigrationReport {
+  const sourceCounts = verifySourceClosure(input, expectedBySource);
   const snapshot = parseIngredientMaster(input);
   const ingredientLinks = snapshot.recipeLineLinks
     .filter((link): link is Extract<RecipeLineLink, { state: "ingredient" }> =>
@@ -209,7 +284,7 @@ export function buildIngredientMigrationReport(
   }
 
   return {
-    sourceCounts: buildSourceCounts(snapshot.recipeLineLinks, expectedBySource),
+    sourceCounts,
     mapped: snapshot.recipeLineLinks
       .filter((link): link is Exclude<RecipeLineLink, { state: "unmapped" }> =>
         link.state !== "unmapped")
@@ -225,7 +300,8 @@ export function buildIngredientMigrationReport(
         sourceRecordId,
         reason,
       })),
-    duplicateCandidates: [...snapshot.redirects]
+    duplicateCandidates: unresolvedDuplicateCandidates(snapshot),
+    resolvedDuplicates: [...snapshot.redirects]
       .sort((left, right) => compareText(left.redirectId, right.redirectId))
       .map(({ redirectId, fromIngredientId, toIngredientId, decisionId }) => ({
         redirectId,
