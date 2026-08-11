@@ -72,6 +72,7 @@ function emptyCurrent(): IngredientMasterSnapshot {
   const snapshot = makeIngredientMasterSnapshot();
   snapshot.legacySourceRecords = [];
   snapshot.reconciliationDecisions = [];
+  snapshot.recipeLineLinks = [];
   return snapshot;
 }
 

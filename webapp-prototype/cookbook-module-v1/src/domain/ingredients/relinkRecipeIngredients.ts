@@ -38,6 +38,7 @@ export type RecipeRelinkDecision = RecipeLineDecisionEvidence;
 export interface RecipeRelinkDecisionSet {
   readonly sourceSha256: string;
   readonly sourceManifest: DirectLineClosureManifest;
+  readonly actualSourceManifest: DirectLineClosureManifest;
   readonly decisions: readonly RecipeRelinkDecision[];
   readonly ingredients: readonly {
     readonly ingredientId: string;
@@ -198,7 +199,8 @@ export function relinkRecipeIngredients(
   document: RelinkRecipeDocument,
   decisionSet: RecipeRelinkDecisionSet,
 ): RecipeRelinkResult {
-  if (decisionSet.sourceSha256 !== document.derivedFrom.v5Sha256) {
+  if (decisionSet.sourceSha256 !== decisionSet.actualSourceManifest.sourceSha256 ||
+    decisionSet.actualSourceManifest.sourceSha256 !== document.derivedFrom.v5Sha256) {
     throw new RecipeRelinkError([issue(
       "SOURCE_REVISION_MISMATCH",
       decisionSet.sourceSha256,
@@ -250,7 +252,11 @@ export function relinkRecipeIngredients(
       recipeId, lineId));
   }
   for (const decision of decisionSet.decisions) {
-    if (decision.manifestId !== decisionSet.sourceManifest.manifestId) {
+    if (!actionHasExactKeys(decision.action)) {
+      fatalIssues.push(issue("INVALID_RELINK_ACTION_PAYLOAD", decision.sourceSha256,
+        decision.recipeId, decision.lineId, decision));
+    }
+    if (decision.manifestId !== decisionSet.actualSourceManifest.manifestId) {
       fatalIssues.push(issue("SOURCE_MANIFEST_MISMATCH", decision.sourceSha256,
         decision.recipeId, decision.lineId, decision));
     }
@@ -324,11 +330,6 @@ export function relinkRecipeIngredients(
 
       const common = commonLink(recipe.recipeId, sourceLine, decision);
       const action = decision.action;
-      if (!actionHasExactKeys(action)) {
-        fatalIssues.push(issue("INVALID_RELINK_ACTION_PAYLOAD", decisionSet.sourceSha256,
-          recipe.recipeId, sourceLine.lineId, decision));
-        continue;
-      }
       if (action.type === "link_ingredient") {
         const ingredient = ingredients.get(action.ingredientId);
         if (ingredient === undefined) {
@@ -421,12 +422,14 @@ export function relinkRecipeIngredients(
   sortIssues(fatalIssues);
   if (fatalIssues.length > 0) throw new RecipeRelinkError(fatalIssues);
   sortIssues(issues);
-  const actualClosure = {
-    manifestId: decisionSet.sourceManifest.manifestId,
-    sourceSha256: document.derivedFrom.v5Sha256,
-    directLineCount: activeDirectLineKeys.length,
-  };
-  assertManifestDirectLineClosure(decisionSet.sourceManifest, actualClosure, links);
+  if (decisionSet.actualSourceManifest.directLineCount !== activeDirectLineKeys.length) {
+    throw new Error("RECIPE_LINE_CLOSURE_FAILED");
+  }
+  assertManifestDirectLineClosure(
+    decisionSet.sourceManifest,
+    decisionSet.actualSourceManifest,
+    links,
+  );
   return { links, sourceLines, issues };
 }
 

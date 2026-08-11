@@ -90,6 +90,11 @@ function decisionSet(
       sourceSha256: SHA,
       directLineCount: decisions.filter(({ approvalState }) => approvalState === "approved").length,
     },
+    actualSourceManifest: {
+      manifestId: "manifest-first-set",
+      sourceSha256: SHA,
+      directLineCount: decisions.filter(({ approvalState }) => approvalState === "approved").length,
+    },
     decisions,
     ingredients: [{
       ingredientId: "ing-oyster",
@@ -416,6 +421,11 @@ describe("relinkRecipeIngredients", () => {
           sourceSha256: SHA,
           directLineCount: 0,
         },
+        actualSourceManifest: {
+          manifestId: "manifest-first-set",
+          sourceSha256: SHA,
+          directLineCount: 0,
+        },
       }),
     );
 
@@ -427,6 +437,37 @@ describe("relinkRecipeIngredients", () => {
       lineId: "line-removed",
       decisionId: "decision:line-removed",
     }]);
+  });
+
+  test("rejects forbidden action keys on inactive historical decisions during preflight", () => {
+    const inactive = line("line-removed", "ฉลากประวัติ", { active: false });
+    const malformed = {
+      ...decision("line-removed", {
+        type: "mark_unmapped",
+        reason: "historical",
+      }, { approvalState: "rejected" }),
+      action: {
+        type: "mark_unmapped",
+        reason: "historical",
+        componentRecipeId: "recipe-component",
+      },
+    } as unknown as RecipeRelinkDecision;
+
+    expect(errorIssues(() => relinkRecipeIngredients(
+      documentWith([inactive]),
+      decisionSet([malformed], {
+        sourceManifest: {
+          manifestId: "manifest-first-set",
+          sourceSha256: SHA,
+          directLineCount: 0,
+        },
+        actualSourceManifest: {
+          manifestId: "manifest-first-set",
+          sourceSha256: SHA,
+          directLineCount: 0,
+        },
+      }),
+    )).map(({ code }) => code)).toEqual(["INVALID_RELINK_ACTION_PAYLOAD"]);
   });
 
   test("does not mutate the recipe document, decisions, or master lookup", () => {
@@ -463,6 +504,52 @@ describe("relinkRecipeIngredients", () => {
 
     expect(() => relinkRecipeIngredients(document, decisions))
       .toThrow("RECIPE_LINE_CLOSURE_FAILED");
+  });
+
+  test("rejects a count-only actual receipt change under the old manifest ID and SHA", () => {
+    const document = documentWith([line("line-oyster", "ซอสหอยนางรม")]);
+    const approved = decision("line-oyster", {
+      type: "link_ingredient",
+      ingredientId: "ing-oyster",
+      requiredSpecificationId: null,
+    });
+    const decisions = decisionSet([approved], {
+      actualSourceManifest: {
+        manifestId: "manifest-first-set",
+        sourceSha256: SHA,
+        directLineCount: 2,
+      },
+    });
+
+    expect(() => relinkRecipeIngredients(document, decisions))
+      .toThrow("RECIPE_LINE_CLOSURE_FAILED");
+  });
+
+  test("accepts a distinct verified manifest ID, SHA, and count receipt together", () => {
+    const nextSha = "9".repeat(64);
+    const document: RelinkRecipeDocument = {
+      ...documentWith([line("line-oyster", "ซอสหอยนางรม")]),
+      derivedFrom: {
+        ...documentWith([]).derivedFrom,
+        v5Sha256: nextSha,
+      },
+    };
+    const approved = decision("line-oyster", {
+      type: "link_ingredient",
+      ingredientId: "ing-oyster",
+      requiredSpecificationId: null,
+    }, { manifestId: "manifest-first-set-v2", sourceSha256: nextSha });
+    const nextReceipt = {
+      manifestId: "manifest-first-set-v2",
+      sourceSha256: nextSha,
+      directLineCount: 1,
+    };
+
+    expect(() => relinkRecipeIngredients(document, decisionSet([approved], {
+      sourceSha256: nextSha,
+      sourceManifest: nextReceipt,
+      actualSourceManifest: { ...nextReceipt },
+    }))).not.toThrow();
   });
 });
 

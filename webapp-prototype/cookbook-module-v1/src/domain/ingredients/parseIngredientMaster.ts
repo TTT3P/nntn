@@ -42,6 +42,33 @@ function exactKeys(record: Record<string, unknown>, allowed: readonly string[]):
     typeof key !== "string" || !allowed.includes(key))) invalid();
 }
 
+function canonicalJson(value: unknown): string {
+  function sortObjectKeys(entry: unknown): unknown {
+    if (Array.isArray(entry)) return entry.map(sortObjectKeys);
+    if (entry === null || typeof entry !== "object") return entry;
+    return Object.fromEntries(Object.keys(entry).sort().map((key) =>
+      [key, sortObjectKeys((entry as Record<string, unknown>)[key])]));
+  }
+  return JSON.stringify(sortObjectKeys(value));
+}
+
+function baseRecipeLineDecision(
+  evidence: RecipeLineLink["decisionEvidence"],
+): ReconciliationDecision {
+  return {
+    decisionId: evidence.decisionId,
+    proposalId: evidence.proposalId,
+    manifestId: evidence.manifestId,
+    sourceSha256: evidence.sourceSha256,
+    sourceRecordId: evidence.sourceRecordId,
+    decidedBy: evidence.decidedBy,
+    decidedAt: evidence.decidedAt,
+    note: evidence.note,
+    approvalState: evidence.approvalState,
+    action: evidence.action,
+  };
+}
+
 function stringValue(value: unknown): string {
   return typeof value === "string" ? value : invalid();
 }
@@ -490,6 +517,8 @@ function validateReferences(snapshot: IngredientMasterSnapshot): void {
   const ingredientIds = new Set(snapshot.ingredients.map(({ ingredientId }) => ingredientId));
   const specificationIds = new Set(snapshot.specifications.map(({ specificationId }) => specificationId));
   const decisionIds = new Set(snapshot.reconciliationDecisions.map(({ decisionId }) => decisionId));
+  const decisionsById = new Map(snapshot.reconciliationDecisions.map((decision) =>
+    [decision.decisionId, decision]));
   const sourceRecordKeys = new Set(snapshot.legacySourceRecords.map(({ manifestId, sourceSha256, sourceRecordId }) =>
     JSON.stringify([manifestId, sourceSha256, sourceRecordId])));
 
@@ -521,6 +550,11 @@ function validateReferences(snapshot: IngredientMasterSnapshot): void {
   }
 
   for (const link of snapshot.recipeLineLinks) {
+    const baseEvidence = baseRecipeLineDecision(link.decisionEvidence);
+    const canonicalDecision = decisionsById.get(link.decisionEvidence.decisionId);
+    if (link.decisionEvidence.approvalState !== "approved" ||
+      canonicalDecision === undefined ||
+      canonicalJson(baseEvidence) !== canonicalJson(canonicalDecision)) invalid();
     const identityIssue = validateRecipeLineLink(link, snapshot).some(({ code }) =>
       code === "UNKNOWN_INGREDIENT" ||
       code === "UNKNOWN_SPECIFICATION" ||

@@ -16,6 +16,25 @@ const invalidScenarios: InvalidIngredientMasterScenario[] = [
   "costable ingredient has no approved specification",
 ];
 
+function authorizeRecipeLineEvidence(
+  snapshot: ReturnType<typeof makeIngredientMasterSnapshot>,
+): void {
+  snapshot.reconciliationDecisions = snapshot.recipeLineLinks.map(({ decisionEvidence }) => {
+    return {
+      decisionId: decisionEvidence.decisionId,
+      proposalId: decisionEvidence.proposalId,
+      manifestId: decisionEvidence.manifestId,
+      sourceSha256: decisionEvidence.sourceSha256,
+      sourceRecordId: decisionEvidence.sourceRecordId,
+      decidedBy: decisionEvidence.decidedBy,
+      decidedAt: decisionEvidence.decidedAt,
+      note: decisionEvidence.note,
+      approvalState: decisionEvidence.approvalState,
+      action: decisionEvidence.action,
+    };
+  });
+}
+
 describe("parseIngredientMaster", () => {
   test("accepts a valid minimal transport snapshot", () => {
     const parsed = parseIngredientMaster(makeIngredientMasterSnapshot());
@@ -66,6 +85,31 @@ describe("parseIngredientMaster", () => {
       decisionEvidence: link.decisionEvidence,
     });
     expect(JSON.stringify(roundTrip.recipeLineLinks)).toBe(expected);
+  });
+
+  test("rejects recipe-link evidence with an unknown canonical decision ID", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    snapshot.recipeLineLinks[0]!.decisionEvidence.decisionId = "decision-unknown";
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
+  });
+
+  test("rejects rejected recipe-link evidence even when the canonical decision matches", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    snapshot.recipeLineLinks[0]!.decisionEvidence.approvalState = "rejected";
+    authorizeRecipeLineEvidence(snapshot);
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
+  });
+
+  test("rejects recipe-link evidence that conflicts with the canonical decision bytes", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    snapshot.recipeLineLinks[0]!.decisionEvidence.note = "conflicting note";
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
   });
 
   test("preserves opaque string identities without normalization", () => {
@@ -250,6 +294,7 @@ describe("parseIngredientMaster", () => {
         action: { type: "link_component_recipe", componentRecipeId: "component-recipe-2" },
       },
     }];
+    authorizeRecipeLineEvidence(snapshot);
 
     expect(parseIngredientMaster(snapshot).recipeLineLinks).toHaveLength(2);
   });
@@ -301,7 +346,7 @@ describe("parseIngredientMaster", () => {
         state: "unmapped",
         recipeId: "recipe-opaque-001",
         lineId: "line-opaque-001",
-        sourceRecordId: "legacy-line-opaque-001",
+        sourceRecordId: "legacy-oyster-sauce",
         reason: "No approved identity",
         historicalLabel: "Unknown sauce",
         amountText: base.amountText,
@@ -310,7 +355,7 @@ describe("parseIngredientMaster", () => {
         servingNote: base.servingNote,
         decisionEvidence: {
           ...structuredClone(base.decisionEvidence),
-          sourceRecordId: "legacy-line-opaque-001",
+          sourceRecordId: "legacy-oyster-sauce",
           action: { type: "mark_unmapped", reason: "No approved identity" },
         },
       }];
@@ -318,6 +363,7 @@ describe("parseIngredientMaster", () => {
   ] as const)("delegates recipe-line policy: accepts %s", (_scenario, mutate) => {
     const snapshot = makeIngredientMasterSnapshot();
     mutate(snapshot);
+    authorizeRecipeLineEvidence(snapshot);
 
     expect(() => parseIngredientMaster(snapshot)).not.toThrow();
   });

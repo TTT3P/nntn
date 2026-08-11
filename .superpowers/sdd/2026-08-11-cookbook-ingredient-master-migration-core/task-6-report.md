@@ -196,3 +196,73 @@ All commands exited `0` with no diagnostics after the final verification run.
 - No blocking concerns.
 - Manifest-bound closure compares an approved expected receipt to an independently supplied/derived actual receipt; changing a count under the prior receipt fails. A later source inventory must publish and use a new manifest ID, source SHA, and count receipt together.
 - The local readonly Cookbook V6 structural boundary remains unchanged and self-contained; this fix does not depend on the pre-existing untracked Cookbook V6 types file.
+
+---
+
+## Fix Round 2/5 — Canonical Link Authorization and Independent Source Receipt
+
+### Findings resolved
+
+1. **Parser authorization:** every authoritative recipe link must carry approved decision evidence and resolve an existing canonical `reconciliationDecisions` row with the same `decisionId`. The parser canonically compares every base decision field—proposal, manifest, source SHA, source record, decider, decision time, note, approval state, and complete action—while keeping `recipeId`/`lineId` as link context. Unknown, rejected, or conflicting evidence fails closed. Valid evidence still preserves exact relink values through repeated snapshot round-trips.
+2. **All-decision action preflight:** exact runtime action-key validation now runs for every supplied relink decision before decision indexing or active/inactive source branching. Malformed inactive/rejected historical actions fail with `INVALID_RELINK_ACTION_PAYLOAD`; they cannot be downgraded into a historical-only disposition.
+3. **Independent actual source receipt:** `RecipeRelinkDecisionSet` now requires a distinct `actualSourceManifest: DirectLineClosureManifest`. The document revision SHA and decision manifest IDs bind to this actual receipt. The relinker independently verifies its count against derived active source lines, then compares approved expected and verified actual manifest ID/SHA/count before returning links. It never constructs actual identity from expected identity.
+
+Task 5's `emptyCurrent()` test fixture now clears `recipeLineLinks` when it clears all canonical reconciliation decisions, keeping the fixture valid under the new authorization invariant. No publisher production code changed.
+
+### RED evidence
+
+Focused parser/relink RED before production repair:
+
+```bash
+./node_modules/.bin/vitest run \
+  src/domain/ingredients/relinkRecipeIngredients.test.ts \
+  src/domain/ingredients/parseIngredientMaster.test.ts --reporter=verbose
+```
+
+```text
+Test Files 2 failed (2)
+Tests 5 failed | 67 passed (72)
+
+Failures reproduced:
+- unknown canonical decision evidence accepted;
+- rejected canonical decision evidence accepted;
+- conflicting canonical decision evidence accepted;
+- malformed inactive action accepted as historical-only;
+- count-only actual receipt change ignored.
+exit 1
+```
+
+### GREEN evidence
+
+Focused relink plus parser:
+
+```text
+Test Files 2 passed (2)
+Tests 72 passed (72)
+exit 0
+```
+
+Task 1–6 domain regression gate:
+
+```text
+Test Files 6 passed (6)
+Tests 167 passed (167)
+exit 0
+```
+
+TypeScript, scoped ESLint, and scoped diff checks all exited `0` with no diagnostics.
+
+### Fix files
+
+- `src/domain/ingredients/parseIngredientMaster.ts`
+- `src/domain/ingredients/parseIngredientMaster.test.ts`
+- `src/domain/ingredients/relinkRecipeIngredients.ts`
+- `src/domain/ingredients/relinkRecipeIngredients.test.ts`
+- `src/domain/ingredients/publishIngredientMaster.test.ts` — one internally consistent empty-snapshot fixture line only
+- `.superpowers/sdd/2026-08-11-cookbook-ingredient-master-migration-core/task-6-report.md`
+
+### Concerns
+
+- No blocking concerns.
+- Canonical comparison recursively sorts object keys, preserving semantic byte equality across property-order-only transport differences while rejecting any changed decision field or action value.
+- The verified actual receipt remains transport-neutral and caller-supplied from staging/source verification; this task does not create a database, source verifier, or persistence adapter.
