@@ -43,3 +43,65 @@ test("persists the first editor save and rejects a stale second page without los
   expect(bytes).not.toContain("น้ำปลาสำหรับหน้าครัว");
   await context.close();
 });
+
+test("uses one saved workstage projection in the editor, Work, and Print Center", async ({ page }) => {
+  const ingredientName = "เนื้อแดดเดียว";
+  const movedStep = "ก่อนแพ็ค ตัดเนื้อให้เป็นชิ้นพอดีคำ ความยาวประมาณ 1.5 นิ้ว";
+
+  await page.goto("./#/recipes/RCP-021/edit");
+  await expect(page.getByRole("heading", { name: "แก้ไขสูตร" })).toBeVisible();
+
+  const ingredientStages = page.getByRole("group", {
+    name: "พิมพ์วัตถุดิบนี้ในใบงาน รายการ 1",
+  });
+  await expect(ingredientStages.getByRole("checkbox", { name: "ปรุง" })).toBeChecked();
+  await expect(ingredientStages.getByRole("checkbox", { name: "จัดเสิร์ฟ" })).toBeChecked();
+  await ingredientStages.getByRole("checkbox", { name: "เตรียม" }).check();
+  await ingredientStages.getByRole("checkbox", { name: "ปรุง" }).uncheck();
+  await page.getByLabel("จุดงานของขั้นตอน ขั้นตอน 1").selectOption("service");
+
+  await page.getByRole("button", { name: "บันทึกสูตร" }).click();
+  await expect(page.getByRole("status")).toHaveText("บันทึกสูตรแล้ว");
+
+  await page.reload();
+  await expect(ingredientStages.getByRole("checkbox", { name: "เตรียม" })).toBeChecked();
+  await expect(ingredientStages.getByRole("checkbox", { name: "ปรุง" })).not.toBeChecked();
+  await expect(ingredientStages.getByRole("checkbox", { name: "จัดเสิร์ฟ" })).toBeChecked();
+  await expect(page.getByLabel("จุดงานของขั้นตอน ขั้นตอน 1")).toHaveValue("service");
+
+  await page.goto("./#/work/RCP-021?stage=prep");
+  const prepWork = page.getByRole("article", { name: "ข้าวขยำเนื้อแดดเดียว", exact: true });
+  await expect(prepWork.getByText(ingredientName, { exact: true })).toBeVisible();
+  await expect(prepWork.getByText(movedStep, { exact: true })).toHaveCount(0);
+
+  await page.goto("./#/work/RCP-021?stage=cook");
+  const cookWork = page.getByRole("article", { name: "ข้าวขยำเนื้อแดดเดียว", exact: true });
+  await expect(cookWork.getByText(ingredientName, { exact: true })).toHaveCount(0);
+  await expect(cookWork.getByText(movedStep, { exact: true })).toHaveCount(0);
+
+  await page.goto("./#/work/RCP-021?stage=service");
+  const serviceWork = page.getByRole("article", { name: "ข้าวขยำเนื้อแดดเดียว", exact: true });
+  await expect(serviceWork.getByText(ingredientName, { exact: true })).toBeVisible();
+  await expect(serviceWork.getByText(movedStep, { exact: true })).toBeVisible();
+
+  await page.goto("./#/print");
+  await page.getByRole("searchbox", { name: "ค้นหาสูตร" }).fill("RCP-021");
+  await page.getByRole("checkbox", { name: "ข้าวขยำเนื้อแดดเดียว · RCP-021" }).check();
+  await page.locator("details.print-advanced > summary").click();
+  const printStage = page.getByRole("combobox", { name: "จุดงานที่จะพิมพ์" });
+
+  await printStage.selectOption("prep");
+  const prepPrint = page.getByRole("article", { name: /ข้าวขยำเนื้อแดดเดียว · ผลิตซอสและของเตรียม/u });
+  await expect(prepPrint.getByRole("rowheader", { name: new RegExp(`^${ingredientName}`, "u") })).toBeVisible();
+  await expect(prepPrint.getByText(movedStep, { exact: true })).toHaveCount(0);
+
+  await printStage.selectOption("cook");
+  const cookPrint = page.getByRole("article", { name: /ข้าวขยำเนื้อแดดเดียว · ครัวปรุง/u });
+  await expect(cookPrint.getByRole("rowheader", { name: new RegExp(`^${ingredientName}`, "u") })).toHaveCount(0);
+  await expect(cookPrint.getByText(movedStep, { exact: true })).toHaveCount(0);
+
+  await printStage.selectOption("service");
+  const servicePrint = page.getByRole("article", { name: /ข้าวขยำเนื้อแดดเดียว · จัดเสิร์ฟหน้าร้าน/u });
+  await expect(servicePrint.getByRole("rowheader", { name: new RegExp(`^${ingredientName}`, "u") })).toBeVisible();
+  await expect(servicePrint.getByText(movedStep, { exact: true })).toBeVisible();
+});

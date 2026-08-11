@@ -1,4 +1,25 @@
+import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./browser-guards";
+
+async function expectNoHorizontalOverflow(page: Page): Promise<void> {
+  const viewport = await page.locator("html").evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(viewport.scrollWidth).toBe(viewport.clientWidth);
+}
+
+async function expectMinimumTargetSize(locator: Locator): Promise<void> {
+  const sizes = await locator.evaluateAll((elements) => elements.map((element) => {
+    const box = element.getBoundingClientRect();
+    return { height: box.height, width: box.width };
+  }));
+  expect(sizes.length).toBeGreaterThan(0);
+  for (const size of sizes) {
+    expect(size.width).toBeGreaterThanOrEqual(44);
+    expect(size.height).toBeGreaterThanOrEqual(44);
+  }
+}
 
 test("uses an ERP print workspace with grouped selection and a responsive proof panel", async ({ page }) => {
   await page.goto("./#/print");
@@ -66,6 +87,28 @@ test("uses the complete Cookbook flow on desktop and iPhone 15 Pro Max width", a
   const visibleText = await page.getByRole("main").innerText();
   expect(visibleText).not.toMatch(/AI|Prototype|Mock|V[456]|schema|source review|blocker|provenance|candidate|Supabase|gateway|snapshot|local.session/iu);
   await strictBrowserBoundary.drain();
+});
+
+test("keeps recipe workstage controls usable without overflow on desktop and 430px width", async ({ page }) => {
+  await page.goto("./#/recipes/RCP-021/edit");
+  const stageHeading = page.getByRole("heading", { name: "จุดงานและการพิมพ์" });
+  await expect(stageHeading).toBeVisible();
+  await stageHeading.scrollIntoViewIfNeeded();
+
+  const stageCheckboxTargets = page
+    .getByRole("group", { name: "พิมพ์วัตถุดิบนี้ในใบงาน รายการ 1" })
+    .locator("label");
+  const methodStageSelects = page.getByLabel(/จุดงานของขั้นตอน ขั้นตอน/u);
+
+  await expectNoHorizontalOverflow(page);
+  await expectMinimumTargetSize(stageCheckboxTargets);
+  await expectMinimumTargetSize(methodStageSelects);
+
+  await page.setViewportSize({ width: 430, height: 932 });
+  await stageHeading.scrollIntoViewIfNeeded();
+  await expectNoHorizontalOverflow(page);
+  await expectMinimumTargetSize(stageCheckboxTargets);
+  await expectMinimumTargetSize(methodStageSelects);
 });
 
 test("keeps the friendly view, search and filters through reload and browser history", async ({ page }) => {
