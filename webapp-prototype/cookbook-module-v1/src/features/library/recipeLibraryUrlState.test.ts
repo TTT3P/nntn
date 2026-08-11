@@ -14,6 +14,7 @@ describe("parseRecipeLibraryUrlState", () => {
       kind: "all",
       status: "all",
       stage: "all",
+      collection: "all",
     });
     expect(
       parseRecipeLibraryUrlState(
@@ -26,6 +27,7 @@ describe("parseRecipeLibraryUrlState", () => {
       kind: "all",
       status: "all",
       stage: "all",
+      collection: "all",
     });
   });
 
@@ -33,7 +35,7 @@ describe("parseRecipeLibraryUrlState", () => {
     expect(
       parseRecipeLibraryUrlState(
         new URLSearchParams(
-          "q=เนื้อ&kind=sellable_menu&status=ready&stage=service&view=compact&mode=work",
+          "q=เนื้อ&kind=sellable_menu&status=ready&stage=service&collection=unassigned&view=compact&mode=work",
         ),
       ),
     ).toMatchObject({
@@ -43,6 +45,7 @@ describe("parseRecipeLibraryUrlState", () => {
       kind: "sellable_menu",
       status: "ready",
       stage: "service",
+      collection: "unassigned",
     });
   });
 
@@ -52,6 +55,11 @@ describe("parseRecipeLibraryUrlState", () => {
         new URLSearchParams("q=%20เนื้อ%20"),
       ).query,
     ).toBe("เนื้อ");
+  });
+
+  test("rejects collection values outside the controlled seven-key allowlist", () => {
+    expect(parseRecipeLibraryUrlState(new URLSearchParams("collection=ซอสและน้ำจิ้ม")).collection).toBe("all");
+    expect(parseRecipeLibraryUrlState(new URLSearchParams("collection=plating")).collection).toBe("plating");
   });
 });
 
@@ -89,10 +97,11 @@ describe("updateRecipeLibraryUrlState", () => {
       query: " stew ",
       view: "compact",
       mode: "manage",
+      collection: "unassigned",
     });
 
     expect(next.toString()).toBe(
-      "mode=manage&view=compact&q=stew&kind=prepared_recipe&status=waiting&stage=cook",
+      "mode=manage&view=compact&q=stew&kind=prepared_recipe&status=waiting&stage=cook&collection=unassigned",
     );
   });
 });

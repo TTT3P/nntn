@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import type { RecipeIdentity } from "../../domain/cookbook/types";
 import type { PrintCollection, PrintCollectionKey } from "./printCollections";
 import type { PrintSetMode } from "./printSetProjection";
@@ -49,7 +50,8 @@ export function PrintCollectionPicker({
       if (normalizedSearch === "") return true;
       return recipeChoiceLabel(recipe).toLocaleLowerCase("th").includes(normalizedSearch);
     });
-    return recipes.length === 0 ? [] : [{ ...collection, recipes }];
+    if (normalizedSearch !== "" && recipes.length === 0) return [];
+    return [{ ...collection, recipes }];
   });
 
   return (
@@ -104,7 +106,7 @@ export function PrintCollectionPicker({
             <details
               className="print-collection"
               key={collection.key}
-              open={activeCollectionKey === collection.key || normalizedSearch !== ""}
+              open={collection.recipes.length === 0 || activeCollectionKey === collection.key || normalizedSearch !== ""}
             >
               <summary>
                 <span aria-hidden="true">›</span>
@@ -112,7 +114,15 @@ export function PrintCollectionPicker({
                 <em>{collection.recipes.length}</em>
               </summary>
               <div className="print-collection__body">
-                <div className="print-collection__bulk-actions">
+                {collection.recipes.length === 0 ? (
+                  <p className="print-collection__empty">
+                    <span>หมวดนี้ยังไม่มีสูตร</span>
+                    <Link to={`/recipes?mode=manage&collection=${collection.key}`} aria-label={`ไปจัดการสูตร ${collection.label}`}>
+                      ไปจัดการสูตร
+                    </Link>
+                  </p>
+                ) : <>
+                  <div className="print-collection__bulk-actions">
                   <button
                     type="button"
                     aria-label={`เลือกทั้งหมด ${collection.label}`}
@@ -127,8 +137,8 @@ export function PrintCollectionPicker({
                   >
                     เอาออกทั้งหมด
                   </button>
-                </div>
-                <div className="print-collection__recipes">
+                  </div>
+                  <div className="print-collection__recipes">
                   {collection.recipes.map((recipe) => (
                     <label key={`${identityKey(recipe.recipeId)}:${JSON.stringify(recipe.recipeVersionId)}`}>
                       <input
@@ -139,7 +149,13 @@ export function PrintCollectionPicker({
                       {recipeChoiceLabel(recipe)}
                     </label>
                   ))}
-                </div>
+                  </div>
+                  {collection.key === "unassigned" && (
+                    <Link to="/recipes?mode=manage&collection=unassigned" aria-label={`จัดหมวดสูตร ${collection.recipes.length} สูตร`}>
+                      จัดหมวดสูตร {collection.recipes.length} สูตร
+                    </Link>
+                  )}
+                </>}
               </div>
             </details>
           ))}

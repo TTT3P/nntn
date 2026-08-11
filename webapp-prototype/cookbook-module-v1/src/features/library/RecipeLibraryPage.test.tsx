@@ -246,6 +246,20 @@ describe("RecipeLibraryPage", () => {
     expect(screen.queryByRole("group", { name: "รูปแบบการแสดงสูตร" })).not.toBeInTheDocument();
   });
 
+  test("filters Manage by an allowlisted print collection key", () => {
+    renderWithPrototype(<RecipeLibraryPage />, {
+      route: "/recipes?mode=manage&collection=unassigned",
+      snapshot: makeSnapshot({ recipes: [
+        recipe({ recipeId: "RCP-SA", name: "ซอสในหมวด", category: "ซอสและน้ำจิ้ม" }),
+        recipe({ recipeId: "RCP-OLD", name: "สูตรยังไม่จัดหมวด", category: "หมวดเดิมจากระบบเก่า" }),
+      ] }),
+    });
+
+    expect(screen.getAllByRole("link", { name: "แก้ไข สูตรยังไม่จัดหมวด" })).toHaveLength(2);
+    expect(screen.queryAllByRole("link", { name: "แก้ไข ซอสในหมวด" })).toHaveLength(0);
+    expect(screen.getByText("แสดง 1 จาก 2 สูตร")).toBeVisible();
+  });
+
   test("stores the view in the URL while preserving valid state and dropping unsupported parameters", async () => {
     const user = userEvent.setup();
     renderWithPrototype(<><RecipeLibraryPage /><CurrentLocation /></>, {

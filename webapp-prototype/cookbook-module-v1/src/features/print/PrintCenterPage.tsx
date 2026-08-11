@@ -523,6 +523,15 @@ export function PrintCenterPage({
     setSelectedKeys((current) => current.filter((key) => !collectionKeys.has(key)));
   }
 
+  function selectAllCollection(collectionKey: PrintCollectionKey): void {
+    const collectionKeys = collections.find(({ key }) => key === collectionKey)
+      ?.recipes.map(({ recipeId }) => identityKey(recipeId)) ?? [];
+    setSelectedKeys((current) => [
+      ...current,
+      ...collectionKeys.filter((key) => !current.includes(key)),
+    ]);
+  }
+
   function chooseOutput(next: OutputIntent): void {
     setOutputIntent(next);
     if (next === "booklet") {
@@ -566,7 +575,7 @@ export function PrintCenterPage({
               onChooseDaily={chooseDaily}
               onChooseManual={chooseManual}
               onToggleRecipe={toggleRecipe}
-              onSelectAll={chooseCollection}
+              onSelectAll={selectAllCollection}
               onClearCollection={clearCollection}
             />
 
@@ -600,8 +609,8 @@ export function PrintCenterPage({
                 disabled={printSetMode.kind !== "manual"}
                 onChange={(event) => setPrintSetMode({ kind: "manual", dependencyPolicy: event.target.value as DependencyPolicy })}
               >
-                <option value="reference">อ้างอิงชื่อและรหัสเท่านั้น</option>
-                <option value="include">แนบสูตรที่ต้องเตรียม</option>
+                <option value="reference">ใช้คู่มือเตรียมกลาง</option>
+                <option value="include">แนบของที่ต้องเตรียมครั้งเดียว</option>
               </select>
             </label>
 
@@ -681,7 +690,7 @@ export function PrintCenterPage({
             <div><strong>{outputIntent === "booklet" ? "เล่มคู่มือสูตรครัว" : outputIntent === "master" ? "A4 สูตรเต็ม" : "A5 ใบงาน"}</strong><span>ตรวจรายการและหน้ากระดาษก่อนพิมพ์</span></div>
             {projection !== null && (
               <div>
-                <span>{activeCollection?.label ?? "ชุดเลือกเอง"}</span>
+                <span>{activeCollection?.label ?? (printSetMode.kind === "daily" ? "ชุดงานวันนี้" : "ชุดเลือกเอง")}</span>
                 <span>{selectedRecipes.length} สูตร</span>
                 <span>{outputCount} {outputIntent === "booklet" ? "หน้าสูตร" : "แผ่น"}</span>
                 <span>อ้างอิงสูตรนอกหมวด {projection.externalReferences.length} สูตร</span>

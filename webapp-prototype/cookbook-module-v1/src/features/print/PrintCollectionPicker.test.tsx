@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { makeRecipe } from "../../test/builders";
 import { buildPrintCollections } from "./printCollections";
@@ -25,7 +26,12 @@ const collections = buildPrintCollections([
   { ...makeRecipe({ recipeId: "SAUCE-A", name: "ซอส ก" }), category: "ซอสและน้ำจิ้ม" },
   { ...makeRecipe({ recipeId: "SAUCE-B", name: "ซอส ข" }), category: "ซอสและน้ำจิ้ม" },
   { ...makeRecipe({ recipeId: "MENU-A", name: "เมนู ก", kind: "sellable_menu" }), category: "เมนูอาหาร" },
+  { ...makeRecipe({ recipeId: "LEGACY-A", name: "สูตรหมวดเดิม" }), category: "หมวดเดิมจากระบบเก่า" },
 ]);
+
+function renderPicker(ui: React.ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 function pickerProps() {
   return {
@@ -45,7 +51,7 @@ function pickerProps() {
 describe("PrintCollectionPicker", () => {
   test("exposes exactly one selected print-set action for collection, daily, and manual modes", () => {
     const props = pickerProps();
-    const view = render(<PrintCollectionPicker {...props} />);
+    const view = renderPicker(<PrintCollectionPicker {...props} />);
 
     function selectedActions() {
       return screen.getAllByRole("button").filter((button) => (
@@ -56,12 +62,12 @@ describe("PrintCollectionPicker", () => {
     expect(screen.getByRole("button", { name: "เลือกสูตรเอง" })).toHaveAttribute("aria-pressed", "true");
     expect(selectedActions()).toHaveLength(1);
 
-    view.rerender(<PrintCollectionPicker {...props} activeMode="daily" />);
+    view.rerender(<MemoryRouter><PrintCollectionPicker {...props} activeMode="daily" /></MemoryRouter>);
     expect(screen.getByRole("button", { name: "ชุดงานวันนี้" })).toHaveAttribute("aria-pressed", "true");
     expect(selectedActions()).toHaveLength(1);
 
     view.rerender(
-      <PrintCollectionPicker {...props} activeMode="collection" activeCollectionKey="sauce" />,
+      <MemoryRouter><PrintCollectionPicker {...props} activeMode="collection" activeCollectionKey="sauce" /></MemoryRouter>,
     );
     expect(screen.getByRole("button", { name: "พิมพ์ทั้งหมวด ซอสและน้ำจิ้ม 2 สูตร" })).toHaveAttribute("aria-pressed", "true");
     expect(selectedActions()).toHaveLength(1);
@@ -70,7 +76,7 @@ describe("PrintCollectionPicker", () => {
   test("offers all seven collection actions with derived counts and disables empty collections", async () => {
     const user = userEvent.setup();
     const props = pickerProps();
-    render(<PrintCollectionPicker {...props} />);
+    renderPicker(<PrintCollectionPicker {...props} />);
 
     expect(screen.getAllByRole("button", { name: /^พิมพ์ทั้งหมวด/u })).toHaveLength(7);
     expect(screen.getByRole("button", { name: "พิมพ์ทั้งหมวด ซอสและน้ำจิ้ม 2 สูตร" })).toBeEnabled();
@@ -88,7 +94,7 @@ describe("PrintCollectionPicker", () => {
   test("lets an operator select all, clear, and override individual recipes in the active collection", async () => {
     const user = userEvent.setup();
     const props = pickerProps();
-    render(
+    renderPicker(
       <PrintCollectionPicker
         {...props}
         activeMode="collection"
@@ -112,7 +118,7 @@ describe("PrintCollectionPicker", () => {
 
   test("shows an empty result when search does not match the active collection", async () => {
     const user = userEvent.setup();
-    render(<PrintCollectionPicker {...pickerProps()} activeCollectionKey="sauce" />);
+    renderPicker(<PrintCollectionPicker {...pickerProps()} activeCollectionKey="sauce" />);
 
     await user.type(screen.getByRole("searchbox", { name: "ค้นหาสูตร" }), "ไม่พบชื่อนี้");
 
@@ -121,7 +127,7 @@ describe("PrintCollectionPicker", () => {
   });
 
   test("keeps every new compact selection control at least 44 pixels tall", () => {
-    render(
+    renderPicker(
       <PrintCollectionPicker
         {...pickerProps()}
         activeMode="collection"
@@ -149,7 +155,7 @@ describe("PrintCollectionPicker", () => {
   });
 
   test("keeps interactive collection counts and help text at least 12 pixels", () => {
-    const view = render(
+    const view = renderPicker(
       <PrintCollectionPicker
         {...pickerProps()}
         activeMode="collection"
@@ -169,5 +175,24 @@ describe("PrintCollectionPicker", () => {
         : Number.parseFloat(fontSize);
       expect(pixels).toBeGreaterThanOrEqual(12);
     }
+  });
+
+  test("keeps empty collections visible with a filtered Recipe Management link", () => {
+    renderPicker(<PrintCollectionPicker {...pickerProps()} />);
+
+    expect(screen.getAllByText("หมวดนี้ยังไม่มีสูตร").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "ไปจัดการสูตร จัดจาน" })).toHaveAttribute(
+      "href",
+      "/recipes?mode=manage&collection=plating",
+    );
+  });
+
+  test("links the exact uncategorized count to its allowlisted management filter", () => {
+    renderPicker(<PrintCollectionPicker {...pickerProps()} />);
+
+    expect(screen.getByRole("link", { name: "จัดหมวดสูตร 1 สูตร" })).toHaveAttribute(
+      "href",
+      "/recipes?mode=manage&collection=unassigned",
+    );
   });
 });

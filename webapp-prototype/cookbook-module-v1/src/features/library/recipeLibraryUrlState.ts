@@ -1,3 +1,8 @@
+import {
+  STANDARD_PRINT_COLLECTIONS,
+  type PrintCollectionKey,
+} from "../print/printCollections";
+
 export type LibraryMode = "read" | "work" | "manage";
 export type LibraryView = "read" | "compact";
 export type RecipeKindFilter =
@@ -7,6 +12,7 @@ export type RecipeKindFilter =
   | "sub_recipe";
 export type RecipeStatusFilter = "all" | "ready" | "waiting";
 export type RecipeStageFilter = "all" | "prep" | "cook" | "service";
+export type RecipeCollectionFilter = "all" | PrintCollectionKey;
 
 export interface RecipeLibraryUrlState {
   mode: LibraryMode;
@@ -15,6 +21,7 @@ export interface RecipeLibraryUrlState {
   kind: RecipeKindFilter;
   status: RecipeStatusFilter;
   stage: RecipeStageFilter;
+  collection: RecipeCollectionFilter;
 }
 
 const modes = new Set<LibraryMode>(["work", "manage"]);
@@ -26,6 +33,9 @@ const kinds = new Set<RecipeKindFilter>([
 ]);
 const statuses = new Set<RecipeStatusFilter>(["ready", "waiting"]);
 const stages = new Set<RecipeStageFilter>(["prep", "cook", "service"]);
+const collections = new Set<PrintCollectionKey>(
+  STANDARD_PRINT_COLLECTIONS.map(({ key }) => key),
+);
 
 function allowlistedValue<T extends string>(
   value: string | null,
@@ -45,6 +55,7 @@ export function parseRecipeLibraryUrlState(
     kind: allowlistedValue(params.get("kind"), kinds, "all"),
     status: allowlistedValue(params.get("status"), statuses, "all"),
     stage: allowlistedValue(params.get("stage"), stages, "all"),
+    collection: allowlistedValue(params.get("collection"), collections, "all"),
   };
 }
 
@@ -75,6 +86,10 @@ export function updateRecipeLibraryUrlState(
       patch.stage === undefined
         ? existing.stage
         : allowlistedValue(patch.stage, stages, "all"),
+    collection:
+      patch.collection === undefined
+        ? existing.collection
+        : allowlistedValue(patch.collection, collections, "all"),
   };
 
   const next = new URLSearchParams();
@@ -84,5 +99,6 @@ export function updateRecipeLibraryUrlState(
   if (state.kind !== "all") next.set("kind", state.kind);
   if (state.status !== "all") next.set("status", state.status);
   if (state.stage !== "all") next.set("stage", state.stage);
+  if (state.collection !== "all") next.set("collection", state.collection);
   return next;
 }

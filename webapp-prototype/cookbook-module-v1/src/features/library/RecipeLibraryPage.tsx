@@ -8,6 +8,10 @@ import { useOptionalCookbookDocument } from "../cookbook/CookbookDocumentProvide
 import { encodeRecipeIdentity } from "../recipe/recipeRoute";
 import { deriveRecipeMediaCoverage } from "../recipe/recipeMediaCoverage";
 import { useOptionalKitchenSotDraft } from "../review/KitchenSotDraftProvider";
+import {
+  recipePrintCollectionKey,
+  STANDARD_PRINT_COLLECTIONS,
+} from "../print/printCollections";
 import { RecipeLibraryResults } from "./RecipeLibraryResults";
 import {
   parseRecipeLibraryUrlState,
@@ -110,12 +114,16 @@ export function RecipeLibraryPage() {
     if (state.status === "ready" && draft) return false;
     if (state.status === "waiting" && !draft) return false;
     if (state.stage !== "all" && recipe.workDocuments[state.stage as WorkStage] === undefined) return false;
+    if (state.collection !== "all" && recipePrintCollectionKey(recipe) !== state.collection) return false;
     return true;
   }).sort((left, right) => compareRecipes(left.recipe, right.recipe));
-  const hasActiveFilters = state.query !== "" || state.kind !== "all" || state.status !== "all" || state.stage !== "all";
+  const hasActiveFilters = state.query !== "" || state.kind !== "all" || state.status !== "all" || state.stage !== "all" || state.collection !== "all";
+  const collectionLabel = state.collection === "all"
+    ? null
+    : STANDARD_PRINT_COLLECTIONS.find(({ key }) => key === state.collection)?.label ?? null;
 
   function clearFilters() {
-    updateUrl({ query: "", kind: "all", status: "all", stage: "all" });
+    updateUrl({ query: "", kind: "all", status: "all", stage: "all", collection: "all" });
   }
 
   return (
@@ -158,12 +166,17 @@ export function RecipeLibraryPage() {
             <option value="cook">ปรุง</option>
             <option value="service">จัดเสิร์ฟ</option>
           </select></label>
+          <label>หมวดพิมพ์<select value={state.collection} onChange={(event) => updateUrl({ collection: event.target.value as RecipeLibraryUrlState["collection"] })}>
+            <option value="all">ทุกหมวด</option>
+            {STANDARD_PRINT_COLLECTIONS.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
+          </select></label>
         </div>}
         {hasActiveFilters && <div aria-label="ตัวกรองที่เลือก">
           {state.query !== "" && <button type="button" aria-label={`ลบตัวกรอง ค้นหา ${state.query}`} onClick={() => updateUrl({ query: "" })}>ค้นหา: {state.query} ×</button>}
           {state.kind !== "all" && <button type="button" aria-label={`ลบตัวกรอง ${KIND_LABELS[state.kind]}`} onClick={() => updateUrl({ kind: "all" })}>{KIND_LABELS[state.kind]} ×</button>}
           {state.status !== "all" && <button type="button" aria-label={`ลบตัวกรอง ${STATUS_LABELS[state.status]}`} onClick={() => updateUrl({ status: "all" })}>{STATUS_LABELS[state.status]} ×</button>}
           {state.stage !== "all" && <button type="button" aria-label={`ลบตัวกรอง ${STAGE_LABELS[state.stage]}`} onClick={() => updateUrl({ stage: "all" })}>{STAGE_LABELS[state.stage]} ×</button>}
+          {collectionLabel !== null && <button type="button" aria-label={`ลบตัวกรอง ${collectionLabel}`} onClick={() => updateUrl({ collection: "all" })}>{collectionLabel} ×</button>}
           <button type="button" onClick={clearFilters}>ล้างตัวกรอง</button>
         </div>}
         {state.mode !== "manage" && <div role="group" aria-label="รูปแบบการแสดงสูตร">

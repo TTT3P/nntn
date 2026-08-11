@@ -229,6 +229,8 @@ describe("PrintCenterPage", () => {
     expect(screen.getByRole("button", { name: /พิมพ์เป็นเล่ม/u })).toBeVisible();
     expect(screen.getByRole("button", { name: "พิมพ์ทั้งหมวด ซอสและน้ำจิ้ม 1 สูตร" })).toBeVisible();
     expect(screen.getByRole("button", { name: "พิมพ์ทั้งหมวด เมนูอาหาร 1 สูตร" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "ใช้คู่มือเตรียมกลาง" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "แนบของที่ต้องเตรียมครั้งเดียว" })).toBeVisible();
   });
 
   test("selects every sauce recipe with one collection action", async () => {
@@ -282,12 +284,43 @@ describe("PrintCenterPage", () => {
     expect(screen.getAllByRole("article", { name: /^ข้าวญี่ปุ่นหุงสุก ·/u })).toHaveLength(1);
     const proof = document.querySelector<HTMLElement>(".print-proof__header");
     expect(proof).not.toBeNull();
-    expect(within(proof!).getByText("ชุดเลือกเอง")).toBeVisible();
+    expect(within(proof!).getByText("ชุดงานวันนี้")).toBeVisible();
     expect(within(proof!).getByText("2 สูตร")).toBeVisible();
     expect(within(proof!).getByText("3 แผ่น")).toBeVisible();
     expect(within(proof!).getByText("อ้างอิงสูตรนอกหมวด 0 สูตร")).toBeVisible();
     expect(within(proof!).getByText("ไม่มีเอกสารซ้ำ")).toBeVisible();
     expect(view.container).not.toHaveTextContent(/cost|ต้นทุน/iu);
+  });
+
+  test("keeps daily mode and dependency deduplication when selecting a whole collection", async () => {
+    const user = userEvent.setup();
+    renderWithPrototype(<PrintCenterPage />, {
+      snapshot: makeSnapshot({ recipes: sharedRiceCollectionRecipes() }),
+    });
+
+    await user.click(screen.getByRole("button", { name: "ชุดงานวันนี้" }));
+    await user.click(screen.getByRole("button", { name: "เลือกทั้งหมด เมนูอาหาร" }));
+
+    expect(screen.getByRole("button", { name: "ชุดงานวันนี้" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getAllByRole("article", { name: /^ข้าวญี่ปุ่นหุงสุก ·/u })).toHaveLength(1);
+    const proof = document.querySelector<HTMLElement>(".print-proof__header");
+    expect(proof).not.toBeNull();
+    expect(within(proof!).getByText("ชุดงานวันนี้")).toBeVisible();
+    expect(within(proof!).getByText("ไม่มีเอกสารซ้ำ")).toBeVisible();
+  });
+
+  test("keeps manual mode when selecting a whole collection", async () => {
+    const user = userEvent.setup();
+    renderWithPrototype(<PrintCenterPage />, {
+      snapshot: makeSnapshot({ recipes: sharedRiceCollectionRecipes() }),
+    });
+
+    await user.click(screen.getByRole("button", { name: "เลือกทั้งหมด เมนูอาหาร" }));
+
+    expect(screen.getByRole("button", { name: "เลือกสูตรเอง" })).toHaveAttribute("aria-pressed", "true");
+    const proof = document.querySelector<HTMLElement>(".print-proof__header");
+    expect(proof).not.toBeNull();
+    expect(within(proof!).getByText("ชุดเลือกเอง")).toBeVisible();
   });
 
   test("searches by public code and keeps a visible selected-set summary", async () => {
