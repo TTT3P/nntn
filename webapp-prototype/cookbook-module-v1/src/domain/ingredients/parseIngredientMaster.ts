@@ -16,6 +16,7 @@ import type {
   UnitConversionEvidence,
   UsableYieldEvidence,
 } from "./types.ts";
+import { validateRecipeLineLink } from "./ingredientPolicy.ts";
 
 // Keep hostile transport input below the browser call-stack limit while returning the domain error.
 const MAX_RAW_DEPTH = 256;
@@ -348,8 +349,6 @@ function validateReferences(snapshot: IngredientMasterSnapshot): void {
     manifests.get(manifestId)?.sha256 !== sourceSha256 ||
     !sourceRecordKeys.has(JSON.stringify([manifestId, sourceSha256, sourceRecordId])))) invalid();
 
-  const specificationById = new Map(snapshot.specifications.map((specification) =>
-    [specification.specificationId, specification]));
   const mappedSpecifications = new Map<string, string>();
   for (const mapping of snapshot.mappings) {
     const previous = mappedSpecifications.get(mapping.stockItemId);
@@ -364,12 +363,11 @@ function validateReferences(snapshot: IngredientMasterSnapshot): void {
   }
 
   for (const link of snapshot.recipeLineLinks) {
-    if (link.state !== "ingredient") continue;
-    if (!ingredientIds.has(link.ingredientId)) invalid();
-    if (link.requiredSpecificationId !== null) {
-      const specification = specificationById.get(link.requiredSpecificationId);
-      if (specification?.ingredientId !== link.ingredientId) invalid();
-    }
+    const identityIssue = validateRecipeLineLink(link, snapshot).some(({ code }) =>
+      code === "UNKNOWN_INGREDIENT" ||
+      code === "UNKNOWN_SPECIFICATION" ||
+      code === "SPECIFICATION_INGREDIENT_MISMATCH");
+    if (identityIssue) invalid();
   }
 }
 
