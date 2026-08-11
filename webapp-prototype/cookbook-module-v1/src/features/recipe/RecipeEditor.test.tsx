@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, test, vi } from "vitest";
@@ -86,6 +86,72 @@ const v6Document: CookbookV6Document = {
     workDocuments: {
       prep: { stage: "prep", scalable: true, ingredientLineIds: ["rice"], stepIds: ["wash"] },
       cook: { stage: "cook", scalable: false, ingredientLineIds: ["rice", "beef"], stepIds: ["stir"] },
+    },
+    parentRecipeIds: [],
+    lineage: { source: "catalog", sourceRecipeId: null },
+  }, {
+    recipeId: "RCP-NO-STAGE",
+    code: "RCP-NO-STAGE",
+    name: "สูตรยังไม่มีใบงาน",
+    kind: "sellable_menu",
+    category: "เมนูอาหาร",
+    active: true,
+    reviewState: "",
+    sourceLocators: [],
+    yieldText: "",
+    operationalNotes: [],
+    methodDecisionNote: "",
+    ingredients: [{
+      lineId: "unstaged-line",
+      name: "วัตถุดิบเดิม",
+      kind: "ingredient",
+      amountText: "1",
+      unitText: "ชิ้น",
+      sourceDisplayText: "1 ชิ้น",
+      ingredientId: "ING-UNSTAGED",
+      componentRecipeId: null,
+      servingNote: "",
+      costBasisText: "",
+      decisionStatus: "",
+      selectedSource: null,
+      active: true,
+    }],
+    methodSteps: [],
+    blockers: [],
+    workDocuments: {},
+    parentRecipeIds: [],
+    lineage: { source: "catalog", sourceRecipeId: null },
+  }, {
+    recipeId: "RCP-PREP-ONLY",
+    code: "RCP-PREP-ONLY",
+    name: "สูตรใบงานเตรียม",
+    kind: "prepared_recipe",
+    category: "เตรียมเนื้อ",
+    active: true,
+    reviewState: "",
+    sourceLocators: [],
+    yieldText: "",
+    operationalNotes: [],
+    methodDecisionNote: "",
+    ingredients: [{
+      lineId: "prep-line",
+      name: "วัตถุดิบเตรียม",
+      kind: "ingredient",
+      amountText: "1",
+      unitText: "ชิ้น",
+      sourceDisplayText: "1 ชิ้น",
+      ingredientId: "ING-PREP",
+      componentRecipeId: null,
+      servingNote: "",
+      costBasisText: "",
+      decisionStatus: "",
+      selectedSource: null,
+      active: true,
+    }],
+    methodSteps: [],
+    blockers: [],
+    workDocuments: {
+      prep: { stage: "prep", scalable: false, ingredientLineIds: ["prep-line"], stepIds: [] },
     },
     parentRecipeIds: [],
     lineage: { source: "catalog", sourceRecipeId: null },
@@ -258,6 +324,66 @@ test("requires an explicit workstage for a new method step", async () => {
 
   const savedRecipe = vi.mocked(save).mock.calls[0]![0].recipes.find(({ recipeId }) => recipeId === "RCP-011");
   expect(savedRecipe?.methodSteps[2]).toMatchObject({ instruction: "จัดใส่จาน", stage: "service" });
+});
+
+test("defaults a new ingredient from a pending first workstage", async () => {
+  const user = userEvent.setup();
+  const { save } = renderEditor(undefined, "RCP-NO-STAGE");
+
+  const existingStages = await screen.findByRole("group", { name: "พิมพ์วัตถุดิบนี้ในใบงาน รายการ 1" });
+  await user.click(within(existingStages).getByRole("checkbox", { name: "เตรียม" }));
+  await user.click(screen.getByRole("button", { name: "เพิ่มวัตถุดิบ" }));
+
+  const newStages = screen.getByRole("group", { name: "พิมพ์วัตถุดิบนี้ในใบงาน รายการ 2" });
+  expect(within(newStages).getByRole("checkbox", { name: "เตรียม" })).toBeChecked();
+  await user.type(screen.getByLabelText("ชื่อวัตถุดิบ รายการ 2"), "วัตถุดิบใหม่");
+  await user.click(screen.getByRole("button", { name: "บันทึกสูตร" }));
+
+  const savedRecipe = vi.mocked(save).mock.calls[0]![0].recipes.find(({ recipeId }) => recipeId === "RCP-NO-STAGE");
+  const newLineId = savedRecipe?.ingredients.find(({ name }) => name === "วัตถุดิบใหม่")?.lineId;
+  expect(savedRecipe?.workDocuments.prep?.ingredientLineIds).toContain(newLineId);
+});
+
+test("does not default a new ingredient after a pending second workstage", async () => {
+  const user = userEvent.setup();
+  const { save } = renderEditor(undefined, "RCP-PREP-ONLY");
+
+  const existingStages = await screen.findByRole("group", { name: "พิมพ์วัตถุดิบนี้ในใบงาน รายการ 1" });
+  await user.click(within(existingStages).getByRole("checkbox", { name: "ปรุง" }));
+  await user.click(screen.getByRole("button", { name: "เพิ่มวัตถุดิบ" }));
+
+  const newStages = screen.getByRole("group", { name: "พิมพ์วัตถุดิบนี้ในใบงาน รายการ 2" });
+  expect(within(newStages).getByRole("checkbox", { name: "เตรียม" })).not.toBeChecked();
+  expect(within(newStages).getByRole("checkbox", { name: "ปรุง" })).not.toBeChecked();
+  expect(within(newStages).getByRole("checkbox", { name: "จัดเสิร์ฟ" })).not.toBeChecked();
+  await user.type(screen.getByLabelText("ชื่อวัตถุดิบ รายการ 2"), "ไม่กำหนดจุดงาน");
+  await user.click(screen.getByRole("button", { name: "บันทึกสูตร" }));
+
+  const savedRecipe = vi.mocked(save).mock.calls[0]![0].recipes.find(({ recipeId }) => recipeId === "RCP-PREP-ONLY");
+  const newLineId = savedRecipe?.ingredients.find(({ name }) => name === "ไม่กำหนดจุดงาน")?.lineId;
+  expect(savedRecipe?.workDocuments.prep?.ingredientLineIds).not.toContain(newLineId);
+  expect(savedRecipe?.workDocuments.cook?.ingredientLineIds).not.toContain(newLineId);
+});
+
+test("defaults a new ingredient from the current document after saving without remounting", async () => {
+  const user = userEvent.setup();
+  const { save } = renderEditor(undefined, "RCP-NO-STAGE");
+
+  const existingStages = await screen.findByRole("group", { name: "พิมพ์วัตถุดิบนี้ในใบงาน รายการ 1" });
+  await user.click(within(existingStages).getByRole("checkbox", { name: "เตรียม" }));
+  await user.click(screen.getByRole("button", { name: "บันทึกสูตร" }));
+  await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+
+  await user.click(screen.getByRole("button", { name: "เพิ่มวัตถุดิบ" }));
+  const newStages = screen.getByRole("group", { name: "พิมพ์วัตถุดิบนี้ในใบงาน รายการ 2" });
+  expect(within(newStages).getByRole("checkbox", { name: "เตรียม" })).toBeChecked();
+  await user.type(screen.getByLabelText("ชื่อวัตถุดิบ รายการ 2"), "เพิ่มหลังบันทึก");
+  await user.click(screen.getByRole("button", { name: "บันทึกสูตร" }));
+  await waitFor(() => expect(save).toHaveBeenCalledTimes(2));
+
+  const savedRecipe = vi.mocked(save).mock.calls[1]![0].recipes.find(({ recipeId }) => recipeId === "RCP-NO-STAGE");
+  const newLineId = savedRecipe?.ingredients.find(({ name }) => name === "เพิ่มหลังบันทึก")?.lineId;
+  expect(savedRecipe?.workDocuments.prep?.ingredientLineIds).toContain(newLineId);
 });
 
 test("fills a blank recipe with an ingredient, a standard unit and a method step", async () => {

@@ -20,7 +20,7 @@ type MethodDraft = Omit<CookbookV6MethodStep, "stage"> & {
   removed: boolean;
 };
 
-type RecipeDraft = Omit<CookbookV6Recipe, "ingredients" | "methodSteps"> & {
+type RecipeDraft = Omit<CookbookV6Recipe, "ingredients" | "methodSteps" | "workDocuments"> & {
   ingredients: IngredientDraft[];
   methodSteps: MethodDraft[];
 };
@@ -52,14 +52,24 @@ function unitDraft(unitText: string) {
   };
 }
 
-function ingredientWorkStages(recipe: CookbookV6Recipe, lineId: string): CookbookV6Stage[] {
+function ingredientWorkStages(workDocuments: CookbookV6Recipe["workDocuments"], lineId: string): CookbookV6Stage[] {
   return WORK_STAGE_OPTIONS.flatMap(({ value }) => (
-    recipe.workDocuments[value]?.ingredientLineIds.includes(lineId) ? [value] : []
+    workDocuments[value]?.ingredientLineIds.includes(lineId) ? [value] : []
   ));
 }
 
-function defaultIngredientWorkStages(recipe: Pick<CookbookV6Recipe, "workDocuments">): CookbookV6Stage[] {
-  const stages = WORK_STAGE_OPTIONS.flatMap(({ value }) => recipe.workDocuments[value] === undefined ? [] : [value]);
+function defaultIngredientWorkStages(original: CookbookV6Recipe, draft: RecipeDraft): CookbookV6Stage[] {
+  const effectiveStages = new Set<CookbookV6Stage>();
+  for (const { value } of WORK_STAGE_OPTIONS) {
+    if (original.workDocuments[value] !== undefined) effectiveStages.add(value);
+  }
+  for (const line of draft.ingredients) {
+    if (!line.removed) line.workStages.forEach((stage) => effectiveStages.add(stage));
+  }
+  for (const step of draft.methodSteps) {
+    if (!step.removed && step.stage !== "") effectiveStages.add(step.stage);
+  }
+  const stages = WORK_STAGE_OPTIONS.flatMap(({ value }) => effectiveStages.has(value) ? [value] : []);
   return stages.length === 1 ? stages : [];
 }
 
@@ -68,15 +78,16 @@ function sameStages(left: readonly CookbookV6Stage[], right: readonly CookbookV6
 }
 
 function toDraft(recipe: CookbookV6Recipe): RecipeDraft {
+  const { ingredients, methodSteps, workDocuments, ...recipeFields } = structuredClone(recipe);
   return {
-    ...structuredClone(recipe),
-    ingredients: recipe.ingredients.map((line) => ({
-      ...structuredClone(line),
+    ...recipeFields,
+    ingredients: ingredients.map((line) => ({
+      ...line,
       removed: false,
       ...unitDraft(line.unitText),
-      workStages: ingredientWorkStages(recipe, line.lineId),
+      workStages: ingredientWorkStages(workDocuments, line.lineId),
     })),
-    methodSteps: recipe.methodSteps.map((step) => ({ ...structuredClone(step), removed: false })),
+    methodSteps: methodSteps.map((step) => ({ ...step, removed: false })),
   };
 }
 
@@ -122,7 +133,7 @@ function buildEdits(original: CookbookV6Recipe, draft: RecipeDraft): CookbookV6E
           active: line.active,
         },
       });
-      const originalStages = ingredientWorkStages(original, line.lineId);
+      const originalStages = ingredientWorkStages(original.workDocuments, line.lineId);
       if (!sameStages(originalStages, line.workStages)) {
         edits.push({
           type: "ingredient-work-stages-update",
@@ -365,7 +376,7 @@ export function RecipeEditor() {
           ingredients: [...current.ingredients, {
             lineId: nextId("ingredient"), name: "", kind: "ingredient", amountText: "", unitText: "", sourceDisplayText: "",
             ingredientId: null, componentRecipeId: null, servingNote: "", costBasisText: "", decisionStatus: "", selectedSource: null,
-            active: true, removed: false, unitSelection: "", customUnit: "", workStages: defaultIngredientWorkStages(current),
+            active: true, removed: false, unitSelection: "", customUnit: "", workStages: defaultIngredientWorkStages(sourceRecipe, current),
           }],
         }))}>เพิ่มวัตถุดิบ</button></div>
         <div className="recipe-editor__list">{draft.ingredients.map((line, index) => {
