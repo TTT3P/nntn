@@ -3,11 +3,13 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { FixtureCookbookRepository } from "../../data/FixtureCookbookRepository";
+import type { CookbookDocumentClient } from "../../data/CookbookDocumentClient";
 import type {
   KitchenSotDraftClient,
   LoadedKitchenSotDraft,
 } from "../../data/KitchenSotDraftClient";
 import type { CookbookSnapshot } from "../../domain/cookbook/types";
+import type { CookbookV6Document } from "../../domain/cookbookV6/types";
 import { buildMediaIndex, buildPrintPlan } from "../../domain/print/printPlanner";
 import {
   parseKitchenSotDocument,
@@ -22,10 +24,12 @@ import {
   makeStepMediaLink,
   makeWorkStep,
 } from "../../test/builders";
+import { withOwnerConfirmedEggRecipe } from "../../test/ownerConfirmedEggRecipe";
 import { renderWithPrototype } from "../../test/renderWithPrototype";
 import { PrototypeContext, type PrototypeContextValue } from "../../prototype/PrototypeProvider";
 import fixture from "../../data/fixtures/first-set.json";
 import { KitchenSotDraftProvider } from "../review/KitchenSotDraftProvider";
+import { CookbookDocumentProvider } from "../cookbook/CookbookDocumentProvider";
 import { PrintCenterPage } from "./PrintCenterPage";
 import { WorkstationCard } from "./WorkstationCard";
 
@@ -129,19 +133,209 @@ function renderWithKitchenSotDocument(
   );
 }
 
+function v6PrintDocument(): CookbookV6Document {
+  return {
+    schemaVersion: "6.0.0",
+    generatedAt: "2026-08-10T00:00:00.000Z",
+    derivedFrom: { v5Path: "internal", v5Sha256: "a".repeat(64), catalogSha256: "b".repeat(64) },
+    recipes: [{
+      recipeId: "RCP-001", code: "RCP-001", name: "เมนูทดสอบ", kind: "sellable_menu",
+      category: "เมนู", active: true, reviewState: "confirmed_by_owner", sourceLocators: [],
+      yieldText: "", operationalNotes: [], methodDecisionNote: "",
+      ingredients: [{
+        lineId: "rice", name: "ข้าวสุก", kind: "ingredient", amountText: "199", unitText: "กรัม",
+        sourceDisplayText: "199 กรัม", ingredientId: null, componentRecipeId: null, servingNote: "ตัก 199 กรัม",
+        costBasisText: "ห้ามแสดงต้นทุนลับ", decisionStatus: "confirmed", selectedSource: null, active: true,
+      }],
+      methodSteps: [{ stepId: "service-step", stage: "service", instruction: "จัดจาน", order: 1 }],
+      blockers: [], workDocuments: { service: { stage: "service", scalable: false, ingredientLineIds: ["rice"], stepIds: ["service-step"] } },
+      parentRecipeIds: [], lineage: { source: "catalog", sourceRecipeId: null },
+    }],
+  };
+}
+
+function renderWithCookbookDocument(document: CookbookV6Document) {
+  const client: CookbookDocumentClient = {
+    load: vi.fn(async () => ({ document, baseSha256: "c".repeat(64), origin: "v6-draft" as const, path: "internal" })),
+    save: vi.fn(),
+  };
+  return render(
+    <PrototypeContext.Provider value={{
+      snapshot: firstSet, dirty: false, persistence: "session", dispatch: () => ({ ok: true }),
+      createSessionObjectUrl: () => "blob:unused", releaseSessionObjectUrl: () => undefined,
+      isSessionObjectUrl: () => false,
+    }}>
+      <CookbookDocumentProvider client={client} mediaSnapshot={firstSet}>
+        <MemoryRouter><PrintCenterPage initialRecipeIds={["RCP-001"]} /></MemoryRouter>
+      </CookbookDocumentProvider>
+    </PrototypeContext.Provider>,
+  );
+}
+
 describe("PrintCenterPage", () => {
+  test("presents the three output intents and groups recipes by editable category", () => {
+    renderWithPrototype(<PrintCenterPage />, {
+      snapshot: makeSnapshot({
+        recipes: [
+          { ...serviceRecipe({ recipeId: "RCP-156", name: "ซอสยากินิกุ", kind: "prepared_recipe" }), category: "ซอสและน้ำซุป" },
+          { ...serviceRecipe({ recipeId: "RCP-069", name: "ข้าวหน้าเนื้อยากินิกุ", kind: "sellable_menu" }), category: "เมนูขาย" },
+        ],
+      }),
+    });
+
+    expect(screen.getByRole("button", { name: /A4 สูตรเต็ม/u })).toBeVisible();
+    expect(screen.getByRole("button", { name: /A5 ใบงาน/u })).toBeVisible();
+    expect(screen.getByRole("button", { name: /พิมพ์เป็นเล่ม/u })).toBeVisible();
+    expect(screen.getByText("ซอสและน้ำซุป")).toBeVisible();
+    expect(screen.getByText("เมนูขาย")).toBeVisible();
+  });
+
+  test("searches by public code and keeps a visible selected-set summary", async () => {
+    const user = userEvent.setup();
+    renderWithPrototype(<PrintCenterPage />, {
+      snapshot: makeSnapshot({
+        recipes: [
+          serviceRecipe({ recipeId: "RCP-021", name: "ข้าวขยำเนื้อแดดเดียว" }),
+          serviceRecipe({ recipeId: "RCP-069", name: "ข้าวหน้าเนื้อยากินิกุ" }),
+        ],
+      }),
+    });
+
+    await user.type(screen.getByRole("searchbox", { name: "ค้นหาสูตร" }), "RCP-021");
+    expect(screen.getByRole("checkbox", { name: "ข้าวขยำเนื้อแดดเดียว · RCP-021" })).toBeVisible();
+    expect(screen.queryByRole("checkbox", { name: "ข้าวหน้าเนื้อยากินิกุ · RCP-069" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox", { name: "ข้าวขยำเนื้อแดดเดียว · RCP-021" }));
+    expect(screen.getByText("เลือกแล้ว 1 สูตร")).toBeVisible();
+    expect(screen.getByText("ข้าวขยำเนื้อแดดเดียว", { selector: ".print-selected-chip" })).toBeVisible();
+  });
+
+  test("booklet defaults to reference-only and includes dependency pages only when selected", async () => {
+    const user = userEvent.setup();
+    const sauce = serviceRecipe({
+      recipeId: "RCP-156",
+      recipeVersionId: "sauce-v1",
+      name: "ซอสยากินิกุ",
+      kind: "prepared_recipe",
+    });
+    const menu = serviceRecipe({
+      recipeId: "RCP-069",
+      recipeVersionId: "menu-v1",
+      name: "ข้าวหน้าเนื้อยากินิกุ",
+      lines: [makeIngredientLine({
+        lineKey: "sauce",
+        itemName: "ซอสยากินิกุ",
+        itemKind: "prepared_recipe",
+        componentRecipeId: "RCP-156",
+        sourceText: "30 กรัม",
+      })],
+    });
+    renderWithPrototype(<PrintCenterPage initialRecipeIds={["RCP-069"]} />, {
+      snapshot: makeSnapshot({ recipes: [menu, sauce] }),
+    });
+
+    await user.click(screen.getByRole("button", { name: /พิมพ์เป็นเล่ม/u }));
+    expect(document.querySelectorAll(".cookbook-page--recipe")).toHaveLength(1);
+    expect(document.querySelector(".workstation-sheet, .two-up-sheet")).toBeNull();
+
+    await user.selectOptions(screen.getByLabelText("สูตรประกอบ"), "include");
+    expect(document.querySelectorAll(".cookbook-page--recipe")).toHaveLength(2);
+    expect(screen.getByRole("article", { name: "ซอสยากินิกุ" })).toBeVisible();
+  });
+
+  test("selects the exact recipe from a detail-page print deeplink", () => {
+    const selected = serviceRecipe({
+      recipeId: "RCP-021",
+      recipeVersionId: "cookbook-v6:RCP-021",
+      name: "ข้าวขยำเนื้อแดดเดียว",
+    });
+    const other = serviceRecipe({
+      recipeId: "RCP-022",
+      recipeVersionId: "cookbook-v6:RCP-022",
+      name: "ข้าวหน้าเนื้ออีกสูตร",
+    });
+
+    renderWithPrototype(<PrintCenterPage />, {
+      snapshot: makeSnapshot({ recipes: [other, selected] }),
+      route: "/print?recipe=RCP-021",
+    });
+
+    expect(screen.getByRole("checkbox", { name: "ข้าวขยำเนื้อแดดเดียว · RCP-021" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "ข้าวหน้าเนื้ออีกสูตร · RCP-022" })).not.toBeChecked();
+    expect(screen.getAllByRole("article", { name: /ข้าวขยำเนื้อแดดเดียว/u }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("article", { name: /ข้าวหน้าเนื้ออีกสูตร/u })).not.toBeInTheDocument();
+  });
+
+  test("decodes a non-public stable identity from the print query without selecting a collision", () => {
+    const stringRecipe = serviceRecipe({ recipeId: "1", recipeVersionId: "string-v1", name: "สูตรรหัสข้อความ" });
+    const numericRecipe = serviceRecipe({ recipeId: 1, recipeVersionId: "number-v1", name: "สูตรรหัสตัวเลข" });
+
+    renderWithPrototype(<PrintCenterPage />, {
+      snapshot: makeSnapshot({ recipes: [numericRecipe, stringRecipe] }),
+      route: "/print?recipe=s~0031",
+    });
+
+    expect(screen.getByRole("checkbox", { name: "สูตรรหัสข้อความ" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "สูตรรหัสตัวเลข" })).not.toBeChecked();
+  });
+
+  test("ignores an invalid print recipe query", () => {
+    renderWithPrototype(<PrintCenterPage />, {
+      snapshot: makeSnapshot({ recipes: [serviceRecipe()] }),
+      route: "/print?recipe=s~broken",
+    });
+
+    expect(screen.getByRole("checkbox", { name: "ข้าวหน้าเนื้อตุ๋น" })).not.toBeChecked();
+    expect(screen.getByRole("status")).toHaveTextContent("เลือกอย่างน้อยหนึ่งสูตร");
+  });
+
+  test("prefers the current cookbook projection and excludes cost basis", async () => {
+    const view = renderWithCookbookDocument(v6PrintDocument());
+
+    expect(await screen.findByText("199 กรัม")).toBeVisible();
+    expect(view.container).not.toHaveTextContent("ห้ามแสดงต้นทุนลับ");
+  });
+
+  test("keeps technical implementation language out of normal print copy", async () => {
+    const view = renderWithCookbookDocument(v6PrintDocument());
+    await screen.findByRole("heading", { name: "ศูนย์การพิมพ์" });
+
+    expect(view.container.textContent).not.toMatch(/\b(?:AI|Prototype|Mock|V4|V5|V6|schema|source|review|blocker|provenance|candidate|Supabase|gateway|snapshot|local[- ]session|session)\b/iu);
+    expect(view.container).toHaveTextContent("สถานะสูตร: พร้อมใช้");
+  });
+
   test("uses the loaded V5 raw document instead of the stale read projection", async () => {
     const document = parseKitchenSotDocument(fixture);
     const rice = document.recipes.find(({ recipe_id }) => recipe_id === 165)!.items
       .find(({ item_name }) => item_name === "ข้าวหอมมะลิหุงสุก")!;
-    rice.candidate_text = "199 กรัม จาก V5";
+    rice.candidate_text = "199 กรัม ฉบับล่าสุด";
 
     renderWithKitchenSotDocument(document, [165]);
 
-    expect(await screen.findByText("ข้อมูลสูตร: V5 draft ในเครื่อง")).toBeVisible();
-    expect(screen.getByText("199 กรัม จาก V5")).toBeVisible();
+    expect(await screen.findByText("199 กรัม ฉบับล่าสุด")).toBeVisible();
     expect(screen.queryByText("180 กรัม")).not.toBeInTheDocument();
     expect(screen.getAllByRole("checkbox")).toHaveLength(18);
+  });
+
+  test("prints the owner-confirmed egg recipe as one non-empty DRAFT card", async () => {
+    const document = withOwnerConfirmedEggRecipe(parseKitchenSotDocument(fixture));
+    renderWithKitchenSotDocument(document, [18]);
+
+    expect(await screen.findByRole("article", { name: /ไข่ข้น/u })).toBeVisible();
+    expect(screen.getAllByRole("checkbox")).toHaveLength(19);
+    const cards = await screen.findAllByRole("article", {
+      name: /ไข่ข้น · ครัวปรุง/u,
+    });
+    expect(cards).toHaveLength(1);
+    const card = cards[0]!;
+    expect(within(card).getByText("สถานะสูตร: ข้อมูลยังไม่ครบ")).toBeVisible();
+    expect(within(card).getByText("2 ฟอง")).toBeVisible();
+    expect(within(card).getByText("ครึ่งช้อนชา (2.5g)")).toBeVisible();
+    expect(card.querySelectorAll(".workstation-steps > li")).toHaveLength(0);
+    expect(within(card).queryByRole("row", { name: /น้ำปลาทิพรส/u }))
+      .not.toBeInTheDocument();
+    expect(within(card).queryByRole("row", { name: /ผงชูรส/u }))
+      .not.toBeInTheDocument();
   });
 
   test("does not print a removed dependency but still prints the same recipe where it remains active", async () => {
@@ -150,7 +344,7 @@ describe("PrintCenterPage", () => {
       [156],
     );
 
-    await screen.findByText("ข้อมูลสูตร: V5 draft ในเครื่อง");
+    await screen.findByRole("heading", { name: "ศูนย์การพิมพ์" });
     expect(screen.queryByRole("article", { name: /ซอสอเนกประสงค์/u }))
       .not.toBeInTheDocument();
     removed.unmount();
@@ -167,8 +361,8 @@ describe("PrintCenterPage", () => {
     const cards = await screen.findAllByRole("article", { name: /ข้าวหน้าเนื้อยากินิกุ/u });
     expect(cards.length).toBeGreaterThan(0);
     for (const card of cards) {
-      expect(within(card).getByText("สถานะสูตร: ฉบับร่าง")).toBeVisible();
-      expect(within(card).queryByText("สถานะสูตร: พร้อมตามเกณฑ์พิมพ์"))
+      expect(within(card).getByText("สถานะสูตร: ข้อมูลยังไม่ครบ")).toBeVisible();
+      expect(within(card).queryByText("สถานะสูตร: พร้อมใช้"))
         .not.toBeInTheDocument();
     }
   });
@@ -229,14 +423,14 @@ describe("PrintCenterPage", () => {
         name: new RegExp(`${recipe.recipe_name} · ผลิตซอสและของเตรียม`, "u"),
       });
       expect(cards).toHaveLength(recipeId === 2 ? 2 : 1);
-      expect(within(cards[0]!).getByText("สถานะสูตร: ฉบับร่าง")).toBeVisible();
+      expect(within(cards[0]!).getByText("สถานะสูตร: ข้อมูลยังไม่ครบ")).toBeVisible();
     },
   );
 
   test("defaults to an automatic A5 workstation recommendation", () => {
     renderWithPrototype(<PrintCenterPage initialRecipeIds={[165]} />, { snapshot: firstSet });
 
-    expect(screen.getByText("ตัวอย่าง A5 แนวนอนสำหรับจุดงาน · แนะนำอัตโนมัติ")).toBeVisible();
+    expect(screen.getByText("จัดชุดใบงาน A5 หรือ A4 สำหรับพิมพ์หน้าครัว")).toBeVisible();
     expect(document.querySelectorAll(".workstation-sheet")).toHaveLength(10);
     const sheet = document.querySelector(".workstation-sheet");
     expect(sheet).toHaveAttribute("data-page-name", "workstation");
@@ -256,13 +450,13 @@ describe("PrintCenterPage", () => {
 
     const choices = screen.getAllByRole("checkbox");
     expect(choices.map((choice) => choice.parentElement?.textContent)).toEqual([
-      "สูตร ก · รหัส 1",
-      "สูตร ข · รหัส 2",
+      "สูตร ก",
+      "สูตร ข",
     ]);
-    expect(screen.getByRole("button", { name: "พิมพ์ชุดเอกสาร" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "พิมพ์ชุดที่เลือก" })).toBeDisabled();
 
-    await user.click(screen.getByRole("checkbox", { name: "สูตร ก · รหัส 1" }));
-    expect(screen.getByRole("button", { name: "พิมพ์ชุดเอกสาร" })).toBeEnabled();
+    await user.click(screen.getByRole("checkbox", { name: "สูตร ก" }));
+    expect(screen.getByRole("button", { name: "พิมพ์ชุดที่เลือก" })).toBeEnabled();
   });
 
   test("filters the pack to service documents", async () => {
@@ -303,7 +497,7 @@ describe("PrintCenterPage", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent("ตัวคูณต้องเป็นจำนวนเต็มตั้งแต่ 1 ขึ้นไป");
     expect(document.querySelector(".workstation-sheet, .two-up-sheet")).toBeNull();
-    expect(screen.getByRole("button", { name: "พิมพ์ชุดเอกสาร" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "พิมพ์ชุดที่เลือก" })).toBeDisabled();
   });
 
   test("renders ordered images and complete operational annotations beside one step", () => {
@@ -338,7 +532,7 @@ describe("PrintCenterPage", () => {
       "ภาพสอง",
       "ภาพสาม",
     ]);
-    expect(within(step!).getByText("DEMO · ภาพตัวอย่าง ยังไม่ยืนยัน")).toBeVisible();
+    expect(within(step!).getByText("ภาพตัวอย่าง · ยังไม่ยืนยัน")).toBeVisible();
     expect(within(step!).getByText("ก่อนทำ")).toBeVisible();
     expect(within(step!).getByText("DEMO — ภาพเริ่มงาน")).toBeVisible();
     expect(within(step!).getByText("180 กรัม")).toBeVisible();
@@ -513,7 +707,7 @@ describe("PrintCenterPage", () => {
 
     renderWithRawSnapshot(snapshot);
 
-    expect(screen.getByText("ชื่อที่จับครั้งเดียว")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "ชื่อที่จับครั้งเดียว" })).toBeVisible();
     expect(recipesReads).toBe(1);
     expect(nameReads).toBe(1);
   });
@@ -619,9 +813,9 @@ describe("PrintCenterPage", () => {
       snapshot: makeSnapshot({ recipes: [serviceRecipe({ reviewState: "candidate" })] }),
     });
 
-    expect(screen.getByText("ตัวอย่างฉบับร่าง")).toBeVisible();
-    await user.selectOptions(screen.getByLabelText("สถานะตัวอย่าง"), "approved");
-    expect(screen.getByText("ตัวอย่างพร้อมพิมพ์แบบอนุมัติ")).toBeVisible();
+    expect(screen.getByText("ตรวจทานก่อนพิมพ์")).toBeVisible();
+    await user.selectOptions(screen.getByLabelText("ชุดที่ต้องการพิมพ์"), "approved");
+    expect(screen.getByText("พร้อมพิมพ์")).toBeVisible();
     expect(screen.queryByText("อนุมัติแล้ว")).not.toBeInTheDocument();
   });
 

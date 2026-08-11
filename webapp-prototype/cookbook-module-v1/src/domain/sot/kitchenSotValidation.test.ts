@@ -1,6 +1,10 @@
 import { describe, expect, test } from "vitest";
 import fixture from "../../data/fixtures/first-set.json";
-import { parseKitchenSotDocument, type KitchenSotDocument } from "./kitchenSotDocument";
+import {
+  parseKitchenSotDocument,
+  type KitchenSotDocument,
+} from "./kitchenSotDocument";
+import { ownerConfirmedEggRecipe } from "../../test/ownerConfirmedEggRecipe";
 import { applyKitchenSotEdit, buildV5Draft, type DerivedFrom } from "./kitchenSotEdits";
 import {
   InvalidKitchenSotTransitionError,
@@ -37,6 +41,53 @@ function permutations<T>(values: readonly T[]): T[][] {
 }
 
 describe("Kitchen SOT transition validation", () => {
+  test("allows an append-only owner-confirmed recipe while preserving the frozen V4 prefix", () => {
+    const source = sourceDocument();
+    const submitted = draft(source);
+    submitted.schema_version = "2.2.0-prototype-draft";
+    submitted.recipes.push(ownerConfirmedEggRecipe());
+
+    expect(() => validateKitchenSotTransition(source, null, submitted, derivedFrom)).not.toThrow();
+    expect(submitted.recipes.slice(0, source.recipes.length)).toEqual(source.recipes);
+  });
+
+  test("rejects duplicate, unconfirmed, reordered, or deleted owner-added recipes", () => {
+    const source = sourceDocument();
+
+    const duplicate = draft(source);
+    duplicate.schema_version = "2.2.0-prototype-draft";
+    const duplicateRecipe = ownerConfirmedEggRecipe();
+    duplicateRecipe.recipe_id = source.recipes[0]!.recipe_id;
+    duplicateRecipe.legacy_recipe_id = source.recipes[0]!.recipe_id;
+    duplicate.recipes.push(duplicateRecipe);
+    expect(() => validateKitchenSotTransition(source, null, duplicate, derivedFrom))
+      .toThrow(/recipe_id/u);
+
+    const unconfirmed = draft(source);
+    unconfirmed.schema_version = "2.2.0-prototype-draft";
+    const unconfirmedRecipe = ownerConfirmedEggRecipe();
+    unconfirmedRecipe.items[0]!.selected_source = null;
+    unconfirmed.recipes.push(unconfirmedRecipe);
+    expect(() => validateKitchenSotTransition(source, null, unconfirmed, derivedFrom))
+      .toThrow(/selected_source/u);
+
+    const previous = draft(source);
+    previous.schema_version = "2.2.0-prototype-draft";
+    previous.recipes.push(ownerConfirmedEggRecipe());
+    expect(() => validateKitchenSotTransition(source, null, previous, derivedFrom)).not.toThrow();
+
+    const reordered = buildV5Draft(previous, "2026-08-09T10:30:00.000Z", derivedFrom);
+    const ownerRecipe = reordered.recipes.pop()!;
+    reordered.recipes.unshift(ownerRecipe);
+    expect(() => validateKitchenSotTransition(source, previous, reordered, derivedFrom))
+      .toThrow(/recipe_id/u);
+
+    const deleted = buildV5Draft(previous, "2026-08-09T10:31:00.000Z", derivedFrom);
+    deleted.recipes.pop();
+    expect(() => validateKitchenSotTransition(source, previous, deleted, derivedFrom))
+      .toThrow(/schema_version|deleted/u);
+  });
+
   test("allows an unrelated first edit while grandfathering the inherited provenance gap", () => {
     const source = sourceDocument();
     const edited = applyKitchenSotEdit(source, { kind: "yield", recipeId: 162, value: "ค่าทดสอบใน temp vault" });

@@ -6,6 +6,7 @@ import { projectKitchenSotPrintSnapshot } from "../../domain/sot/kitchenSotPrint
 import { projectWorkDocuments, type ProjectedWorkDocument } from "../../domain/work/workDocuments";
 import { usePrototype } from "../../prototype/PrototypeProvider";
 import { StepMediaEditor } from "../media/StepMediaEditor";
+import { useOptionalCookbookDocument } from "../cookbook/CookbookDocumentProvider";
 import { decodeRecipeIdentity, encodeRecipeIdentity } from "../recipe/recipeRoute";
 import { deriveRecipeMediaCoverage } from "../recipe/recipeMediaCoverage";
 import { useOptionalKitchenSotDraft } from "../review/KitchenSotDraftProvider";
@@ -36,12 +37,6 @@ function parseRequestedStage(search: string): WorkStage | "all" | null {
   return stage === "prep" || stage === "cook" || stage === "service" || stage === "all"
     ? stage
     : null;
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error
-    ? `${error.name}: ${error.message}`
-    : "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ";
 }
 
 function sourceFact(line: IngredientLine): string | null {
@@ -118,15 +113,15 @@ function WorkDocumentView({
   return (
     <article aria-labelledby={`work-document-${document.recipeVersionId}-${document.stage}`}>
       <h4 id={`work-document-${document.recipeVersionId}-${document.stage}`}>{document.recipeName}</h4>
-      <p>{draft ? "DRAFT" : "พร้อมใช้งาน"}</p>
-      {document.blockers.length > 0 && <ul aria-label={`ตัวขวางในเอกสารของ ${document.recipeName}`}>{document.blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}</ul>}
+      <p className={draft ? "work-status work-status--waiting" : "work-status work-status--ready"}>{draft ? "ข้อมูลยังไม่ครบ" : "พร้อมใช้"}</p>
+      {document.blockers.length > 0 && <ul aria-label={`ข้อมูลที่ยังต้องเติมของ ${document.recipeName}`}>{document.blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}</ul>}
       <div aria-label={`สถานะรูปของ ${document.recipeName}`}>
         {media.missingMedia && <p>รูปขั้นตอนไม่ครบ</p>}
         {media.mediaReviewNeeded && <p>รูปต้องตรวจสอบ</p>}
-        {(media.missingMedia || media.mediaReviewNeeded) && <p>สถานะรูปไม่ทำให้เอกสารเป็น DRAFT</p>}
+        {(media.missingMedia || media.mediaReviewNeeded) && <p>สถานะรูปไม่เปลี่ยนความพร้อมของสูตร</p>}
       </div>
       {hasOperationalFacts && (
-        <section aria-label={`ข้อมูลใช้งานตามต้นฉบับของ ${document.recipeName}`}>
+        <section aria-label={`ข้อมูลใช้งานของ ${document.recipeName}`}>
           {document.operationalNotes.length > 0 && (
             <div>
               <h5>หมายเหตุการใช้งาน</h5>
@@ -136,7 +131,7 @@ function WorkDocumentView({
             </div>
           )}
           {document.yieldText !== null && (
-            <p style={{ whiteSpace: "pre-wrap" }}><strong>ผลผลิตตามต้นฉบับ</strong> <span>{document.yieldText}</span></p>
+            <p style={{ whiteSpace: "pre-wrap" }}><strong>ผลผลิต</strong> <span>{document.yieldText}</span></p>
           )}
           {document.methodDecisionNote !== null && (
             <p style={{ whiteSpace: "pre-wrap" }}><strong>ขอบเขตวิธีทำ</strong> <span>{document.methodDecisionNote}</span></p>
@@ -145,12 +140,12 @@ function WorkDocumentView({
       )}
       {document.ingredients.length > 0 && (
         <table>
-          <thead><tr><th>วัตถุดิบ</th><th>ปริมาณตามต้นฉบับ</th></tr></thead>
+          <thead><tr><th>วัตถุดิบ</th><th>ปริมาณ</th></tr></thead>
           <tbody>{document.ingredients.map((line) => (
             <tr key={line.lineKey}>
               <th scope="row">{line.itemName}</th>
               <td style={{ whiteSpace: "pre-wrap" }}>
-                <span>{sourceFact(line) ?? "ไม่ระบุในต้นฉบับ"}</span>
+                <span>{sourceFact(line) ?? "ยังไม่ระบุ"}</span>
                 {document.stage === "service" && line.servingNote !== null && (
                   <span style={{ display: "block" }}>{line.servingNote}</span>
                 )}
@@ -175,6 +170,7 @@ export function WorkStagePage() {
   const { recipeId: routeSegment } = useParams();
   const location = useLocation();
   const { snapshot: sessionSnapshot } = usePrototype();
+  const cookbookDocument = useOptionalCookbookDocument();
   const kitchenSotDraft = useOptionalKitchenSotDraft();
   const identity = routeSegment === undefined ? null : decodeRecipeIdentity(routeSegment);
 
@@ -187,7 +183,7 @@ export function WorkStagePage() {
     return (
       <section role="alert" aria-labelledby="work-stage-error-title">
         <h2 id="work-stage-error-title">จุดงานไม่ถูกต้อง</h2>
-        <p>เลือกจุดงาน prep, cook, service หรือ all เท่านั้น</p>
+        <p>เลือกจุดงานจากเมนูที่กำหนด</p>
         <Link to={`/work/${encodeRecipeIdentity(identity)}?stage=all`}>ดูทุกจุดงาน</Link>
       </section>
     );
@@ -199,7 +195,10 @@ export function WorkStagePage() {
   let snapshot = sessionSnapshot;
   let rawDraftById: ReadonlyMap<RecipeIdentity, boolean> | null = null;
   try {
-    if (kitchenSotDraft !== null) {
+    if (cookbookDocument !== null) {
+      snapshot = cookbookDocument.snapshot;
+      rawDraftById = cookbookDocument.recipeDraftById;
+    } else if (kitchenSotDraft !== null) {
       const projection = projectKitchenSotPrintSnapshot(
         kitchenSotDraft.document,
         sessionSnapshot,
@@ -228,7 +227,7 @@ export function WorkStagePage() {
     return (
       <section role="alert" aria-labelledby="work-document-error-title">
         <h2 id="work-document-error-title">สร้างเอกสารจุดงานไม่ได้</h2>
-        <p>{errorMessage(error)}</p>
+        <p>ข้อมูลสูตรที่เกี่ยวข้องยังไม่ครบ กรุณากลับไปตรวจสูตรอาหาร</p>
         <Link to="/recipes">กลับไปคลังสูตรอาหาร</Link>
       </section>
     );
@@ -239,7 +238,6 @@ export function WorkStagePage() {
       <header>
         <Link to={`/recipes/${encodeRecipeIdentity(recipe.recipeId)}`}>กลับไปหน้าสูตร</Link>
         <h2 id="work-stage-title">{recipe.name}</h2>
-        <p>แก้ไขรูปได้เฉพาะ session นี้</p>
       </header>
       <nav aria-label="เลือกจุดงาน">
         <ul>

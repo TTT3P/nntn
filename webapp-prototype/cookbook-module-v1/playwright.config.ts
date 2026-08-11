@@ -57,7 +57,7 @@ const connectOptions = wsEndpoint === undefined || wsEndpoint.length === 0
 export default defineConfig({
   testDir: "./tests",
   testMatch: /.*\.spec\.ts/,
-  testIgnore: "cookbook-draft-persistence.spec.ts",
+  testIgnore: ["cookbook-draft-persistence.spec.ts", "cookbook-v6-persistence.spec.ts"],
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -66,7 +66,7 @@ export default defineConfig({
   reporter: "list",
   outputDir: "node_modules/.cache/playwright-results",
   webServer: {
-    command: `npm run build && npm run preview -- --host ${host} --port ${String(port)} --strictPort`,
+    command: `node scripts/prepare-cookbook-v6-test-vault.mjs && ./node_modules/.bin/tsc -b && ./node_modules/.bin/vite build && NNTN_VAULT_ROOT=node_modules/.cache/cookbook-v6-e2e-vault ./node_modules/.bin/vite preview --host ${host} --port ${String(port)} --strictPort`,
     url: `http://${host}:${String(port)}${appBase}`,
     reuseExistingServer: false,
     timeout: 120_000,

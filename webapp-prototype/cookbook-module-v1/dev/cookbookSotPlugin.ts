@@ -1,8 +1,18 @@
 import { createHash, randomUUID } from "node:crypto";
 import { link, lstat, mkdir, open, readFile, realpath, rename, unlink, type FileHandle } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { isAbsolute, join, relative } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import type { Plugin } from "vite";
+import { parseRecipeCatalog } from "../src/domain/catalog/recipeCatalog.ts";
+import { migrateV5ToV6 } from "../src/domain/cookbookV6/migrateV5ToV6.ts";
+import { parseCookbookV6 } from "../src/domain/cookbookV6/parseCookbookV6.ts";
+import {
+  V6_ENDPOINT,
+  type CookbookV6ReadResponse,
+  type CookbookV6SaveRequest,
+  type CookbookV6SaveResponse,
+} from "../src/domain/cookbookV6/cookbookV6Transport.ts";
+import type { CookbookV6Document } from "../src/domain/cookbookV6/types.ts";
 import { parseKitchenSotDocument } from "../src/domain/sot/kitchenSotDocument.ts";
 import { validateKitchenSotTransition } from "../src/domain/sot/kitchenSotValidation.ts";
 import {
@@ -21,6 +31,11 @@ const V5_DIRECTORY_RELATIVE_PATH = "Operations/CookBook/sot/v5-draft";
 const V5_FILENAME = "kitchen-sot-first-set-v5-draft.json";
 const V5_RELATIVE_PATH = `${V5_DIRECTORY_RELATIVE_PATH}/${V5_FILENAME}`;
 const V5_LOCK_FILENAME = `.${V5_FILENAME}.lock`;
+const V6_DIRECTORY_RELATIVE_PATH = "Operations/CookBook/sot/v6-draft";
+const V6_FILENAME = "kitchen-cookbook-v6-draft.json";
+const V6_RELATIVE_PATH = `${V6_DIRECTORY_RELATIVE_PATH}/${V6_FILENAME}`;
+const CATALOG_PATH = resolve(process.cwd(), "src/data/catalog/recipe-catalog-85.json");
+const CROSSWALK_PATH = resolve(process.cwd(), "src/data/catalog/v5-recipe-crosswalk.json");
 const MAX_BODY_BYTES = 5 * 1024 * 1024;
 const LOCK_RETRY_MS = 10;
 
@@ -51,6 +66,10 @@ type LoadedDraft = Awaited<ReturnType<typeof loadDraft>>;
 
 function sha256(bytes: Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function isWithin(parent: string, child: string): boolean {
@@ -129,7 +148,7 @@ async function requireExactDirectory(path: string): Promise<void> {
   }
 }
 
-async function resolveDraftDirectory(vaultRoot: string, create: boolean): Promise<string> {
+async function resolveNamedDraftDirectory(vaultRoot: string, directoryName: "v5-draft" | "v6-draft", create: boolean): Promise<string> {
   const realVaultRoot = await realpath(vaultRoot);
   let currentDirectory = realVaultRoot;
   for (const component of ["Operations", "CookBook", "sot"]) {
@@ -137,7 +156,7 @@ async function resolveDraftDirectory(vaultRoot: string, create: boolean): Promis
     await requireExactDirectory(currentDirectory);
   }
 
-  const draftDirectory = join(currentDirectory, "v5-draft");
+  const draftDirectory = join(currentDirectory, directoryName);
   if (create) {
     try {
       await mkdir(draftDirectory);
@@ -148,6 +167,10 @@ async function resolveDraftDirectory(vaultRoot: string, create: boolean): Promis
   await requireExactDirectory(draftDirectory);
   if (!isWithin(realVaultRoot, draftDirectory)) throw new InvalidDraftError();
   return draftDirectory;
+}
+
+async function resolveDraftDirectory(vaultRoot: string, create: boolean): Promise<string> {
+  return resolveNamedDraftDirectory(vaultRoot, "v5-draft", create);
 }
 
 async function loadDraft(vaultRoot: string): Promise<{ bytes: Buffer; document: VerifiedSource["document"] }> {
@@ -255,6 +278,128 @@ async function writeDraft(
   return { bytes, sha256: sha256(bytes) };
 }
 
+interface V6Synthesis {
+  document: CookbookV6Document;
+  bytes: Buffer;
+  v5Sha256: string;
+  catalogSha256: string;
+}
+
+async function loadV6Synthesis(vaultRoot: string): Promise<V6Synthesis> {
+  const source = await loadVerifiedSource(vaultRoot);
+  const draft = await loadDraft(vaultRoot);
+  validateExistingDraft(source, draft);
+  const [catalogBytes, crosswalkBytes] = await Promise.all([
+    readFile(CATALOG_PATH),
+    readFile(CROSSWALK_PATH),
+  ]);
+  let catalogValue: unknown;
+  let crosswalkValue: unknown;
+  try {
+    catalogValue = JSON.parse(catalogBytes.toString("utf8")) as unknown;
+    crosswalkValue = JSON.parse(crosswalkBytes.toString("utf8")) as unknown;
+  } catch {
+    throw new InvalidDraftError();
+  }
+  const v5Sha256 = sha256(draft.bytes);
+  const catalogSha256 = sha256(catalogBytes);
+  let document: CookbookV6Document;
+  try {
+    document = migrateV5ToV6({
+      catalog: parseRecipeCatalog(catalogValue),
+      v5: draft.document,
+      crosswalk: crosswalkValue,
+      v5Sha256,
+      catalogSha256,
+      generatedAt: draft.document.generated_at,
+    });
+  } catch {
+    throw new InvalidDraftError();
+  }
+  return {
+    document,
+    bytes: Buffer.from(`${JSON.stringify(document, null, 2)}\n`, "utf8"),
+    v5Sha256,
+    catalogSha256,
+  };
+}
+
+function validateV6Lineage(document: CookbookV6Document, synthesis: V6Synthesis): void {
+  if (
+    document.derivedFrom.v5Path !== V5_RELATIVE_PATH ||
+    document.derivedFrom.v5Sha256 !== synthesis.v5Sha256 ||
+    document.derivedFrom.catalogSha256 !== synthesis.catalogSha256
+  ) {
+    throw new InvalidDraftError();
+  }
+}
+
+async function loadV6Draft(vaultRoot: string, synthesis: V6Synthesis): Promise<{ bytes: Buffer; document: CookbookV6Document }> {
+  try {
+    const directory = await resolveNamedDraftDirectory(vaultRoot, "v6-draft", false);
+    const expectedTarget = join(directory, V6_FILENAME);
+    const realTarget = await realpath(expectedTarget);
+    if (realTarget !== expectedTarget) throw new InvalidDraftError();
+    const bytes = await readFile(realTarget);
+    const document = parseCookbookV6(JSON.parse(bytes.toString("utf8")) as unknown);
+    validateV6Lineage(document, synthesis);
+    return { bytes, document };
+  } catch (error) {
+    if (isMissingFile(error)) throw new DraftNotFoundError();
+    if (error instanceof InvalidDraftError || error instanceof DraftNotFoundError) throw error;
+    throw new InvalidDraftError();
+  }
+}
+
+function parseV6SaveRequest(bytes: Buffer): CookbookV6SaveRequest {
+  let value: unknown;
+  try {
+    value = JSON.parse(bytes.toString("utf8")) as unknown;
+  } catch {
+    throw new InvalidDraftError();
+  }
+  if (!isRecord(value)) throw new InvalidDraftError();
+  try {
+    return {
+      base_sha256: typeof value.base_sha256 === "string" ? value.base_sha256 : "",
+      document: parseCookbookV6(value.document),
+    };
+  } catch {
+    throw new InvalidDraftError();
+  }
+}
+
+async function writeV6Draft(
+  directory: string,
+  document: CookbookV6Document,
+  openFile: typeof open,
+  renameFile: typeof rename,
+  unlinkFile: typeof unlink,
+): Promise<{ bytes: Buffer; sha256: string }> {
+  const targetPath = join(directory, V6_FILENAME);
+  try {
+    const existingTarget = await realpath(targetPath);
+    if (existingTarget !== targetPath) throw new InvalidDraftError();
+  } catch (error) {
+    if (!isMissingFile(error)) throw error;
+  }
+  const bytes = Buffer.from(`${JSON.stringify(document, null, 2)}\n`, "utf8");
+  const temporaryPath = join(directory, `.${V6_FILENAME}.${randomUUID()}.tmp`);
+  let handle: FileHandle | undefined;
+  try {
+    handle = await openFile(temporaryPath, "wx");
+    await handle.writeFile(bytes);
+    await handle.sync();
+    await handle.close();
+    await renameFile(temporaryPath, targetPath);
+  } catch {
+    await handle?.close().catch(() => undefined);
+    if (handle !== undefined) await unlinkFile(temporaryPath).catch(() => undefined);
+    throw new WriteFailedError();
+  }
+  return { bytes, sha256: sha256(bytes) };
+}
+
 interface WriteLock {
   release(): Promise<void>;
 }
@@ -300,10 +445,11 @@ async function acquireWriteLock(
   realDraftDirectory: string,
   afterOwnershipVerified: ((lockPath: string) => Promise<void>) | undefined,
   beforePublication: (() => Promise<void>) | undefined,
+  draftFilename = V5_FILENAME,
 ): Promise<WriteLock> {
-  const lockPath = join(realDraftDirectory, V5_LOCK_FILENAME);
+  const lockPath = join(realDraftDirectory, draftFilename === V5_FILENAME ? V5_LOCK_FILENAME : `.${draftFilename}.lock`);
   const owner: LockOwner = { pid: process.pid, token: randomUUID() };
-  const ownerPath = join(realDraftDirectory, `.${V5_FILENAME}.lock-owner-${owner.token}`);
+  const ownerPath = join(realDraftDirectory, `.${draftFilename}.lock-owner-${owner.token}`);
   let ownerHandle: FileHandle | undefined;
   try {
     ownerHandle = await open(ownerPath, "wx");
@@ -349,7 +495,7 @@ async function acquireWriteLock(
 
   return {
     async release() {
-      const quarantinedPath = join(realDraftDirectory, `.${V5_FILENAME}.lock-quarantine-${owner.token}`);
+      const quarantinedPath = join(realDraftDirectory, `.${draftFilename}.lock-quarantine-${owner.token}`);
       try {
         await rename(lockPath, quarantinedPath);
         const quarantinedIdentity = await lstat(quarantinedPath);
@@ -449,12 +595,72 @@ async function handlePut(
   sendJson(response, 200, body);
 }
 
+async function handleV6Put(
+  request: IncomingMessage,
+  response: ServerResponse,
+  options: CookbookSotPluginOptions,
+): Promise<void> {
+  const initialSynthesis = await loadV6Synthesis(options.vaultRoot);
+  const saveRequest = parseV6SaveRequest(await readBoundedBody(request));
+  validateV6Lineage(saveRequest.document, initialSynthesis);
+  let directory: string;
+  try {
+    directory = await resolveNamedDraftDirectory(options.vaultRoot, "v6-draft", true);
+  } catch (error) {
+    if (error instanceof InvalidDraftError) throw error;
+    throw new WriteFailedError();
+  }
+  const lock = await acquireWriteLock(
+    directory,
+    options.afterLockOwnershipVerified,
+    options.beforeLockPublication,
+    V6_FILENAME,
+  );
+  let saved: Awaited<ReturnType<typeof writeV6Draft>>;
+  try {
+    const synthesis = await loadV6Synthesis(options.vaultRoot);
+    validateV6Lineage(saveRequest.document, synthesis);
+    let previous: Awaited<ReturnType<typeof loadV6Draft>> | null;
+    try {
+      previous = await loadV6Draft(options.vaultRoot, synthesis);
+    } catch (error) {
+      if (error instanceof DraftNotFoundError) previous = null;
+      else throw error;
+    }
+    const currentBaseSha256 = previous === null ? sha256(synthesis.bytes) : sha256(previous.bytes);
+    requireMatchingPreconditions(request, saveRequest.base_sha256, currentBaseSha256);
+    saved = await writeV6Draft(
+      directory,
+      saveRequest.document,
+      options.openFile ?? open,
+      options.renameFile ?? rename,
+      options.unlinkFile ?? unlink,
+    );
+  } catch (error) {
+    try {
+      await lock.release();
+    } catch {
+      throw new WriteFailedError();
+    }
+    throw error;
+  }
+  await lock.release();
+  const body: CookbookV6SaveResponse = {
+    document: saveRequest.document,
+    sha256: saved.sha256,
+    base_sha256: saved.sha256,
+    generatedAt: saveRequest.document.generatedAt,
+    path: V6_RELATIVE_PATH,
+  };
+  sendJson(response, 200, body);
+}
+
 export function createCookbookSotRequestHandler(
   options: CookbookSotPluginOptions,
 ): CookbookSotRequestHandler {
   return async (request, response, next) => {
     const path = request.url?.split("?", 1)[0];
-    if (path !== V4_ENDPOINT && path !== V5_ENDPOINT) {
+    if (path !== V4_ENDPOINT && path !== V5_ENDPOINT && path !== V6_ENDPOINT) {
       next();
       return;
     }
@@ -468,6 +674,32 @@ export function createCookbookSotRequestHandler(
     }
 
     try {
+      if (path === V6_ENDPOINT && request.method === "PUT") {
+        await handleV6Put(request, response, options);
+        return;
+      }
+      if (path === V6_ENDPOINT) {
+        const synthesis = await loadV6Synthesis(options.vaultRoot);
+        let document = synthesis.document;
+        let bytes = synthesis.bytes;
+        let origin: CookbookV6ReadResponse["origin"] = "synthesized";
+        try {
+          const draft = await loadV6Draft(options.vaultRoot, synthesis);
+          document = draft.document;
+          bytes = draft.bytes;
+          origin = "v6-draft";
+        } catch (error) {
+          if (!(error instanceof DraftNotFoundError)) throw error;
+        }
+        const body: CookbookV6ReadResponse = {
+          document,
+          base_sha256: sha256(bytes),
+          origin,
+          path: V6_RELATIVE_PATH,
+        };
+        sendJson(response, 200, body);
+        return;
+      }
       if (path === V5_ENDPOINT && request.method === "PUT") {
         await handlePut(request, response, options);
         return;
@@ -519,6 +751,9 @@ export function cookbookSotPlugin(options: CookbookSotPluginOptions): Plugin {
   return {
     name: "cookbook-sot",
     configureServer(server) {
+      server.middlewares.use(createCookbookSotRequestHandler(options));
+    },
+    configurePreviewServer(server) {
       server.middlewares.use(createCookbookSotRequestHandler(options));
     },
   };

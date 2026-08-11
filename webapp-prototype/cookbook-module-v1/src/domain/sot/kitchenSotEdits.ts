@@ -231,7 +231,9 @@ export function buildV5Draft(
   requireIsoTimestamp(generatedAt, "generatedAt");
   requireText(derivedFrom.sha256, "derivedFrom.sha256");
   const draft = cloneKitchenSotDocument(working);
-  draft.schema_version = "2.1.0-prototype-draft";
+  draft.schema_version = working.schema_version === "2.2.0-prototype-draft"
+    ? "2.2.0-prototype-draft"
+    : "2.1.0-prototype-draft";
   draft.generated_at = generatedAt;
   draft.derived_from = structuredClone(derivedFrom) as unknown as KitchenSotDocument["derived_from"];
   return draft;

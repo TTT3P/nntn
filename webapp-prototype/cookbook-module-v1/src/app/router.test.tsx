@@ -1,148 +1,89 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import fixture from "../data/fixtures/first-set.json";
-import type { KitchenSotDraftClient } from "../data/KitchenSotDraftClient";
-import { parseKitchenSotDocument } from "../domain/sot/kitchenSotDocument";
+import type { CookbookDocumentClient } from "../data/CookbookDocumentClient";
+import type { CookbookV6Document } from "../domain/cookbookV6/types";
+import { CookbookDocumentProvider } from "../features/cookbook/CookbookDocumentProvider";
 import { PrototypeProvider } from "../prototype/PrototypeProvider";
 import { makeRecipe, makeSnapshot } from "../test/builders";
 import { AppRoutes } from "./router";
 
 afterEach(cleanup);
 
+function productDocument(): CookbookV6Document {
+  return {
+    schemaVersion: "6.0.0",
+    generatedAt: "2026-08-10T00:00:00.000Z",
+    derivedFrom: { v5Path: "draft.json", v5Sha256: "a".repeat(64), catalogSha256: "b".repeat(64) },
+    recipes: [{
+      recipeId: "RCP-011", code: "RCP-011", name: "ข้าวเนื้อสับคั่วน้ำปลาไข่ข้น", kind: "sellable_menu", category: "เมนูข้าว",
+      active: true, reviewState: "", sourceLocators: [], yieldText: "", operationalNotes: [], methodDecisionNote: "",
+      ingredients: [], methodSteps: [], blockers: [], workDocuments: {}, parentRecipeIds: [], lineage: { source: "catalog", sourceRecipeId: null },
+    }],
+  };
+}
+
+function renderProductRoute(path: string) {
+  const document = productDocument();
+  const client: CookbookDocumentClient = {
+    load: vi.fn(async () => ({ document, baseSha256: "c".repeat(64), origin: "synthesized" as const, path: "draft.json" })),
+    save: vi.fn(),
+  };
+  return render(
+    <PrototypeProvider initialSnapshot={makeSnapshot({ recipes: [] })}>
+      <CookbookDocumentProvider client={client} mediaSnapshot={makeSnapshot({ recipes: [], media: [], stepMedia: [] })}>
+        <MemoryRouter initialEntries={[path]}><AppRoutes /></MemoryRouter>
+      </CookbookDocumentProvider>
+    </PrototypeProvider>,
+  );
+}
+
 describe("AppRoutes", () => {
-  test("passes the durable client only to Source Review", async () => {
-    const document = parseKitchenSotDocument(fixture);
-    const client: KitchenSotDraftClient = {
-      load: vi.fn<KitchenSotDraftClient["load"]>(async () => ({
-        document,
-        origin: "v4",
-        sourcePath: "Operations/CookBook/sot/v4-2026-08-05/source/kitchen-sot-first-set-v2.json",
-        sourceSha256: "a".repeat(64),
-        baseSha256: "b".repeat(64),
-      })),
-      save: vi.fn(),
-    };
-
-    render(
-      <PrototypeProvider initialSnapshot={makeSnapshot()}>
-        <MemoryRouter initialEntries={["/source-review"]}>
-          <AppRoutes draftClient={client} />
-        </MemoryRouter>
-      </PrototypeProvider>,
-    );
-
-    expect(await screen.findByText("18 สูตร")).toBeVisible();
-    expect(client.load).toHaveBeenCalledTimes(1);
-  });
-
-  test("keeps the projected repository route independent from the durable client", () => {
-    const client: KitchenSotDraftClient = {
-      load: vi.fn(),
-      save: vi.fn(),
-    };
-
-    render(
-      <PrototypeProvider initialSnapshot={makeSnapshot()}>
-        <MemoryRouter initialEntries={["/recipes"]}>
-          <AppRoutes draftClient={client} />
-        </MemoryRouter>
-      </PrototypeProvider>,
-    );
-
-    expect(screen.getByRole("heading", { name: "คลังสูตรอาหาร" })).toBeInTheDocument();
-    expect(client.load).not.toHaveBeenCalled();
-  });
-
-  test("mounts the real Print Center inside the app routes", () => {
-    render(
-      <PrototypeProvider initialSnapshot={makeSnapshot()}>
-        <MemoryRouter initialEntries={["/print"]}>
-          <AppRoutes />
-        </MemoryRouter>
-      </PrototypeProvider>,
-    );
-
-    expect(screen.getByRole("heading", { name: "ศูนย์การพิมพ์" })).toBeInTheDocument();
-    expect(screen.getByText("ตัวอย่าง A5 แนวนอนสำหรับจุดงาน · แนะนำอัตโนมัติ")).toBeInTheDocument();
-    expect(screen.queryByText(/หน้าจอชั่วคราว/)).not.toBeInTheDocument();
+  test("redirects the product root to the Cookbook role center", async () => {
+    renderProductRoute("/");
+    expect(await screen.findByRole("heading", { name: "ภาพรวม Cookbook" })).toBeVisible();
+    expect(screen.getByRole("navigation", { name: "เมนูหลัก" })).toBeVisible();
+    expect(screen.getByLabelText("1 สูตรทั้งหมด")).toBeVisible();
+    expect(screen.getByLabelText("1 สูตรรอข้อมูล")).toBeVisible();
   });
 
   test.each([
-    ["/source-review", "ตรวจสอบแหล่งข้อมูล"],
-    ["/work/159?stage=all", "ข้าวหน้าเนื้อยากินิกุ"],
-  ])("renders the real review/work page for %s", (path, heading) => {
+    ["/recipes", "สูตรอาหาร"],
+    ["/recipes/RCP-011", "ข้าวเนื้อสับคั่วน้ำปลาไข่ข้น"],
+    ["/recipes/RCP-011/edit", "แก้ไขสูตร"],
+  ])("renders the product route %s", async (path, heading) => {
+    renderProductRoute(path);
+    expect(await screen.findByRole("heading", { name: heading })).toBeVisible();
+  });
+
+  test("keeps the operational Work page available", () => {
     render(
-      <PrototypeProvider
-        initialSnapshot={makeSnapshot({
-          recipes: [
-            makeRecipe({
-              recipeId: 159,
-              name: "ข้าวหน้าเนื้อยากินิกุ",
-              reviewState: "candidate",
-            }),
-          ],
-        })}
-      >
-        <MemoryRouter initialEntries={[path]}>
-          <AppRoutes />
-        </MemoryRouter>
+      <PrototypeProvider initialSnapshot={makeSnapshot({ recipes: [makeRecipe({ recipeId: 159, name: "ข้าวหน้าเนื้อยากินิกุ" })] })}>
+        <MemoryRouter initialEntries={["/work/159?stage=all"]}><AppRoutes /></MemoryRouter>
       </PrototypeProvider>,
     );
+    expect(screen.getByRole("heading", { level: 2, name: "ข้าวหน้าเนื้อยากินิกุ" })).toBeVisible();
+  });
 
-    expect(screen.getByRole("heading", { level: 2, name: heading })).toBeInTheDocument();
-    expect(screen.queryByText(/หน้าจอชั่วคราว/)).not.toBeInTheDocument();
+  test("keeps the Print Center available", () => {
+    render(<PrototypeProvider initialSnapshot={makeSnapshot()}><MemoryRouter initialEntries={["/print"]}><AppRoutes /></MemoryRouter></PrototypeProvider>);
+    expect(screen.getByRole("heading", { name: "ศูนย์การพิมพ์" })).toBeVisible();
   });
 
   test.each([
-    ["/recipes", "คลังสูตรอาหาร"],
-    ["/recipes/159", "ข้าวหน้าเนื้อยากินิกุ"],
-  ])("renders the real recipe page for %s", (path, heading) => {
-    render(
-      <PrototypeProvider
-        initialSnapshot={makeSnapshot({
-          recipes: [
-            makeRecipe({
-              recipeId: 159,
-              name: "ข้าวหน้าเนื้อยากินิกุ",
-            }),
-          ],
-        })}
-      >
-        <MemoryRouter initialEntries={[path]}>
-          <AppRoutes />
-        </MemoryRouter>
-      </PrototypeProvider>,
-    );
-
-    expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
-    expect(screen.queryByText(/หน้าจอชั่วคราว/)).not.toBeInTheDocument();
+    ["/branches", "สาขาและเมนู"],
+    ["/knowledge", "Measurement Knowledge"],
+    ["/settings", "ตั้งค่า Cookbook"],
+  ])("renders the ERP module route %s without fake records", async (path, heading) => {
+    renderProductRoute(path);
+    expect(await screen.findByRole("heading", { name: heading })).toBeVisible();
+    expect(document.body).not.toHaveTextContent(/ยอดขายวันนี้|สาขาสยาม|อัปเดตเมื่อ 5 นาที|฿\d/u);
   });
 
-  test("redirects the root route to the recipe library", async () => {
-    render(
-      <PrototypeProvider initialSnapshot={makeSnapshot()}>
-        <MemoryRouter initialEntries={["/"]}>
-          <AppRoutes />
-        </MemoryRouter>
-      </PrototypeProvider>,
-    );
-
-    expect(
-      await screen.findByRole("heading", { name: "คลังสูตรอาหาร" }),
-    ).toBeInTheDocument();
-  });
-
-  test("renders an accessible not-found placeholder for an unknown route", () => {
-    render(
-      <MemoryRouter initialEntries={["/not-an-approved-route"]}>
-        <AppRoutes />
-      </MemoryRouter>,
-    );
-
-    expect(
-      screen.getByRole("heading", { name: "ไม่พบหน้าที่ต้องการ" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/หน้าจอชั่วคราว/)).toBeInTheDocument();
+  test.each(["/source-review", "/not-a-product-route"])("renders a clean not-found page for %s", (path) => {
+    render(<MemoryRouter initialEntries={[path]}><AppRoutes /></MemoryRouter>);
+    expect(screen.getByRole("heading", { name: "ไม่พบหน้าที่ต้องการ" })).toBeVisible();
+    expect(screen.getByText("ตรวจสอบที่อยู่แล้วลองอีกครั้ง")).toBeVisible();
+    expect(document.body).not.toHaveTextContent(/ชั่วคราว|source.review|Prototype/i);
   });
 });

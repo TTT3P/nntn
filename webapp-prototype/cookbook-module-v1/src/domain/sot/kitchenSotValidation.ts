@@ -29,6 +29,26 @@ const ITEM_MUTABLE = new Set([
   "source_values",
 ]);
 const BLOCKER_MUTABLE = new Set(["resolved", "resolved_note", "resolved_at"]);
+const OWNER_RECIPE_SCHEMA_VERSION = "2.2.0-prototype-draft";
+const OWNER_RECIPE_KEY_ORDER = [
+  "recipe_id",
+  "legacy_recipe_id",
+  "recipe_version_id",
+  "recipe_name",
+  "recipe_type",
+  "parent_recipe_ids",
+  "review_state",
+  "source_locators",
+  "source_section_mappings",
+  "items",
+  "method_candidate_text",
+  "method_selected_source",
+  "method_decision_note",
+  "yield_candidate_text",
+  "operational_notes",
+  "blockers",
+  "work_documents",
+] as const;
 
 const OWNER_NA_PREFIX = "เจ้าของยืนยันว่าไม่ต้องมีวิธีทำ (N/A):";
 
@@ -60,6 +80,45 @@ function jsonEqual(left: JsonValue | undefined, right: JsonValue | undefined): b
 function requireIsoTimestamp(value: unknown, field: string): void {
   if (!isCanonicalKitchenSotTimestamp(value)) {
     fail(field, "must be a canonical UTC ISO timestamp with millisecond precision");
+  }
+}
+
+function identityKey(identity: KitchenSotRecipe["recipe_id"]): string {
+  return typeof identity === "number"
+    ? `number:${String(identity)}`
+    : `string:${JSON.stringify(identity)}`;
+}
+
+function requireNonEmptyString(value: JsonValue | undefined, field: string): string {
+  if (typeof value !== "string" || value.trim() === "") {
+    fail(field, "must be a non-empty string");
+  }
+  return value;
+}
+
+function requireStringArray(value: JsonValue | undefined, field: string): string[] {
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+    fail(field, "must be a string array");
+  }
+  return value as string[];
+}
+
+function requireRecord(value: JsonValue | undefined, field: string): Record<string, JsonValue> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    fail(field, "must be an object");
+  }
+  return value;
+}
+
+function requireCanonicalKeys(
+  record: Record<string, JsonValue>,
+  canonicalOrder: readonly string[],
+  field: string,
+): void {
+  const actual = Object.keys(record);
+  const expected = canonicalOrder.filter((key) => actual.includes(key));
+  if (!jsonEqual(actual, expected)) {
+    fail(field, "contains unknown fields or fields outside canonical order");
   }
 }
 
@@ -267,9 +326,109 @@ function validateRecipe(baseline: KitchenSotRecipe, submitted: KitchenSotRecipe,
   }
 }
 
-function validateMetadata(submitted: KitchenSotDocument, derivedFrom: DerivedFrom): void {
-  if (submitted.schema_version !== "2.1.0-prototype-draft") {
-    fail("schema_version", "must be 2.1.0-prototype-draft");
+function validateAppendedWorkDocuments(recipe: KitchenSotRecipe, field: string): void {
+  const documents = requireRecord(recipe.work_documents, `${field}.work_documents`);
+  const stages = Object.keys(documents);
+  if (stages.length === 0 || stages.some((stage) => !["prep", "cook", "service"].includes(stage))) {
+    fail(`${field}.work_documents`, "must contain at least one known work stage");
+  }
+  const itemKeys = new Set(recipe.items.map(({ line_key }) => line_key));
+  const referencedKeys = new Set<string>();
+  for (const stage of stages) {
+    const documentField = `${field}.work_documents.${stage}`;
+    const document = requireRecord(documents[stage], documentField);
+    requireCanonicalKeys(
+      document,
+      ["stage", "scalable", "ingredient_line_keys", "steps"],
+      documentField,
+    );
+    if (document.stage !== stage) fail(`${documentField}.stage`, "must match its work stage key");
+    if (typeof document.scalable !== "boolean") {
+      fail(`${documentField}.scalable`, "must be boolean");
+    }
+    const ingredientLineKeys = requireStringArray(
+      document.ingredient_line_keys,
+      `${documentField}.ingredient_line_keys`,
+    );
+    for (const lineKey of ingredientLineKeys) {
+      if (!itemKeys.has(lineKey)) fail(`${documentField}.ingredient_line_keys`, "references an unknown item");
+      if (referencedKeys.has(lineKey)) fail(`${documentField}.ingredient_line_keys`, "duplicates an item across work stages");
+      referencedKeys.add(lineKey);
+    }
+    const steps = requireStringArray(document.steps, `${documentField}.steps`);
+    if (recipe.method_candidate_text === null && steps.length > 0) {
+      fail(`${documentField}.steps`, "cannot invent steps while the owner-confirmed method is missing");
+    }
+  }
+  if (recipe.items.some(({ line_key }) => !referencedKeys.has(line_key))) {
+    fail(`${field}.work_documents`, "must place every owner-confirmed item in a work stage");
+  }
+}
+
+function validateAppendedOwnerRecipe(recipe: KitchenSotRecipe, field: string): void {
+  requireCanonicalKeys(recipe, OWNER_RECIPE_KEY_ORDER, field);
+  if (recipe.legacy_recipe_id !== undefined && recipe.legacy_recipe_id !== recipe.recipe_id) {
+    fail(`${field}.legacy_recipe_id`, "must preserve the matching legacy identity");
+  }
+  requireNonEmptyString(recipe.recipe_version_id, `${field}.recipe_version_id`);
+  if (!Array.isArray(recipe.parent_recipe_ids)) {
+    fail(`${field}.parent_recipe_ids`, "must be an identity array");
+  }
+  const sourceLocators = requireStringArray(recipe.source_locators, `${field}.source_locators`);
+  if (!sourceLocators.some((locator) => locator.startsWith("Owner confirmation:"))) {
+    fail(`${field}.source_locators`, "must include dated owner-confirmation provenance");
+  }
+  if (!Array.isArray(recipe.source_section_mappings)) {
+    fail(`${field}.source_section_mappings`, "must be an array");
+  }
+  requireStringArray(recipe.operational_notes, `${field}.operational_notes`);
+  if (recipe.items.length === 0) fail(`${field}.items`, "must contain at least one item");
+
+  const lineKeys = new Set<string>();
+  recipe.items.forEach((item, index) => {
+    const itemField = `${field}.items[${String(index)}]`;
+    requireCanonicalKeys(item, KITCHEN_SOT_ITEM_KEY_ORDER, itemField);
+    if (lineKeys.has(item.line_key)) fail(`${itemField}.line_key`, "must be unique within the recipe");
+    lineKeys.add(item.line_key);
+    if (item.item_kind !== "direct_ingredient" && item.item_kind !== "prepared_recipe") {
+      fail(`${itemField}.item_kind`, "must be a known ingredient kind");
+    }
+    if (!jsonEqual(Object.keys(item.source_values), ["owner_confirmation"])) {
+      fail(`${itemField}.source_values`, "new owner recipes may contain only owner_confirmation evidence");
+    }
+    validateDirtyOwnerItem(recipe, item, itemField);
+  });
+
+  if (recipe.method_candidate_text === null) {
+    if (recipe.method_selected_source !== null) {
+      fail(`${field}.method_selected_source`, "must be null while the method is missing");
+    }
+    requireNonEmptyString(recipe.method_decision_note, `${field}.method_decision_note`);
+    if (!recipe.blockers.some(({ code, resolved }) => code === "missing_method" && resolved !== true)) {
+      fail(`${field}.blockers`, "must retain an unresolved missing_method blocker");
+    }
+  } else {
+    validateChangedMethod(recipe, field);
+  }
+
+  recipe.blockers.forEach((blocker, index) => {
+    const blockerField = `${field}.blockers[${String(index)}]`;
+    requireCanonicalKeys(blocker, KITCHEN_SOT_BLOCKER_KEY_ORDER, blockerField);
+    requireNonEmptyString(blocker.code, `${blockerField}.code`);
+    requireNonEmptyString(blocker.message, `${blockerField}.message`);
+    if (blocker.resolved !== undefined) validateDirtyBlocker(recipe, blocker, blockerField);
+  });
+  validateAppendedWorkDocuments(recipe, field);
+}
+
+function validateMetadata(
+  submitted: KitchenSotDocument,
+  derivedFrom: DerivedFrom,
+  hasOwnerRecipes: boolean,
+): void {
+  const expectedSchema = hasOwnerRecipes ? OWNER_RECIPE_SCHEMA_VERSION : "2.1.0-prototype-draft";
+  if (submitted.schema_version !== expectedSchema) {
+    fail("schema_version", `must be ${expectedSchema}`);
   }
   requireIsoTimestamp(submitted.generated_at, "generated_at");
   if (!jsonEqual(submitted.derived_from, derivedFrom as unknown as JsonValue)) {
@@ -284,7 +443,8 @@ export function validateKitchenSotTransition(
   derivedFrom: DerivedFrom,
 ): void {
   const baseline = previousV5 ?? sourceV4;
-  validateMetadata(submitted, derivedFrom);
+  const hasOwnerRecipes = submitted.recipes.length > sourceV4.recipes.length;
+  validateMetadata(submitted, derivedFrom, hasOwnerRecipes);
   compareImmutableFields(
     baseline,
     submitted,
@@ -293,7 +453,20 @@ export function validateKitchenSotTransition(
     new Set(["recipes"]),
     "document",
   );
-  if (baseline.recipes.length !== submitted.recipes.length) fail("recipes", "array length changed");
+  if (submitted.recipes.length < baseline.recipes.length) {
+    fail("recipes", "existing recipes were deleted");
+  }
   baseline.recipes.forEach((recipe, index) =>
     validateRecipe(recipe, submitted.recipes[index]!, `recipes[${index}]`));
+
+  const identities = new Set(sourceV4.recipes.map(({ recipe_id }) => identityKey(recipe_id)));
+  submitted.recipes.slice(sourceV4.recipes.length).forEach((recipe, offset) => {
+    const field = `recipes[${String(sourceV4.recipes.length + offset)}]`;
+    const key = identityKey(recipe.recipe_id);
+    if (identities.has(key)) fail(`${field}.recipe_id`, "duplicates an existing recipe identity");
+    identities.add(key);
+    if (sourceV4.recipes.length + offset >= baseline.recipes.length) {
+      validateAppendedOwnerRecipe(recipe, field);
+    }
+  });
 }

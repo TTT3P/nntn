@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, expect, test } from "vitest";
 import { applyKitchenSotEdit, buildV5Draft } from "../src/domain/sot/kitchenSotEdits";
 import { parseKitchenSotDocument, type KitchenSotDocument } from "../src/domain/sot/kitchenSotDocument";
+import { ownerConfirmedEggRecipe } from "../src/test/ownerConfirmedEggRecipe";
 import { createCookbookSotRequestHandler } from "./cookbookSotPlugin";
 
 const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
@@ -14,6 +15,7 @@ const V4_RELATIVE_PATH = "Operations/CookBook/sot/v4-2026-08-05/source/kitchen-s
 const V4_DIRECTORY_RELATIVE_PATH = "Operations/CookBook/sot/v4-2026-08-05";
 const CHECKSUM_RELATIVE_PATH = "Operations/CookBook/sot/v4-2026-08-05/SHA256SUMS.txt";
 const V5_RELATIVE_PATH = "Operations/CookBook/sot/v5-draft/kitchen-sot-first-set-v5-draft.json";
+const V6_RELATIVE_PATH = "Operations/CookBook/sot/v6-draft/kitchen-cookbook-v6-draft.json";
 const FIXTURE_TEXT = await readFile(join(MODULE_DIRECTORY, "../src/data/fixtures/first-set.json"), "utf8");
 
 interface TemporaryVault {
@@ -134,6 +136,69 @@ async function putDraft(
   });
 }
 
+async function putV6Draft(
+  server: MiddlewareServer,
+  baseSha256: string,
+  document: unknown,
+): Promise<Response> {
+  return fetch(`${server.origin}/__cookbook/v6-draft`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": `"${baseSha256}"`,
+    },
+    body: JSON.stringify({ base_sha256: baseSha256, document }),
+  });
+}
+
+async function writePopulatedV5(vault: TemporaryVault): Promise<void> {
+  const draft = makeValidDraft(vault, "2026-08-10T00:00:00.000Z");
+  draft.schema_version = "2.2.0-prototype-draft";
+  draft.recipes.push(ownerConfirmedEggRecipe());
+  await writeDraftFixture(vault, draft);
+}
+
+test("serves synthesized V6 without creating a real draft file", async () => {
+  const vault = await makeTemporaryVault();
+  await writePopulatedV5(vault);
+  const server = await startMiddlewareServer(createCookbookSotRequestHandler({ vaultRoot: vault.root }));
+  try {
+    const response = await fetch(`${server.origin}/__cookbook/v6-draft`);
+    expect(response.status).toBe(200);
+    const body = await response.json() as { document: { recipes: unknown[] }; origin: string; base_sha256: string };
+    expect(body.origin).toBe("synthesized");
+    expect(body.document.recipes).toHaveLength(87);
+    expect(body.base_sha256).toMatch(/^[a-f0-9]{64}$/u);
+    await expect(readFile(join(vault.root, V6_RELATIVE_PATH))).rejects.toMatchObject({ code: "ENOENT" });
+  } finally {
+    await server.close();
+  }
+});
+
+test("V6 first writer wins and a stale writer cannot change authoritative bytes", async () => {
+  const vault = await makeTemporaryVault();
+  await writePopulatedV5(vault);
+  const server = await startMiddlewareServer(createCookbookSotRequestHandler({ vaultRoot: vault.root }));
+  try {
+    const loaded = await fetch(`${server.origin}/__cookbook/v6-draft`);
+    const initial = await loaded.json() as { document: { recipes: Array<{ recipeId: string; name: string }> }; base_sha256: string };
+    const firstDocument = structuredClone(initial.document);
+    firstDocument.recipes.find(({ recipeId }) => recipeId === "RCP-026")!.name = "ไข่ข้นหน้าครัว";
+    const secondDocument = structuredClone(initial.document);
+    secondDocument.recipes.find(({ recipeId }) => recipeId === "RCP-026")!.name = "ชื่อจากแท็บเก่า";
+
+    const first = await putV6Draft(server, initial.base_sha256, firstDocument);
+    expect(first.status).toBe(200);
+    const authoritativeBytes = await readFile(join(vault.root, V6_RELATIVE_PATH), "utf8");
+    const second = await putV6Draft(server, initial.base_sha256, secondDocument);
+    expect(second.status).toBe(409);
+    expect(await second.json()).toEqual({ code: "STALE_DRAFT" });
+    expect(await readFile(join(vault.root, V6_RELATIVE_PATH), "utf8")).toBe(authoritativeBytes);
+  } finally {
+    await server.close();
+  }
+});
+
 async function rawRequest(origin: string, path: string): Promise<{ status: number; body: string }> {
   const url = new URL(origin);
   return new Promise((resolve, reject) => {
@@ -170,6 +235,46 @@ test("serves verified V4 and reports V5 missing without falling through", async 
       base_sha256: vault.sha256,
       origin: "v4",
     });
+  } finally {
+    await server.close();
+  }
+});
+
+test("persists an append-only owner recipe and preserves it through later V5 edits", async () => {
+  const vault = await makeTemporaryVault();
+  const server = await startMiddlewareServer(createCookbookSotRequestHandler({ vaultRoot: vault.root }));
+  try {
+    const first = makeValidDraft(vault, "2026-08-09T10:00:00.000Z");
+    first.schema_version = "2.2.0-prototype-draft";
+    first.recipes.push(ownerConfirmedEggRecipe());
+
+    const created = await putDraft(server, vault.sha256, first);
+    expect(created.status).toBe(200);
+    const createdReceipt = await created.json() as { base_sha256: string };
+
+    const loaded = await fetch(`${server.origin}/__cookbook/v5-draft`);
+    expect(loaded.status).toBe(200);
+    const loadedBody = await loaded.json() as { document: KitchenSotDocument };
+    expect(loadedBody.document.schema_version).toBe("2.2.0-prototype-draft");
+    expect(loadedBody.document.recipes).toHaveLength(19);
+    expect(loadedBody.document.recipes.at(-1)).toMatchObject({
+      recipe_id: 18,
+      recipe_name: "ไข่ข้น",
+    });
+
+    const edited = buildV5Draft(
+      applyKitchenSotEdit(loadedBody.document, {
+        kind: "yield",
+        recipeId: 18,
+        value: "1 ที่",
+      }),
+      "2026-08-09T10:05:00.000Z",
+      { path: V4_RELATIVE_PATH, sha256: vault.sha256 },
+    );
+    const updated = await putDraft(server, createdReceipt.base_sha256, edited);
+    expect(updated.status).toBe(200);
+    expect(edited.schema_version).toBe("2.2.0-prototype-draft");
+    expect(edited.recipes).toHaveLength(19);
   } finally {
     await server.close();
   }

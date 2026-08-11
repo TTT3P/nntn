@@ -3,18 +3,18 @@ import { expect, test } from "./browser-guards";
 
 type ObjectUrlEvent = { type: "create" | "revoke"; url: string; at: number };
 
-test("finds the Thai menu, opens its dependency graph, and previews the 180 gram service pack", async ({ page }) => {
+test("finds the Thai menu, opens its related recipes, and previews the 180 gram service pack", async ({ page }) => {
   await page.goto("./#/recipes");
-  await expect(page.getByRole("heading", { name: "คลังสูตรอาหาร" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "สูตรอาหาร" })).toBeVisible();
 
-  await page.getByRole("searchbox", { name: "ค้นหาสูตรอาหาร" }).fill("ข้าวหน้าเนื้อตุ๋น");
-  await page.getByRole("link", { name: "ข้าวหน้าเนื้อตุ๋น", exact: true }).click();
-  await page.getByRole("button", { name: "แสดงสูตรที่เกี่ยวข้อง" }).click();
-  await expect(page.getByRole("navigation", { name: "โครงสร้างสูตรที่เกี่ยวข้อง" })
+  await page.getByRole("searchbox", { name: "ค้นหาชื่อหรือรหัสสูตร" }).fill("ข้าวหน้าเนื้อตุ๋น");
+  await page.getByRole("link", { name: /^ข้าวหน้าเนื้อตุ๋น(?:\s|$)/u }).click();
+  await expect(page.getByRole("navigation", { name: "สูตรที่ใช้ร่วมกัน" })
     .getByRole("link", { name: "เนื้อตุ๋น (ราดข้าว)", exact: true })).toBeVisible();
 
   await page.goto("./#/print");
-  await page.getByRole("checkbox", { name: "ข้าวหน้าเนื้อตุ๋น · รหัส 165" }).check();
+  await page.getByRole("checkbox", { name: "ข้าวหน้าเนื้อตุ๋น · RCP-071" }).check();
+  await page.locator("details.print-advanced > summary").click();
   await page.getByRole("combobox", { name: /^จุดงาน/u }).selectOption("service");
 
   await expect(page.getByRole("row", { name: /ข้าวหอมมะลิหุงสุก\s+180 กรัม/u })).toBeVisible();
@@ -22,7 +22,7 @@ test("finds the Thai menu, opens its dependency graph, and previews the 180 gram
   await expect(page.getByText("จัดเสิร์ฟหน้าร้าน").first()).toBeVisible();
 });
 
-test("downloads the versioned snapshot before revoking its object URL", async ({ page }) => {
+test("downloads the current Cookbook JSON before revoking its object URL", async ({ page }) => {
   await page.addInitScript(() => {
     const scope = globalThis as typeof globalThis & {
       __snapshotDownloadUrlEvents?: ObjectUrlEvent[];
@@ -44,9 +44,9 @@ test("downloads the versioned snapshot before revoking its object URL", async ({
 
   await page.goto("./#/recipes");
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export prototype snapshot" }).click();
+  await page.getByRole("button", { name: "ดาวน์โหลดข้อมูล" }).click();
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe("cookbook-prototype-snapshot.json");
+  expect(download.suggestedFilename()).toBe("nntn-cookbook.json");
 
   const stream = await download.createReadStream();
   const chunks: Buffer[] = [];
@@ -54,14 +54,10 @@ test("downloads the versioned snapshot before revoking its object URL", async ({
   const exported = JSON.parse(Buffer.concat(chunks).toString("utf8")) as {
     schemaVersion?: unknown;
     recipes?: unknown;
-    media?: Array<{ localSessionOnly?: unknown; exportWarning?: unknown }>;
+    recipes?: unknown[];
   };
-  expect(exported.schemaVersion).toBe("cookbook-prototype-v1");
-  expect(Array.isArray(exported.recipes)).toBe(true);
-  expect(exported.media?.length).toBeGreaterThan(0);
-  expect(exported.media?.every((asset) =>
-    asset.localSessionOnly !== true || asset.exportWarning === "binary-not-included"
-  )).toBe(true);
+  expect(exported.schemaVersion).toBe("6.0.0");
+  expect(exported.recipes).toHaveLength(87);
 
   const eventsBeforeCleanup = await page.evaluate(() => {
     const scope = globalThis as typeof globalThis & {

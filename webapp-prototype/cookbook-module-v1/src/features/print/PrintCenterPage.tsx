@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import type {
   CookbookSnapshot,
   FocalPoint,
@@ -28,11 +29,17 @@ import { projectKitchenSotPrintSnapshot } from "../../domain/sot/kitchenSotPrint
 import { projectWorkDocuments } from "../../domain/work/workDocuments";
 import { usePrototype } from "../../prototype/PrototypeProvider";
 import { deriveRecipeMediaCoverage } from "../recipe/recipeMediaCoverage";
+import { decodeRecipeIdentity } from "../recipe/recipeRoute";
 import { useOptionalKitchenSotDraft } from "../review/KitchenSotDraftProvider";
+import { CookbookBooklet } from "./CookbookBooklet";
+import { buildPrintCollections } from "./printCollections";
 import { WorkstationCard } from "./WorkstationCard";
+import { useOptionalCookbookDocument } from "../cookbook/CookbookDocumentProvider";
 import "./print.css";
 
 type PreviewMode = "draft" | "approved";
+type OutputIntent = "master" | "station" | "booklet";
+type DependencyPolicy = "reference" | "include";
 
 class InvalidPrintUiSnapshotError extends Error {
   constructor() {
@@ -138,6 +145,7 @@ function captureRecipe(value: unknown): RecipeVersion {
     recipeVersionId,
     name,
     kind: recipe.kind as RecipeVersion["kind"],
+    category: meaningfulString(recipe.category) ? recipe.category : null,
     parentRecipeIds: requireArray(recipe.parentRecipeIds).map(captureIdentity),
     reviewState: recipe.reviewState as RecipeVersion["reviewState"],
     sourceLocators: requireArray(recipe.sourceLocators).map((locator) => locator as string),
@@ -203,10 +211,28 @@ function identityKey(recipeId: RecipeIdentity): string {
     : `string:${JSON.stringify(recipeId)}`;
 }
 
+function recipeIdsFromSearchParams(searchParams: URLSearchParams): RecipeIdentity[] {
+  return searchParams.getAll("recipe").flatMap((value) => {
+    const identity = decodeRecipeIdentity(value);
+    return identity === null ? [] : [identity];
+  });
+}
+
 function compareRecipes(left: RecipeVersion, right: RecipeVersion): number {
   const byName = left.name.localeCompare(right.name, "th");
   if (byName !== 0) return byName;
   return identityKey(left.recipeId).localeCompare(identityKey(right.recipeId));
+}
+
+function publicRecipeCode(recipe: RecipeVersion): string | null {
+  return typeof recipe.recipeId === "string" && /^(?:RCP|SRCP)-/u.test(recipe.recipeId)
+    ? recipe.recipeId
+    : null;
+}
+
+function recipeChoiceLabel(recipe: RecipeVersion): string {
+  const code = publicRecipeCode(recipe);
+  return code === null ? recipe.name : `${recipe.name} · ${code}`;
 }
 
 function isDuplicateSnapshotError(
@@ -342,13 +368,22 @@ function PreviewPage({
 export function PrintCenterPage({
   initialRecipeIds = [],
 }: {
-  initialRecipeIds?: number[];
+  initialRecipeIds?: RecipeIdentity[];
 }) {
   const { snapshot: rawSnapshot } = usePrototype();
+  const cookbookDocument = useOptionalCookbookDocument();
   const kitchenSotDraft = useOptionalKitchenSotDraft();
+  const [searchParams] = useSearchParams();
   const [selectedKeys, setSelectedKeys] = useState<string[]>(() => [
-    ...new Set(initialRecipeIds.map(identityKey)),
+    ...new Set([
+      ...initialRecipeIds,
+      ...recipeIdsFromSearchParams(searchParams),
+    ].map(identityKey)),
   ]);
+  const [outputIntent, setOutputIntent] = useState<OutputIntent>("station");
+  const [dependencyPolicy, setDependencyPolicy] = useState<DependencyPolicy>("include");
+  const [searchText, setSearchText] = useState("");
+  const [closedCollectionKeys, setClosedCollectionKeys] = useState<string[]>([]);
   const [stage, setStage] = useState<WorkStage | "all">("all");
   const [template, setTemplate] = useState<PrintTemplate>("auto");
   const [multiplierText, setMultiplierText] = useState("1");
@@ -357,7 +392,10 @@ export function PrintCenterPage({
   let snapshot: CookbookSnapshot;
   let rawRecipeDraftById: ReadonlyMap<RecipeIdentity, boolean> | null = null;
   try {
-    if (kitchenSotDraft === null) {
+    if (cookbookDocument !== null) {
+      snapshot = capturePrintSnapshot(cookbookDocument.snapshot);
+      rawRecipeDraftById = cookbookDocument.recipeDraftById;
+    } else if (kitchenSotDraft === null) {
       snapshot = capturePrintSnapshot(rawSnapshot);
     } else {
       const projected = projectKitchenSotPrintSnapshot(
@@ -375,7 +413,7 @@ export function PrintCenterPage({
       <section className="print-center-page" aria-labelledby="print-center-title">
         <header className="print-center-header">
           <h2 id="print-center-title">ศูนย์การพิมพ์</h2>
-          <p>ตัวอย่าง A5 แนวนอนสำหรับจุดงาน · แนะนำอัตโนมัติ</p>
+          <p>จัดชุดใบงาน A5 หรือ A4 สำหรับพิมพ์หน้าครัว</p>
         </header>
         <section className="print-error" role="alert">
           <h3>เปิดข้อมูลศูนย์การพิมพ์ไม่ได้</h3>
@@ -393,6 +431,19 @@ export function PrintCenterPage({
     const recipe = recipesByIdentity.get(key);
     return recipe === undefined ? [] : [recipe.recipeId];
   });
+  const selectedRecipes = selectedKeys.flatMap((key) => {
+    const recipe = recipesByIdentity.get(key);
+    return recipe === undefined ? [] : [recipe];
+  });
+  const normalizedSearch = searchText.trim().toLocaleLowerCase("th");
+  const collections = buildPrintCollections(availableRecipes).flatMap((collection) => {
+    const recipes = collection.recipes.filter((recipe) => {
+      if (normalizedSearch === "") return true;
+      const code = publicRecipeCode(recipe) ?? "";
+      return `${recipe.name} ${code}`.toLocaleLowerCase("th").includes(normalizedSearch);
+    });
+    return recipes.length === 0 ? [] : [{ ...collection, recipes }];
+  });
 
   const parsedMultiplier = stage === "service" ? 1 : Number(multiplierText);
   const multiplierValid =
@@ -400,12 +451,15 @@ export function PrintCenterPage({
   let pages: PrintPage[] = [];
   let media: MediaIndex | null = null;
   let planningError: string | null = null;
+  let bookletRecipes: RecipeVersion[] = [];
   const readinessByRecipe = new Map<string, "draft" | "ready">();
 
-  if (selectedIds.length > 0 && multiplierValid) {
+  if (selectedIds.length > 0 && (outputIntent === "booklet" || multiplierValid)) {
     try {
-      const reachable = selectedReachableRecipes(snapshot.recipes, selectedIds);
-      for (const recipe of reachable) {
+      const includedRecipes = dependencyPolicy === "include"
+        ? selectedReachableRecipes(snapshot.recipes, selectedIds)
+        : selectedRecipes;
+      for (const recipe of includedRecipes) {
         if (rawRecipeDraftById === null) {
           const coverage = deriveRecipeMediaCoverage(recipe, snapshot).coverage;
           const readiness = evaluateReadiness(recipe, coverage);
@@ -418,18 +472,22 @@ export function PrintCenterPage({
         }
       }
       const printableRecipes = previewMode === "approved"
-        ? reachable.filter((recipe) => readinessByRecipe.get(identityKey(recipe.recipeId)) === "ready")
-        : reachable;
-      const documents = projectWorkDocuments(printableRecipes, {
-        stage: "all",
-        multiplier: parsedMultiplier,
-      });
-      media = buildMediaIndex(snapshot);
-      pages = buildPrintPlan(documents, media, {
-        template,
-        stage,
-        multiplier: parsedMultiplier,
-      });
+        ? includedRecipes.filter((recipe) => readinessByRecipe.get(identityKey(recipe.recipeId)) === "ready")
+        : includedRecipes;
+      if (outputIntent === "booklet") {
+        bookletRecipes = printableRecipes;
+      } else {
+        const documents = projectWorkDocuments(printableRecipes, {
+          stage: "all",
+          multiplier: parsedMultiplier,
+        });
+        media = buildMediaIndex(snapshot);
+        pages = buildPrintPlan(documents, media, {
+          template,
+          stage,
+          multiplier: parsedMultiplier,
+        });
+      }
     } catch (error) {
       planningError = plannerErrorMessage(error);
       pages = [];
@@ -446,116 +504,228 @@ export function PrintCenterPage({
       : current.filter((candidate) => candidate !== key));
   }
 
-  const printDisabled = selectedIds.length === 0 || !multiplierValid || planningError !== null || pages.length === 0;
+  function chooseOutput(next: OutputIntent): void {
+    setOutputIntent(next);
+    if (next === "booklet") {
+      setDependencyPolicy("reference");
+      return;
+    }
+    setDependencyPolicy("include");
+    setTemplate(next === "master" ? "two-up" : "station");
+  }
+
+  const outputCount = outputIntent === "booklet" ? bookletRecipes.length : pages.length;
+  const printDisabled = selectedIds.length === 0
+    || (outputIntent !== "booklet" && !multiplierValid)
+    || planningError !== null
+    || outputCount === 0;
 
   return (
     <section className="print-center-page" aria-labelledby="print-center-title">
       <header className="print-center-header">
-        <h2 id="print-center-title">ศูนย์การพิมพ์</h2>
-        <p>ตัวอย่าง A5 แนวนอนสำหรับจุดงาน · แนะนำอัตโนมัติ</p>
-        <p>
-          {kitchenSotDraft === null
-            ? "ข้อมูลสูตร: V4 ที่ฝังใน prototype"
-            : kitchenSotDraft.origin === "v5-draft"
-              ? "ข้อมูลสูตร: V5 draft ในเครื่อง"
-              : "ข้อมูลสูตร: V4 ที่ตรวจ checksum แล้ว (fallback)"}
-        </p>
+        <div>
+          <p className="print-center-header__eyebrow">งานพิมพ์เอกสารครัว</p>
+          <h2 id="print-center-title">ศูนย์การพิมพ์</h2>
+          <p>จัดชุดใบงาน A5 หรือ A4 สำหรับพิมพ์หน้าครัว</p>
+        </div>
+        <p className="print-center-header__note">ข้อมูลที่มีแสดงทันที · ช่องว่างเติมภายหลังได้</p>
       </header>
 
-      <form className="print-controls" onSubmit={(event) => event.preventDefault()}>
-        <fieldset className="print-recipe-selection">
-          <legend>เลือกสูตรตามชื่อ</legend>
-          {availableRecipes.map((recipe) => {
-            const label = `${recipe.name} · รหัส ${String(recipe.recipeId)}`;
-            return (
-              <label key={`${identityKey(recipe.recipeId)}:${JSON.stringify(recipe.recipeVersionId)}`}>
+      <div className="print-workspace">
+        <form className="print-sidebar" onSubmit={(event) => event.preventDefault()}>
+          <div className="print-sidebar__scroll">
+            <fieldset className="print-intents">
+              <legend>1. พิมพ์เพื่อใช้อะไร</legend>
+              <div>
+                <button type="button" aria-pressed={outputIntent === "master"} onClick={() => chooseOutput("master")}>
+                  <span aria-hidden="true">▤</span><strong>A4 สูตรเต็ม</strong><small>สูตรอ้างอิงฉบับเต็ม</small>
+                </button>
+                <button type="button" aria-pressed={outputIntent === "station"} onClick={() => chooseOutput("station")}>
+                  <span aria-hidden="true">✓</span><strong>A5 ใบงาน</strong><small>ใช้ตามจุดครัว</small>
+                </button>
+                <button type="button" aria-pressed={outputIntent === "booklet"} onClick={() => chooseOutput("booklet")}>
+                  <span aria-hidden="true">▥</span><strong>พิมพ์เป็นเล่ม</strong><small>ปก สารบัญ และสูตร</small>
+                </button>
+              </div>
+            </fieldset>
+
+            <fieldset className="print-recipe-selection">
+              <legend>2. เลือกสูตรตามชื่อ</legend>
+              <label className="print-search">
+                <span>ค้นหาสูตร</span>
                 <input
-                  type="checkbox"
-                  checked={selectedKeys.includes(identityKey(recipe.recipeId))}
-                  onChange={(event) => toggleRecipe(recipe.recipeId, event.target.checked)}
+                  type="search"
+                  value={searchText}
+                  placeholder="ค้นหาชื่อหรือรหัสสูตร"
+                  onChange={(event) => setSearchText(event.target.value)}
                 />
-                {label}
               </label>
-            );
-          })}
-        </fieldset>
+              <div className="print-collections">
+                {collections.map((collection) => (
+                  <details
+                    className="print-collection"
+                    key={collection.key}
+                    open={normalizedSearch !== "" || !closedCollectionKeys.includes(collection.key)}
+                    onToggle={(event) => {
+                      if (normalizedSearch !== "") return;
+                      const isOpen = event.currentTarget.open;
+                      setClosedCollectionKeys((current) => isOpen
+                        ? current.filter((key) => key !== collection.key)
+                        : current.includes(collection.key) ? current : [...current, collection.key]);
+                    }}
+                  >
+                    <summary>
+                      <span aria-hidden="true">›</span>
+                      <strong>{collection.label}</strong>
+                      <em>{collection.recipes.length}</em>
+                    </summary>
+                    <div>
+                      {collection.recipes.map((recipe) => (
+                        <label key={`${identityKey(recipe.recipeId)}:${JSON.stringify(recipe.recipeVersionId)}`}>
+                          <input
+                            type="checkbox"
+                            checked={selectedKeys.includes(identityKey(recipe.recipeId))}
+                            onChange={(event) => toggleRecipe(recipe.recipeId, event.target.checked)}
+                          />
+                          {recipeChoiceLabel(recipe)}
+                        </label>
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </div>
+              {collections.length === 0 && <p className="print-empty-search">ไม่พบสูตรที่ค้นหา</p>}
+            </fieldset>
 
-        <div className="print-control-grid">
-          <label>
-            จุดงาน
-            <select value={stage} onChange={(event) => setStage(event.target.value as WorkStage | "all")}>
-              <option value="all">ทุกจุดงาน</option>
-              <option value="prep">เตรียม</option>
-              <option value="cook">ปรุง</option>
-              <option value="service">จัดเสิร์ฟ</option>
-            </select>
-          </label>
-          <label>
-            แม่แบบ
-            <select value={template} onChange={(event) => setTemplate(event.target.value as PrintTemplate)}>
-              <option value="auto">แนะนำอัตโนมัติ</option>
-              <option value="station">A5 จุดงาน</option>
-              <option value="two-up">A4 สองใบต่อหน้า</option>
-            </select>
-          </label>
-          <label>
-            ตัวคูณการผลิต
-            <input
-              type="number"
-              min="1"
-              step="1"
-              required
-              disabled={stage === "service"}
-              value={stage === "service" ? "1" : multiplierText}
-              aria-invalid={!multiplierValid}
-              aria-describedby={!multiplierValid ? "print-multiplier-error" : undefined}
-              onChange={(event) => setMultiplierText(event.target.value)}
-            />
-          </label>
-          <label>
-            สถานะตัวอย่าง
-            <select value={previewMode} onChange={(event) => setPreviewMode(event.target.value as PreviewMode)}>
-              <option value="draft">ฉบับร่าง</option>
-              <option value="approved">พร้อมพิมพ์แบบอนุมัติ</option>
-            </select>
-          </label>
-        </div>
+            <section className="print-selected" aria-label="รายการที่เลือก">
+              <header><strong>เลือกแล้ว {selectedRecipes.length} สูตร</strong><button type="button" onClick={() => setSelectedKeys([])}>ล้างการเลือก</button></header>
+              {selectedRecipes.length === 0
+                ? <p>เลือกสูตรจากหมวดด้านบน</p>
+                : <div>{selectedRecipes.map((recipe) => <span className="print-selected-chip" key={identityKey(recipe.recipeId)}>{recipe.name}</span>)}</div>}
+            </section>
 
-        {!multiplierValid && (
-          <p id="print-multiplier-error" role="alert">ตัวคูณต้องเป็นจำนวนเต็มตั้งแต่ 1 ขึ้นไป</p>
-        )}
-        <div className="print-actions">
-          <button type="button" disabled={printDisabled} onClick={() => window.print()}>
-            พิมพ์ชุดเอกสาร
-          </button>
-        </div>
-      </form>
+            <label className="print-dependency-policy">
+              <span><strong>3. สูตรประกอบ</strong><small>กำหนดว่าต้องแนบสูตรที่อ้างอิงหรือไม่</small></span>
+              <select aria-label="สูตรประกอบ" value={dependencyPolicy} onChange={(event) => setDependencyPolicy(event.target.value as DependencyPolicy)}>
+                <option value="reference">อ้างอิงชื่อและรหัสเท่านั้น</option>
+                <option value="include">แนบสูตรที่ต้องเตรียม</option>
+              </select>
+            </label>
 
-      {planningError !== null && (
-        <section className="print-error" role="alert" aria-labelledby="print-error-title">
-          <h3 id="print-error-title">สร้างตัวอย่างพิมพ์ไม่ได้</h3>
-          <p>{planningError}</p>
+            {outputIntent !== "booklet" && (
+              <details className="print-advanced">
+                <summary>ตั้งค่าใบงานเพิ่มเติม</summary>
+                <div className="print-control-grid">
+                  <label>
+                    จุดงาน
+                    <select value={stage} onChange={(event) => setStage(event.target.value as WorkStage | "all")}>
+                      <option value="all">ทุกจุดงาน</option>
+                      <option value="prep">เตรียม</option>
+                      <option value="cook">ปรุง</option>
+                      <option value="service">จัดเสิร์ฟ</option>
+                    </select>
+                  </label>
+                  <label>
+                    แม่แบบ
+                    <select value={template} onChange={(event) => {
+                      const nextTemplate = event.target.value as PrintTemplate;
+                      setTemplate(nextTemplate);
+                      setOutputIntent(nextTemplate === "two-up" ? "master" : "station");
+                    }}>
+                      <option value="auto">แนะนำอัตโนมัติ</option>
+                      <option value="station">A5 จุดงาน</option>
+                      <option value="two-up">A4 สองใบต่อหน้า</option>
+                    </select>
+                  </label>
+                  <label>
+                    ตัวคูณการผลิต
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      required
+                      disabled={stage === "service"}
+                      value={stage === "service" ? "1" : multiplierText}
+                      aria-invalid={!multiplierValid}
+                      aria-describedby={!multiplierValid ? "print-multiplier-error" : undefined}
+                      onChange={(event) => setMultiplierText(event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    ชุดที่ต้องการพิมพ์
+                    <select value={previewMode} onChange={(event) => setPreviewMode(event.target.value as PreviewMode)}>
+                      <option value="draft">ข้อมูลทั้งหมด</option>
+                      <option value="approved">เฉพาะสูตรพร้อมใช้</option>
+                    </select>
+                  </label>
+                </div>
+              </details>
+            )}
+
+            {outputIntent === "booklet" && (
+              <label className="print-booklet-status">
+                ชุดที่ต้องการพิมพ์
+                <select value={previewMode} onChange={(event) => setPreviewMode(event.target.value as PreviewMode)}>
+                  <option value="draft">ข้อมูลทั้งหมด</option>
+                  <option value="approved">เฉพาะสูตรพร้อมใช้</option>
+                </select>
+              </label>
+            )}
+
+            {outputIntent !== "booklet" && !multiplierValid && (
+              <p id="print-multiplier-error" role="alert">ตัวคูณต้องเป็นจำนวนเต็มตั้งแต่ 1 ขึ้นไป</p>
+            )}
+          </div>
+
+          <footer className="print-sidebar__footer">
+            <p><strong>{selectedRecipes.length} สูตร</strong><span>{outputCount} {outputIntent === "booklet" ? "หน้าสูตร" : "แผ่น"}</span></p>
+            <button type="button" disabled={printDisabled} onClick={() => window.print()}>พิมพ์ชุดที่เลือก</button>
+          </footer>
+        </form>
+
+        <section className="print-proof" aria-label="ตรวจตัวอย่างก่อนพิมพ์">
+          <header className="print-proof__header">
+            <div><strong>{outputIntent === "booklet" ? "เล่มคู่มือสูตรครัว" : outputIntent === "master" ? "A4 สูตรเต็ม" : "A5 ใบงาน"}</strong><span>ตรวจรายการและหน้ากระดาษก่อนพิมพ์</span></div>
+            <div><span>{selectedRecipes.length} สูตร</span><span>{dependencyPolicy === "include" ? "แนบสูตรประกอบ" : "อ้างอิงสูตรประกอบ"}</span><span>{outputCount} {outputIntent === "booklet" ? "หน้าสูตร" : "แผ่น"}</span><span>{outputIntent === "booklet" ? "A5 แนวตั้ง" : outputIntent === "master" ? "A4 แนวตั้ง" : "A5 แนวนอน"}</span></div>
+          </header>
+
+          <div className="print-proof__canvas">
+            {planningError !== null && (
+              <section className="print-error" role="alert" aria-labelledby="print-error-title">
+                <h3 id="print-error-title">สร้างตัวอย่างพิมพ์ไม่ได้</h3>
+                <p>{planningError}</p>
+              </section>
+            )}
+
+            {selectedIds.length === 0 && <p className="print-empty-state" role="status">เลือกอย่างน้อยหนึ่งสูตรเพื่อสร้างชุดพิมพ์</p>}
+            {selectedIds.length > 0 && (outputIntent === "booklet" || multiplierValid) && planningError === null && outputCount === 0 && (
+              <p className="print-empty-state" role="status">ไม่มีเอกสารที่ตรงกับจุดงานและชุดที่เลือก</p>
+            )}
+
+            {outputIntent === "booklet" && bookletRecipes.length > 0 && (
+              <CookbookBooklet
+                recipes={bookletRecipes}
+                allRecipes={availableRecipes}
+                readinessFor={(recipeId) => readinessByRecipe.get(identityKey(recipeId)) ?? "draft"}
+              />
+            )}
+
+            {outputIntent !== "booklet" && media !== null && pages.length > 0 && (
+              <div className="print-preview" aria-label="ตัวอย่างชุดพิมพ์">
+                {pages.map((page, index) => (
+                  <PreviewPage
+                    key={page.kind === "station" ? pageKey(page) : `two-up:${String(index)}:${page.slots.map(pageKey).join("|")}`}
+                    page={page}
+                    media={media}
+                    previewMode={previewMode}
+                    readinessByRecipe={readinessByRecipe}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </section>
-      )}
-
-      {selectedIds.length === 0 && <p role="status">เลือกอย่างน้อยหนึ่งสูตรเพื่อสร้างตัวอย่าง</p>}
-      {selectedIds.length > 0 && multiplierValid && planningError === null && pages.length === 0 && (
-        <p role="status">ไม่มีเอกสารที่ตรงกับจุดงานและสถานะตัวอย่างที่เลือก</p>
-      )}
-
-      {media !== null && pages.length > 0 && (
-        <div className="print-preview" aria-label="ตัวอย่างชุดพิมพ์">
-          {pages.map((page, index) => (
-            <PreviewPage
-              key={page.kind === "station" ? pageKey(page) : `two-up:${String(index)}:${page.slots.map(pageKey).join("|")}`}
-              page={page}
-              media={media}
-              previewMode={previewMode}
-              readinessByRecipe={readinessByRecipe}
-            />
-          ))}
-        </div>
-      )}
+      </div>
     </section>
   );
 }

@@ -1,19 +1,99 @@
 @page workstation { size: A5 landscape; margin: 0; }
 @page two-up { size: A4 portrait; margin: 0; }
+@page cookbook { size: A5 portrait; margin: 0; }
 
-.print-center-page {
-  width: min(82rem, 100%);
+.cookbook-booklet {
+  display: grid;
+  gap: 1.5rem;
   min-width: 0;
 }
 
-.print-center-header,
-.print-controls,
-.print-error {
-  margin-bottom: 1rem;
-  padding: 1rem;
-  border: 1px solid #d8cbb9;
-  border-radius: 0.75rem;
+.cookbook-page {
+  page: cookbook;
+  position: relative;
+  width: 148mm;
+  min-height: 210mm;
+  margin-inline: auto;
+  break-after: page;
+  color: #172019;
   background: #fffdf8;
+  box-shadow: 0 0.2rem 1.25rem rgb(39 35 31 / 18%);
+}
+
+.cookbook-page--cover {
+  height: 210mm;
+  overflow: hidden;
+  padding: 14mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #fff;
+  background: #173d24;
+}
+
+.cookbook-page--cover::after {
+  content: "";
+  position: absolute;
+  right: -35mm;
+  bottom: -38mm;
+  width: 100mm;
+  height: 100mm;
+  border-radius: 50%;
+  background: #c9962c;
+}
+
+.cookbook-page--cover > * { position: relative; z-index: 1; }
+.cookbook-page--cover > p { margin: 0; font-size: 8pt; font-weight: 900; letter-spacing: .16em; }
+.cookbook-page--cover h1 { max-width: 95mm; margin: 0; font-family: Georgia, "Noto Serif Thai", serif; font-size: 30pt; line-height: 1.08; }
+.cookbook-page--cover div p { margin: 5mm 0 0; color: #dceade; }
+.cookbook-page--cover small { font-size: 8pt; }
+
+.cookbook-page--contents,
+.cookbook-page--recipe { padding: 12mm; }
+.cookbook-page--contents { height: 210mm; overflow: hidden; }
+.cookbook-page--recipe { padding-bottom: 18mm; overflow: visible; break-inside: auto; }
+.cookbook-page__kicker,
+.cookbook-recipe__header p { margin: 0; color: #27683a; font-size: 7pt; font-weight: 900; letter-spacing: .13em; }
+.cookbook-page--contents h2 { margin: 3mm 0 8mm; color: #173d24; font-family: Georgia, "Noto Serif Thai", serif; font-size: 23pt; }
+.cookbook-page--contents ol { margin: 0; padding: 0; list-style: none; border-top: .2mm solid #cdd8cf; }
+.cookbook-page--contents li { min-height: 12mm; display: flex; align-items: center; justify-content: space-between; gap: 4mm; border-bottom: .2mm solid #dce4dd; font-size: 9pt; }
+.cookbook-page--contents li strong { color: #27683a; }
+
+.cookbook-recipe__header { padding-bottom: 4mm; display: flex; justify-content: space-between; gap: 8mm; border-bottom: .7mm solid #173d24; }
+.cookbook-recipe__header h2 { margin: 1.5mm 0 0; color: #173d24; font-family: Georgia, "Noto Serif Thai", serif; font-size: 20pt; line-height: 1.2; }
+.cookbook-recipe__identity { flex: none; display: grid; align-content: start; gap: 2mm; text-align: right; font-size: 7.5pt; }
+.cookbook-recipe__identity strong { padding: 1mm 2mm; border-radius: 999px; color: #20512f; background: #e7efe6; }
+.cookbook-recipe__facts { margin: 4mm 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2mm; }
+.cookbook-recipe__facts div { padding: 2.5mm; border-radius: 2mm; background: #e7efe6; }
+.cookbook-recipe__facts dt { color: #68726b; font-size: 7pt; }
+.cookbook-recipe__facts dd { margin: 1mm 0 0; font-size: 8pt; font-weight: 800; }
+.cookbook-recipe__body { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 6mm; }
+.cookbook-recipe__body h3 { margin: 0 0 2mm; color: #20512f; font-size: 9pt; }
+.cookbook-ingredients { width: 100%; border-collapse: collapse; font-size: 8pt; }
+.cookbook-ingredients th,
+.cookbook-ingredients td { padding: 2mm 0; border-bottom: .2mm solid #dce4dd; text-align: left; vertical-align: top; }
+.cookbook-ingredients td { text-align: right; font-weight: 800; }
+.cookbook-method { margin: 0; white-space: pre-line; font-size: 8pt; line-height: 1.5; }
+.cookbook-fill-later { padding: 3mm; border: .3mm dashed #c7a45b; border-radius: 2mm; color: #765923; background: #fbf5e6; font-size: 8pt; }
+.cookbook-components,
+.cookbook-operational-notes { margin-top: 4mm; padding: 3mm; border-radius: 2mm; background: #f3f2ed; font-size: 7.5pt; }
+.cookbook-components ul,
+.cookbook-operational-notes ul { margin: 0; padding-left: 4mm; }
+.cookbook-components li { display: flex; justify-content: space-between; gap: 2mm; }
+.cookbook-page__footer { position: absolute; right: 12mm; bottom: 8mm; left: 12mm; padding-top: 2mm; display: flex; justify-content: space-between; border-top: .2mm solid #d9e0da; color: #747d76; font-size: 6.5pt; }
+
+.print-center-page {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.print-center-header {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.5rem;
 }
 
 .print-center-header h2,
@@ -23,51 +103,382 @@
   margin: 0;
 }
 
-.print-center-header p,
-.print-error p {
-  margin-top: 0.5rem;
+.print-center-header h2 {
+  color: var(--cb-green);
+  font-size: clamp(1.8rem, 3vw, 2.45rem);
+  line-height: 1.1;
+}
+
+.print-center-header > div > p:last-child {
+  margin-top: .45rem;
+  color: var(--cb-muted);
+}
+
+.print-center-header__eyebrow {
+  margin-bottom: .35rem !important;
+  color: #8b6726;
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+}
+
+.print-center-header__note {
+  max-width: 22rem;
+  padding: .65rem .85rem;
+  border: 1px solid #e1d7bd;
+  border-radius: 999px;
+  color: #6e5726;
+  background: #fff9e8;
+  font-size: .82rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.print-workspace {
+  display: grid;
+  grid-template-columns: minmax(22rem, 25rem) minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+}
+
+.print-sidebar,
+.print-proof {
+  min-width: 0;
+  border: 1px solid var(--cb-line);
+  border-radius: 1rem;
+  background: var(--cb-surface);
+  box-shadow: var(--cb-shadow);
+}
+
+.print-sidebar {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.print-sidebar__scroll {
+  min-height: 0;
+  padding: 1rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.print-sidebar fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.print-sidebar fieldset + fieldset,
+.print-sidebar fieldset + section,
+.print-sidebar section + label,
+.print-sidebar label + details,
+.print-sidebar details + label {
+  margin-top: 1.1rem;
+}
+
+.print-sidebar legend {
+  width: 100%;
+  margin-bottom: .65rem;
+  color: var(--cb-green);
+  font-size: .88rem;
+  font-weight: 900;
+}
+
+.print-intents > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .45rem;
+}
+
+.print-intents button {
+  min-width: 0;
+  min-height: 6.15rem;
+  padding: .7rem .45rem;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: .22rem;
+  border: 1px solid #cbd7cd;
+  border-radius: .75rem;
+  color: #334039;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.print-intents button:hover {
+  border-color: #90a894;
+  background: #f7faf7;
+}
+
+.print-intents button[aria-pressed="true"] {
+  border-color: var(--cb-green);
+  color: var(--cb-green);
+  background: #edf5ee;
+  box-shadow: inset 0 0 0 1px var(--cb-green);
+}
+
+.print-intents button > span {
+  width: 1.7rem;
+  height: 1.7rem;
+  display: grid;
+  place-items: center;
+  border-radius: .45rem;
+  color: #fff;
+  background: var(--cb-green);
+  font-weight: 900;
+}
+
+.print-intents button strong {
+  font-size: .79rem;
+  line-height: 1.2;
+}
+
+.print-intents button small {
+  color: var(--cb-muted);
+  font-size: .68rem;
+  line-height: 1.25;
 }
 
 .print-recipe-selection {
+  display: block;
+}
+
+.print-search {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: 0.45rem 1rem;
+  gap: .35rem;
+  color: #465249;
+  font-size: .78rem;
+  font-weight: 800;
 }
 
-.print-recipe-selection legend {
-  margin-bottom: 0.5rem;
-  font-weight: 700;
+.print-search input,
+.print-control-grid input,
+.print-control-grid select,
+.print-dependency-policy select,
+.print-booklet-status select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: .55rem .7rem;
+  border: 1px solid #bcc9be;
+  border-radius: .55rem;
+  color: var(--cb-ink);
+  background: #fff;
+  font: inherit;
 }
 
-.print-recipe-selection label {
+.print-search input:focus,
+.print-control-grid input:focus,
+.print-control-grid select:focus,
+.print-dependency-policy select:focus,
+.print-booklet-status select:focus {
+  outline: 3px solid rgb(32 82 44 / 18%);
+  border-color: var(--cb-green-2);
+}
+
+.print-collections {
+  margin-top: .65rem;
+  display: grid;
+  gap: .45rem;
+}
+
+.print-collection {
+  overflow: hidden;
+  border: 1px solid var(--cb-line);
+  border-radius: .65rem;
+  background: #fbfcfb;
+}
+
+.print-collection summary {
+  min-height: 2.75rem;
+  padding: .6rem .7rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .5rem;
+  color: #334039;
+  cursor: pointer;
+  list-style: none;
+}
+
+.print-collection summary::-webkit-details-marker { display: none; }
+.print-collection summary > span { color: #748078; font-size: 1.2rem; transition: transform .15s ease; }
+.print-collection[open] summary > span { transform: rotate(90deg); }
+.print-collection summary strong { min-width: 0; overflow-wrap: anywhere; font-size: .84rem; }
+.print-collection summary em { min-width: 1.75rem; padding: .15rem .4rem; border-radius: 999px; color: #546158; background: #e9eeea; font-size: .72rem; font-style: normal; text-align: center; }
+
+.print-collection > div {
+  max-height: 14rem;
+  padding: .15rem .45rem .5rem;
+  display: grid;
+  overflow-y: auto;
+}
+
+.print-collection label {
+  min-height: 2.5rem;
+  padding: .48rem .38rem;
   display: flex;
-  gap: 0.5rem;
   align-items: start;
+  gap: .55rem;
+  border-radius: .45rem;
+  color: #344038;
+  font-size: .8rem;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.print-collection label:hover { background: #eef4ef; }
+.print-collection input { width: 1rem; height: 1rem; margin-top: .05rem; flex: none; accent-color: var(--cb-green); }
+.print-empty-search { margin: .75rem 0 0; color: var(--cb-muted); font-size: .82rem; }
+
+.print-selected {
+  padding: .8rem;
+  border: 1px solid #dfe6e0;
+  border-radius: .7rem;
+  background: #f7faf7;
+}
+
+.print-selected header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.print-selected header strong { color: var(--cb-green); font-size: .85rem; }
+.print-selected header button { padding: .2rem; border: 0; color: #68746b; background: transparent; font: inherit; font-size: .74rem; font-weight: 700; cursor: pointer; }
+.print-selected > p { margin: .55rem 0 0; color: var(--cb-muted); font-size: .78rem; }
+.print-selected > div { margin-top: .55rem; display: flex; flex-wrap: wrap; gap: .35rem; }
+.print-selected-chip { max-width: 100%; padding: .3rem .5rem; overflow: hidden; border-radius: 999px; color: #285032; background: #e6f0e7; font-size: .72rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+
+.print-dependency-policy,
+.print-booklet-status {
+  display: grid;
+  gap: .5rem;
+}
+
+.print-dependency-policy > span { display: grid; gap: .2rem; }
+.print-dependency-policy strong,
+.print-booklet-status { color: var(--cb-green); font-size: .86rem; font-weight: 900; }
+.print-dependency-policy small { color: var(--cb-muted); font-size: .74rem; font-weight: 500; }
+
+.print-advanced {
+  margin-top: 1.1rem;
+  border-top: 1px solid var(--cb-line);
+}
+
+.print-advanced summary {
+  padding: .85rem 0 .2rem;
+  color: #566159;
+  font-size: .8rem;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 .print-control-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  gap: 0.75rem;
-  margin-top: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .65rem;
+  margin-top: .65rem;
 }
 
 .print-control-grid label {
   display: grid;
-  gap: 0.3rem;
+  gap: .3rem;
+  color: #465249;
+  font-size: .75rem;
+  font-weight: 800;
 }
 
-.print-control-grid input,
-.print-control-grid select,
-.print-actions button {
-  min-height: 2.75rem;
-  padding: 0.5rem 0.65rem;
+.print-sidebar [role="alert"] {
+  margin: .7rem 0 0;
+  color: #8a3125;
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.print-sidebar__footer {
+  padding: .85rem 1rem 1rem;
+  border-top: 1px solid var(--cb-line);
+  background: #fff;
+  box-shadow: 0 -8px 18px rgb(23 61 32 / 5%);
+}
+
+.print-sidebar__footer p {
+  margin: 0 0 .65rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--cb-muted);
+  font-size: .78rem;
+}
+
+.print-sidebar__footer p strong { color: var(--cb-green); font-size: .9rem; }
+
+.print-sidebar__footer button {
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid var(--cb-green);
+  border-radius: .65rem;
+  color: #fff;
+  background: var(--cb-green);
   font: inherit;
+  font-weight: 900;
+  cursor: pointer;
 }
 
-.print-actions {
-  margin-top: 1rem;
+.print-sidebar__footer button:hover:not(:disabled) { background: var(--cb-green-2); }
+.print-sidebar__footer button:disabled { border-color: #c7d0c9; color: #879189; background: #e8ece9; cursor: not-allowed; }
+
+.print-proof {
+  overflow: hidden;
 }
+
+.print-proof__header {
+  min-height: 4.2rem;
+  padding: .8rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--cb-line);
+  background: #fff;
+}
+
+.print-proof__header > div:first-child { display: grid; gap: .2rem; }
+.print-proof__header strong { color: var(--cb-green); }
+.print-proof__header span { color: var(--cb-muted); font-size: .75rem; }
+.print-proof__header > div:last-child { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .35rem; }
+.print-proof__header > div:last-child span { padding: .28rem .48rem; border: 1px solid #dbe3dc; border-radius: 999px; background: #f7faf7; font-weight: 700; }
+
+.print-proof__canvas {
+  min-height: 44rem;
+  padding: 1.25rem;
+  overflow: auto;
+  background-color: #e8ece8;
+  background-image: linear-gradient(45deg, rgb(23 61 32 / 2%) 25%, transparent 25%), linear-gradient(-45deg, rgb(23 61 32 / 2%) 25%, transparent 25%);
+  background-size: 24px 24px;
+  background-position: 0 0, 0 12px;
+}
+
+.print-error,
+.print-empty-state {
+  max-width: 32rem;
+  margin: 4rem auto;
+  padding: 1rem;
+  border: 1px solid #ddc7c2;
+  border-radius: .75rem;
+  color: #6e342b;
+  background: #fff8f6;
+  text-align: center;
+}
+
+.print-error p { margin-top: .4rem; }
 
 .print-preview {
   display: grid;
@@ -287,9 +698,28 @@
   line-height: 1.25;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 68rem) {
   .print-center-page {
     width: 100%;
+    left: auto;
+    transform: none;
+  }
+
+  .print-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .print-sidebar {
+    position: static;
+    max-height: none;
+  }
+
+  .print-sidebar__scroll {
+    overflow: visible;
+  }
+
+  .print-proof__canvas {
+    min-height: 28rem;
   }
 
   .workstation-sheet,
@@ -298,10 +728,46 @@
   }
 }
 
+@media (max-width: 38rem) {
+  .print-center-header,
+  .print-proof__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .print-center-header__note {
+    max-width: none;
+    border-radius: .65rem;
+    text-align: left;
+  }
+
+  .print-intents > div,
+  .print-control-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .print-intents button {
+    min-height: 3.8rem;
+    padding: .55rem .7rem;
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start;
+    text-align: left;
+  }
+
+  .print-intents button > span { grid-row: 1 / span 2; }
+  .print-proof__header > div:last-child { justify-content: flex-start; }
+  .print-proof__canvas { padding: .75rem; }
+}
+
 @media print {
   body {
     min-width: 0;
     background: #fff;
+  }
+
+  .product-shell,
+  .product-main {
+    display: contents;
   }
 
   main.app-shell {
@@ -310,38 +776,62 @@
     padding: 0;
   }
 
+  .product-main {
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
   .app-header,
+  .product-header,
   .product-sidebar,
   .product-mobile-header,
   .product-sidebar-backdrop,
   .prototype-snapshot-export,
+  .product-nav__message,
   .print-center-header,
-  .print-controls,
+  .print-sidebar,
+  .print-proof__header,
   .print-error,
-  .print-center-page > [role="status"] {
+  .print-empty-state {
     display: none !important;
   }
 
   .print-center-page,
+  .print-workspace,
+  .print-proof,
+  .print-proof__canvas,
   .print-preview {
     display: block;
     width: auto;
     max-width: none;
     margin: 0;
     padding: 0;
+    border: 0;
+    border-radius: 0;
     overflow: visible;
+    background: #fff;
+    box-shadow: none;
+    transform: none;
   }
 
   .workstation-sheet,
-  .two-up-sheet {
+  .two-up-sheet,
+  .cookbook-page {
     margin: 0;
     box-shadow: none;
   }
 
   .workstation-card,
   .workstation-sheet,
-  .two-up-sheet {
+  .two-up-sheet,
+  .cookbook-page {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  .cookbook-booklet {
+    display: block;
   }
 }

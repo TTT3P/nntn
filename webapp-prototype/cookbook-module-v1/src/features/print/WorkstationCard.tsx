@@ -34,7 +34,7 @@ function sourceFact(line: IngredientLine): string {
   }
   if (line.sourceValue !== null) return String(line.sourceValue);
   if (line.sourceUnit !== null) return line.sourceUnit;
-  return "ไม่ระบุในต้นฉบับ";
+  return "ยังไม่ระบุ";
 }
 
 function mediaForStep(
@@ -86,8 +86,8 @@ export function WorkstationCard({
           <h3>{page.document.recipeName}</h3>
         </div>
         <div className="workstation-card__status">
-          <p>{previewMode === "approved" ? "ตัวอย่างพร้อมพิมพ์แบบอนุมัติ" : "ตัวอย่างฉบับร่าง"}</p>
-          <p>{readiness === "ready" ? "สถานะสูตร: พร้อมตามเกณฑ์พิมพ์" : "สถานะสูตร: ฉบับร่าง"}</p>
+          <p>{previewMode === "approved" ? "พร้อมพิมพ์" : "ตรวจทานก่อนพิมพ์"}</p>
+          <p>{readiness === "ready" ? "สถานะสูตร: พร้อมใช้" : "สถานะสูตร: ข้อมูลยังไม่ครบ"}</p>
           <p>
             {page.document.stage === "service"
               ? "ตัวคูณ 1 · ต่อหนึ่งเสิร์ฟ"
@@ -107,7 +107,7 @@ export function WorkstationCard({
           page.document.methodDecisionNote !== null) && (
           <section
             className="workstation-facts"
-            aria-label={`ข้อมูลใช้งานตามต้นฉบับของ ${page.document.recipeName}`}
+            aria-label={`ข้อมูลใช้งานของ ${page.document.recipeName}`}
           >
             {page.document.operationalNotes.length > 0 && (
               <ul>{page.document.operationalNotes.map((note, index) => (
@@ -115,7 +115,7 @@ export function WorkstationCard({
               ))}</ul>
             )}
             {page.document.yieldText !== null && (
-              <p><strong>ผลผลิตตามต้นฉบับ</strong> <span>{page.document.yieldText}</span></p>
+              <p><strong>ผลผลิต</strong> <span>{page.document.yieldText}</span></p>
             )}
             {page.document.methodDecisionNote !== null && (
               <p><strong>ขอบเขตวิธีทำ</strong> <span>{page.document.methodDecisionNote}</span></p>
@@ -125,7 +125,7 @@ export function WorkstationCard({
         {page.document.ingredients.length > 0 && (
           <table className="workstation-ingredients">
             <thead>
-              <tr><th>วัตถุดิบ</th><th>ปริมาณตามต้นฉบับ</th></tr>
+              <tr><th>วัตถุดิบ</th><th>ปริมาณ</th></tr>
             </thead>
             <tbody>
               {page.document.ingredients.map((line) => (
@@ -162,7 +162,7 @@ export function WorkstationCard({
                         <img src={renderedUrl} alt={asset.altText} />
                         <div className="workstation-media__meta">
                           {asset.reviewState === "sample" && (
-                            <strong>DEMO · ภาพตัวอย่าง ยังไม่ยืนยัน</strong>
+                            <strong>ภาพตัวอย่าง · ยังไม่ยืนยัน</strong>
                           )}
                           {link.reviewNeeded && <strong>รูปควรตรวจใหม่</strong>}
                           <span>{ROLE_LABELS[link.role]}</span>
@@ -184,12 +184,12 @@ export function WorkstationCard({
 
       {(readiness === "draft" || hasMissingMedia || hasSampleMedia || hasReviewNeededMedia) && (
         <footer className="workstation-card__warnings" aria-label="คำเตือนชุดพิมพ์">
-          {readiness === "draft" && <p>ฉบับร่าง — ข้อมูลวิธีทำ แหล่งข้อมูล หรือรายการขวางยังต้องตรวจ</p>}
+          {readiness === "draft" && <p>ข้อมูลยังไม่ครบ — กรุณาตรวจรายการวัตถุดิบและวิธีทำ</p>}
           {readiness === "draft" && page.document.blockers.map((blocker, index) => (
             <p key={`${String(index)}:${blocker}`}>{blocker}</p>
           ))}
           {hasMissingMedia && <p>รูปขั้นตอนไม่ครบ — พิมพ์แบบข้อความได้</p>}
-          {hasSampleMedia && <p>มีภาพ DEMO — ใช้อ้างอิงเท่านั้น ยังไม่ยืนยัน</p>}
+          {hasSampleMedia && <p>มีภาพตัวอย่าง — ใช้อ้างอิงเท่านั้น ยังไม่ยืนยัน</p>}
           {hasReviewNeededMedia && <p>มีรูปที่ควรตรวจใหม่</p>}
         </footer>
       )}

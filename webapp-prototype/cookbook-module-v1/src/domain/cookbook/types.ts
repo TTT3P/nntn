@@ -1,4 +1,4 @@
-export type RecipeKind = "sellable_menu" | "prepared_recipe";
+export type RecipeKind = "sellable_menu" | "prepared_recipe" | "sub_recipe";
 export type RecipeIdentity = number | string;
 export type WorkStage = "prep" | "cook" | "service";
 export type ReviewState = "confirmed" | "candidate" | "conflict" | "blocked";
@@ -36,6 +36,7 @@ export interface RecipeVersion {
   recipeVersionId: string;
   name: string;
   kind: RecipeKind;
+  category?: string | null;
   parentRecipeIds: RecipeIdentity[];
   reviewState: ReviewState;
   sourceLocators: string[];

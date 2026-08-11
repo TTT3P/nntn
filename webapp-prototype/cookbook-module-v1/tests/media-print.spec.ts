@@ -23,15 +23,45 @@ function expectPdfPages(
   }
 }
 
+test("prints a reading-order A5 cookbook without Print Center chrome", async ({ page }) => {
+  await page.goto("./#/print");
+  await page.getByRole("searchbox", { name: "ค้นหาสูตร" }).fill("RCP-026");
+  await page.getByRole("checkbox", { name: "ไข่ข้น · RCP-026" }).check();
+  await page.getByRole("button", { name: /พิมพ์เป็นเล่ม/u }).click();
+
+  const pages = page.locator(".cookbook-page");
+  await expect(pages).toHaveCount(3);
+  await expect(page.getByRole("heading", { name: "คู่มือสูตรครัว NNTN" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "สารบัญ", exact: true })).toBeVisible();
+  await expect(page.getByRole("article", { name: "ไข่ข้น" })).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "เปิดเมนู" }).click();
+  await expect(page.locator(".product-sidebar-backdrop")).toBeVisible();
+  await page.emulateMedia({ media: "print" });
+  await expect(page.locator(".product-sidebar")).toBeHidden();
+  await expect(page.locator(".product-mobile-header")).toBeHidden();
+  await expect(page.locator(".product-sidebar-backdrop")).toBeHidden();
+  await expect(page.locator(".print-sidebar")).toBeHidden();
+  await expect(page.locator(".print-proof__header")).toBeHidden();
+  expectPdfPages(
+    await page.pdf({ preferCSSPageSize: true, printBackground: true }),
+    3,
+    148,
+    210,
+  );
+});
+
 test("prints one A5 SOP without app-shell or blank trailing pages", async ({ page }) => {
   await page.goto("./#/print");
-  await page.getByRole("checkbox", { name: "ข้าวขยำเนื้อแดดเดียว · รหัส 37" }).check();
+  await page.getByRole("checkbox", { name: "ข้าวขยำเนื้อแดดเดียว · RCP-021" }).check();
+  await page.locator("details.print-advanced > summary").click();
   await page.getByRole("combobox", { name: /^จุดงาน/u }).selectOption("service");
   await expect(page.locator(".workstation-sheet")).toHaveCount(1);
 
   await page.emulateMedia({ media: "print" });
-  await expect(page.locator(".app-header")).toBeHidden();
-  await expect(page.getByRole("region", { name: "Prototype snapshot export" })).toBeHidden();
+  await expect(page.locator(".product-sidebar")).toBeHidden();
+  await expect(page.locator(".product-mobile-header")).toBeHidden();
   expectPdfPages(
     await page.pdf({ preferCSSPageSize: true, printBackground: true }),
     1,
@@ -41,7 +71,7 @@ test("prints one A5 SOP without app-shell or blank trailing pages", async ({ pag
 });
 
 test("shows exact operational facts on Work and Print without Service cost basis", async ({ page }) => {
-  await page.goto("./#/work/2?stage=all");
+  await page.goto("./#/work/RCP-002?stage=all");
   const soup = page.getByRole("article", { name: "น้ำซุปก๋วยเตี๋ยว V3" });
   await expect(soup.getByText(
     "ใช้น้ำเปล่าประมาณ 50 ลิตร ต่อหม้อเบอร์ 70",
@@ -52,13 +82,13 @@ test("shows exact operational facts on Work and Print without Service cost basis
     { exact: true },
   )).toBeVisible();
 
-  await page.goto("./#/work/159?stage=service");
+  await page.goto("./#/work/RCP-069?stage=service");
   const service = page.getByRole("article", { name: "ข้าวหน้าเนื้อยากินิกุ" });
   await expect(service.getByText("ตักข้าวหุงสุก 180 กรัม", { exact: true })).toBeVisible();
   await expect(service.getByText("ข้าวสารญี่ปุ่นดิบ 72 กรัม", { exact: true })).toHaveCount(0);
 
   await page.goto("./#/print");
-  await page.getByRole("checkbox", { name: "น้ำซุปก๋วยเตี๋ยว V3 · รหัส 2" }).check();
+  await page.getByRole("checkbox", { name: "น้ำซุปก๋วยเตี๋ยว V3 · RCP-002" }).check();
   await expect(page.getByRole("article", {
     name: /น้ำซุปก๋วยเตี๋ยว V3 · ผลิตซอสและของเตรียม/u,
   })).toHaveCount(2);
@@ -86,26 +116,26 @@ test("shows exact operational facts on Work and Print without Service cost basis
 });
 
 test("excludes removed dependencies while retaining the same recipe where it is still used", async ({ page }) => {
-  await page.goto("./#/work/156?stage=all");
+  await page.goto("./#/work/SRCP-014?stage=all");
   await expect(page.getByRole("heading", { level: 4, name: "ซอสอเนกประสงค์" }))
     .toHaveCount(0);
   await expect(page.getByRole("article", { name: "ซอสยากินิกุ" }).locator("tbody tr"))
     .toHaveCount(11);
   await expect(page.locator("tbody tr")).toHaveCount(11);
 
-  await page.goto("./#/work/157?stage=all");
+  await page.goto("./#/work/SRCP-015?stage=all");
   await expect(page.getByRole("heading", { level: 4, name: "ซอสอเนกประสงค์" }))
     .toBeVisible();
   await expect(page.locator("tbody tr")).toHaveCount(14);
 
   await page.goto("./#/print");
-  const removedRoot = page.getByRole("checkbox", { name: "ซอสยากินิกุ · รหัส 156" });
+  const removedRoot = page.getByRole("checkbox", { name: "ซอสยากินิกุ · SRCP-014" });
   await removedRoot.check();
   await expect(page.getByRole("article", { name: /ซอสอเนกประสงค์/u })).toHaveCount(0);
   await expect(page.locator(".workstation-ingredients tbody tr")).toHaveCount(11);
 
   await removedRoot.uncheck();
-  await page.getByRole("checkbox", { name: "ผัดผัก · รหัส 157" }).check();
+  await page.getByRole("checkbox", { name: "ผัดผัก · SRCP-015" }).check();
   await expect(page.getByRole("article", { name: /ซอสอเนกประสงค์/u }).first())
     .toBeVisible();
   await expect(page.locator(".workstation-ingredients tbody tr")).toHaveCount(14);
@@ -113,7 +143,8 @@ test("excludes removed dependencies while retaining the same recipe where it is 
 
 test("loads base-aware DEMO media, preserves step attachment, and fits real A5 cards", async ({ page }) => {
   await page.goto("./#/print");
-  await page.getByRole("checkbox", { name: "ข้าวหน้าเนื้อตุ๋น · รหัส 165" }).check();
+  await page.getByRole("checkbox", { name: "ข้าวหน้าเนื้อตุ๋น · RCP-071" }).check();
+  await page.locator("details.print-advanced > summary").click();
   await page.getByRole("combobox", { name: /^จุดงาน/u }).selectOption("service");
 
   const sheets = page.locator(".workstation-sheet");
@@ -135,7 +166,7 @@ test("loads base-aware DEMO media, preserves step attachment, and fits real A5 c
 
   const mediaList = page.getByRole("list", { name: "รูปขั้นตอน 2" });
   await expect(mediaList.getByRole("img", { name: /DEMO.*กล่องเดลิเวอรี/u })).toBeVisible();
-  await expect(mediaList.getByText(/DEMO · ภาพตัวอย่าง ยังไม่ยืนยัน/u)).toBeVisible();
+  await expect(mediaList.getByText(/ภาพตัวอย่าง · ยังไม่ยืนยัน/u)).toBeVisible();
   const mediaPaths = await mediaList.locator("img").evaluateAll((images) =>
     images.map((image) => new URL(image.currentSrc).pathname),
   );
@@ -146,18 +177,17 @@ test("loads base-aware DEMO media, preserves step attachment, and fits real A5 c
   expect(await textOnlySteps.locator(".workstation-media").count()).toBe(0);
 });
 
-test("prints the exact long blocker without clipping an A5 SOP", async ({ page }) => {
+test("prints the confirmed flour quantities without clipping an A5 SOP", async ({ page }) => {
   await page.goto("./#/print");
-  await page.getByRole("checkbox", { name: "เนื้อตุ๋น (ราดข้าว) · รหัส 164" }).check();
+  await page.getByRole("checkbox", { name: "เนื้อตุ๋น (ราดข้าว) · SRCP-019" }).check();
+  await page.getByRole("button", { name: /^A5 ใบงาน/u }).click();
+  await page.locator("details.print-advanced > summary").click();
   await page.getByRole("combobox", { name: /^จุดงาน/u }).selectOption("prep");
-  await page.getByRole("combobox", { name: /^แม่แบบ/u }).selectOption("station");
 
   const sheets = page.locator(".workstation-sheet");
   await expect(sheets).toHaveCount(7);
-  await expect(page.getByText(
-    "แป้งมันฮ่องกง แป้งข้าวโพด และน้ำผสมแป้งใช้เท่าไรในฉบับลายมือสุดท้าย",
-    { exact: true },
-  )).toHaveCount(2);
+  expect(await page.getByText("1 ช้อนโต๊ะพูนๆ", { exact: true }).count()).toBeGreaterThanOrEqual(2);
+  await expect(page.getByText("120 ml", { exact: true }).first()).toBeVisible();
   const geometry = await sheets.evaluateAll((elements) => elements.map((element) => ({
     clientWidth: element.clientWidth,
     scrollWidth: element.scrollWidth,
@@ -170,8 +200,8 @@ test("prints the exact long blocker without clipping an A5 SOP", async ({ page }
   }
 
   await page.emulateMedia({ media: "print" });
-  await expect(page.locator(".app-header")).toBeHidden();
-  await expect(page.getByRole("region", { name: "Prototype snapshot export" })).toBeHidden();
+  await expect(page.locator(".product-sidebar")).toBeHidden();
+  await expect(page.locator(".product-mobile-header")).toBeHidden();
   expectPdfPages(
     await page.pdf({ preferCSSPageSize: true, printBackground: true }),
     7,
@@ -182,13 +212,14 @@ test("prints the exact long blocker without clipping an A5 SOP", async ({ page }
 
 test("prints a methodless recipe as one nonblank A5 DRAFT sheet", async ({ page }) => {
   await page.goto("./#/print");
-  await page.getByRole("checkbox", { name: "ผงคั่วพริกเกลือ · รหัส 162" }).check();
+  await page.getByRole("checkbox", { name: "ผงคั่วพริกเกลือ · SRCP-018" }).check();
+  await page.getByRole("button", { name: /^A5 ใบงาน/u }).click();
+  await page.locator("details.print-advanced > summary").click();
   await page.getByRole("combobox", { name: /^จุดงาน/u }).selectOption("prep");
-  await page.getByRole("combobox", { name: /^แม่แบบ/u }).selectOption("station");
 
   const sheet = page.locator(".workstation-sheet");
   await expect(sheet).toHaveCount(1);
-  await expect(sheet.getByText("สถานะสูตร: ฉบับร่าง", { exact: true })).toBeVisible();
+  await expect(sheet.getByText("สถานะสูตร: ข้อมูลยังไม่ครบ", { exact: true })).toBeVisible();
   await expect(sheet.getByLabel("คำเตือนชุดพิมพ์").getByText(
     "มีสัดส่วนผสมครบ แต่ยังไม่มีขั้นตอนคลุก/เก็บ/ผลผลิต จึงพิมพ์ได้เฉพาะฉบับร่าง",
     { exact: true },
@@ -206,8 +237,8 @@ test("prints a methodless recipe as one nonblank A5 DRAFT sheet", async ({ page 
   expect(geometry.scrollHeight).toBe(geometry.clientHeight);
 
   await page.emulateMedia({ media: "print" });
-  await expect(page.locator(".app-header")).toBeHidden();
-  await expect(page.getByRole("region", { name: "Prototype snapshot export" })).toBeHidden();
+  await expect(page.locator(".product-sidebar")).toBeHidden();
+  await expect(page.locator(".product-mobile-header")).toBeHidden();
   expectPdfPages(
     await page.pdf({ preferCSSPageSize: true, printBackground: true }),
     1,
@@ -219,9 +250,9 @@ test("prints a methodless recipe as one nonblank A5 DRAFT sheet", async ({ page 
 test("keeps every production fixture media sequence in its exact accessible step", async ({ page }) => {
   await page.goto("./#/print");
   for (const name of [
-    "เนื้อตุ๋น (ราดข้าว) · รหัส 164",
-    "ข้าวขยำเนื้อแดดเดียว · รหัส 37",
-    "ข้าวหน้าเนื้อตุ๋น · รหัส 165",
+    "เนื้อตุ๋น (ราดข้าว) · SRCP-019",
+    "ข้าวขยำเนื้อแดดเดียว · RCP-021",
+    "ข้าวหน้าเนื้อตุ๋น · RCP-071",
   ]) {
     await page.getByRole("checkbox", { name }).check();
   }
@@ -260,14 +291,15 @@ test("keeps every production fixture media sequence in its exact accessible step
 test("renders A4 two-up sheets with an unclipped odd tail", async ({ page }) => {
   await page.goto("./#/print");
   for (const name of [
-    "ข้าวหน้าเนื้อตุ๋น · รหัส 165",
-    "ข้าวหน้าเนื้อยากินิกุ · รหัส 159",
-    "ข้าวขยำเนื้อแดดเดียว · รหัส 37",
+    "ข้าวหน้าเนื้อตุ๋น · RCP-071",
+    "ข้าวหน้าเนื้อยากินิกุ · RCP-069",
+    "ข้าวขยำเนื้อแดดเดียว · RCP-021",
   ]) {
     await page.getByRole("checkbox", { name }).check();
   }
+  await page.getByRole("button", { name: /^A4 สูตรเต็ม/u }).click();
+  await page.locator("details.print-advanced > summary").click();
   await page.getByRole("combobox", { name: /^จุดงาน/u }).selectOption("service");
-  await page.getByRole("combobox", { name: /^แม่แบบ/u }).selectOption("two-up");
   const sheets = page.locator(".two-up-sheet");
   await expect(sheets).toHaveCount(2);
 
@@ -314,7 +346,8 @@ test("renders A4 two-up sheets with an unclipped odd tail", async ({ page }) => 
   }
 
   await page.emulateMedia({ media: "print" });
-  await expect(page.getByRole("region", { name: "Prototype snapshot export" })).toBeHidden();
+  await expect(page.locator(".product-sidebar")).toBeHidden();
+  await expect(page.locator(".product-mobile-header")).toBeHidden();
   expectPdfPages(
     await page.pdf({ preferCSSPageSize: true, printBackground: true }),
     2,
@@ -338,7 +371,8 @@ for (const viewport of [
     expect(libraryOverflow.document).toBeLessThanOrEqual(1);
 
     await page.goto("./#/print");
-    await page.getByRole("checkbox", { name: "ข้าวหน้าเนื้อตุ๋น · รหัส 165" }).check();
+    await page.getByRole("checkbox", { name: "ข้าวหน้าเนื้อตุ๋น · RCP-071" }).check();
+    await page.locator("details.print-advanced > summary").click();
     await page.getByRole("combobox", { name: /^จุดงาน/u }).selectOption("service");
     await expect(page.locator(".print-preview")).toBeVisible();
     const printOverflow = await page.evaluate(() => {

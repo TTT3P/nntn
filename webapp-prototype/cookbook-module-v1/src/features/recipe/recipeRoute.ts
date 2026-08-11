@@ -8,6 +8,8 @@ export function encodeRecipeIdentity(identity: RecipeIdentity): string {
     return String(identity);
   }
 
+  if (/^(?:RCP|SRCP)-[A-Z0-9-]+$/u.test(identity)) return identity;
+
   let encoded = "s~";
   for (let index = 0; index < identity.length; index += 1) {
     encoded += identity.charCodeAt(index).toString(16).padStart(4, "0");
@@ -20,6 +22,7 @@ export function decodeRecipeIdentity(segment: string): RecipeIdentity | null {
     const value = Number(segment);
     return Number.isSafeInteger(value) ? value : null;
   }
+  if (/^(?:RCP|SRCP)-[A-Z0-9-]+$/u.test(segment)) return segment;
   if (!segment.startsWith("s~")) return null;
 
   const hex = segment.slice(2);

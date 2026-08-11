@@ -6,8 +6,10 @@ import type {
   KitchenSotDraftClient,
   LoadedKitchenSotDraft,
 } from "../../data/KitchenSotDraftClient";
+import type { CookbookDocumentClient } from "../../data/CookbookDocumentClient";
 import fixture from "../../data/fixtures/first-set.json";
 import type { CookbookSnapshot, RecipeVersion, WorkStage } from "../../domain/cookbook/types";
+import type { CookbookV6Document } from "../../domain/cookbookV6/types";
 import { FixtureCookbookRepository } from "../../data/FixtureCookbookRepository";
 import {
   parseKitchenSotDocument,
@@ -15,9 +17,11 @@ import {
 } from "../../domain/sot/kitchenSotDocument";
 import { PrototypeContext, type PrototypeContextValue } from "../../prototype/PrototypeProvider";
 import { makeIngredientLine, makeMediaAsset, makeRecipe, makeSnapshot, makeStepMediaLink, makeWorkStep } from "../../test/builders";
+import { withOwnerConfirmedEggRecipe } from "../../test/ownerConfirmedEggRecipe";
 import { renderWithPrototype } from "../../test/renderWithPrototype";
 import { encodeRecipeIdentity } from "../recipe/recipeRoute";
 import { KitchenSotDraftProvider } from "../review/KitchenSotDraftProvider";
+import { CookbookDocumentProvider } from "../cookbook/CookbookDocumentProvider";
 import { resolveWorkStageDraft, WorkStagePage } from "./WorkStagePage";
 
 afterEach(cleanup);
@@ -83,6 +87,65 @@ function renderWithKitchenSotDocument(
   );
 }
 
+function v6WorkDocument(): CookbookV6Document {
+  return {
+    schemaVersion: "6.0.0",
+    generatedAt: "2026-08-10T00:00:00.000Z",
+    derivedFrom: { v5Path: "internal", v5Sha256: "a".repeat(64), catalogSha256: "b".repeat(64) },
+    recipes: [
+      {
+        recipeId: "SRCP-001", code: "SRCP-001", name: "ซอสเตรียม", kind: "prepared_recipe",
+        category: "ซอส", active: true, reviewState: "confirmed_by_owner", sourceLocators: [],
+        yieldText: "", operationalNotes: [], methodDecisionNote: "",
+        ingredients: [{
+          lineId: "dep-line", name: "น้ำ", kind: "ingredient", amountText: "10", unitText: "กรัม",
+          sourceDisplayText: "10 กรัม", ingredientId: null, componentRecipeId: null, servingNote: "",
+          costBasisText: "ห้ามแสดงต้นทุนลับ", decisionStatus: "confirmed", selectedSource: null, active: true,
+        }],
+        methodSteps: [{ stepId: "dep-step", stage: "prep", instruction: "ผสมซอส", order: 1 }],
+        blockers: [], workDocuments: { prep: { stage: "prep", scalable: true, ingredientLineIds: ["dep-line"], stepIds: ["dep-step"] } },
+        parentRecipeIds: ["RCP-001"], lineage: { source: "catalog", sourceRecipeId: null },
+      },
+      {
+        recipeId: "RCP-001", code: "RCP-001", name: "เมนูทดสอบ", kind: "sellable_menu",
+        category: "เมนู", active: true, reviewState: "confirmed_by_owner", sourceLocators: [],
+        yieldText: "", operationalNotes: [], methodDecisionNote: "",
+        ingredients: [
+          {
+            lineId: "rice", name: "ข้าวสุก", kind: "ingredient", amountText: "199", unitText: "กรัม",
+            sourceDisplayText: "199 กรัม", ingredientId: null, componentRecipeId: null, servingNote: "ตัก 199 กรัม",
+            costBasisText: "ห้ามแสดงต้นทุนลับ", decisionStatus: "confirmed", selectedSource: null, active: true,
+          },
+          {
+            lineId: "removed-dep", name: "ซอสเตรียม", kind: "prepared_recipe", amountText: "1", unitText: "ชุด",
+            sourceDisplayText: "1 ชุด", ingredientId: null, componentRecipeId: "SRCP-001", servingNote: "",
+            costBasisText: "", decisionStatus: "removed_by_editor", selectedSource: null, active: false,
+          },
+        ],
+        methodSteps: [{ stepId: "service-step", stage: "service", instruction: "จัดจาน", order: 1 }],
+        blockers: [], workDocuments: { service: { stage: "service", scalable: false, ingredientLineIds: ["rice", "removed-dep"], stepIds: ["service-step"] } },
+        parentRecipeIds: [], lineage: { source: "catalog", sourceRecipeId: null },
+      },
+    ],
+  };
+}
+
+function renderWithCookbookDocument(document: CookbookV6Document, route: string) {
+  const client: CookbookDocumentClient = {
+    load: vi.fn(async () => ({ document, baseSha256: "c".repeat(64), origin: "v6-draft" as const, path: "internal" })),
+    save: vi.fn(),
+  };
+  return render(
+    <PrototypeContext.Provider value={prototypeContext(firstSet)}>
+      <CookbookDocumentProvider client={client} mediaSnapshot={firstSet}>
+        <MemoryRouter initialEntries={[route]}>
+          <Routes><Route path="/work/:recipeId" element={<WorkStagePage />} /></Routes>
+        </MemoryRouter>
+      </CookbookDocumentProvider>
+    </PrototypeContext.Provider>,
+  );
+}
+
 const rawRecipes = parseKitchenSotDocument(fixture).recipes.map((recipe) => ({
   recipeId: recipe.recipe_id,
   recipeName: recipe.recipe_name,
@@ -115,17 +178,53 @@ function stagedRecipe(overrides: Partial<RecipeVersion> = {}): RecipeVersion {
 }
 
 describe("WorkStagePage", () => {
+  test("prefers the current cookbook projection and keeps removed dependencies and cost basis out", async () => {
+    const view = renderWithCookbookDocument(v6WorkDocument(), "/work/RCP-001?stage=all");
+
+    expect(await screen.findByText("199 กรัม")).toBeVisible();
+    expect(screen.queryByRole("heading", { level: 4, name: "ซอสเตรียม" })).not.toBeInTheDocument();
+    expect(view.container).not.toHaveTextContent("ห้ามแสดงต้นทุนลับ");
+  });
+
+  test("keeps technical implementation language out of normal work copy", async () => {
+    const view = renderWithCookbookDocument(v6WorkDocument(), "/work/RCP-001?stage=all");
+    await screen.findByRole("heading", { level: 2, name: "เมนูทดสอบ" });
+
+    expect(view.container.textContent).not.toMatch(/\b(?:AI|Prototype|Mock|V4|V5|V6|schema|source|review|blocker|provenance|candidate|Supabase|gateway|snapshot|local[- ]session|session)\b/iu);
+    expect(view.container).toHaveTextContent("พร้อมใช้");
+  });
+
   test("uses the loaded V5 candidate text instead of the stale read projection", async () => {
     const document = parseKitchenSotDocument(fixture);
     const rice = document.recipes.find(({ recipe_id }) => recipe_id === 165)!.items
       .find(({ item_name }) => item_name === "ข้าวหอมมะลิหุงสุก")!;
-    rice.candidate_text = "199 กรัม จาก V5";
+    rice.candidate_text = "199 กรัม ฉบับล่าสุด";
 
     renderWithKitchenSotDocument(document, "/work/165?stage=service");
 
-    expect(await screen.findByText("199 กรัม จาก V5")).toBeVisible();
+    expect(await screen.findByText("199 กรัม ฉบับล่าสุด")).toBeVisible();
     expect(screen.queryByText("180 กรัม")).not.toBeInTheDocument();
     expect(screen.queryByText("72 กรัม")).not.toBeInTheDocument();
+  });
+
+  test("renders the owner-confirmed egg recipe as a two-item DRAFT without invented steps", async () => {
+    const document = withOwnerConfirmedEggRecipe(parseKitchenSotDocument(fixture));
+    renderWithKitchenSotDocument(document, "/work/18?stage=all");
+
+    const article = await screen.findByRole("article", { name: "ไข่ข้น" });
+    expect(within(article).getByText("ข้อมูลยังไม่ครบ")).toBeVisible();
+    expect(within(article).getAllByRole("row")).toHaveLength(3);
+    expect(within(article).getByRole("row", { name: "ไข่ไก่ 2 ฟอง" })).toBeVisible();
+    expect(within(article).getByRole("row", {
+      name: "รสดีก๋วยเตี๋ยวเข้มข้น ครึ่งช้อนชา (2.5g)",
+    })).toBeVisible();
+    expect(within(article).getByText("ยังไม่มีวิธีทำไข่ข้นที่เจ้าของหรือครัวยืนยัน"))
+      .toBeVisible();
+    expect(article.querySelector("ol")).toBeNull();
+    expect(within(article).queryByRole("row", { name: /น้ำปลาทิพรส/u }))
+      .not.toBeInTheDocument();
+    expect(within(article).queryByRole("row", { name: /ผงชูรส/u }))
+      .not.toBeInTheDocument();
   });
 
   test.each(rawRecipes)(
@@ -145,8 +244,8 @@ describe("WorkStagePage", () => {
     renderWithKitchenSotDocument(parseKitchenSotDocument(fixture), "/work/159?stage=all");
 
     const article = await screen.findByRole("article", { name: "ข้าวหน้าเนื้อยากินิกุ" });
-    expect(within(article).getByText("DRAFT")).toBeVisible();
-    expect(within(article).queryByText("พร้อมใช้งาน")).not.toBeInTheDocument();
+    expect(within(article).getByText("ข้อมูลยังไม่ครบ")).toBeVisible();
+    expect(within(article).queryByText("พร้อมใช้")).not.toBeInTheDocument();
   });
 
   test("shows only exact unresolved blocker messages from the raw document", async () => {
@@ -240,7 +339,7 @@ describe("WorkStagePage", () => {
       );
 
       const article = await screen.findByRole("article", { name: recipe.recipe_name });
-      expect(within(article).getByText("DRAFT")).toBeVisible();
+      expect(within(article).getByText("ข้อมูลยังไม่ครบ")).toBeVisible();
       expect(within(article).getAllByRole("row").length).toBeGreaterThan(1);
       expect(article.querySelector("ol")).toBeNull();
     },
@@ -416,7 +515,7 @@ describe("WorkStagePage", () => {
       route: "/work/37?stage=prep",
     });
     expect(screen.getByText("1.5 ช้อนโต๊ะ (เดิม)")).toBeVisible();
-    expect(screen.getByText("DRAFT")).toBeVisible();
+    expect(screen.getByText("ข้อมูลยังไม่ครบ")).toBeVisible();
     expect(screen.getByText("ยืนยันวิธีทอด")).toBeVisible();
     expect(screen.getByText("รูปขั้นตอนไม่ครบ")).toBeVisible();
     expect(recipe).toEqual(before);
@@ -438,7 +537,7 @@ describe("WorkStagePage", () => {
       route: "/work/37?stage=all",
     });
     expect(screen.getByRole("alert")).toHaveAccessibleName("สร้างเอกสารจุดงานไม่ได้");
-    expect(screen.getByRole("alert")).toHaveTextContent("Unresolved dependency");
+    expect(screen.getByRole("alert")).toHaveTextContent("ข้อมูลสูตรที่เกี่ยวข้องยังไม่ครบ");
   });
 
   test("keeps an unknown reachable component classified as a document error", () => {
@@ -462,7 +561,7 @@ describe("WorkStagePage", () => {
       route: "/work/37?stage=prep",
     });
     expect(screen.getByRole("alert")).toHaveAccessibleName("สร้างเอกสารจุดงานไม่ได้");
-    expect(screen.getByRole("alert")).toHaveTextContent("WorkDocumentStageIntegrityError");
+    expect(screen.getByRole("alert")).toHaveTextContent("ข้อมูลสูตรที่เกี่ยวข้องยังไม่ครบ");
     expect(screen.queryByRole("heading", { name: "ผลิตซอสและของเตรียม" })).not.toBeInTheDocument();
   });
 
@@ -474,7 +573,7 @@ describe("WorkStagePage", () => {
       route: "/work/37?stage=all",
     });
 
-    expect(screen.getByRole("alert")).toHaveTextContent("DuplicateRecipeIdentityError");
+    expect(screen.getByRole("alert")).toHaveTextContent("ข้อมูลสูตรที่เกี่ยวข้องยังไม่ครบ");
     expect(screen.queryByText("ชื่อ revision แรก")).not.toBeInTheDocument();
     expect(screen.queryByText("ชื่อ revision สอง")).not.toBeInTheDocument();
   });
@@ -493,7 +592,7 @@ describe("WorkStagePage", () => {
       route: "/work/37?stage=prep",
     });
 
-    expect(screen.getByRole("alert")).toHaveTextContent("DuplicateReachableRecipeVersionIdError");
+    expect(screen.getByRole("alert")).toHaveTextContent("ข้อมูลสูตรที่เกี่ยวข้องยังไม่ครบ");
   });
 
   test("turns malformed projected render values into a named alert without partial output", () => {
@@ -505,7 +604,7 @@ describe("WorkStagePage", () => {
     });
 
     expect(screen.getByRole("alert")).toHaveAccessibleName("สร้างเอกสารจุดงานไม่ได้");
-    expect(screen.getByRole("alert")).toHaveTextContent("InvalidProjectedWorkDocumentFieldError");
+    expect(screen.getByRole("alert")).toHaveTextContent("ข้อมูลสูตรที่เกี่ยวข้องยังไม่ครบ");
     expect(screen.queryByRole("heading", { name: "ผลิตซอสและของเตรียม" })).not.toBeInTheDocument();
   });
 
@@ -525,7 +624,7 @@ describe("WorkStagePage", () => {
 
     expect(screen.getByRole("group", { name: "รูปของขั้นตอน เตรียมของ" })).toBeVisible();
     expect(screen.getByText("เพิ่มรูปภายหลัง")).toBeVisible();
-    expect(screen.getByText("แก้ไขรูปได้เฉพาะ session นี้")).toBeVisible();
+    expect(screen.queryByText(/แก้ไขชั่วคราว/u)).not.toBeInTheDocument();
   });
 
   test("edits media through a visible work step without changing readiness status", async () => {
@@ -540,14 +639,14 @@ describe("WorkStagePage", () => {
     });
 
     expect(screen.getByText("รูปควรตรวจใหม่")).toBeVisible();
-    expect(screen.getByText("พร้อมใช้งาน")).toBeVisible();
-    expect(screen.queryByText("DRAFT")).not.toBeInTheDocument();
+    expect(screen.getByText("พร้อมใช้")).toBeVisible();
+    expect(screen.queryByText("ข้อมูลยังไม่ครบ")).not.toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText("ชนิดรูป"), "final");
     await user.selectOptions(screen.getByLabelText("ภาชนะ"), "plate");
     expect(screen.getByLabelText("ชนิดรูป")).toHaveValue("final");
     expect(screen.getByLabelText("ภาชนะ")).toHaveValue("plate");
-    expect(screen.getByText("พร้อมใช้งาน")).toBeVisible();
+    expect(screen.getByText("พร้อมใช้")).toBeVisible();
   });
 
   test("previews a local file from the visible stage editor", async () => {
@@ -564,6 +663,6 @@ describe("WorkStagePage", () => {
 
     expect(screen.getByAltText("ตัวอย่าง station-prep.png")).toBeVisible();
     expect(screen.getByText("รูปนี้อยู่เฉพาะ session และจะหายเมื่อ reload")).toBeVisible();
-    expect(screen.getByText("พร้อมใช้งาน")).toBeVisible();
+    expect(screen.getByText("พร้อมใช้")).toBeVisible();
   });
 });

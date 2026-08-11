@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { chromium } from "@playwright/test";
 import { createServer } from "vite";
+import { prepareCookbookV6TestVault } from "../scripts/prepare-cookbook-v6-test-vault.mjs";
 
 const host = "127.0.0.1";
 const port = 4176;
@@ -31,6 +32,8 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+const isolated = await prepareCookbookV6TestVault();
+process.env.NNTN_VAULT_ROOT = isolated.vaultRoot;
 const server = await createServer({
   logLevel: "error",
   server: { host, port, strictPort: true },
@@ -66,22 +69,18 @@ try {
   await page.getByRole("heading", { name: "ภาพรวม Cookbook" }).waitFor();
   const [download] = await Promise.all([
     page.waitForEvent("download"),
-    page.getByRole("button", { name: "Export prototype snapshot" }).click(),
+    page.getByRole("button", { name: "ดาวน์โหลดข้อมูล" }).click(),
   ]);
   assert(
-    download.suggestedFilename() === "cookbook-prototype-snapshot.json",
+    download.suggestedFilename() === "nntn-cookbook.json",
     `unexpected download filename: ${download.suggestedFilename()}`,
   );
   const stream = await download.createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);
   const exported = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-  assert(exported.schemaVersion === "cookbook-prototype-v1", "downloaded JSON schema mismatch");
-  assert(Array.isArray(exported.recipes) && exported.recipes.length > 0, "downloaded JSON missing recipes");
-  assert(
-    exported.media.every((asset) => asset.exportWarning === "binary-not-included"),
-    "session media warning missing from browser download",
-  );
+  assert(exported.schemaVersion === "6.0.0", "downloaded JSON schema mismatch");
+  assert(Array.isArray(exported.recipes) && exported.recipes.length === 87, "downloaded JSON must contain all recipes");
 
   const beforeGraceEvents = await page.evaluate(() => globalThis.__snapshotDownloadUrlEvents);
   assert(beforeGraceEvents.length === 1 && beforeGraceEvents[0].type === "create", `URL revoked before download consumption: ${JSON.stringify(beforeGraceEvents)}`);
@@ -91,7 +90,7 @@ try {
   assert(events[0].type === "create" && events[1].type === "revoke", `unexpected URL lifecycle: ${JSON.stringify(events)}`);
   assert(events[0].url === events[1].url, `revoked wrong download URL: ${JSON.stringify(events)}`);
   assert(events[1].at - events[0].at >= 900, `download URL grace period too short: ${JSON.stringify(events)}`);
-  assert(await page.locator('a[download="cookbook-prototype-snapshot.json"]').count() === 0, "download anchor leaked into document");
+  assert(await page.locator('a[download="nntn-cookbook.json"]').count() === 0, "download anchor leaked into document");
   assert(externalRequests.length === 0, `unexpected external requests: ${externalRequests.join(", ")}`);
 } finally {
   await browser?.close();

@@ -1,24 +1,27 @@
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
-import type { KitchenSotDraftClient } from "../data/KitchenSotDraftClient";
 import { RecipeLibraryPage } from "../features/library/RecipeLibraryPage";
 import { RecipeDetailPage } from "../features/recipe/RecipeDetailPage";
+import { RecipeEditor } from "../features/recipe/RecipeEditor";
 import { PrintCenterPage } from "../features/print/PrintCenterPage";
-import { SourceReviewPage } from "../features/review/SourceReviewPage";
 import { WorkStagePage } from "../features/work/WorkStagePage";
+import { CookbookHomePage } from "../features/home/CookbookHomePage";
+import { BranchMenuPage, CookbookSettingsPage, MeasurementKnowledgePage } from "../features/modules/CookbookModulePages";
+import { AppShell } from "./AppShell";
 
 function RoutePlaceholder({ title }: { title: string }) {
   return (
     <section className="route-placeholder" aria-label={title}>
       <h2>{title}</h2>
-      <p>หน้าจอชั่วคราวสำหรับเส้นทางที่อนุมัติแล้ว</p>
+      <p>ตรวจสอบที่อยู่แล้วลองอีกครั้ง</p>
     </section>
   );
 }
 
-export function AppRoutes({ draftClient }: { draftClient?: KitchenSotDraftClient }) {
+export function AppRoutes() {
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/recipes" replace />} />
+    <AppShell><Routes>
+      <Route path="/" element={<Navigate to="/home" replace />} />
+      <Route path="/home" element={<CookbookHomePage />} />
       <Route
         path="/recipes"
         element={<RecipeLibraryPage />}
@@ -28,8 +31,8 @@ export function AppRoutes({ draftClient }: { draftClient?: KitchenSotDraftClient
         element={<RecipeDetailPage />}
       />
       <Route
-        path="/source-review"
-        element={<SourceReviewPage draftClient={draftClient} />}
+        path="/recipes/:recipeId/edit"
+        element={<RecipeEditor />}
       />
       <Route
         path="/work/:recipeId"
@@ -39,18 +42,21 @@ export function AppRoutes({ draftClient }: { draftClient?: KitchenSotDraftClient
         path="/print"
         element={<PrintCenterPage />}
       />
+      <Route path="/branches" element={<BranchMenuPage />} />
+      <Route path="/knowledge" element={<MeasurementKnowledgePage />} />
+      <Route path="/settings" element={<CookbookSettingsPage />} />
       <Route
         path="*"
         element={<RoutePlaceholder title="ไม่พบหน้าที่ต้องการ" />}
       />
-    </Routes>
+    </Routes></AppShell>
   );
 }
 
-export function AppRouter({ draftClient }: { draftClient?: KitchenSotDraftClient }) {
+export function AppRouter() {
   return (
     <HashRouter>
-      <AppRoutes draftClient={draftClient} />
+      <AppRoutes />
     </HashRouter>
   );
 }
