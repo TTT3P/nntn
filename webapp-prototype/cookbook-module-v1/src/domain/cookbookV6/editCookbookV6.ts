@@ -25,6 +25,7 @@ export type CookbookV6Edit =
   | { type: "ingredient-update"; recipeId: string; lineId: string; patch: IngredientEditablePatch }
   | { type: "ingredient-rename"; recipeId: string; lineId: string; name: string }
   | { type: "ingredient-move"; recipeId: string; lineId: string; toIndex: number }
+  | { type: "ingredient-work-stages-update"; recipeId: string; lineId: string; stages: CookbookV6Stage[] }
   | { type: "ingredient-remove"; recipeId: string; lineId: string }
   | { type: "method-add"; recipeId: string; step: CookbookV6MethodStep }
   | { type: "method-update"; recipeId: string; stepId: string; patch: MethodEditablePatch }
@@ -121,6 +122,19 @@ function applyEdit(document: CookbookV6Document, edit: CookbookV6Edit): void {
       const fromIndex = recipe.ingredients.findIndex((line) => line.lineId === edit.lineId);
       if (fromIndex < 0) fail("UNKNOWN_INGREDIENT_LINE");
       move(recipe.ingredients, fromIndex, edit.toIndex);
+      syncIngredientOrder(recipe);
+      return;
+    }
+    case "ingredient-work-stages-update": {
+      lineFor(recipe, edit.lineId);
+      const requested = [...new Set(edit.stages)];
+      for (const workDocument of Object.values(recipe.workDocuments)) {
+        workDocument.ingredientLineIds = workDocument.ingredientLineIds
+          .filter((lineId) => lineId !== edit.lineId);
+      }
+      for (const stage of requested) {
+        ensureWorkDocument(recipe, stage).ingredientLineIds.push(edit.lineId);
+      }
       syncIngredientOrder(recipe);
       return;
     }

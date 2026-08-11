@@ -75,6 +75,65 @@ function makeLine(lineId: string, name: string, amountText = "", unitText = ""):
 }
 
 describe("applyCookbookV6Edits", () => {
+  test("moves one ingredient across work stages without changing recipe content or another recipe", () => {
+    const original = makeDocument();
+    const edited = applyCookbookV6Edits(original, [{
+      type: "ingredient-work-stages-update",
+      recipeId: "RCP-026",
+      lineId: "egg",
+      stages: ["prep", "service", "prep"],
+    }]);
+
+    expect(edited.recipes[0]?.workDocuments.cook?.ingredientLineIds).toEqual([]);
+    expect(edited.recipes[0]?.workDocuments.prep?.ingredientLineIds).toEqual(["egg"]);
+    expect(edited.recipes[0]?.workDocuments.service?.ingredientLineIds).toEqual(["egg"]);
+    expect(edited.recipes[0]?.ingredients[0]).toEqual(original.recipes[0]?.ingredients[0]);
+    expect(edited.recipes[1]).toEqual(original.recipes[1]);
+  });
+
+  test("removes one ingredient from every work stage", () => {
+    const original = makeDocument();
+    const recipe = original.recipes[0];
+    if (recipe === undefined) throw new Error("MISSING_TEST_RECIPE");
+    recipe.workDocuments.prep = {
+      stage: "prep",
+      scalable: true,
+      ingredientLineIds: ["egg"],
+      stepIds: [],
+    };
+    recipe.workDocuments.service = {
+      stage: "service",
+      scalable: false,
+      ingredientLineIds: ["egg"],
+      stepIds: [],
+    };
+
+    const edited = applyCookbookV6Edits(original, [{
+      type: "ingredient-work-stages-update",
+      recipeId: "RCP-026",
+      lineId: "egg",
+      stages: [],
+    }]);
+
+    expect(edited.recipes[0]?.workDocuments.cook?.ingredientLineIds).toEqual([]);
+    expect(edited.recipes[0]?.workDocuments.prep).toEqual({
+      stage: "prep",
+      scalable: true,
+      ingredientLineIds: [],
+      stepIds: [],
+    });
+    expect(edited.recipes[0]?.workDocuments.service?.ingredientLineIds).toEqual([]);
+  });
+
+  test("rejects a work-stage update for an unknown ingredient line", () => {
+    expect(() => applyCookbookV6Edits(makeDocument(), [{
+      type: "ingredient-work-stages-update",
+      recipeId: "RCP-026",
+      lineId: "missing",
+      stages: ["prep"],
+    }])).toThrow("UNKNOWN_INGREDIENT_LINE");
+  });
+
   test("adds, renames, updates, reorders and removes ingredients without changing another recipe", () => {
     const document = makeDocument();
     const otherRecipeBefore = structuredClone(document.recipes[1]);
