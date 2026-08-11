@@ -173,12 +173,12 @@ function renderWithCookbookDocument(document: CookbookV6Document) {
 }
 
 describe("PrintCenterPage", () => {
-  test("presents the three output intents and groups recipes by editable category", () => {
+  test("presents the three output intents and controlled print collections", () => {
     renderWithPrototype(<PrintCenterPage />, {
       snapshot: makeSnapshot({
         recipes: [
-          { ...serviceRecipe({ recipeId: "RCP-156", name: "ซอสยากินิกุ", kind: "prepared_recipe" }), category: "ซอสและน้ำซุป" },
-          { ...serviceRecipe({ recipeId: "RCP-069", name: "ข้าวหน้าเนื้อยากินิกุ", kind: "sellable_menu" }), category: "เมนูขาย" },
+          { ...serviceRecipe({ recipeId: "RCP-156", name: "ซอสยากินิกุ", kind: "prepared_recipe" }), category: "ซอสและน้ำจิ้ม" },
+          { ...serviceRecipe({ recipeId: "RCP-069", name: "ข้าวหน้าเนื้อยากินิกุ", kind: "sellable_menu" }), category: "เมนูอาหาร" },
         ],
       }),
     });
@@ -186,8 +186,27 @@ describe("PrintCenterPage", () => {
     expect(screen.getByRole("button", { name: /A4 สูตรเต็ม/u })).toBeVisible();
     expect(screen.getByRole("button", { name: /A5 ใบงาน/u })).toBeVisible();
     expect(screen.getByRole("button", { name: /พิมพ์เป็นเล่ม/u })).toBeVisible();
-    expect(screen.getByText("ซอสและน้ำซุป")).toBeVisible();
-    expect(screen.getByText("เมนูขาย")).toBeVisible();
+    expect(screen.getByRole("button", { name: "พิมพ์ทั้งหมวด ซอสและน้ำจิ้ม 1 สูตร" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "พิมพ์ทั้งหมวด เมนูอาหาร 1 สูตร" })).toBeVisible();
+  });
+
+  test("selects every sauce recipe with one collection action", async () => {
+    const user = userEvent.setup();
+    renderWithPrototype(<PrintCenterPage />, {
+      snapshot: makeSnapshot({
+        recipes: [
+          { ...serviceRecipe({ recipeId: "RCP-SA", recipeVersionId: "sauce-a-v1", name: "ซอส ก", kind: "prepared_recipe" }), category: "ซอสและน้ำจิ้ม" },
+          { ...serviceRecipe({ recipeId: "RCP-SB", recipeVersionId: "sauce-b-v1", name: "ซอส ข", kind: "prepared_recipe" }), category: "ซอสและน้ำจิ้ม" },
+          { ...serviceRecipe({ recipeId: "RCP-M", recipeVersionId: "menu-a-v1", name: "เมนู ก", kind: "sellable_menu" }), category: "เมนูอาหาร" },
+        ],
+      }),
+    });
+
+    await user.click(screen.getByRole("button", { name: "พิมพ์ทั้งหมวด ซอสและน้ำจิ้ม 2 สูตร" }));
+
+    expect(screen.getByRole("checkbox", { name: "ซอส ก · RCP-SA" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "ซอส ข · RCP-SB" })).toBeChecked();
+    expect(screen.getByText("เลือกแล้ว 2 สูตร")).toBeVisible();
   });
 
   test("searches by public code and keeps a visible selected-set summary", async () => {

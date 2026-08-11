@@ -31,8 +31,9 @@ import { deriveRecipeMediaCoverage } from "../recipe/recipeMediaCoverage";
 import { decodeRecipeIdentity } from "../recipe/recipeRoute";
 import { useOptionalKitchenSotDraft } from "../review/KitchenSotDraftProvider";
 import { CookbookBooklet } from "./CookbookBooklet";
-import { buildPrintCollections } from "./printCollections";
-import { projectPrintSet } from "./printSetProjection";
+import { PrintCollectionPicker } from "./PrintCollectionPicker";
+import { buildPrintCollections, type PrintCollectionKey } from "./printCollections";
+import { projectPrintSet, type PrintSetMode } from "./printSetProjection";
 import { WorkstationCard } from "./WorkstationCard";
 import { useOptionalCookbookDocument } from "../cookbook/CookbookDocumentProvider";
 import "./print.css";
@@ -224,17 +225,6 @@ function compareRecipes(left: RecipeVersion, right: RecipeVersion): number {
   return identityKey(left.recipeId).localeCompare(identityKey(right.recipeId));
 }
 
-function publicRecipeCode(recipe: RecipeVersion): string | null {
-  return typeof recipe.recipeId === "string" && /^(?:RCP|SRCP)-/u.test(recipe.recipeId)
-    ? recipe.recipeId
-    : null;
-}
-
-function recipeChoiceLabel(recipe: RecipeVersion): string {
-  const code = publicRecipeCode(recipe);
-  return code === null ? recipe.name : `${recipe.name} · ${code}`;
-}
-
 function isDuplicateSnapshotError(
   error: unknown,
 ): error is DuplicatePrintRecipeIdentityError {
@@ -366,10 +356,11 @@ export function PrintCenterPage({
       ...recipeIdsFromSearchParams(searchParams),
     ].map(identityKey)),
   ]);
+  const [printSetMode, setPrintSetMode] = useState<PrintSetMode>(() => ({
+    kind: "manual",
+    dependencyPolicy: "include",
+  }));
   const [outputIntent, setOutputIntent] = useState<OutputIntent>("station");
-  const [dependencyPolicy, setDependencyPolicy] = useState<DependencyPolicy>("include");
-  const [searchText, setSearchText] = useState("");
-  const [closedCollectionKeys, setClosedCollectionKeys] = useState<string[]>([]);
   const [stage, setStage] = useState<WorkStage | "all">("all");
   const [template, setTemplate] = useState<PrintTemplate>("auto");
   const [multiplierText, setMultiplierText] = useState("1");
@@ -421,15 +412,10 @@ export function PrintCenterPage({
     const recipe = recipesByIdentity.get(key);
     return recipe === undefined ? [] : [recipe];
   });
-  const normalizedSearch = searchText.trim().toLocaleLowerCase("th");
-  const collections = buildPrintCollections(availableRecipes).flatMap((collection) => {
-    const recipes = collection.recipes.filter((recipe) => {
-      if (normalizedSearch === "") return true;
-      const code = publicRecipeCode(recipe) ?? "";
-      return `${recipe.name} ${code}`.toLocaleLowerCase("th").includes(normalizedSearch);
-    });
-    return recipes.length === 0 ? [] : [{ ...collection, recipes }];
-  });
+  const collections = buildPrintCollections(availableRecipes);
+  const dependencyPolicy: DependencyPolicy = printSetMode.kind === "manual"
+    ? printSetMode.dependencyPolicy
+    : printSetMode.kind === "daily" ? "include" : "reference";
 
   const parsedMultiplier = stage === "service" ? 1 : Number(multiplierText);
   const multiplierValid =
@@ -442,10 +428,7 @@ export function PrintCenterPage({
 
   if (selectedIds.length > 0 && (outputIntent === "booklet" || multiplierValid)) {
     try {
-      const includedRecipes = projectPrintSet(snapshot.recipes, selectedIds, {
-        kind: "manual",
-        dependencyPolicy,
-      }).fullRecipes;
+      const includedRecipes = projectPrintSet(snapshot.recipes, selectedIds, printSetMode).fullRecipes;
       for (const recipe of includedRecipes) {
         if (rawRecipeDraftById === null) {
           const coverage = deriveRecipeMediaCoverage(recipe, snapshot).coverage;
@@ -491,13 +474,40 @@ export function PrintCenterPage({
       : current.filter((candidate) => candidate !== key));
   }
 
+  function chooseCollection(collectionKey: PrintCollectionKey): void {
+    const collection = collections.find(({ key }) => key === collectionKey);
+    setPrintSetMode({ kind: "collection", collectionKey });
+    setSelectedKeys(collection?.recipes.map(({ recipeId }) => identityKey(recipeId)) ?? []);
+  }
+
+  function chooseDaily(): void {
+    setPrintSetMode({ kind: "daily" });
+    setSelectedKeys([]);
+  }
+
+  function chooseManual(): void {
+    setPrintSetMode({ kind: "manual", dependencyPolicy: "reference" });
+    setSelectedKeys([]);
+  }
+
+  function clearCollection(collectionKey: PrintCollectionKey): void {
+    const collectionKeys = new Set(
+      collections.find(({ key }) => key === collectionKey)?.recipes.map(({ recipeId }) => identityKey(recipeId)) ?? [],
+    );
+    setSelectedKeys((current) => current.filter((key) => !collectionKeys.has(key)));
+  }
+
   function chooseOutput(next: OutputIntent): void {
     setOutputIntent(next);
     if (next === "booklet") {
-      setDependencyPolicy("reference");
+      if (printSetMode.kind === "manual") {
+        setPrintSetMode({ kind: "manual", dependencyPolicy: "reference" });
+      }
       return;
     }
-    setDependencyPolicy("include");
+    if (printSetMode.kind === "manual") {
+      setPrintSetMode({ kind: "manual", dependencyPolicy: "include" });
+    }
     setTemplate(next === "master" ? "two-up" : "station");
   }
 
@@ -521,8 +531,20 @@ export function PrintCenterPage({
       <div className="print-workspace">
         <form className="print-sidebar" onSubmit={(event) => event.preventDefault()}>
           <div className="print-sidebar__scroll">
+            <PrintCollectionPicker
+              collections={collections}
+              activeCollectionKey={printSetMode.kind === "collection" ? printSetMode.collectionKey : null}
+              selectedRecipeKeys={selectedKeys}
+              onChooseCollection={chooseCollection}
+              onChooseDaily={chooseDaily}
+              onChooseManual={chooseManual}
+              onToggleRecipe={toggleRecipe}
+              onSelectAll={chooseCollection}
+              onClearCollection={clearCollection}
+            />
+
             <fieldset className="print-intents">
-              <legend>1. พิมพ์เพื่อใช้อะไร</legend>
+              <legend>2. พิมพ์เพื่อใช้อะไร</legend>
               <div>
                 <button type="button" aria-pressed={outputIntent === "master"} onClick={() => chooseOutput("master")}>
                   <span aria-hidden="true">▤</span><strong>A4 สูตรเต็ม</strong><small>สูตรอ้างอิงฉบับเต็ม</small>
@@ -536,55 +558,7 @@ export function PrintCenterPage({
               </div>
             </fieldset>
 
-            <fieldset className="print-recipe-selection">
-              <legend>2. เลือกสูตรตามชื่อ</legend>
-              <label className="print-search">
-                <span>ค้นหาสูตร</span>
-                <input
-                  type="search"
-                  value={searchText}
-                  placeholder="ค้นหาชื่อหรือรหัสสูตร"
-                  onChange={(event) => setSearchText(event.target.value)}
-                />
-              </label>
-              <div className="print-collections">
-                {collections.map((collection) => (
-                  <details
-                    className="print-collection"
-                    key={collection.key}
-                    open={normalizedSearch !== "" || !closedCollectionKeys.includes(collection.key)}
-                    onToggle={(event) => {
-                      if (normalizedSearch !== "") return;
-                      const isOpen = event.currentTarget.open;
-                      setClosedCollectionKeys((current) => isOpen
-                        ? current.filter((key) => key !== collection.key)
-                        : current.includes(collection.key) ? current : [...current, collection.key]);
-                    }}
-                  >
-                    <summary>
-                      <span aria-hidden="true">›</span>
-                      <strong>{collection.label}</strong>
-                      <em>{collection.recipes.length}</em>
-                    </summary>
-                    <div>
-                      {collection.recipes.map((recipe) => (
-                        <label key={`${identityKey(recipe.recipeId)}:${JSON.stringify(recipe.recipeVersionId)}`}>
-                          <input
-                            type="checkbox"
-                            checked={selectedKeys.includes(identityKey(recipe.recipeId))}
-                            onChange={(event) => toggleRecipe(recipe.recipeId, event.target.checked)}
-                          />
-                          {recipeChoiceLabel(recipe)}
-                        </label>
-                      ))}
-                    </div>
-                  </details>
-                ))}
-              </div>
-              {collections.length === 0 && <p className="print-empty-search">ไม่พบสูตรที่ค้นหา</p>}
-            </fieldset>
-
-            <section className="print-selected" aria-label="รายการที่เลือก">
+            <section className="print-selected" aria-label="รายการที่เลือก" aria-live="polite">
               <header><strong>เลือกแล้ว {selectedRecipes.length} สูตร</strong><button type="button" onClick={() => setSelectedKeys([])}>ล้างการเลือก</button></header>
               {selectedRecipes.length === 0
                 ? <p>เลือกสูตรจากหมวดด้านบน</p>
@@ -593,7 +567,12 @@ export function PrintCenterPage({
 
             <label className="print-dependency-policy">
               <span><strong>3. สูตรประกอบ</strong><small>กำหนดว่าต้องแนบสูตรที่อ้างอิงหรือไม่</small></span>
-              <select aria-label="สูตรประกอบ" value={dependencyPolicy} onChange={(event) => setDependencyPolicy(event.target.value as DependencyPolicy)}>
+              <select
+                aria-label="สูตรประกอบ"
+                value={dependencyPolicy}
+                disabled={printSetMode.kind !== "manual"}
+                onChange={(event) => setPrintSetMode({ kind: "manual", dependencyPolicy: event.target.value as DependencyPolicy })}
+              >
                 <option value="reference">อ้างอิงชื่อและรหัสเท่านั้น</option>
                 <option value="include">แนบสูตรที่ต้องเตรียม</option>
               </select>
