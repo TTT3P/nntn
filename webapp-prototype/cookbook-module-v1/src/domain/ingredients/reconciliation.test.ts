@@ -556,4 +556,44 @@ describe("recordReconciliationDecision", () => {
       },
     }))).toThrow("INVALID_RECONCILIATION_DECISION");
   });
+
+  test("rejects tampered proposal evidence that substitutes another canonical record type", () => {
+    const proposalSource = sourceRecord("shared-source", "ingredient", {
+      ingredient_name: "Oyster sauce",
+      brand: "Mae Krua",
+    });
+    const substitutedType = sourceRecord("shared-source", "recipe_line", {
+      ingredient_name: "Oyster sauce",
+      brand: "Mae Krua",
+    });
+    const secondLine = sourceRecord("second-line", "recipe_line", {
+      ingredient_name: "Oyster sauce",
+      brand: "Mae Krua",
+    });
+    const records = [proposalSource, substitutedType, secondLine];
+    const snapshot = snapshotWithRecords(records);
+    const originalProposal = buildReconciliationQueue(
+      makeLegacyStagingBatch(records),
+      snapshot,
+    ).find(({ sourceRecordId, actionType, proposalId }) =>
+      sourceRecordId === proposalSource.sourceRecordId &&
+      actionType === "link_ingredient" &&
+      proposalId.includes(":ingredient:"))!;
+    const tamperedProposal = structuredClone(originalProposal);
+    tamperedProposal.evidence = tamperedProposal.evidence.map((entry) =>
+      entry.label === "record_type" ? { ...entry, value: "recipe_line" } : entry);
+
+    expect(() => recordReconciliationDecision(tamperedProposal, validDecisionInput({
+      type: "link_ingredient",
+      ingredientId: "ing-oyster-sauce",
+      requiredSpecificationId: "spec-oyster-sauce-standard",
+    }, snapshot, {
+      proposalId: tamperedProposal.proposalId,
+      sourceRecordId: tamperedProposal.sourceRecordId,
+      bulk: {
+        records: [substitutedType, secondLine],
+        comparisonFields: ["ingredient_name", "brand"],
+      },
+    }))).toThrow("INVALID_RECONCILIATION_DECISION");
+  });
 });

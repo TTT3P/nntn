@@ -184,10 +184,6 @@ function requireText(value: unknown): void {
   if (typeof value !== "string" || value.trim().length === 0) invalid();
 }
 
-function sourceKey(record: Pick<LegacySourceRecord, "manifestId" | "sourceSha256" | "sourceRecordId">): string {
-  return JSON.stringify([record.manifestId, record.sourceSha256, record.sourceRecordId]);
-}
-
 function fullSourceKey(
   record: Pick<LegacySourceRecord, "manifestId" | "sourceSha256" | "recordType" | "sourceRecordId">,
 ): string {
@@ -199,6 +195,18 @@ function fullSourceKey(
   ]);
 }
 
+function resolveProposalSource(
+  proposal: ReconciliationProposal,
+  snapshot: IngredientMasterSnapshot,
+): LegacySourceRecord {
+  const matches = snapshot.legacySourceRecords.filter((record) =>
+    record.manifestId === proposal.manifestId &&
+    record.sourceSha256 === proposal.sourceSha256 &&
+    record.sourceRecordId === proposal.sourceRecordId &&
+    proposalId(record, proposal.actionType) === proposal.proposalId);
+  return matches.length === 1 ? matches[0]! : invalid();
+}
+
 function stagingIdentity(record: LegacySourceRecord): string {
   return typeof record.stagingId === "string" && record.stagingId.trim().length > 0
     ? `staging:${record.stagingId}`
@@ -208,7 +216,7 @@ function stagingIdentity(record: LegacySourceRecord): string {
 function validateBulkEvidence(
   bulk: BulkDecisionEvidence | undefined,
   snapshot: IngredientMasterSnapshot,
-  proposal: ReconciliationProposal,
+  proposalSource: LegacySourceRecord,
 ): void {
   if (bulk === undefined) return;
   if (bulk.records.length < 2 || bulk.comparisonFields.length === 0 ||
@@ -225,14 +233,6 @@ function validateBulkEvidence(
     if (recordsBySourceKey.has(canonicalSourceKey)) invalid();
     recordsBySourceKey.set(canonicalSourceKey, canonical);
   }
-
-  const proposalRecordType = proposal.evidence.find(({ label }) => label === "record_type")?.value;
-  const proposalSource = snapshot.legacySourceRecords.find((record) =>
-    record.manifestId === proposal.manifestId &&
-    record.sourceSha256 === proposal.sourceSha256 &&
-    record.recordType === proposalRecordType &&
-    record.sourceRecordId === proposal.sourceRecordId);
-  if (proposalSource === undefined) invalid();
 
   const resolvedIdentities = new Set<string>();
   let comparison: string | undefined;
@@ -338,14 +338,13 @@ export function recordReconciliationDecision(
     input.sourceRecordId !== proposal.sourceRecordId ||
     input.action.type !== proposal.actionType) invalid();
 
-  const matchingSource = input.snapshot.legacySourceRecords.some((record) =>
-    sourceKey(record) === sourceKey(proposal));
   const matchingManifest = input.snapshot.sourceManifests.some(({ manifestId, sha256 }) =>
     manifestId === proposal.manifestId && sha256 === proposal.sourceSha256);
-  if (!matchingSource || !matchingManifest) invalid();
+  if (!matchingManifest) invalid();
+  const proposalSource = resolveProposalSource(proposal, input.snapshot);
 
   validateAction(input.action, input);
-  validateBulkEvidence(input.bulk, input.snapshot, proposal);
+  validateBulkEvidence(input.bulk, input.snapshot, proposalSource);
 
   return {
     decisionId: input.decisionId,
