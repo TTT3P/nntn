@@ -96,25 +96,31 @@ export interface CostObservation {
   approvalState: ApprovalState;
 }
 
-export interface ReconciliationPublishPayload {
-  rename?: {
-    ingredientId: string;
-    primaryName: string;
-    alias: IngredientAlias;
-  };
-  redirectId?: string;
+export interface SpecificationPublishPayload {
   mappings?: IngredientMapping[];
   costObservations?: CostObservation[];
   usableYields?: UsableYieldEvidence[];
 }
 
+export interface LinkIngredientPublishPayload extends SpecificationPublishPayload {
+  rename?: {
+    ingredientId: string;
+    primaryName: string;
+    alias: IngredientAlias;
+  };
+}
+
+export interface MergeRedirectPublishPayload {
+  redirectId?: string;
+}
+
 export type ReconciliationAction =
-  | { type: "create_ingredient"; ingredient: CookbookIngredient; firstSpecification: IngredientSpecification; publish?: ReconciliationPublishPayload }
-  | { type: "create_specification"; specification: IngredientSpecification; publish?: ReconciliationPublishPayload }
-  | { type: "link_ingredient"; ingredientId: string; requiredSpecificationId: string | null; publish?: ReconciliationPublishPayload }
-  | { type: "merge_redirect"; fromIngredientId: string; toIngredientId: string; publish?: ReconciliationPublishPayload }
-  | { type: "link_component_recipe"; componentRecipeId: string; publish?: ReconciliationPublishPayload }
-  | { type: "mark_unmapped"; reason: string; publish?: ReconciliationPublishPayload };
+  | { type: "create_ingredient"; ingredient: CookbookIngredient; firstSpecification: IngredientSpecification; publish?: SpecificationPublishPayload }
+  | { type: "create_specification"; specification: IngredientSpecification; publish?: SpecificationPublishPayload }
+  | { type: "link_ingredient"; ingredientId: string; requiredSpecificationId: string | null; publish?: LinkIngredientPublishPayload }
+  | { type: "merge_redirect"; fromIngredientId: string; toIngredientId: string; publish?: MergeRedirectPublishPayload }
+  | { type: "link_component_recipe"; componentRecipeId: string }
+  | { type: "mark_unmapped"; reason: string };
 
 export interface ReconciliationProposal {
   proposalId: string;

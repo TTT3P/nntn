@@ -56,7 +56,7 @@ function approvedDecision(
 ): ReconciliationDecision {
   return {
     decisionId,
-    proposalId: `proposal-${decisionId}`,
+    proposalId: `${SHA}:ingredient:${sourceRecordId}:${action.type}`,
     manifestId: "manifest-v1",
     sourceSha256: SHA,
     sourceRecordId,
@@ -106,6 +106,125 @@ function pendingYield(yieldEvidenceId: string): UsableYieldEvidence {
 }
 
 describe("publishReconciliationBatch", () => {
+  test("rejects a fake proposal ID before publishing an otherwise valid action", () => {
+    const current = emptyCurrent();
+    const record = sourceRecord("forged-proposal", { name: "Oyster sauce" });
+    const decision = {
+      ...approvedDecision("decision-forged-proposal", record.sourceRecordId, {
+        type: "link_ingredient",
+        ingredientId: "ing-oyster-sauce",
+        requiredSpecificationId: null,
+      }),
+      proposalId: "proposal-forged-by-caller",
+    };
+
+    expect(() => publishReconciliationBatch(current, staging(record), [decision]))
+      .toThrow("INVALID_RECONCILIATION_PROPOSAL");
+  });
+
+  test("rejects canonical side effects attached to mark-unmapped, component, or rejected decisions", () => {
+    const current = emptyCurrent();
+    const records = [
+      sourceRecord("forged-unmapped", { name: "Unmapped" }),
+      sourceRecord("forged-component", { componentRecipeId: "recipe-component" }),
+      sourceRecord("forged-rejected", { name: "Rejected" }),
+    ];
+    const rename = {
+      rename: {
+        ingredientId: "ing-oyster-sauce",
+        primaryName: "Forged rename",
+        alias: {
+          aliasId: "alias-forged",
+          ingredientId: "ing-oyster-sauce",
+          text: "Oyster sauce",
+          sourceRecordId: records[0]!.sourceRecordId,
+        },
+      },
+    };
+    const unmapped = approvedDecision("decision-forged-unmapped", records[0]!.sourceRecordId, {
+      type: "mark_unmapped",
+      reason: "No identity approved",
+    }, rename);
+    const component = approvedDecision("decision-forged-component", records[1]!.sourceRecordId, {
+      type: "link_component_recipe",
+      componentRecipeId: "recipe-component",
+    }, rename);
+    const rejected = {
+      ...approvedDecision("decision-forged-rejected", records[2]!.sourceRecordId, {
+        type: "link_ingredient",
+        ingredientId: "ing-oyster-sauce",
+        requiredSpecificationId: null,
+      }, rename),
+      approvalState: "rejected" as const,
+    };
+
+    for (const decision of [unmapped, component, rejected]) {
+      expect(() => publishReconciliationBatch(current, staging(...records), [decision]))
+        .toThrow("UNAUTHORIZED_PUBLISH_SIDE_EFFECT");
+    }
+    expect(current.ingredients[0]!.primaryName).toBe("Oyster sauce");
+  });
+
+  test.each(["rename", "mapping", "cost", "yield"] as const)(
+    "rejects a %s target outside the ingredient/specification authorized by link action",
+    (sideEffect) => {
+      const current = emptyCurrent();
+      current.ingredients.push({
+        ingredientId: "ing-sugar",
+        primaryName: "Sugar",
+        category: "seasoning",
+        status: "active",
+        costingState: "requires_specification",
+      });
+      current.specifications.push({
+        specificationId: "spec-sugar-white",
+        ingredientId: "ing-sugar",
+        label: "White sugar",
+        attributes: {},
+        status: "active",
+        approvalState: "approved",
+      });
+      const record = sourceRecord("cross-target", { cost_per_unit_v1: 72, yield_pct_v1: 1 });
+      const publish: PublishPayload = sideEffect === "rename" ? {
+        rename: {
+          ingredientId: "ing-sugar",
+          primaryName: "Forged sugar rename",
+          alias: {
+            aliasId: "alias-cross-target",
+            ingredientId: "ing-sugar",
+            text: "Sugar",
+            sourceRecordId: record.sourceRecordId,
+          },
+        },
+      } : sideEffect === "mapping" ? {
+        mappings: [{
+          mappingId: "mapping-cross-target",
+          specificationId: "spec-sugar-white",
+          stockItemId: "stock-cross-target",
+          approvalState: "approved",
+        }],
+      } : sideEffect === "cost" ? {
+        costObservations: [{
+          ...pendingObservation("observation-cross-target", 72),
+          specificationId: "spec-sugar-white",
+        }],
+      } : {
+        usableYields: [{
+          ...pendingYield("yield-cross-target"),
+          specificationId: "spec-sugar-white",
+        }],
+      };
+      const decision = approvedDecision("decision-cross-target", record.sourceRecordId, {
+        type: "link_ingredient",
+        ingredientId: "ing-oyster-sauce",
+        requiredSpecificationId: "spec-oyster-sauce-standard",
+      }, publish);
+
+      expect(() => publishReconciliationBatch(current, staging(record), [decision]))
+        .toThrow("UNAUTHORIZED_PUBLISH_TARGET");
+    },
+  );
+
   test("rejects the whole batch without mutating inputs when the third decision is invalid", () => {
     const current = emptyCurrent();
     const batch = staging(
@@ -426,6 +545,89 @@ describe("publishReconciliationBatch", () => {
 
     expect(second.alreadyAppliedDecisionIds).toEqual(["decision-idempotent"]);
     expect(second.snapshot).toEqual(first.snapshot);
+  });
+
+  test("canonicalizes property order before comparing a replayed decision", () => {
+    const current = emptyCurrent();
+    const record = sourceRecord("canonical-replay", { name: "Oyster sauce" });
+    const decision = approvedDecision("decision-canonical-replay", record.sourceRecordId, {
+      type: "link_ingredient",
+      ingredientId: "ing-oyster-sauce",
+      requiredSpecificationId: null,
+    });
+    const first = publishReconciliationBatch(current, staging(record), [decision]);
+    const reordered = {
+      action: {
+        requiredSpecificationId: null,
+        ingredientId: "ing-oyster-sauce",
+        type: "link_ingredient" as const,
+      },
+      approvalState: "approved" as const,
+      note: decision.note,
+      decidedAt: decision.decidedAt,
+      decidedBy: decision.decidedBy,
+      sourceRecordId: decision.sourceRecordId,
+      sourceSha256: decision.sourceSha256,
+      manifestId: decision.manifestId,
+      proposalId: decision.proposalId,
+      decisionId: decision.decisionId,
+    };
+
+    const second = publishReconciliationBatch(first.snapshot, staging(record), [reordered]);
+    expect(second.alreadyAppliedDecisionIds).toEqual([decision.decisionId]);
+    expect(second.snapshot).toEqual(first.snapshot);
+  });
+
+  test("rejects duplicate full source identities and non-deterministic staging IDs", () => {
+    const current = emptyCurrent();
+    const record = sourceRecord("duplicate-source", { name: "Oyster sauce" });
+
+    expect(() => publishReconciliationBatch(current, staging(record, structuredClone(record)), []))
+      .toThrow("DUPLICATE_SOURCE_IDENTITY");
+    expect(() => publishReconciliationBatch(current, staging({
+      ...record,
+      stagingId: "caller-selected-staging-id",
+    }), [])).toThrow("INVALID_STAGING_ID");
+  });
+
+  test("treats an identical deterministic staged source replay as idempotent", () => {
+    const current = emptyCurrent();
+    const record = sourceRecord("staging-replay", { name: "Oyster sauce" });
+    const first = publishReconciliationBatch(current, staging(record), []);
+
+    const second = publishReconciliationBatch(first.snapshot, staging(record), []);
+    expect(second.snapshot).toEqual(first.snapshot);
+  });
+
+  test("rejects two redirects from one ingredient before a redirect map can hide one", () => {
+    const snapshot = makeIngredientMasterSnapshot();
+    snapshot.ingredients.push({
+      ingredientId: "ing-duplicate-redirect-source",
+      primaryName: "Duplicate",
+      category: "seasoning",
+      status: "inactive",
+      costingState: "not_costed",
+    }, {
+      ingredientId: "ing-second-target",
+      primaryName: "Second target",
+      category: "seasoning",
+      status: "active",
+      costingState: "not_costed",
+    });
+    snapshot.redirects.push({
+      redirectId: "redirect-first",
+      fromIngredientId: "ing-duplicate-redirect-source",
+      toIngredientId: "ing-oyster-sauce",
+      decisionId: "decision-link-oyster-sauce",
+    }, {
+      redirectId: "redirect-second",
+      fromIngredientId: "ing-duplicate-redirect-source",
+      toIngredientId: "ing-second-target",
+      decisionId: "decision-link-oyster-sauce",
+    });
+
+    expect(() => parseIngredientMaster(snapshot))
+      .toThrow("INVALID_INGREDIENT_MASTER_SNAPSHOT");
   });
 
   test("reapplies a byte-identical merge decision after its redirect exists", () => {

@@ -66,13 +66,21 @@ function stageRecord(
   sourceRecordId: string,
 ): LegacySourceRecord {
   return Object.freeze({
-    stagingId: `${manifest.sha256}:${recordType}:${sourceRecordId}`,
+    stagingId: legacyStagingId(manifest.sha256, recordType, sourceRecordId),
     manifestId: manifest.manifestId,
     sourceSha256: manifest.sha256,
     recordType,
     sourceRecordId,
     raw: cloneAndFreezeJson(raw),
   });
+}
+
+export function legacyStagingId(
+  sourceSha256: string,
+  recordType: LegacySourceRecord["recordType"],
+  sourceRecordId: string,
+): string {
+  return `${sourceSha256}:${recordType}:${sourceRecordId}`;
 }
 
 function assertUnique(records: readonly LegacySourceRecord[]): void {

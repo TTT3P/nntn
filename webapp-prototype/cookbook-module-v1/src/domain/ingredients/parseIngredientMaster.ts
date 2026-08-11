@@ -8,12 +8,14 @@ import type {
   IngredientRedirect,
   IngredientSpecification,
   LegacySourceRecord,
+  LinkIngredientPublishPayload,
+  MergeRedirectPublishPayload,
   RecipeLineLink,
   ReconciliationAction,
   ReconciliationDecision,
-  ReconciliationPublishPayload,
   RecordStatus,
   SourceManifest,
+  SpecificationPublishPayload,
   UnitConversionEvidence,
   UsableYieldEvidence,
 } from "./types.ts";
@@ -242,18 +244,13 @@ function parseCostObservation(value: unknown): CostObservation {
   };
 }
 
-function parsePublishPayload(value: unknown): ReconciliationPublishPayload {
+function parseSpecificationPublishPayload(
+  value: unknown,
+  allowRename = false,
+): SpecificationPublishPayload {
   const record = recordValue(value);
-  const payload: ReconciliationPublishPayload = {};
-  if (record.rename !== undefined) {
-    const rename = recordValue(record.rename);
-    payload.rename = {
-      ingredientId: identity(rename.ingredientId),
-      primaryName: stringValue(rename.primaryName),
-      alias: parseAlias(rename.alias),
-    };
-  }
-  if (record.redirectId !== undefined) payload.redirectId = identity(record.redirectId);
+  if ((!allowRename && record.rename !== undefined) || record.redirectId !== undefined) invalid();
+  const payload: SpecificationPublishPayload = {};
   if (record.mappings !== undefined) payload.mappings = arrayValue(record.mappings, parseMapping);
   if (record.costObservations !== undefined) {
     payload.costObservations = arrayValue(record.costObservations, parseCostObservation);
@@ -264,10 +261,50 @@ function parsePublishPayload(value: unknown): ReconciliationPublishPayload {
   return payload;
 }
 
-function optionalPublishPayload(record: Record<string, unknown>):
-  | { publish: ReconciliationPublishPayload }
+function parseLinkIngredientPublishPayload(value: unknown): LinkIngredientPublishPayload {
+  const record = recordValue(value);
+  if (record.redirectId !== undefined) invalid();
+  const payload: LinkIngredientPublishPayload = parseSpecificationPublishPayload(record, true);
+  if (record.rename !== undefined) {
+    const rename = recordValue(record.rename);
+    payload.rename = {
+      ingredientId: identity(rename.ingredientId),
+      primaryName: stringValue(rename.primaryName),
+      alias: parseAlias(rename.alias),
+    };
+  }
+  return payload;
+}
+
+function parseMergeRedirectPublishPayload(value: unknown): MergeRedirectPublishPayload {
+  const record = recordValue(value);
+  if (record.rename !== undefined || record.mappings !== undefined ||
+    record.costObservations !== undefined || record.usableYields !== undefined) invalid();
+  return { redirectId: identity(record.redirectId) };
+}
+
+function optionalSpecificationPublishPayload(record: Record<string, unknown>):
+  | { publish: SpecificationPublishPayload }
   | Record<string, never> {
-  return record.publish === undefined ? {} : { publish: parsePublishPayload(record.publish) };
+  return record.publish === undefined ? {} : {
+    publish: parseSpecificationPublishPayload(record.publish),
+  };
+}
+
+function optionalLinkPublishPayload(record: Record<string, unknown>):
+  | { publish: LinkIngredientPublishPayload }
+  | Record<string, never> {
+  return record.publish === undefined ? {} : {
+    publish: parseLinkIngredientPublishPayload(record.publish),
+  };
+}
+
+function optionalRedirectPublishPayload(record: Record<string, unknown>):
+  | { publish: MergeRedirectPublishPayload }
+  | Record<string, never> {
+  return record.publish === undefined ? {} : {
+    publish: parseMergeRedirectPublishPayload(record.publish),
+  };
 }
 
 function parseReconciliationAction(value: unknown): ReconciliationAction {
@@ -278,39 +315,39 @@ function parseReconciliationAction(value: unknown): ReconciliationAction {
         type: "create_ingredient",
         ingredient: parseIngredient(record.ingredient),
         firstSpecification: parseSpecification(record.firstSpecification),
-        ...optionalPublishPayload(record),
+        ...optionalSpecificationPublishPayload(record),
       };
     case "create_specification":
       return {
         type: "create_specification",
         specification: parseSpecification(record.specification),
-        ...optionalPublishPayload(record),
+        ...optionalSpecificationPublishPayload(record),
       };
     case "link_ingredient":
       return {
         type: "link_ingredient",
         ingredientId: identity(record.ingredientId),
         requiredSpecificationId: nullableIdentity(record.requiredSpecificationId),
-        ...optionalPublishPayload(record),
+        ...optionalLinkPublishPayload(record),
       };
     case "merge_redirect":
       return {
         type: "merge_redirect",
         fromIngredientId: identity(record.fromIngredientId),
         toIngredientId: identity(record.toIngredientId),
-        ...optionalPublishPayload(record),
+        ...optionalRedirectPublishPayload(record),
       };
     case "link_component_recipe":
+      if (record.publish !== undefined) invalid();
       return {
         type: "link_component_recipe",
         componentRecipeId: identity(record.componentRecipeId),
-        ...optionalPublishPayload(record),
       };
     case "mark_unmapped":
+      if (record.publish !== undefined) invalid();
       return {
         type: "mark_unmapped",
         reason: stringValue(record.reason),
-        ...optionalPublishPayload(record),
       };
     default:
       return invalid();
@@ -422,6 +459,7 @@ function validateStableIds(snapshot: IngredientMasterSnapshot): void {
   assertUnique(snapshot.specifications, ({ specificationId }) => specificationId);
   assertUnique(snapshot.aliases, ({ aliasId }) => aliasId);
   assertUnique(snapshot.redirects, ({ redirectId }) => redirectId);
+  assertUnique(snapshot.redirects, ({ fromIngredientId }) => fromIngredientId);
   assertUnique(snapshot.mappings, ({ mappingId }) => mappingId);
   assertUnique(snapshot.unitConversions, ({ conversionId }) => conversionId);
   assertUnique(snapshot.usableYields, ({ yieldEvidenceId }) => yieldEvidenceId);
