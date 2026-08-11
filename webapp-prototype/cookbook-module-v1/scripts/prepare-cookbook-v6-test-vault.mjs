@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const defaultModuleRoot = resolve(dirname(scriptPath), "..");
+const vaultDirectoryName = "cookbook-v6-e2e-vault";
 const v4RelativePath = "Operations/CookBook/sot/v4-2026-08-05/source/kitchen-sot-first-set-v2.json";
 const manifestRelativePath = "Operations/CookBook/sot/v4-2026-08-05/SHA256SUMS.txt";
 const v5RelativePath = "Operations/CookBook/sot/v5-draft/kitchen-sot-first-set-v5-draft.json";
@@ -34,6 +35,23 @@ async function requireCanonicalDirectory(path, label) {
   }
 }
 
+async function requireCanonicalExistingVault(vaultRoot, cacheRoot) {
+  let metadata;
+  try {
+    metadata = await lstat(vaultRoot);
+  } catch (error) {
+    if (isMissing(error)) return;
+    throw error;
+  }
+  if (metadata.isSymbolicLink() || !metadata.isDirectory()) {
+    throw new Error(`Refusing noncanonical existing Cookbook V6 test vault: ${vaultRoot}`);
+  }
+  const canonicalVaultRoot = await realpath(vaultRoot);
+  if (canonicalVaultRoot !== vaultRoot || dirname(canonicalVaultRoot) !== cacheRoot) {
+    throw new Error(`Refusing noncanonical existing Cookbook V6 test vault: ${vaultRoot}`);
+  }
+}
+
 function expectedV4Sha(manifest) {
   for (const line of manifest.split(/\r?\n/u)) {
     const match = /^([a-fA-F0-9]{64}) [ *](.+)$/u.exec(line);
@@ -45,11 +63,26 @@ function expectedV4Sha(manifest) {
 export async function prepareCookbookV6TestVault(options = {}) {
   const moduleRoot = resolve(options.moduleRoot ?? defaultModuleRoot);
   const sourceVaultRoot = resolve(options.sourceVaultRoot ?? resolve(moduleRoot, "../../../../../..", "vault/nntn"));
-  const cacheRoot = resolve(moduleRoot, "node_modules/.cache");
-  const vaultRoot = resolve(cacheRoot, "cookbook-v6-e2e-vault");
+  const nodeModulesRoot = resolve(moduleRoot, "node_modules");
+  const cacheRoot = resolve(nodeModulesRoot, ".cache");
+  const vaultRoot = resolve(cacheRoot, vaultDirectoryName);
   await requireCanonicalDirectory(moduleRoot, "Cookbook module root");
+  await requireCanonicalDirectory(nodeModulesRoot, "Cookbook node_modules directory");
   await requireCanonicalDirectory(sourceVaultRoot, "source vault");
-  await mkdir(cacheRoot, { recursive: true });
+  if (cacheRoot !== resolve(moduleRoot, "node_modules/.cache")) {
+    throw new Error("Refusing a Cookbook cache path outside the canonical module root");
+  }
+  try {
+    await requireCanonicalDirectory(cacheRoot, "Cookbook cache directory");
+  } catch (error) {
+    if (!isMissing(error)) throw error;
+    await mkdir(cacheRoot);
+    await requireCanonicalDirectory(cacheRoot, "Cookbook cache directory");
+  }
+  if (relative(cacheRoot, vaultRoot) !== vaultDirectoryName) {
+    throw new Error("Refusing a Cookbook V6 test vault outside node_modules/.cache");
+  }
+  await requireCanonicalExistingVault(vaultRoot, cacheRoot);
 
   const realV4Path = resolve(sourceVaultRoot, v4RelativePath);
   const realManifestPath = resolve(sourceVaultRoot, manifestRelativePath);
@@ -65,6 +98,8 @@ export async function prepareCookbookV6TestVault(options = {}) {
   if (v4Sha256 !== expectedV4Sha(manifest)) throw new Error("V4 checksum mismatch");
 
   await rm(vaultRoot, { recursive: true, force: true });
+  await mkdir(vaultRoot);
+  await requireCanonicalDirectory(vaultRoot, "Cookbook V6 test vault");
   for (const relativePath of [v4RelativePath, manifestRelativePath, v5RelativePath]) {
     const target = resolve(vaultRoot, relativePath);
     await mkdir(dirname(target), { recursive: true });
