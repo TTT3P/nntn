@@ -498,7 +498,7 @@ Expected: all tests PASS.
 **Files:**
 - Modify: `tests/media-print.spec.ts`
 - Verify unchanged: `tests/print-layout.browser.mjs`
-- Update: `docs/HANDOFF.md`
+- Create: `docs/handoffs/2026-08-11-category-print-collections.md`
 
 **Interfaces:**
 - Consumes: completed collection-first Print Center.
@@ -569,7 +569,7 @@ Repeat the Step 1 commands and compare exact before/after V5 and V6 hashes. Requ
 
 - [ ] **Step 7: Update the handoff**
 
-Add a concise section to `docs/HANDOFF.md` with:
+Create `docs/handoffs/2026-08-11-category-print-collections.md` with:
 
 - collection catalog and one-print-job boundary;
 - named collection versus daily packet dependency policy;
@@ -581,7 +581,7 @@ Add a concise section to `docs/HANDOFF.md` with:
 - [ ] **Step 8: Commit the verified gate and handoff**
 
 ```bash
-/opt/homebrew/bin/git add -- tests/media-print.spec.ts docs/HANDOFF.md
+/opt/homebrew/bin/git add -- tests/media-print.spec.ts docs/handoffs/2026-08-11-category-print-collections.md
 /opt/homebrew/bin/git commit -m "test(cookbook): verify category print collections"
 ```
 
