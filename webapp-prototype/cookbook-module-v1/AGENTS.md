@@ -12,8 +12,15 @@ Snapshot ที่รันได้ของ CookingBook Module V1 สำหร
 2. `README.md`
 3. `docs/PRD.html`
 4. `docs/DESIGN.md`
-5. `docs/HANDOFF.md`
-6. Parent `../docs/COOKBOOK-V1-CONTINUE-BRIEF.md`
+5. `docs/ENGINEERING-BASELINE.md`
+6. The active feature spec and plan
+7. `docs/HANDOFF.md`
+8. Parent `../docs/COOKBOOK-V1-CONTINUE-BRIEF.md`
+
+## Default Feature Workflow
+
+- Design, TDD, browser verification, and independent review are defaults.
+- Select additional skills according to the shape of the task.
 
 ## Runtime Contract
 
@@ -50,4 +57,3 @@ git diff --check
 - Source/tests/docs อยู่ในโมดูลนี้
 - `node_modules/`, `dist/`, `test-results/`, `playwright-report/` เป็น generated/runtime และห้ามส่งต่อหรือ commit
 - ไฟล์ชั่วคราวให้อยู่นอก repo หรือใน path ที่ gitignore แล้ว
-
