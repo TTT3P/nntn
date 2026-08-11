@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation, unit/static verification, documentation, immutable-artifact verification, and all five sequential browser/persistence gates are complete. The ERP/V6 prerequisite closure is committed and the V6 isolated-vault cleanup is hardened against symlink redirection. Task 8 is ready for final scoped review; no Food Cost, backend, production migration, or deployment claim is made.
+Migration-core implementation, unit/static verification, documentation, immutable-artifact verification, and all five sequential browser/persistence gates are complete. The ERP/V6 prerequisite closure is committed and the V6 isolated-vault cleanup is hardened against symlink redirection. Source-wide data reconciliation is not complete: design acceptance 5–6 remain `NOT EXECUTED — pending owner reconciliation decisions/#28`. No Food Cost, backend, production migration, or deployment claim is made.
 
 ## Changed files
 
@@ -104,7 +104,7 @@ The isolated V5 gate also exposed that its old test drove `#/source-review`, a r
 ## Boundaries and remaining work
 
 - #26 remains: costing-specification selection, eligibility/staleness, recursive component Food Cost, rounding, batch/portion totals, and margin.
-- #28 remains: reconciliation queue and Ingredient Master UI/CRUD/workflow/export surfaces.
+- #28 remains: reconciliation queue and Ingredient Master UI/CRUD/workflow/export surfaces, including authorized closure of all 426 V1 and 108 first-set direct lines. Current tests prove the closure mechanism and counts only; they do not fabricate or claim source-wide owner decisions.
 - #31 remains: physical backend/schema/adapter, durable CAS/revision, live read-only price refresh, shadow read, adapter cutover, rollback selection, auth, and deployment.
 - Design acceptance 19–20 are recorded exactly as `NOT EXECUTED — blocked by #31` in `docs/HANDOFF.md`.
 - No Ingredient Master record was published to a real database. No Stock V1/V2, Supabase, auth, cloud, deployment, MAW, CROO, or production surface was accessed or changed.

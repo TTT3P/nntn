@@ -249,8 +249,8 @@ The npm `255` behavior is the known controller wrapper limitation recorded in th
 | 2 | `ingredientMigrationTracer.test.ts` — `reports the full V1 evidence without manufacturing owner decisions`. |
 | 3 | Same read-only V1 inventory test: 44 lines / 39 recipes / 16 IDs remain explicit evidence. |
 | 4 | Same V1 inventory test plus tracer `MISSING_PRICE_EVIDENCE`; no zero price is synthesized. |
-| 5 | `relinkRecipeIngredients.test.ts` — `proves the frozen 108-line first-set baseline without dropped or duplicated lines`; Task 8 separately proves the real receipt remains 108 unresolved lines. |
-| 6 | `relinkRecipeIngredients.test.ts` — frozen 426- and 108-line closure tests; tracer source closure reports mapped + unmapped = direct. |
+| 5 | `NOT EXECUTED — pending owner reconciliation decisions/#28`. The real first set remains 108 unresolved direct lines with `ingredientId: null`. Synthetic tests prove the closure guard can count 108 authorized outcomes without drops/duplicates; they do not claim those real decisions exist. |
+| 6 | `NOT EXECUTED — pending owner reconciliation decisions/#28`. Synthetic 426- and 108-line tests prove collision-safe `linked + explicitly unmapped = direct` mechanics. No 426-decision V1 set or 108-decision first-set closure was manufactured. |
 | 7 | Tracer cooked-rice component assertion and `creates exactly one ingredient, component, or explicit-unmapped state per active direct line`. |
 | 8 | Parser/publisher specification invariants plus tracer approved explicit specifications; no synthetic default. |
 | 9 | `relinkRecipeIngredients.test.ts` — `never converts display-name equality into identity without an explicit approved decision`. |
