@@ -11,6 +11,7 @@ import type {
   RecipeLineLink,
   ReconciliationAction,
   ReconciliationDecision,
+  ReconciliationPublishPayload,
   RecordStatus,
   SourceManifest,
   UnitConversionEvidence,
@@ -241,6 +242,34 @@ function parseCostObservation(value: unknown): CostObservation {
   };
 }
 
+function parsePublishPayload(value: unknown): ReconciliationPublishPayload {
+  const record = recordValue(value);
+  const payload: ReconciliationPublishPayload = {};
+  if (record.rename !== undefined) {
+    const rename = recordValue(record.rename);
+    payload.rename = {
+      ingredientId: identity(rename.ingredientId),
+      primaryName: stringValue(rename.primaryName),
+      alias: parseAlias(rename.alias),
+    };
+  }
+  if (record.redirectId !== undefined) payload.redirectId = identity(record.redirectId);
+  if (record.mappings !== undefined) payload.mappings = arrayValue(record.mappings, parseMapping);
+  if (record.costObservations !== undefined) {
+    payload.costObservations = arrayValue(record.costObservations, parseCostObservation);
+  }
+  if (record.usableYields !== undefined) {
+    payload.usableYields = arrayValue(record.usableYields, parseUsableYield);
+  }
+  return payload;
+}
+
+function optionalPublishPayload(record: Record<string, unknown>):
+  | { publish: ReconciliationPublishPayload }
+  | Record<string, never> {
+  return record.publish === undefined ? {} : { publish: parsePublishPayload(record.publish) };
+}
+
 function parseReconciliationAction(value: unknown): ReconciliationAction {
   const record = recordValue(value);
   switch (record.type) {
@@ -249,31 +278,46 @@ function parseReconciliationAction(value: unknown): ReconciliationAction {
         type: "create_ingredient",
         ingredient: parseIngredient(record.ingredient),
         firstSpecification: parseSpecification(record.firstSpecification),
+        ...optionalPublishPayload(record),
       };
     case "create_specification":
-      return { type: "create_specification", specification: parseSpecification(record.specification) };
+      return {
+        type: "create_specification",
+        specification: parseSpecification(record.specification),
+        ...optionalPublishPayload(record),
+      };
     case "link_ingredient":
       return {
         type: "link_ingredient",
         ingredientId: identity(record.ingredientId),
         requiredSpecificationId: nullableIdentity(record.requiredSpecificationId),
+        ...optionalPublishPayload(record),
       };
     case "merge_redirect":
       return {
         type: "merge_redirect",
         fromIngredientId: identity(record.fromIngredientId),
         toIngredientId: identity(record.toIngredientId),
+        ...optionalPublishPayload(record),
       };
     case "link_component_recipe":
-      return { type: "link_component_recipe", componentRecipeId: identity(record.componentRecipeId) };
+      return {
+        type: "link_component_recipe",
+        componentRecipeId: identity(record.componentRecipeId),
+        ...optionalPublishPayload(record),
+      };
     case "mark_unmapped":
-      return { type: "mark_unmapped", reason: stringValue(record.reason) };
+      return {
+        type: "mark_unmapped",
+        reason: stringValue(record.reason),
+        ...optionalPublishPayload(record),
+      };
     default:
       return invalid();
   }
 }
 
-function parseReconciliationDecision(value: unknown): ReconciliationDecision {
+export function parseReconciliationDecision(value: unknown): ReconciliationDecision {
   const record = recordValue(value);
   return {
     decisionId: identity(record.decisionId),

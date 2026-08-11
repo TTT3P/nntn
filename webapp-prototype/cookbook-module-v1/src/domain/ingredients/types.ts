@@ -96,13 +96,25 @@ export interface CostObservation {
   approvalState: ApprovalState;
 }
 
+export interface ReconciliationPublishPayload {
+  rename?: {
+    ingredientId: string;
+    primaryName: string;
+    alias: IngredientAlias;
+  };
+  redirectId?: string;
+  mappings?: IngredientMapping[];
+  costObservations?: CostObservation[];
+  usableYields?: UsableYieldEvidence[];
+}
+
 export type ReconciliationAction =
-  | { type: "create_ingredient"; ingredient: CookbookIngredient; firstSpecification: IngredientSpecification }
-  | { type: "create_specification"; specification: IngredientSpecification }
-  | { type: "link_ingredient"; ingredientId: string; requiredSpecificationId: string | null }
-  | { type: "merge_redirect"; fromIngredientId: string; toIngredientId: string }
-  | { type: "link_component_recipe"; componentRecipeId: string }
-  | { type: "mark_unmapped"; reason: string };
+  | { type: "create_ingredient"; ingredient: CookbookIngredient; firstSpecification: IngredientSpecification; publish?: ReconciliationPublishPayload }
+  | { type: "create_specification"; specification: IngredientSpecification; publish?: ReconciliationPublishPayload }
+  | { type: "link_ingredient"; ingredientId: string; requiredSpecificationId: string | null; publish?: ReconciliationPublishPayload }
+  | { type: "merge_redirect"; fromIngredientId: string; toIngredientId: string; publish?: ReconciliationPublishPayload }
+  | { type: "link_component_recipe"; componentRecipeId: string; publish?: ReconciliationPublishPayload }
+  | { type: "mark_unmapped"; reason: string; publish?: ReconciliationPublishPayload };
 
 export interface ReconciliationProposal {
   proposalId: string;
