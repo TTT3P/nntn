@@ -578,6 +578,67 @@ describe("publishReconciliationBatch", () => {
     expect(second.snapshot).toEqual(first.snapshot);
   });
 
+  test("canonicalizes nested object key order before comparing a replayed decision", () => {
+    const current = emptyCurrent();
+    const record = sourceRecord("nested-canonical-replay", { name: "Owner ingredient" });
+    const decision = approvedDecision("decision-nested-canonical-replay", record.sourceRecordId, {
+      type: "create_ingredient",
+      ingredient: {
+        ingredientId: "ing-nested-canonical-replay",
+        primaryName: "Owner ingredient",
+        category: "seasoning",
+        status: "active",
+        costingState: "requires_specification",
+      },
+      firstSpecification: {
+        specificationId: "spec-nested-canonical-replay",
+        ingredientId: "ing-nested-canonical-replay",
+        label: "Owner specification",
+        attributes: { brand: "Owner brand", form: "liquid" },
+        status: "active",
+        approvalState: "approved",
+      },
+    });
+    const first = publishReconciliationBatch(current, staging(record), [decision]);
+    const reordered = structuredClone(decision);
+    if (reordered.action.type !== "create_ingredient") throw new Error("invalid test action");
+    reordered.action.firstSpecification.attributes = { form: "liquid", brand: "Owner brand" };
+
+    const second = publishReconciliationBatch(first.snapshot, staging(record), [reordered]);
+    expect(second.alreadyAppliedDecisionIds).toEqual([decision.decisionId]);
+    expect(second.snapshot).toEqual(first.snapshot);
+  });
+
+  test("still rejects changed nested values under a replayed decision ID", () => {
+    const current = emptyCurrent();
+    const record = sourceRecord("nested-value-conflict", { name: "Owner ingredient" });
+    const decision = approvedDecision("decision-nested-value-conflict", record.sourceRecordId, {
+      type: "create_ingredient",
+      ingredient: {
+        ingredientId: "ing-nested-value-conflict",
+        primaryName: "Owner ingredient",
+        category: "seasoning",
+        status: "active",
+        costingState: "requires_specification",
+      },
+      firstSpecification: {
+        specificationId: "spec-nested-value-conflict",
+        ingredientId: "ing-nested-value-conflict",
+        label: "Owner specification",
+        attributes: { brand: "Owner brand", form: "liquid" },
+        status: "active",
+        approvalState: "approved",
+      },
+    });
+    const first = publishReconciliationBatch(current, staging(record), [decision]);
+    const changed = structuredClone(decision);
+    if (changed.action.type !== "create_ingredient") throw new Error("invalid test action");
+    changed.action.firstSpecification.attributes = { form: "powder", brand: "Owner brand" };
+
+    expect(() => publishReconciliationBatch(first.snapshot, staging(record), [changed]))
+      .toThrow("DECISION_ID_CONFLICT");
+  });
+
   test("rejects duplicate full source identities and non-deterministic staging IDs", () => {
     const current = emptyCurrent();
     const record = sourceRecord("duplicate-source", { name: "Oyster sauce" });

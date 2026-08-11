@@ -53,6 +53,17 @@ function bytes(value: unknown): string {
   return JSON.stringify(value);
 }
 
+function canonicalDecisionBytes(decision: ReconciliationDecision): string {
+  function sortObjectKeys(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(sortObjectKeys);
+    if (value === null || typeof value !== "object") return value;
+    return Object.fromEntries(Object.keys(value).sort().map((key) =>
+      [key, sortObjectKeys((value as Record<string, unknown>)[key])]));
+  }
+
+  return JSON.stringify(sortObjectKeys(decision));
+}
+
 function compareText(left: string, right: string): number {
   if (left === right) return 0;
   return left < right ? -1 : 1;
@@ -420,7 +431,7 @@ export function publishReconciliationBatch(
     } catch {
       fail("INVALID_RECONCILIATION_PUBLISH", supplied);
     }
-    const canonicalSuppliedBytes = bytes(decision);
+    const canonicalSuppliedBytes = canonicalDecisionBytes(decision);
     const priorSuppliedBytes = suppliedIds.get(decision.decisionId);
     if (priorSuppliedBytes !== undefined) {
       if (priorSuppliedBytes !== canonicalSuppliedBytes) fail("DECISION_ID_CONFLICT", decision);
@@ -432,7 +443,9 @@ export function publishReconciliationBatch(
     const existing = next.reconciliationDecisions.find(({ decisionId }) =>
       decisionId === decision.decisionId);
     if (existing !== undefined) {
-      if (bytes(existing) !== canonicalSuppliedBytes) fail("DECISION_ID_CONFLICT", decision);
+      if (canonicalDecisionBytes(existing) !== canonicalSuppliedBytes) {
+        fail("DECISION_ID_CONFLICT", decision);
+      }
       alreadyAppliedDecisionIds.push(decision.decisionId);
       continue;
     }
