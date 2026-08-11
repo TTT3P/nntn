@@ -1,4 +1,9 @@
-import type { IngredientMasterSnapshot, SourceManifest } from "../domain/ingredients/types";
+import type { LegacyStagingBatch } from "../domain/ingredients/legacyIngredientSnapshot";
+import type {
+  IngredientMasterSnapshot,
+  LegacySourceRecord,
+  SourceManifest,
+} from "../domain/ingredients/types";
 
 export type InvalidIngredientMasterScenario =
   | "duplicate ingredientId"
@@ -22,6 +27,22 @@ export function makeSourceManifest(
     sourcePolicy: "immutable-input-receipt",
     expectedCounts,
     ...overrides,
+  };
+}
+
+export function makeLegacyStagingBatch(
+  records: readonly LegacySourceRecord[],
+): LegacyStagingBatch {
+  const ingredients = records.filter(({ recordType }) => recordType === "ingredient");
+  const recipes = records.filter(({ recordType }) => recordType === "recipe");
+  const lines = records.filter(({ recordType }) => recordType === "recipe_line");
+  return {
+    records,
+    ingredients,
+    recipes,
+    lines,
+    directLines: lines,
+    componentLines: [],
   };
 }
 

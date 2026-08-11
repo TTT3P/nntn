@@ -104,6 +104,17 @@ export type ReconciliationAction =
   | { type: "link_component_recipe"; componentRecipeId: string }
   | { type: "mark_unmapped"; reason: string };
 
+export interface ReconciliationProposal {
+  proposalId: string;
+  manifestId: string;
+  sourceSha256: string;
+  sourceRecordId: string;
+  actionType: ReconciliationAction["type"];
+  suggestedTargetId: string | null;
+  evidence: Array<{ label: string; value: string }>;
+  consequences: string[];
+}
+
 export interface ReconciliationDecision {
   decisionId: string;
   proposalId: string;
