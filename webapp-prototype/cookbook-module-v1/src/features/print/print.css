@@ -721,6 +721,14 @@
   font-weight: 700;
 }
 
+.workstation-ingredient__component-reference {
+  display: block;
+  margin-top: 0.4mm;
+  color: #735b3d;
+  font-size: 7.5pt;
+  font-weight: 700;
+}
+
 .workstation-ingredients {
   width: 100%;
   min-width: 0;

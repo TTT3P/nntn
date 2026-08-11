@@ -1,6 +1,7 @@
 import type {
   IngredientLine,
   MediaAsset,
+  RecipeIdentity,
   StepMediaLink,
   Vessel,
   WorkStage,
@@ -58,11 +59,13 @@ export function WorkstationCard({
   media,
   previewMode,
   readiness,
+  componentLabelFor,
 }: {
   page: WorkstationPage;
   media: MediaIndex;
   previewMode: "draft" | "approved";
   readiness: "draft" | "ready";
+  componentLabelFor?: (componentRecipeId: RecipeIdentity) => string | null;
 }) {
   const stepsById = new Map(page.document.steps.map((step) => [step.stepId, step]));
   const hasMissingMedia = page.blocks.some(
@@ -128,17 +131,29 @@ export function WorkstationCard({
               <tr><th>วัตถุดิบ</th><th>ปริมาณ</th></tr>
             </thead>
             <tbody>
-              {page.document.ingredients.map((line) => (
-                <tr key={line.lineKey}>
-                  <th scope="row">{line.itemName}</th>
-                  <td>
-                    <span>{sourceFact(line)}</span>
-                    {page.document.stage === "service" && line.servingNote !== null && (
-                      <span className="workstation-ingredient__serving-note">{line.servingNote}</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {page.document.ingredients.map((line) => {
+                const componentLabel = line.componentRecipeId === null
+                  ? null
+                  : componentLabelFor?.(line.componentRecipeId) ?? null;
+                return (
+                  <tr key={line.lineKey}>
+                    <th scope="row">
+                      {line.itemName}
+                      {componentLabel !== null && (
+                        <span className="workstation-ingredient__component-reference">
+                          {componentLabel}
+                        </span>
+                      )}
+                    </th>
+                    <td>
+                      <span>{sourceFact(line)}</span>
+                      {page.document.stage === "service" && line.servingNote !== null && (
+                        <span className="workstation-ingredient__serving-note">{line.servingNote}</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

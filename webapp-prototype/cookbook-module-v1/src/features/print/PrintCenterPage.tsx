@@ -33,7 +33,11 @@ import { useOptionalKitchenSotDraft } from "../review/KitchenSotDraftProvider";
 import { CookbookBooklet } from "./CookbookBooklet";
 import { PrintCollectionPicker } from "./PrintCollectionPicker";
 import { buildPrintCollections, type PrintCollectionKey } from "./printCollections";
-import { projectPrintSet, type PrintSetMode } from "./printSetProjection";
+import {
+  projectPrintSet,
+  type PrintSetMode,
+  type PrintSetProjection,
+} from "./printSetProjection";
 import { WorkstationCard } from "./WorkstationCard";
 import { useOptionalCookbookDocument } from "../cookbook/CookbookDocumentProvider";
 import "./print.css";
@@ -212,6 +216,12 @@ function identityKey(recipeId: RecipeIdentity): string {
     : `string:${JSON.stringify(recipeId)}`;
 }
 
+function publicRecipeCode(recipeId: RecipeIdentity): string | null {
+  return typeof recipeId === "string" && /^(?:RCP|SRCP)-/u.test(recipeId)
+    ? recipeId
+    : null;
+}
+
 function recipeIdsFromSearchParams(searchParams: URLSearchParams): RecipeIdentity[] {
   return searchParams.getAll("recipe").flatMap((value) => {
     const identity = decodeRecipeIdentity(value);
@@ -298,11 +308,13 @@ function PreviewPage({
   media,
   previewMode,
   readinessByRecipe,
+  componentLabelFor,
 }: {
   page: PrintPage;
   media: MediaIndex;
   previewMode: PreviewMode;
   readinessByRecipe: Map<string, "draft" | "ready">;
+  componentLabelFor: (componentRecipeId: RecipeIdentity) => string | null;
 }) {
   if (page.kind === "station") {
     return (
@@ -316,6 +328,7 @@ function PreviewPage({
           media={media}
           previewMode={previewMode}
           readiness={readinessByRecipe.get(identityKey(page.document.recipeId)) ?? "draft"}
+          componentLabelFor={componentLabelFor}
         />
       </section>
     );
@@ -334,6 +347,7 @@ function PreviewPage({
             media={media}
             previewMode={previewMode}
             readiness={readinessByRecipe.get(identityKey(slot.document.recipeId)) ?? "draft"}
+            componentLabelFor={componentLabelFor}
           />
         </div>
       ))}
@@ -413,6 +427,15 @@ export function PrintCenterPage({
     return recipe === undefined ? [] : [recipe];
   });
   const collections = buildPrintCollections(availableRecipes);
+  const activeCollection = printSetMode.kind === "collection"
+    ? collections.find(({ key }) => key === printSetMode.collectionKey) ?? null
+    : null;
+  const componentLabelFor = (componentRecipeId: RecipeIdentity): string | null => {
+    const component = recipesByIdentity.get(identityKey(componentRecipeId));
+    if (component === undefined) return null;
+    const code = publicRecipeCode(component.recipeId);
+    return code === null ? component.name : `${component.name} · ${code}`;
+  };
   const dependencyPolicy: DependencyPolicy = printSetMode.kind === "manual"
     ? printSetMode.dependencyPolicy
     : printSetMode.kind === "daily" ? "include" : "reference";
@@ -424,11 +447,13 @@ export function PrintCenterPage({
   let media: MediaIndex | null = null;
   let planningError: string | null = null;
   let bookletRecipes: RecipeVersion[] = [];
+  let projection: PrintSetProjection | null = null;
   const readinessByRecipe = new Map<string, "draft" | "ready">();
 
   if (selectedIds.length > 0 && (outputIntent === "booklet" || multiplierValid)) {
     try {
-      const includedRecipes = projectPrintSet(snapshot.recipes, selectedIds, printSetMode).fullRecipes;
+      projection = projectPrintSet(snapshot.recipes, selectedIds, printSetMode);
+      const includedRecipes = projection.fullRecipes;
       for (const recipe of includedRecipes) {
         if (rawRecipeDraftById === null) {
           const coverage = deriveRecipeMediaCoverage(recipe, snapshot).coverage;
@@ -460,6 +485,7 @@ export function PrintCenterPage({
       }
     } catch (error) {
       planningError = plannerErrorMessage(error);
+      projection = null;
       pages = [];
       media = null;
     }
@@ -653,7 +679,15 @@ export function PrintCenterPage({
         <section className="print-proof" aria-label="ตรวจตัวอย่างก่อนพิมพ์">
           <header className="print-proof__header">
             <div><strong>{outputIntent === "booklet" ? "เล่มคู่มือสูตรครัว" : outputIntent === "master" ? "A4 สูตรเต็ม" : "A5 ใบงาน"}</strong><span>ตรวจรายการและหน้ากระดาษก่อนพิมพ์</span></div>
-            <div><span>{selectedRecipes.length} สูตร</span><span>{dependencyPolicy === "include" ? "แนบสูตรประกอบ" : "อ้างอิงสูตรประกอบ"}</span><span>{outputCount} {outputIntent === "booklet" ? "หน้าสูตร" : "แผ่น"}</span><span>{outputIntent === "booklet" ? "A5 แนวตั้ง" : outputIntent === "master" ? "A4 แนวตั้ง" : "A5 แนวนอน"}</span></div>
+            {projection !== null && (
+              <div>
+                <span>{activeCollection?.label ?? "ชุดเลือกเอง"}</span>
+                <span>{selectedRecipes.length} สูตร</span>
+                <span>{outputCount} {outputIntent === "booklet" ? "หน้าสูตร" : "แผ่น"}</span>
+                <span>อ้างอิงสูตรนอกหมวด {projection.externalReferences.length} สูตร</span>
+                <span>{projection.duplicateFree ? "ไม่มีเอกสารซ้ำ" : "พบเอกสารซ้ำ"}</span>
+              </div>
+            )}
           </header>
 
           <div className="print-proof__canvas">
@@ -686,6 +720,7 @@ export function PrintCenterPage({
                     media={media}
                     previewMode={previewMode}
                     readinessByRecipe={readinessByRecipe}
+                    componentLabelFor={componentLabelFor}
                   />
                 ))}
               </div>

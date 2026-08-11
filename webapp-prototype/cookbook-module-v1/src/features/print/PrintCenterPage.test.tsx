@@ -74,6 +74,47 @@ function serviceRecipe(overrides: Parameters<typeof makeRecipe>[0] = {}) {
   });
 }
 
+function sharedRiceCollectionRecipes() {
+  const rice = {
+    ...serviceRecipe({
+      recipeId: "RCP-RICE",
+      recipeVersionId: "rice-v1",
+      name: "ข้าวญี่ปุ่นหุงสุก",
+      kind: "prepared_recipe",
+    }),
+    category: "ข้าวและเครื่องเคียง",
+  };
+  const menu = (recipeId: string, name: string) => ({
+    ...serviceRecipe({
+      recipeId,
+      recipeVersionId: `${recipeId.toLocaleLowerCase()}-v1`,
+      name,
+      lines: [makeIngredientLine({
+        lineKey: `${recipeId}:rice`,
+        itemName: "ข้าวญี่ปุ่นหุงสุก",
+        itemKind: "prepared_recipe",
+        ingredientId: null,
+        componentRecipeId: "RCP-RICE",
+        sourceText: "180 กรัม",
+      })],
+      workDocuments: {
+        service: {
+          stage: "service",
+          scalable: false,
+          ingredientLineKeys: [`${recipeId}:rice`],
+          steps: [makeWorkStep({
+            stepId: `${recipeId}:service:1`,
+            stage: "service",
+            instruction: `จัด ${name}`,
+          })],
+        },
+      },
+    }),
+    category: "เมนูอาหาร",
+  });
+  return [menu("RCP-MENU-A", "เมนูข้าว A"), menu("RCP-MENU-B", "เมนูข้าว B"), rice];
+}
+
 function renderWithRawSnapshot(snapshot: CookbookSnapshot) {
   const context: PrototypeContextValue = {
     snapshot,
@@ -207,6 +248,37 @@ describe("PrintCenterPage", () => {
     expect(screen.getByRole("checkbox", { name: "ซอส ก · RCP-SA" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: "ซอส ข · RCP-SB" })).toBeChecked();
     expect(screen.getByText("เลือกแล้ว 2 สูตร")).toBeVisible();
+  });
+
+  test("keeps shared dependencies as compact references in a named collection proof set", async () => {
+    const user = userEvent.setup();
+    renderWithPrototype(<PrintCenterPage />, {
+      snapshot: makeSnapshot({ recipes: sharedRiceCollectionRecipes() }),
+    });
+
+    await user.click(screen.getByRole("button", { name: "พิมพ์ทั้งหมวด เมนูอาหาร 2 สูตร" }));
+
+    expect(screen.queryByRole("article", { name: "ข้าวญี่ปุ่นหุงสุก" })).not.toBeInTheDocument();
+    expect(screen.getAllByText("ข้าวญี่ปุ่นหุงสุก · RCP-RICE")).toHaveLength(2);
+    expect(screen.getByText("เมนูอาหาร", { selector: ".print-proof__header span" })).toBeVisible();
+    expect(screen.getByText("อ้างอิงสูตรนอกหมวด 1 สูตร")).toBeVisible();
+    expect(screen.getByText("ไม่มีเอกสารซ้ำ")).toBeVisible();
+  });
+
+  test("expands a daily proof set to one full shared dependency without duplicates or cost text", async () => {
+    const user = userEvent.setup();
+    const view = renderWithPrototype(<PrintCenterPage />, {
+      snapshot: makeSnapshot({ recipes: sharedRiceCollectionRecipes() }),
+    });
+
+    await user.click(screen.getByRole("button", { name: "ชุดงานวันนี้" }));
+    await user.click(screen.getByRole("checkbox", { name: "เมนูข้าว A · RCP-MENU-A" }));
+    await user.click(screen.getByRole("checkbox", { name: "เมนูข้าว B · RCP-MENU-B" }));
+
+    expect(screen.getAllByRole("article", { name: /ข้าวญี่ปุ่นหุงสุก/u })).toHaveLength(1);
+    expect(screen.getByText("อ้างอิงสูตรนอกหมวด 0 สูตร")).toBeVisible();
+    expect(screen.getByText("ไม่มีเอกสารซ้ำ")).toBeVisible();
+    expect(view.container).not.toHaveTextContent(/cost|ต้นทุน/iu);
   });
 
   test("searches by public code and keeps a visible selected-set summary", async () => {
