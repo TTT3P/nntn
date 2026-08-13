@@ -146,6 +146,19 @@
       cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
     .print-btn:hover { background: #B71C1C; }
+    .refresh-btn {
+      position: fixed; bottom: 20px; right: 300px;
+      background: #F57F17; color: white; border: none; border-radius: 50px;
+      padding: 12px 20px; font-size: 15px; font-weight: bold; font-family: inherit;
+      cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .refresh-btn:hover { background: #EF6C00; }
+    .refresh-btn:disabled { opacity: 0.6; cursor: default; }
+    .last-updated {
+      position: fixed; bottom: 68px; right: 140px;
+      font-size: 11px; color: #757575; background: #fff;
+      padding: 3px 10px; border-radius: 10px; border: 1px solid #E0E0E0;
+    }
   </style>
 </head>
 <body>
@@ -207,7 +220,9 @@
   </div>
 </div>
 
-<!-- Print Button -->
+<!-- Refresh / Print Buttons -->
+<div class="last-updated no-print" id="last-updated"></div>
+<button class="refresh-btn no-print" id="refresh-btn" onclick="refresh()">🔄 ดึงข้อมูลล่าสุด</button>
 <button class="print-btn no-print" onclick="window.print()">🖨️ พิมพ์</button>
 
 <script>
@@ -224,6 +239,58 @@
     meat_other:     '🥩 อื่นๆ',
     meat_trim:      '✂️ เศษเนื้อ (SCRAP)',
   };
+
+  // Freshness tracking — this page's catch_weight snapshot is only as good as the
+  // moment load() last ran; there's no live subscription. Confirmed root cause
+  // 2026-08-13 (same class as hub-delivery.html's bag-picker bug): a tab left open
+  // while the kitchen closes a pot mid-shift keeps showing the OLD (pre-production)
+  // bag counts — e.g. MT-004/033/035/047 all rendered 0 ถุง / หมด here despite each
+  // having real ✅ In Stock bags, because their catch_weight rows were created after
+  // this page's one-time fetch. See refresh()/updateLastUpdatedBadge() below.
+  let lastLoadedAt = null;
+
+  function updateLastUpdatedBadge() {
+    const el = document.getElementById('last-updated');
+    if (!el || !lastLoadedAt) return;
+    el.textContent = 'ข้อมูลล่าสุด: ' + lastLoadedAt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // เก็บค่า "ถุงนับจริง" ที่พิมพ์ไว้แล้ว (key ด้วย sku) ก่อนรีเฟรช — กันไม่ให้ re-render ทับข้อมูลที่นับไปแล้วหาย
+  function snapshotCounts() {
+    const snap = {};
+    document.querySelectorAll('.td-count input').forEach(input => {
+      const sku = input.closest('tr')?.querySelector('.td-sku')?.textContent?.trim();
+      if (sku && input.value !== '') snap[sku] = input.value;
+    });
+    return snap;
+  }
+
+  function restoreCounts(snap) {
+    document.querySelectorAll('.td-count input').forEach(input => {
+      const sku = input.closest('tr')?.querySelector('.td-sku')?.textContent?.trim();
+      if (sku && snap[sku] !== undefined) {
+        input.value = snap[sku];
+        calcDiff(input);
+      }
+    });
+  }
+
+  // รีเฟรชสต๊อกล่าสุดจาก catch_weight แบบไม่ทำลายค่าที่นับไว้แล้วบนหน้าจอ
+  async function refresh() {
+    const btn = document.getElementById('refresh-btn');
+    const snap = snapshotCounts();
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังโหลด...'; }
+    await load();
+    restoreCounts(snap);
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 ดึงข้อมูลล่าสุด'; }
+  }
+
+  // ถ้าออกไปจากแท็บนี้แล้วกลับมาหลังจากผ่านไป ≥60 วิ ให้รีเฟรชอัตโนมัติ —
+  // ครอบเคสที่เปิดแท็บค้างไว้ระหว่างที่ครัวปิดหม้อ/บันทึกผลผลิตใหม่
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || !lastLoadedAt) return;
+    if (Date.now() - lastLoadedAt.getTime() >= 60 * 1000) refresh();
+  });
 
   // สโคป: SKU ขึ้นต้น MT- (เนื้อตุ๋น/พอร์ชั่น/เศษ ฯลฯ) หรือ category ดิบ/สด (SP- ที่เป็นเนื้อ)
   // ตรงข้ามกับ SKIP_PREFIXES/SKIP_CATEGORIES ของ count-sheet-live.html (non-meat)
@@ -270,6 +337,8 @@
       }
 
       renderSheet(groups);
+      lastLoadedAt = new Date();
+      updateLastUpdatedBadge();
     } catch (err) {
       document.getElementById('content').innerHTML =
         `<div class="error-msg">❌ โหลดไม่ได้: ${err.message || err}</div>`;
