@@ -137,13 +137,25 @@ async function load() {
 
   // Load meat items + bags
   // Single query: catch_weight + join items — filter MT-* SKU client-side
-  const bagsRes = await fetch(
-    `${SB}/rest/v1/catch_weight?select=item_id,lot_date,weight_g,items(id,sku,name,category)&status=eq.%E2%9C%85%20In%20Stock&limit=3000`,
-    { headers: H }
-  )
-  const bags = bagsRes.ok ? await bagsRes.json() : []
-  if (!bagsRes.ok) {
-    console.error('catch_weight fetch failed:', bagsRes.status, await bagsRes.text())
+  //
+  // ต้อง paginate — PostgREST/Supabase cap คำตอบทุก request ไว้ที่ 1000 แถวเสมอ ไม่ว่า
+  // ฝั่ง client จะขอ limit เท่าไหร่ (ยืนยันจริงด้วย network capture 2026-08-13: ขอ
+  // limit=5000 แต่ได้ content-range: 0-999/1172 — เดิม limit=3000 ที่นี่ก็โดน cap เหมือนกัน
+  // เพราะ query นี้ไม่กรอง item_id เลย ดึงถุง In Stock ทั้งระบบ). ไม่มี .order() ชัดเจนมาก่อน
+  // ก็เพิ่ม order=id.asc ให้ pagination นิ่ง (ไม่งั้นแถวอาจซ้ำ/หลุดตรงรอยต่อหน้า)
+  let bags = []
+  for (let offset = 0; ; offset += 1000) {
+    const pageRes = await fetch(
+      `${SB}/rest/v1/catch_weight?select=item_id,lot_date,weight_g,items(id,sku,name,category)&status=eq.%E2%9C%85%20In%20Stock&order=id.asc&limit=1000&offset=${offset}`,
+      { headers: H }
+    )
+    if (!pageRes.ok) {
+      console.error('catch_weight fetch failed:', pageRes.status, await pageRes.text())
+      break
+    }
+    const page = await pageRes.json()
+    bags = bags.concat(page)
+    if (!page.length || page.length < 1000) break
   }
 
   // Fetch all active meat_portioned items (SOT = items.item_category)

@@ -308,11 +308,23 @@
 
       // 2) ถุงสถานะ In Stock จริงจาก catch_weight — source of truth ของสต๊อกเนื้อ (กฎ "CW = Source of Truth")
       // ห้ามใช้ current_stock: ledger sync trigger นับ ±1/ถุง ไม่ใช่น้ำหนักจริง → เลข กก. เพี้ยน
-      const { data: bags, error: bagsErr } = await sb.from('catch_weight')
-        .select('weight_g, items(sku)')
-        .eq('status', '✅ In Stock')
-        .limit(5000);
-      if (bagsErr) throw bagsErr;
+      //
+      // ต้อง paginate — PostgREST/Supabase cap คำตอบทุก request ไว้ที่ 1000 แถวเสมอ
+      // ไม่ว่าฝั่ง client จะขอ limit เท่าไหร่ก็ตาม (ยืนยันจริงด้วย network capture 2026-08-13:
+      // ขอ limit=5000 แต่ได้ content-range: 0-999/1172 — โดน silent truncate 172 แถว)
+      // แถวที่หลุดคือแถวท้าย ๆ ตาม order เริ่มต้น ซึ่งมักเป็นแถวใหม่สุด (id สูงสุด = ผลิตล่าสุด)
+      // → นี่คือ root cause จริงของบั๊ก MT-004/033/035/047 "0 ถุง / หมด" (ไม่ใช่ client cache เก่า)
+      const bags = [];
+      for (let from = 0; ; from += 1000) {
+        const { data: page, error: bagsErr } = await sb.from('catch_weight')
+          .select('weight_g, items(sku)')
+          .eq('status', '✅ In Stock')
+          .order('id', { ascending: true })
+          .range(from, from + 999);
+        if (bagsErr) throw bagsErr;
+        bags.push(...(page || []));
+        if (!page || page.length < 1000) break;
+      }
 
       // aggregate ถุง + กก. ต่อ sku
       const agg = {};

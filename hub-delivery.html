@@ -529,6 +529,28 @@ async function get(table, params = {}) {
   return r.json()
 }
 
+// PostgREST/Supabase caps every response at 1000 rows server-side regardless of the
+// requested `limit` — confirmed by network capture 2026-08-13 (asked limit=5000, got
+// content-range: 0-999/1172, silently dropping 172 rows). A single get() call on a
+// growing table like catch_weight WILL silently truncate once total rows cross 1000,
+// and the dropped tail tends to be the newest rows (highest id = most recent
+// production) since no explicit order was pinned to a unique key. This was the real
+// root cause of the MT-004/033/035/047 "no bags In Stock" bug — page through with
+// limit+offset until a page comes back short, don't trust one request as complete.
+async function getAll(table, params = {}) {
+  const PAGE = 1000
+  let offset = 0
+  let all = []
+  while (true) {
+    const page = await get(table, { ...params, limit: PAGE, offset })
+    if (!Array.isArray(page)) break
+    all = all.concat(page)
+    if (page.length < PAGE) break
+    offset += PAGE
+  }
+  return all
+}
+
 function fmtDate(s) {
   if (!s) return '—'
   const d = s.split('T')[0]
@@ -544,11 +566,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const [allItems, bags, stockRows] = await Promise.all([
       get('items', { select: 'id,sku,name,unit,category', is_active: 'eq.true', order: 'sku.asc', limit: 500 }),
-      get('catch_weight', {
+      getAll('catch_weight', {
         select: 'id,item_id,weight_g,lot_date,warehouse,legacy_cw_row',
         status: 'eq.✅ In Stock',
-        order: 'lot_date.asc',
-        limit: 2000
+        order: 'lot_date.asc,id.asc'
       }),
       get('v_stock_unified', { select: 'sku,qty_on_hand', limit: 500 })
     ])
@@ -835,11 +856,14 @@ async function openBagModal(n) {
     body.innerHTML = `<div style="text-align:center;color:var(--muted);padding:24px">กำลังตรวจสอบสต๊อกล่าสุด…</div>`
     document.getElementById('bag-modal').classList.add('open')
     try {
-      const freshBags = await get('catch_weight', {
+      // getAll(), not get() — a single limit=N request silently truncates at
+      // PostgREST's server-side 1000-row cap (see getAll() comment above). Using a
+      // capped single fetch here would have re-produced the exact same class of bug
+      // this re-fetch is trying to self-heal.
+      const freshBags = await getAll('catch_weight', {
         select: 'id,item_id,weight_g,lot_date,warehouse,legacy_cw_row',
         status: 'eq.✅ In Stock',
-        order: 'lot_date.asc',
-        limit: 2000
+        order: 'lot_date.asc,id.asc'
       })
       if (Array.isArray(freshBags)) {
         cwBags = freshBags
