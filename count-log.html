@@ -87,8 +87,17 @@ let rows = []
 async function load() {
   const tok = localStorage.getItem('nntn_sb_token') || KEY
   const H = { apikey: KEY, Authorization: 'Bearer ' + tok }
-  const res = await fetch(`${SB}/rest/v1/v_count_adjust_log?select=*&order=ts_bkk.desc&limit=1000`, { headers: H })
-  rows = res.ok ? await res.json() : []
+  // v_count_adjust_log grows with every count adjust (≈1000 rows already). render()
+  // filters client-side and assumes `rows` is complete, so page past the 1000-row cap
+  // with a stable (ts_bkk desc, id desc) order instead of one capped request.
+  rows = []
+  for (let offset = 0; ; offset += 1000) {
+    const res = await fetch(`${SB}/rest/v1/v_count_adjust_log?select=*&order=ts_bkk.desc,id.desc&limit=1000&offset=${offset}`, { headers: H })
+    if (!res.ok) break
+    const page = await res.json()
+    rows = rows.concat(Array.isArray(page) ? page : [])
+    if (!Array.isArray(page) || page.length < 1000) break
+  }
   render()
 }
 
