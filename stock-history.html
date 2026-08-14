@@ -162,7 +162,8 @@ async function loadHistory() {
   if (from) q = q.gte('ts_bkk', from + 'T00:00:00');
   if (to) q = q.lte('ts_bkk', to + 'T23:59:59');
   if (actor) q = q.ilike('actor', '%'+actor+'%');
-  q = q.order('ts_bkk', { ascending: false }).limit(500);
+  const ROW_LIMIT = 500;
+  q = q.order('ts_bkk', { ascending: false }).limit(ROW_LIMIT);
 
   const { data, error } = await q;
   if (error) { div.innerHTML = '<div class="empty">❌ '+error.message+'</div>'; return; }
@@ -174,7 +175,10 @@ async function loadHistory() {
   const sumLine = Object.entries(counts).map(([k,v])=>`${(ACTION_META[k]?.label||k)} <strong>${v}</strong>`).join(' · ');
   const sumDiv = document.getElementById('summary');
   sumDiv.style.display = 'block';
-  sumDiv.innerHTML = `พบ <strong>${data.length}</strong> รายการ · ${sumLine}`;
+  const cappedHint = data.length >= ROW_LIMIT
+    ? ` · <span style="color:#b91c1c">⚠️ แสดง ${ROW_LIMIT} ล่าสุด — แคบ filter (วันที่/SKU/ผู้บันทึก) เพื่อดูให้ครบ</span>`
+    : '';
+  sumDiv.innerHTML = `พบ <strong>${data.length}</strong> รายการ · ${sumLine}${cappedHint}`;
 
   // Aggregate catch_weight create_bag rows ที่อยู่ใน batch เดียวกัน (same minute + sku + actor + action) → 1 บรรทัด
   // Other rows pass through as-is
