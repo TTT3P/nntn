@@ -329,18 +329,36 @@ function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return
 async function loadData() {
   if (!sb) { document.querySelector('.container').innerHTML = '<div class="error-msg">Supabase ไม่พร้อม — กรุณา login ก่อน</div>'; return; }
 
-  const [fsRes, dailyRes, aliasRes] = await Promise.all([
-    sb.from('fs_items').select('sale_date,branch_id,menu_name,qty,unit_price,discounted_price,channel_name,receipt_no').order('sale_date', { ascending: true }),
-    sb.from('v_daily_revenue').select('*').order('sale_date', { ascending: true }),
-    sb.from('menu_aliases').select('menu_name,rcp_code,is_active').eq('is_active', true)
-  ]);
+  // sales_ops tables grow with every sale — fs_items is already ~10k rows. A single
+  // unbounded fetch silently caps at 1000 (oldest by sale_date) and makes the whole
+  // analysis stale/wrong. Page through with a stable order (keep sale_date asc — code
+  // below relies on allFs[last] being the max date — with a unique tiebreaker).
+  const PAGE = 1000;
+  async function fetchAll(table, tune) {
+    let all = [], from = 0;
+    for (;;) {
+      const { data, error } = await tune(sb.from(table)).range(from, from + PAGE - 1);
+      if (error) throw error;
+      all = all.concat(data || []);
+      if (!data || data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
 
-  if (fsRes.error) { document.querySelector('.container').innerHTML = `<div class="error-msg">โหลดข้อมูลไม่ได้: ${fsRes.error.message}</div>`; return; }
-
-  allFs = fsRes.data || [];
-  allDaily = dailyRes.data || [];
-  allAliases = aliasRes.data || [];
-  render();
+  try {
+    const [fsData, dailyData, aliasData] = await Promise.all([
+      fetchAll('fs_items', q => q.select('sale_date,branch_id,menu_name,qty,unit_price,discounted_price,channel_name,receipt_no').order('sale_date', { ascending: true }).order('id', { ascending: true })),
+      fetchAll('v_daily_revenue', q => q.select('*').order('sale_date', { ascending: true }).order('branch_id', { ascending: true })),
+      fetchAll('menu_aliases', q => q.select('menu_name,rcp_code,is_active').eq('is_active', true).order('menu_name', { ascending: true }))
+    ]);
+    allFs = fsData;
+    allDaily = dailyData;
+    allAliases = aliasData;
+    render();
+  } catch (e) {
+    document.querySelector('.container').innerHTML = `<div class="error-msg">โหลดข้อมูลไม่ได้: ${e.message}</div>`;
+  }
 }
 
 function getDateRange() {
