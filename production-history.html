@@ -135,9 +135,23 @@ let allRuns = [];
 let currentFilter = 'all';
 
 async function load() {
-  const { data, error } = await sb.from('v_production_history').select('*').limit(500);
-  if (error) { console.error(error); document.getElementById('rows').innerHTML = `<tr><td colspan="7" style="color:var(--nntn-color-critical); text-align:center; padding:var(--nntn-space-6)">❌ โหลดไม่ได้: ${error.message}</td></tr>`; return; }
-  allRuns = data || [];
+  // v_production_history grows with every cook/repack run (1200+ rows). A single
+  // .limit(500) silently dropped the overflow → "all time" KPIs undercounted and the
+  // table missed runs. Page past the 1000-row cap with a stable (run_at, run_id) order.
+  const PAGE = 1000;
+  let all = [], from = 0;
+  while (true) {
+    const { data, error } = await sb.from('v_production_history')
+      .select('*')
+      .order('run_at', { ascending: false })
+      .order('run_id', { ascending: false })
+      .range(from, from + PAGE - 1);
+    if (error) { console.error(error); document.getElementById('rows').innerHTML = `<tr><td colspan="7" style="color:var(--nntn-color-critical); text-align:center; padding:var(--nntn-space-6)">❌ โหลดไม่ได้: ${error.message}</td></tr>`; return; }
+    all = all.concat(data || []);
+    if (!data || data.length < PAGE) break;
+    from += PAGE;
+  }
+  allRuns = all;
   renderKPI();
   renderRows();
 }
