@@ -571,8 +571,45 @@ const SB = 'https://emjqulzikpxorvpaaiww.supabase.co'
 const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M'
 const H = { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' }
 
-const get = (path, params={}) =>
+const _rawGet = (path, params={}) =>
   fetch(`${SB}/rest/v1/${path}?${new URLSearchParams(params)}`, { headers: H }).then(r => r.json())
+
+// Single-shot GET with a truncation guard: warns if the result exactly hits the
+// requested limit (a silent-truncation smell). For loading a whole set, use getAll().
+async function get(path, params={}) {
+  const data = await _rawGet(path, params)
+  if (Array.isArray(data) && params.limit && data.length === Number(params.limit)) {
+    console.warn(`[nntn] get('${path}') returned exactly limit=${params.limit} rows — likely truncated. Use getAll() for full-set loads.`)
+  }
+  return data
+}
+
+// Paginated GET: loops past PostgREST's ~1000-row cap until the whole set is loaded.
+// Deterministic order (default id.asc) so offset paging never skips/dupes rows.
+async function getAll(path, params={}, pageSize=1000) {
+  const base = { ...params }
+  delete base.limit; delete base.offset
+  if (!base.order) base.order = 'id.asc'
+  const out = []
+  for (let offset = 0; ; offset += pageSize) {
+    const page = await _rawGet(path, { ...base, limit: pageSize, offset })
+    if (!Array.isArray(page)) throw new Error(`getAll('${path}'): ${page && page.message ? page.message : 'bad response'}`)
+    out.push(...page)
+    if (page.length < pageSize) break
+  }
+  return out
+}
+
+// Cheap server-side count(*) via PostgREST count=exact header (load-completeness checks).
+async function countRows(path, params={}) {
+  try {
+    const res = await fetch(`${SB}/rest/v1/${path}?${new URLSearchParams({ ...params, select:'id', limit:1 })}`,
+      { headers: { ...H, Prefer:'count=exact' } })
+    const total = (res.headers.get('content-range')||'').split('/')[1]
+    return total ? Number(total) : null
+  } catch { return null }
+}
+
 const post = (path, body) =>
   fetch(`${SB}/rest/v1/${path}`, { method: 'POST', headers: {...H, Prefer:'return=representation'}, body: JSON.stringify(body) })
   .then(async r => { if (!r.ok) throw new Error(await r.text()); return r.json(); })
@@ -704,7 +741,7 @@ let recvItemCount = 0, procInputCount = 0
 async function init() {
   const [its, cw] = await Promise.all([
     get('items', { select:'id,name,sku,category,item_category,byproduct_item_id,byproduct_required,yield_expected_min,yield_expected_max', is_active:'eq.true', order:'name' }),
-    get('catch_weight', { 'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name,sku,category)', 'status':'eq.✅ In Stock', 'limit':1000 })
+    getAll('catch_weight', { 'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name,sku,category)', 'status':'eq.✅ In Stock' })
   ])
   items = Array.isArray(its) ? its : []
   // normalize item_name/sku/category จาก join
@@ -1873,9 +1910,9 @@ async function revertClosePot(sessionId) {
 
 async function reloadCwAndKanban() {
   try {
-    const cw = await get('catch_weight', {
+    const cw = await getAll('catch_weight', {
       'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name,sku,category)',
-      'status':'eq.✅ In Stock', 'limit':1000
+      'status':'eq.✅ In Stock'
     })
     cwStock = Array.isArray(cw) ? cw.map(r => ({
       ...r,
@@ -2651,7 +2688,7 @@ async function loadStock() {
   loadYieldAnalytics()
   try {
     const [cw, ys] = await Promise.all([
-      get('catch_weight', { 'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name,sku,category)', 'status':'eq.✅ In Stock', 'limit':1000 }),
+      getAll('catch_weight', { 'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name,sku,category)', 'status':'eq.✅ In Stock' }),
       get('yield_summary', { select:'item_name,yield_pct,yield_expected_min,yield_expected_max,yield_status', order:'yield_pct.desc' })
     ])
 
@@ -2668,6 +2705,14 @@ async function loadStock() {
     rows.forEach(r=>{ const k=r.warehouse||''; if(byWh[k]!==undefined) byWh[k]++ })
 
     document.getElementById('sk-total').textContent=rows.length+' ถุง'
+    // Load-completeness guard: displayed bags must equal the server's true In Stock count.
+    countRows('catch_weight', { 'status':'eq.✅ In Stock' }).then(total => {
+      if (total != null && total !== rows.length) {
+        console.warn(`[nntn] In Stock load incomplete: showing ${rows.length} of ${total} bags`)
+        const el = document.getElementById('sk-total')
+        if (el) el.innerHTML = `${rows.length} ถุง <span style="color:var(--red-light);font-size:.72rem">⚠️ ไม่ครบ (${rows.length}/${total})</span>`
+      }
+    })
     document.getElementById('sk-kg').textContent=totalKg.toFixed(2)+' กก.'
     document.getElementById('sk-a').textContent=byWh.A>0?byWh.A+' ถุง':'—'
     document.getElementById('sk-b').textContent=byWh.B>0?byWh.B+' ถุง':'—'
