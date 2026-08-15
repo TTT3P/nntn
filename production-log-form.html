@@ -853,11 +853,19 @@ function renderIngrRows(logId, rows) {
 
 async function init() {
   // Load BOM items first (always available)
-  const { data: bomData } = await sb.from('bom_items')
-    .select('rcp_code, rcp_name, sp_code, ingredient, qty, unit')
-    .order('rcp_code, line_no');
+  // paginate past PostgREST's 1000-row cap — bom_items grows with every recipe line
+  let bomData = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await sb.from('bom_items')
+      .select('rcp_code, rcp_name, sp_code, ingredient, qty, unit')
+      .order('rcp_code').order('line_no').order('id')
+      .range(from, from + 999);
+    if (error) break;
+    bomData = bomData.concat(data || []);
+    if (!data || data.length < 1000) break;
+  }
 
-  if (bomData) {
+  if (bomData.length) {
     bomData.forEach(item => {
       if (!bomCache[item.rcp_code]) bomCache[item.rcp_code] = [];
       bomCache[item.rcp_code].push({ sp_code: item.sp_code, ingredient: item.ingredient, qty: item.qty, unit: item.unit });

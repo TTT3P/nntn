@@ -75,15 +75,27 @@ let allBOM = [];
 let allIngredients = [];
 let allRecipes = [];
 
+// paginate bom_items past PostgREST's 1000-row cap
+async function fetchAllBom() {
+  let all = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await sb.from('bom_items').select('*').order('line_no').order('id').range(from, from + 999);
+    if (error) throw error;
+    all = all.concat(data || []);
+    if (!data || data.length < 1000) break;
+  }
+  return all;
+}
+
 async function load() {
-  const [costsRes, bomRes, ingRes, rcpRes] = await Promise.all([
+  const [costsRes, bomAll, ingRes, rcpRes] = await Promise.all([
     sb.from('recipe_costs').select('*').eq('type', 'menu').eq('is_active', true).order('rcp_code'),
-    sb.from('bom_items').select('*').order('line_no'),
+    fetchAllBom(),
     sb.from('ingredients').select('id, name, sp_code'),
     sb.from('recipes').select('id, rcp_code, name').in('type', ['prep','sub','kitchen'])
   ]);
   allMenus = costsRes.data || [];
-  allBOM = bomRes.data || [];
+  allBOM = bomAll || [];
   allIngredients = ingRes.data || [];
   allRecipes = rcpRes.data || [];
   document.getElementById('total').textContent = allMenus.length + ' เมนู';

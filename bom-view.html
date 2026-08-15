@@ -146,10 +146,17 @@ let allData = [];
 let activeRcp = '';
 
 async function loadBOM() {
-  const { data, error } = await sb.from('bom_items')
-    .select('*')
-    .order('rcp_code')
-    .order('line_no');
+  // paginate past PostgREST's 1000-row cap — bom_items grows with every recipe line
+  let data = [], error = null;
+  for (let from = 0; ; from += 1000) {
+    const res = await sb.from('bom_items')
+      .select('*')
+      .order('rcp_code').order('line_no').order('id')
+      .range(from, from + 999);
+    if (res.error) { error = res.error; break; }
+    data = data.concat(res.data || []);
+    if (!res.data || res.data.length < 1000) break;
+  }
 
   if (error) {
     document.getElementById('bom-content').innerHTML = `<div class="empty">❌ ${error.message}</div>`;

@@ -70,14 +70,26 @@ let allRecipes = [];
 let allBOM = [];
 let allIngredients = [];
 
+// paginate bom_items past PostgREST's 1000-row cap
+async function fetchAllBom() {
+  let all = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await sb.from('bom_items').select('*').order('id').range(from, from + 999);
+    if (error) throw error;
+    all = all.concat(data || []);
+    if (!data || data.length < 1000) break;
+  }
+  return all;
+}
+
 async function load() {
-  const [rcpRes, bomRes, ingRes] = await Promise.all([
+  const [rcpRes, bomAll, ingRes] = await Promise.all([
     sb.from('recipes').select('*').in('type', ['prep','sub','kitchen']).eq('is_active', true).order('rcp_code'),
-    sb.from('bom_items').select('*'),
+    fetchAllBom(),
     sb.from('ingredients').select('id, name, unit')
   ]);
   allRecipes = rcpRes.data || [];
-  allBOM = bomRes.data || [];
+  allBOM = bomAll || [];
   allIngredients = ingRes.data || [];
   document.getElementById('total').textContent = allRecipes.length + ' สูตร';
   filterList();
