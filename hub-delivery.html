@@ -1620,13 +1620,17 @@ async function loadHistory() {
       // chunk to avoid URL length limit (~2000 chars)
       const chunks = []
       for (let i = 0; i < cwIds.length; i += 200) chunks.push(cwIds.slice(i, i+200))
-      for (const chunk of chunks) {
-        const cwRes = await _fetchCatchWeightBatch(chunk.join(','), 'id,status', SHh)
-        if (cwRes.ok) {
-          const rows = await cwRes.json()
-          rows.forEach(r => { cwStatus[r.id] = r.status })
-        }
-      }
+      // Fetch chunks in parallel. This was a sequential await loop — on a large/
+      // polluted history (~4.6k cw_ids → 24 chunks) that meant 24 serial round-trips
+      // (~3s locally, >15s in CI → history tab timed out). Promise.all collapses it to
+      // roughly one round-trip; failed chunks degrade to [] so one bad chunk can't
+      // block the rest (same skip-on-error behavior as before).
+      const chunkResults = await Promise.all(chunks.map(chunk =>
+        _fetchCatchWeightBatch(chunk.join(','), 'id,status', SHh)
+          .then(cwRes => (cwRes.ok ? cwRes.json() : []))
+          .catch(() => [])
+      ))
+      chunkResults.forEach(rows => rows.forEach(r => { cwStatus[r.id] = r.status }))
     }
 
     let filtered = deliveries
