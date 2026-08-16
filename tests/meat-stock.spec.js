@@ -119,10 +119,13 @@ test.describe('meat-stock page', () => {
     await expect(dropdown).toBeVisible();
 
     const options = await dropdown.locator('option').allTextContents();
-    // 1 placeholder + 14 SKUs = 15 (PROC_OUTPUT_SKUS in meat-stock/index.html
-    // counted 14 as of MT-052 [150G]เนื้อแดดเดียว, added 10/07 — verified by
-    // reading the literal array, not by trusting the old comment)
-    expect(options.length).toBe(15);
+    // Bind the count to the live source array (PROC_OUTPUT_SKUS, exposed as
+    // window._PROC_OUTPUT_SKUS in meat-stock/index.html) instead of a hardcoded
+    // number — the curated list grows as SKUs are added (20 as of MT-057/058
+    // 13/08), so a literal count goes stale. Dropdown = 1 placeholder + N SKUs.
+    const skuCount = await page.evaluate(() => (window._PROC_OUTPUT_SKUS || []).length);
+    expect(skuCount).toBeGreaterThan(0); // sanity: source array loaded
+    expect(options.length).toBe(skuCount + 1);
 
     // ควรมี MT-020, MT-014 (พิคานย่า)
     expect(options.some(o => o.includes('MT-020'))).toBe(true);
