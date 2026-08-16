@@ -55,3 +55,8 @@ const post = (path, body) =>
 
 function today() { return new Date().toISOString().split('T')[0] }
 function fmtDate(d) { if(!d) return ''; const dt=new Date(d); return `${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}/${dt.getFullYear()}` }
+
+// Shared HTML-escape util (used by history/produce/process/stock render paths).
+function escHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+}
