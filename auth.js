@@ -44,27 +44,64 @@
     location.replace(LOGIN_URL);
   }
 
-  async function refreshSession() {
+  // ── Single-flight refresh ──────────────────────────────────
+  // Collapse every concurrent refresh into ONE in-flight request.
+  // Without this, a page that fires several REST queries at once all get 401
+  // when the token expires → each calls refreshSession() with the SAME refresh
+  // token → Supabase rotates it on the first, the rest reuse a spent token →
+  // 400 → the old code called logout() → user kicked to login. (root cause #1)
+  function refreshSession() {
+    if (window.__nntnRefreshPromise) return window.__nntnRefreshPromise;
+    window.__nntnRefreshPromise = doRefresh().finally(function () {
+      window.__nntnRefreshPromise = null;
+    });
+    return window.__nntnRefreshPromise;
+  }
+
+  async function doRefresh() {
     var rt = localStorage.getItem(REFRESH_KEY);
     if (!rt) { logout(); return false; }
+
+    var res;
     try {
-      var res = await fetch(SB + '/auth/v1/token?grant_type=refresh_token', {
+      res = await fetch(SB + '/auth/v1/token?grant_type=refresh_token', {
         method: 'POST',
         headers: { 'apikey': KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: rt })
       });
-      if (!res.ok) { logout(); return false; }
+    } catch (e) {
+      // Network blip (flaky kitchen wifi) — DON'T log out. Keep the session and
+      // let the next call retry. (root cause #2: logout-on-any-error)
+      console.warn('[auth] refresh network error, keeping session:', e);
+      return false;
+    }
+
+    if (res.ok) {
       var data = await res.json();
       localStorage.setItem(TOKEN_KEY,   data.access_token);
       localStorage.setItem(REFRESH_KEY, data.refresh_token);
       localStorage.setItem(EXPIRES_KEY, String(data.expires_at));
-      // Update any existing clients' header to use new token
-      window.__nntnCurrentToken = data.access_token;
+      window.__nntnCurrentToken = data.access_token;  // patched client/fetch read this
       return true;
-    } catch (e) {
-      logout();
+    }
+
+    // Refresh rejected. Before nuking the session, check whether ANOTHER tab or
+    // request already rotated the refresh token successfully (cross-tab race #3).
+    var current = localStorage.getItem(REFRESH_KEY);
+    if (current && current !== rt) {
+      window.__nntnCurrentToken = localStorage.getItem(TOKEN_KEY);
+      return true;  // adopt the fresh token a sibling just wrote
+    }
+
+    // 5xx = transient server hiccup → keep session, don't force re-login.
+    if (res.status >= 500) {
+      console.warn('[auth] refresh server error ' + res.status + ', keeping session');
       return false;
     }
+
+    // 400/401 with no newer token anywhere → refresh token is genuinely dead.
+    logout();
+    return false;
   }
 
   // ============================================================
@@ -154,6 +191,9 @@
     document.documentElement.style.visibility = 'hidden';
     refreshSession().then(function (ok) {
       if (ok) location.reload();
+      // Refresh failed on a transient blip (no logout) → un-hide so the page
+      // isn't stuck invisible; existing token still drives the UI / next retry.
+      else document.documentElement.style.visibility = '';
     });
     return;
   }
