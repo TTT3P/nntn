@@ -302,7 +302,6 @@ SELECT count(*) FROM pg_class WHERE relrowsecurity;         -- RLS-enabled table
 <tr><td><code>portion-form.html</code></td><td class="num">401</td><td>แบ่ง SRCP→PKG portions</td><td>portion_log</td><td>✅</td></tr>
 <tr><td><code>po-receive.html</code></td><td class="num">1064</td><td>PO + รับของ</td><td>rpc_receive_universal</td><td><span class="tag-warn">⚠️ B1</span></td></tr>
 <tr><td><code>goal-dashboard.html</code></td><td class="num">611</td><td>KPI goals</td><td>—</td><td>✅</td></tr>
-<tr><td><code>data-pipeline.html</code></td><td class="num">1501</td><td>ระบบเก็บข้อมูลยอดขาย Grab/FS/Wongnai</td><td>external sales tables</td><td><span class="tag-warn">⚠️ B7</span></td></tr>
 <tr><td><code>production-log-form.html</code></td><td class="num">946</td><td>บันทึก prep (no stock effect)</td><td>production_log</td><td>✅</td></tr>
 <tr><td><code>production-log-view.html</code></td><td class="num">272</td><td>ประวัติ prep</td><td>—</td><td>✅</td></tr>
 <tr><td><code>production-history.html</code></td><td class="num">322</td><td>ประวัติผลิต</td><td>—</td><td>✅</td></tr>
@@ -456,7 +455,7 @@ flowchart LR
 <tr><td><strong>B3</strong></td><td>🟡 P2</td><td>Bundle SKU (PKG-009) dispenses without cascading sub-items</td><td>None</td><td>Waiting on CookingBook BOM spec</td></tr>
 <tr><td><strong>B5</strong></td><td>🟢 P3</td><td>count-log doesn't show receive/dispense events</td><td>Check dashboard</td><td>Add qty_on_hand column to count-log UI</td></tr>
 <tr><td><strong>B6</strong></td><td>🟢 P3</td><td>4-bill scatter when shipping combined meat+nm via SQL</td><td>bill_no UNIQUE prevents merge</td><td>UI: group bills by date+branch</td></tr>
-<tr><td><strong>B7</strong></td><td>🟢 P3</td><td><code>data-pipeline.html</code> purpose unclear (1501 LoC)</td><td>Skip</td><td>Audit + deprecate or document</td></tr>
+<tr><td><strong>B7</strong></td><td>✅</td><td><code>data-pipeline.html</code> — obsolete doc (local SQLite nntn_sales.db pipeline, superseded by Supabase sales_ops)</td><td>Audited 2026-08-17</td><td>✅ Removed — page + nav link deleted</td></tr>
 </tbody>
 </table>
 
@@ -684,7 +683,7 @@ flowchart LR
 <thead><tr><th>Domain</th><th>Where to look</th></tr></thead>
 <tbody>
 <tr><td>CookingBook BOM internals</td><td>CookingBook room SKILL · <code>nntn-cookingbook</code></td></tr>
-<tr><td>Sales data pipeline scraping</td><td><code>data-pipeline.html</code> source · pending audit (B7)</td></tr>
+<tr><td>Sales data pipeline</td><td>Supabase <code>sales_ops</code> schema · <code>sales-ops.html</code> (old <code>data-pipeline.html</code> SQLite doc removed 2026-08-17)</td></tr>
 <tr><td>Web redesign target state</td><td>Phase 1 deliverable (separate · TBD)</td></tr>
 <tr><td>Mobile/responsive behavior</td><td>Desktop-first only · responsive case-by-case</td></tr>
 <tr><td>Full RLS policy audit per-table</td><td><code>pg_policies</code> (73 policies)</td></tr>
@@ -712,7 +711,7 @@ flowchart TB
   SB -->|pg_net webhook| DC[📢 Discord AIM bot]
   SB -->|pg_cron 9 jobs| SB
 
-  GRAB[📱 Grab] -.->|order CSV / scrape| PIPE[data-pipeline.html]
+  GRAB[📱 Grab] -.->|order CSV / scrape| PIPE[sales_ops ingest]
   FS[📱 FoodStory POS] -.-> PIPE
   WN[📱 Wongnai] -.-> PIPE
   PIPE --> SB

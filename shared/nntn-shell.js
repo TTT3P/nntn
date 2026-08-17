@@ -101,9 +101,7 @@
     { href: '/nntn/production-log-form.html', icon: '📝', label: 'Production Log' },
     { section: 'Admin' },
     { href: '/nntn/admin-items.html', icon: '🏷️', label: 'Items' },
-    { href: '/nntn/admin-bom.html', icon: '🧪', label: 'BOM Admin' },
-    { section: 'Reports' },
-    { href: '/nntn/data-pipeline.html', icon: '📊', label: 'Data Pipeline' }
+    { href: '/nntn/admin-bom.html', icon: '🧪', label: 'BOM Admin' }
   ];
 
   const OPEN_KEY = 'nntn_nav_open';
