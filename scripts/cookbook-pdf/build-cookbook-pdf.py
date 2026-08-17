@@ -26,7 +26,11 @@ CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 
 def main():
     version = sys.argv[1] if len(sys.argv) > 1 else 'draft'
-    out = pathlib.Path.home() / 'Desktop' / f'ตำราครัว NNTN — {version}.pdf'
+    # ออกที่โฟลเดอร์ของสคริปต์เอง ไม่ใช่ Desktop ของ TINE (2026-08-02 TINE สั่ง อย่าโยนของใส่ Desktop)
+    # เล่มที่ปล่อยจริงค่อยคัดไป vault/nntn/Operations/CookBook/ · ของที่ให้ TINE ดูไป ψ/inbox/TINE/
+    outdir = WORK / 'out'
+    outdir.mkdir(exist_ok=True)
+    out = outdir / f'ตำราครัว NNTN — {version}.pdf'
 
     if not DATA.exists():
         sys.exit(f'ยังไม่มีไฟล์ข้อมูล: {DATA} — รัน export-cookbook-data.py ก่อน')

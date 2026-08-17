@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <!-- CookBook (full book) · cookbook.html · created 2026-06-25 · cookingbook.* (recipes+bom+sop_steps)
      ตำราครัว NNTN ทั้งเล่ม · 1 สูตร/หน้า · จัดกลุ่มตาม recipes.category · กด Print → Save as PDF ได้เล่มจริง
-     2026-06-25: filter ปริ้นทีละหมวด (catFilter) + แก้ line-height/footer/TOC + ตัด BOM note ออกจากเล่ม -->
+     2026-06-25: filter ปริ้นทีละหมวด (catFilter) + แก้ line-height/footer/TOC + ตัด BOM note ออกจากเล่ม
+     2026-08-02: เพิ่ม "เล่มครัว" — 2 สูตร/หน้า A4 (ครึ่งละสูตร) · วัตถุดิบซ้าย วิธีทำขวา · หน่วยช้อนตวง · ภาษาคนล้วน
+                 หน่วยผูกกับแบบเล่มแล้ว (ทางการ=กรัม · ครัว=ช้อน) เลยตัด toggle หน่วยเดิมที่ค้าง disabled ทิ้ง -->
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -168,6 +170,111 @@
       border-top: 1px solid #eee; padding-top: 4px;
     }
 
+    /* ═══ โหมดครัว — ครึ่ง A4 ต่อสูตร · วัตถุดิบซ้าย ขั้นตอนขวา ═══
+       (TINE 2026-08-02: "1 เมนูเป็นครึ่ง A4 วัตถุดิบซ้าย ขั้นตอนการทำขวา")
+       ความสูง 148mm = ครึ่ง A4 พอดี → 2 สูตรต่อแผ่น · ใช้ 148 ไม่ใช่ 148.5 กันเศษดันตกหน้า */
+    .recipe-body { display: block; }
+
+    /* สลับภาษา: ปกติโชว์ฉบับระบบ · โหมดครัวโชว์ฉบับภาษาคน */
+    .t-kit { display: none; }
+    body.kitchen .t-sys { display: none; }
+    body.kitchen .t-kit { display: inline; }
+    body.kitchen .doc-rcp-code { display: none; }   /* ครัวไม่ต้องเห็นรหัสสูตร */
+
+    body.kitchen .cover,
+    body.kitchen .toc { display: none !important; }
+
+    /* ไม่ล็อกความสูง — ให้แต่ละสูตรกินพื้นที่เท่าที่ต้องใช้จริง แล้วไหลต่อกันไป
+       สูตรสั้นจะได้อัดลงแผ่นเดียวกันหลายสูตร (ใช้กระดาษคุ้ม)
+       สูตรยาวก็ยืดได้ ไม่มีอะไรถูกตัดหาย · ห้ามแตกกลางสูตรเท่านั้น */
+    body.kitchen .recipe-page {
+      min-height: 0;
+      padding: 4.5mm 7mm;        /* บนล่างเฉือนจาก 6mm — มี 15 ใบที่พลาดช่อง 1/4 แผ่นไปแค่ 2-3 มม. */
+      break-inside: avoid;
+      border-bottom: 1px dashed #bbb;
+    }
+    body.kitchen .book-wrap { gap: 0; }
+    /* 3 ขนาดตามเนื้อหาจริง (TINE 2026-08-02) — JS วัดความสูงแล้วติดคลาสให้
+         .size-q  เมนูจุ๊บ ๆ (ไข่ดาว ไข่เจียว)  = 1/4 แผ่น → 4 เมนู/หน้า
+         .size-h  เมนูปกติ                     = 1/2 แผ่น → 2 เมนู/หน้า
+         ไม่ติดคลาส = ใบใหญ่ที่มีซอสพ่วง ปล่อยยืดตามเนื้อหา
+       ทุกขนาดหารลงตัวกับ A4 (74/148/297) ตัดกระดาษได้ตรงเส้นเสมอ
+       ใช้ min-height ไม่ใช่ height: ใบไหนล้นจะยืด ไม่ถูกตัดเนื้อหาหาย */
+    body.kitchen .recipe-page { min-height: 148mm; }
+    body.kitchen .recipe-page.size-q { min-height: 74mm; }
+    body.kitchen .recipe-page.size-h { min-height: 148mm; }
+    /* สูตรหลัก: ให้คอลัมน์ยืดตามเนื้อหา ไม่ล็อก 40% ตายตัว
+       เมนูที่มีของ 3-4 อย่างจะได้ไม่ลากตารางยาวจนเหลือขาวข้างขวา */
+    body.kitchen .recipe-body { grid-template-columns: minmax(min-content, 42%) 1fr; }
+
+    /* ── ซอส/ของเตรียม แนบท้ายหน้าเดียวกับเมนู ── */
+    .sub-wrap { display: none; }
+    /* การ์ดซอยเรียง 2 คอลัมน์ แล้วในการ์ดวางส่วนผสมบน-วิธีทำล่าง
+       เดิมล็อกซ้าย-ขวาในการ์ดเดียว พอวิธีทำสั้นกว่ารายการของก็เหลือขาวข้างขวาทั้งแถบ */
+    /* ใช้ grid ไม่ใช่ CSS columns — columns เอาการ์ดสูง ๆ ไปกองคอลัมน์เดียวจนขวาว่างทั้งแถบ
+       grid บังคับวางไล่ซ้าย-ขวาแน่นอน */
+    /* คอลัมน์ปรับเองตามจำนวนซอส — ซอส 3 ใบในกริด 2 คอลัมน์กลายเป็น 2 แถว กินความสูงเท่าตัว
+       auto-fit ทำให้ 3 ใบเรียงแถวเดียวได้ เหลือแค่ความสูงของใบที่สูงสุด */
+    body.kitchen .sub-wrap {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 3mm; align-items: start; margin-top: 6px;
+    }
+    body.kitchen .sub-wrap > .doc-section-title { grid-column: 1 / -1; margin: 0; }
+    .sub-card { border: 1px solid #dcdcdc; border-radius: 5px; overflow: hidden; break-inside: avoid; }
+    .sub-card-head {
+      background: #F1F6F3; border-bottom: 1px solid #e3e3e3;
+      padding: 3px 8px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+    }
+    .sub-card-name { font-size: 11.5px; font-weight: 700; color: var(--green); }
+    .sub-card-batch { font-size: 9.5px; color: var(--muted); white-space: nowrap; }
+    .sub-card-body { padding: 4px 7px 5px; }
+    .sub-ing {
+      list-style: none; margin: 0 0 5px; padding: 0;
+      /* บอกเป็น "ความกว้างคอลัมน์" ไม่ใช่จำนวน — การ์ดกว้างได้ 2 คอลัมน์ การ์ดแคบยุบเหลือ 1 เอง */
+      columns: 32mm; column-gap: 4mm; font-size: 10px; line-height: 1.5;
+    }
+    .sub-ing li {
+      display: flex; justify-content: space-between; gap: 6px;
+      break-inside: avoid; border-bottom: 1px dotted #eaeaea; padding: 1px 0;
+    }
+    .sub-ing .si-qty { font-weight: 600; white-space: nowrap; }
+    .sub-ing-empty { color: #999; }
+    .sub-card-body .steps-body {
+      font-size: 9.5px; line-height: 1.42; padding: 4px 6px;
+      background: #FAFAFA; border: 1px solid #eee; border-radius: 4px;
+    }
+    /* ใบที่มีซอสประกอบต้องอัดให้ลงครึ่งแผ่นเหมือนใบอื่น — ย่อส่วนบนลงอีกขั้น */
+    body.kitchen .recipe-page:has(.sub-card) .ing-table { font-size: 10px; }
+    body.kitchen .recipe-page:has(.sub-card) .ing-table th { padding: 3px 6px; font-size: 9.5px; }
+    body.kitchen .recipe-page:has(.sub-card) .ing-table td { padding: 2px 6px; }
+    body.kitchen .recipe-page:has(.sub-card) > .recipe-body .steps-body { font-size: 10px; line-height: 1.5; padding: 5px 7px; }
+    body.kitchen .doc-header { gap: 8px; padding-bottom: 3px; margin-bottom: 4px; border-bottom-width: 2px; }
+    body.kitchen .doc-cover-img,
+    body.kitchen .doc-cover-placeholder { width: 38px; height: 38px; font-size: 17px; }
+    body.kitchen .doc-menu-name { font-size: 15px; }
+    body.kitchen .doc-cat-tag { font-size: 9px; }
+    body.kitchen .doc-rcp-code { font-size: 9px; padding: 1px 7px; }
+    body.kitchen .doc-meta { font-size: 10px; margin-top: 3px; }
+    body.kitchen .doc-status-badge { display: none; }
+    body.kitchen .doc-footer { display: none; }        /* ช่องเซ็นไม่ต้องในครัว */
+
+    body.kitchen .recipe-body {
+      display: grid;
+      grid-template-columns: 40% 1fr;
+      gap: 7mm;
+      align-items: start;
+    }
+    body.kitchen .doc-section-title { font-size: 10px; margin: 0 0 5px; padding-bottom: 3px; letter-spacing: 0.05em; }
+    body.kitchen .ing-table { font-size: 11px; }
+    body.kitchen .ing-table th { padding: 4px 6px; font-size: 10px; }
+    body.kitchen .ing-table td { padding: 3px 6px; }
+    body.kitchen .ing-table td:last-child { font-size: 11px; font-weight: 600; }
+    body.kitchen .steps-body {
+      font-size: 11.5px; line-height: 1.65; padding: 7px 9px;
+      background: white; border-color: #ddd;
+    }
+    body.kitchen .page-foot { margin-top: 4px; font-size: 8px; padding-top: 2px; }
+
     /* ── Print ── */
     @media print {
       header, nav, .print-controls { display: none !important; }
@@ -191,7 +298,42 @@
       body:not(.kitchen) .doc-section-title { break-after: avoid; }   /* หัวข้อไปไหน กล่องไปด้วย */
       /* จุดตัดของสูตรที่ยาวเกินหน้า — JS ติดคลาสนี้ให้หลังวัดของจริง (ดู markOverflowPages) */
       body:not(.kitchen) .break-here { break-before: page; }
-      body.kitchen-input .kitchen-break { break-before: page; }
+
+      /* โหมดครัว: ไม่บังคับขึ้นหน้าใหม่ ให้สูตรไหลอัดกันจนเต็มแผ่น (ใช้กระดาษคุ้ม)
+         แต่ห้ามแตกกลางสูตร — ครัวต้องเห็นทั้งสูตรพร้อมซอสในสายตาเดียว */
+      body.kitchen .recipe-page {
+        page-break-before: auto;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        /* ⚠️ ต้องล็อก 148mm ตรงนี้ด้วย ไม่ใช่แค่บนจอ — เคยตั้ง min-height:0 ค้างไว้
+           ผลคือตอนพิมพ์จริงการ์ดหดตามเนื้อหา ครึ่งล่างของแผ่นเลยว่างทิ้ง เปลืองกระดาษ */
+        min-height: 148mm;
+        padding: 4.5mm 7mm;
+        border-bottom: 1px dashed #ccc;
+      }
+      body.kitchen .recipe-page.size-q { min-height: 74mm; }
+      body.kitchen .recipe-page.size-h { min-height: 148mm; }
+      body.kitchen .sub-card { break-inside: avoid; }
+
+      /* ═══ โหมดไหลต่อกันแบบหนังสือ (body.flowbook) — A4 แนวนอน 3 คอลัมน์ ═══
+         เลิกคิดว่า "1 สูตร = 1 การ์ดขนาดตายตัว" เปลี่ยนเป็นสูตรเป็นบล็อกที่ไหลลงคอลัมน์
+         สูตรถัดไปขึ้นทันทีที่สูตรก่อนจบ → ไม่มีช่องว่างค้าง และไม่มีขนาดสลับให้สายตาสะดุด */
+      body.flowbook .book-wrap { columns: 3; column-gap: 7mm; display: block; }
+      body.flowbook .recipe-page {
+        width: auto; min-height: 0; padding: 0 0 4mm; margin: 0 0 4mm;
+        box-shadow: none; border-bottom: 0.8px solid #e3e1dc;
+        break-inside: avoid; page-break-inside: avoid; page-break-before: auto;
+        display: block;
+      }
+      body.flowbook .doc-footer { display: none; }
+      body.flowbook .page-foot { display: none; }
+      /* ในคอลัมน์แคบ ส่วนผสมกับวิธีทำวางซ้อนกัน ไม่ใช่ซ้าย-ขวา */
+      body.flowbook .recipe-body { display: block; }
+      body.flowbook .col-steps { margin-top: 3px; }
+      body.flowbook .sub-wrap { display: block; }
+      body.flowbook .sub-card { margin-bottom: 3px; }
+      body.flowbook .sub-ing { columns: auto; }
+      body.kitchen .cover, body.kitchen .toc { display: none !important; }
     }
   </style>
 </head>
@@ -220,8 +362,15 @@
     <option value="__all__">ทุกสูตร</option>
     <option value="__kitchen__">ใบส่งครัว — เฉพาะสูตรที่ต้องให้ครัวเขียน</option>
   </select>
+  <span class="ctrl-label">แบบ:</span>
+  <!-- 2026-08-02: หน่วยผูกกับแบบเล่มแล้ว ไม่ต้องมี toggle แยก
+       เล่มทางการ = กรัม (ใช้คิดต้นทุน) · เล่มครัว = ช้อนตวง (ใช้ทำอาหาร) -->
+  <select class="ctrl-select" id="layoutMode" style="min-width:290px;" onchange="applyLayout()">
+    <option value="full">📄 เล่มทางการ — 1 สูตร/หน้า · หน่วยกรัม</option>
+    <option value="kitchen">👨‍🍳 เล่มครัว — 2 สูตร/หน้า A4 · หน่วยช้อนตวง</option>
+  </select>
   <span class="ctrl-label" id="bookStatus">กำลังโหลด...</span>
-  <span class="ctrl-hint">💡 เลือกหมวดเพื่อปริ้นทีละส่วน (ไม่ต้องรวดเดียว) → กดปริ้น → "Save as PDF"</span>
+  <span class="ctrl-hint">💡 เลือกหมวดเพื่อปริ้นทีละส่วน → กดปริ้น → "Save as PDF" · โหมดครัว: วัตถุดิบซ้าย ขั้นตอนขวา ตัดช่องเซ็นออก</span>
   <button class="btn-print" id="printBtn" onclick="window.print()" disabled>🖨️ พิมพ์ / บันทึก PDF</button>
 </div>
 
@@ -237,22 +386,98 @@ const SB_URL = 'https://emjqulzikpxorvpaaiww.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
+// ═══ ตารางแปลงหน่วย · กี่กรัมต่อ 1 ช้อนโต๊ะ ═══════════════════════════════
+// TINE ยืนยัน 2026-08-02: ช้อนที่ครัวใช้ = ช้อนตวงมาตรฐาน (ช้อนโต๊ะ 15 ml · ช้อนชา 5 ml)
+//
+// ⚠️ เลิกใช้ป้ายช้อนที่ครัวเขียนกำกับในลายมือเป็นค่าตั้งต้น — ตรวจแล้วครัวไม่ได้ตวงจริง
+//    เขาอ่านกรัมจากตำราที่เราปริ้นให้ แล้วเขียนช้อนที่ใกล้ที่สุดกำกับไว้
+//    จึงคลาดไปทางปัดลงเหมือนกันหมด: น้ำปลา 5 g เขียน "1 ช้อนชา" · ของจริง 1 ช้อนชา = 6.1 g
+//
+// กติกา: ของเหลว = ความหนาแน่น x 15 · ของแห้ง = ค่าอ้างอิงที่ตรวจแล้ว
+//        ของสด "ซอย/สับ" ห้ามใส่ — น้ำหนักขึ้นกับความละเอียดที่หั่น ต้องชั่งจริงเท่านั้น
+//        ตัวไหนไม่มีในตาราง = ตำราจะโชว์กรัมพร้อมบอกให้ใช้ตาชั่ง (ไม่เดา)
+const G_PER_TBSP = {
+  // ── ของเหลว · ความหนาแน่น x 15 ml ──
+  'น้ำเปล่า':                        { v: 15,   src: 'น้ำ 1 ml = 1 g' },
+  'น้ำปลาทิพรส':                     { v: 18,   src: 'ความหนาแน่น 1.22' },
+  'ซอสหอยนางรม ฮาเดย์ ซูพีเรีย':      { v: 18,   src: 'ความหนาแน่น 1.2' },
+  'แม่ครัว ซอสหอยนางรม':             { v: 18,   src: 'ความหนาแน่น 1.2' },
+  'ซีอิ๊วขาว (เด็กสมบูรณ์)':           { v: 17,   src: 'ความหนาแน่น 1.15' },
+  'ซีอิ๊วขาว (amoy)':                 { v: 17,   src: 'ความหนาแน่น 1.15' },
+  'ซีอิ๊วดำ ฉลากส้ม':                 { v: 18,   src: 'ความหนาแน่น 1.2' },
+  'ซอสแม็กกี้ ฝาเขียว (Maggi)':       { v: 17,   src: 'ความหนาแน่น 1.15' },
+  'น้ำมะนาว ARO (Frozen Tahiti)':    { v: 15.5, src: 'ความหนาแน่น 1.03' },
+  'น้ำมะนาวขวด ฟ้าไทย':              { v: 15.5, src: 'ความหนาแน่น 1.03' },
+  'น้ำส้มสายชู':                      { v: 15,   src: 'ใกล้น้ำ' },
+  'เหล้าจีน (ตราเจดีย์)':              { v: 15,   src: 'ใกล้น้ำ' },
+  'น้ำมันพืช':                        { v: 14,   src: 'ความหนาแน่น 0.92' },
+  'น้ำมันปาล์ม':                      { v: 14,   src: 'ความหนาแน่น 0.92' },
+  'น้ำมันงา':                         { v: 14,   src: 'ความหนาแน่น 0.92' },
+  // ── ของแห้ง · ค่าอ้างอิงที่ตรวจแล้ว ──
+  'น้ำตาลทรายขาว':                   { v: 12,   src: 'อ้างอิงมาตรฐาน' },
+  'น้ำตาลทรายไม่ขัดสี':               { v: 12.5, src: 'อ้างอิงมาตรฐาน' },
+  'น้ำตาลทรายไม่ขัด':                 { v: 12.5, src: 'อ้างอิงมาตรฐาน (ชื่อสั้น)' },
+  'ผงชูรส (อายิโนะโมะโต๊ะ)':           { v: 12,   src: '203 g ต่อถ้วยตวง' },
+  'พริกไทยขาวป่น':                    { v: 7,    src: 'ตำราสากล — แก้จากที่ระบบเคยจด 12 ซึ่งหนักเกินจริงเกือบเท่าตัว' },
+  'รสดี ผงปรุงรสเนื้อ':                { v: 12,   src: 'อ้างอิงผงปรุงรส' },
+  'เกลือสมุทร':                       { v: 18,   src: 'อ้างอิงเกลือเม็ดละเอียด' },
+  // ⚠️ ห้ามใส่: พริกจินดาซอย · ต้นหอมซอย · กระเทียมสับ · หอมแดงซอย · กระเทียมเจียว
+  //    5 ตัวนี้ต้องให้ครัวชั่งจริง ใส่ค่าเดาไปครัวจะตวงผิดทุกจาน
+};
+
+// สูตรเตรียมของเราเอง (ซอส/น้ำจิ้ม) แปลงด้วยรหัสสูตร ไม่ใช่ชื่อวัตถุดิบ
+const G_PER_TBSP_RCP = {
+  'SRCP-008': { v: 30, src: 'ลายมือครัว 08-02 · เขียนตรงกัน 5 หน้า' },
+  'SRCP-018': { v: 15, src: 'ชั่งจริง 2026-06-24' },
+  'RCP-020':  { v: 15, src: 'น้ำยำเป็นของเหลว ใกล้น้ำ' },
+  'RCP-014':  { v: 15, src: 'พริกน้ำปลาเป็นของเหลว ใกล้น้ำ' },
+  'RCP-015':  { v: 16, src: 'ซอสอเนกประสงค์ ข้นกว่าน้ำเล็กน้อย' },
+  'SRCP-016': { v: 16, src: 'น้ำจิ้มซีฟู๊ด ข้นกว่าน้ำเล็กน้อย' },
+  'SRCP-020': { v: 16, src: 'ซอสข้าวเนื้อสับ ข้นกว่าน้ำเล็กน้อย' },
+  'SRCP-021': { v: 16, src: 'ซอสข้าวเนื้อแม็กกี้ ข้นกว่าน้ำเล็กน้อย' },
+};
+
+// ═══ โหมดครัว: ภาษาคน ไม่มีรหัส ไม่มีศัพท์ระบบ (TINE 2026-08-02) ═══
+// ครัวไม่ต้องรู้ว่าอะไรเป็น sub-recipe อะไรเป็น [75G] — เห็นแค่ "ชื่อของ" กับ "เท่าไหร่"
+const human = s => String(s ?? '')
+  .replace(/^\[[^\]]*\]\s*/, '')              // [75G]เนื้อตุ๋น → เนื้อตุ๋น
+  .replace(/^(S?RCP-[\w.]+)\s+/, '')          // SRCP-016 น้ำจิ้มซีฟู๊ด → น้ำจิ้มซีฟู๊ด
+  .replace(/\s*\(\s*S?RCP-[\w.]+\s*\)\s*$/, '') // น้ำจิ้มซีฟู๊ด (SRCP-016) → น้ำจิ้มซีฟู๊ด
+  .trim();
+const UNIT_TH = { g: 'กรัม', ml: 'มล.', portion: 'ที่', l: 'ลิตร' };
+const unitTH = u => UNIT_TH[u] || u;
+// สองภาษาในแถวเดียว: .t-sys = ฉบับระบบ · .t-kit = ฉบับครัว · CSS สลับให้ ไม่ต้องโหลดข้อมูลใหม่
+const dual = (sys, kit) => `<span class="t-sys">${esc(sys)}</span><span class="t-kit">${esc(kit)}</span>`;
+
+const MEAT_CATS = new Set(['meat', 'meat_portioned', 'meat_cooked', 'meat_other']);
+const FRAC = { 0.25: '¼', 0.5: '½', 0.75: '¾', 0.33: '⅓', 0.67: '⅔' };
+
+// กรัม → ข้อความช้อนที่ครัวตวงได้จริง (ปัดเป็นขั้นละ ¼ ช้อน)
+function toSpoon(g, gPerTbsp) {
+  const tsp = g / (gPerTbsp / 3);
+  if (tsp < 0.2) return 'ปลายช้อน';
+  if (tsp < 3) return fmtSpoon(Math.round(tsp * 4) / 4) + ' ช้อนชา';
+  return fmtSpoon(Math.round((tsp / 3) * 4) / 4) + ' ช้อนโต๊ะ';
+}
+function fmtSpoon(n) {
+  const whole = Math.floor(n), rest = +(n - whole).toFixed(2);
+  const f = FRAC[rest];
+  if (!f) return String(+n.toFixed(2));
+  return whole ? `${whole}${f}` : f;
+}
+
 // หมวดเรียงเหมือน print-recipe.html (เมนูอาหารก่อน → ครัวเตรียม) · emoji บอก type
 const CAT_ORDER = ['ข้าว/จานเดียว','ก๋วยเตี๋ยว/เกาเหลา','กะเพรา','เนื้อจานหลัก','ของทานเล่น','ไข่','เครื่องดื่ม','ซอส/น้ำจิ้ม','น้ำซุป/สต๊อก','หมักเนื้อ','เครื่องปรุง/ผง','กระเทียม-พริกเจียว'];  // 26/07 ตัด 'เซ็ต/ดีล' (filter ที่ fetch ด้วย)
 const TYPE_EMOJI = { menu: '🍽️', prep: '🧪', sub: '📦' };
 const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
-function isMissingSteps(sop) {
-  return !String(sop?.steps_freeform ?? '').trim();
-}
-
+function isMissingSteps(sop) { return !String(sop?.steps_freeform ?? '').trim(); }
 function needsKitchenSteps(rcpCode, missingSteps) {
   const isPackagingGroupA = /^PKG-(00[1-9]|01[0-6])$/.test(rcpCode);
   return missingSteps &&
     !isPackagingGroupA &&
     !['RCP-022-M', 'RCP-023-M', 'RCP-055-M', 'RCP-069-M'].includes(rcpCode);
 }
-
 function recipeMatchesFilters(category, needsStepsFromKitchen, selectedCategory, selectedSteps) {
   return (selectedCategory === '__all__' || category === selectedCategory) &&
     (selectedSteps === '__all__' || needsStepsFromKitchen);
@@ -280,13 +505,33 @@ async function buildBook() {
   const [bomRes, ingRes, sopRes] = await Promise.all([
     sb.schema('cookingbook').from('bom_items')
       .select('recipe_id, line_no, qty_g, unit, note, ingredient_id, sub_recipe_id').in('recipe_id', ids).order('line_no').limit(2000),
-    sb.schema('cookingbook').from('ingredients').select('id, name').limit(2000),
+    sb.schema('cookingbook').from('ingredients').select('id, name, category').limit(2000),
     sb.schema('cookingbook').from('sop_steps')
       .select('recipe_id, steps_freeform, cover_photo_url, status, reviewed_by, reviewed_at, version').in('recipe_id', ids).order('version', { ascending: false }).limit(2000),
   ]);
 
-  const ingMap = {}; (ingRes.data || []).forEach(i => { ingMap[i.id] = i.name; });
-  const recMap = {}; recipes.forEach(r => { recMap[r.id] = `${r.name} (${r.rcp_code})`; });
+  const ingMap = {}, ingCat = {};
+  (ingRes.data || []).forEach(i => { ingMap[i.id] = i.name; ingCat[i.id] = i.category; });
+  const recMap = {}, recCode = {};
+  recipes.forEach(r => { recMap[r.id] = `${r.name} (${r.rcp_code})`; recCode[r.id] = r.rcp_code; });
+  // ปริมาณฉบับครัว: แปลงเป็นช้อนตวงเมื่อมีค่าที่เชื่อถือได้ · ไม่มีค่า = บอกให้ใช้ตาชั่ง ไม่เดา
+  // เพดาน 4 ช้อนโต๊ะ: เกินกว่านั้นไม่มีครัวไหนนั่งตวงทีละช้อน (น้ำซุป 1 กิโล = 67 ช้อนโต๊ะ ใช้ไม่ได้จริง)
+  const MAX_TBSP = 4;
+  const bigG  = q => q >= 1000 ? +(q / 1000).toFixed(2) + ' กิโล' : q + ' กรัม';
+  const bigML = q => q >= 1000 ? +(q / 1000).toFixed(2) + ' ลิตร' : q + ' มล.';
+  function toKitchenQty(b, u, raw) {
+    const q = Number(b.qty_g);
+    if (u !== 'g' && u !== 'ml') return q + ' ' + unitTH(u);          // ฟอง/แผง/ที่ — นับเป็นชิ้นอยู่แล้ว
+    if (u === 'ml') return q / 15 > MAX_TBSP ? bigML(q) : toSpoon(q, 15);  // ปริมาตรอยู่แล้ว 1 ช้อนโต๊ะ = 15 ml
+    if (b.ingredient_id && MEAT_CATS.has(ingCat[b.ingredient_id])) return bigG(q) + ' (ใช้ตาชั่ง)';
+    const hit = b.ingredient_id
+      ? G_PER_TBSP[ingMap[b.ingredient_id]]
+      : G_PER_TBSP_RCP[recCode[b.sub_recipe_id]];
+    if (!hit) return bigG(q) + ' (ใช้ตาชั่ง)';                        // ของสดซอย/สับ และตัวที่ยังไม่ได้ชั่ง
+    if (q / hit.v > MAX_TBSP) return bigG(q);                          // เยอะเกินกว่าจะตวงช้อน
+    return toSpoon(q, hit.v);
+  }
+
   const bomByRecipe = {}; (bomRes.data || []).forEach(b => { (bomByRecipe[b.recipe_id] ||= []).push(b); });
   const sopByRecipe = {}; (sopRes.data || []).forEach(s => { if (!sopByRecipe[s.recipe_id]) sopByRecipe[s.recipe_id] = s; }); // latest version (order desc → first wins)
 
@@ -329,21 +574,68 @@ async function buildBook() {
   });
   html += `<section class="page toc" data-section="toc"><h2>สารบัญ</h2><div class="toc-grid">${tocBody}</div></section>`;
 
-  // ── หน้าสูตร (1 สูตร/หน้า) ──
+  // แถวส่วนผสมของสูตรใด ๆ (ใช้ทั้งสูตรหลักและซอสที่แนบท้าย)
+  function ingRows(rid) {
+    const bom = bomByRecipe[rid] || [];
+    if (!bom.length) return `<tr><td colspan="3" style="text-align:center;color:#999;padding:10px;">${dual('ยังไม่ได้กรอก BOM', 'ยังไม่ได้ใส่ส่วนผสม')}</td></tr>`;
+    return bom.map((b, i) => {
+      const raw = b.ingredient_id ? (ingMap[b.ingredient_id] || '—') : (recMap[b.sub_recipe_id] || '(sub-recipe)');
+      const u = b.unit || 'g';
+      const qSys = b.qty_g ? b.qty_g + ' ' + u : u;
+      const qKit = b.qty_g ? toKitchenQty(b, u, raw) : unitTH(u);
+      return `<tr><td>${dual(b.line_no, i + 1)}</td><td>${dual(raw, human(raw))}</td><td>${dual(qSys, qKit)}</td></tr>`;
+    }).join('');
+  }
+
+  // ส่วนผสมของซอส: ทำเป็นรายการ ไม่ใช่ตาราง เพราะรายการหักลง 2 คอลัมน์ได้ (ตารางหักไม่ได้)
+  // ซอส 10 แถวเรียงลงล่างกิน 96 มม. · หัก 2 คอลัมน์เหลือครึ่งเดียว ทำให้อัดลงครึ่ง A4 ได้โดยไม่ต้องย่อฟอนต์
+  function ingList(rid) {
+    const bom = bomByRecipe[rid] || [];
+    if (!bom.length) return `<li class="sub-ing-empty">ยังไม่ได้ใส่ส่วนผสม</li>`;
+    return bom.map(b => {
+      const raw = b.ingredient_id ? (ingMap[b.ingredient_id] || '—') : (recMap[b.sub_recipe_id] || '');
+      const u = b.unit || 'g';
+      const q = b.qty_g ? toKitchenQty(b, u, raw) : unitTH(u);
+      return `<li><span class="si-name">${esc(human(raw))}</span><span class="si-qty">${esc(q)}</span></li>`;
+    }).join('');
+  }
+
+  // ── ซอส/ของเตรียมที่เมนูนี้ใช้ → แนบไว้หน้าเดียวกัน (TINE 2026-08-02)
+  //    เอา "ชั้นเดียว" คือของที่ครัวตักใส่จานนี้จริง ๆ เท่านั้น
+  //    เคยไล่ 2 ชั้น (ซอสของซอส) ผลคือก๋วยเตี๋ยวได้การ์ด 7 ใบ สูง 317mm กินเกินหนึ่งแผ่น
+  //    ทั้งที่คนลวกก๋วยเตี๋ยวไม่ได้ต้มน้ำซุปเองตรงนั้น — สูตรชั้นลึกมีหน้าของตัวเองอยู่แล้ว
+  function subBlocks(rid, depth = 0, seen = new Set()) {
+    if (depth > 0) return '';
+    const subs = (bomByRecipe[rid] || []).filter(b => b.sub_recipe_id).map(b => b.sub_recipe_id);
+    return subs.filter(id => !seen.has(id)).map(id => {
+      seen.add(id);
+      const sr = recipes.find(x => x.id === id);
+      if (!sr) return '';
+      const ssop = sopByRecipe[id] || {};
+      const sbatch = sr.batch_size_g ? `ผสมครั้งละ ${sr.batch_size_g} กรัม` : '';
+      return `
+      <div class="sub-card">
+        <div class="sub-card-head">
+          <span class="sub-card-name">${esc(human(sr.name))}</span>
+          ${sbatch ? `<span class="sub-card-batch">${esc(sbatch)}</span>` : ''}
+        </div>
+        <div class="sub-card-body">
+          <ul class="sub-ing">${ingList(id)}</ul>
+          <div class="steps-body">${esc(ssop.steps_freeform || 'ยังไม่มีวิธีทำ — รอครัวเขียน')}</div>
+        </div>
+      </div>` + subBlocks(id, depth + 1, seen);
+    }).join('');
+  }
+
+  // ── หน้าสูตร ──
   recipes.forEach(r => {
-    const bom = bomByRecipe[r.id] || [];
     const sop = sopByRecipe[r.id] || {};
     const missingSteps = isMissingSteps(sop);
     const needsStepsFromKitchen = needsKitchenSteps(r.rcp_code, missingSteps);
-    const rows = bom.length
-      ? bom.map(b => `<tr>
-          <td>${b.line_no}</td>
-          <td>${b.ingredient_id ? esc(ingMap[b.ingredient_id] || '—') : esc(recMap[b.sub_recipe_id] || '(sub-recipe)')}</td>
-          <td>${b.qty_g ? esc(b.qty_g + ' ' + (b.unit || 'g')) : esc(b.unit || '—')}</td>
-        </tr>`).join('')
-      : `<tr><td colspan="3" style="text-align:center;color:#999;padding:12px;">ยังไม่ได้กรอก BOM</td></tr>`;
+    const rows = ingRows(r.id);
+    const subs = subBlocks(r.id);
 
-    const steps = missingSteps ? '(ยังไม่ได้กรอกขั้นตอน — เว้นพื้นที่ให้ครัวเขียน)' : sop.steps_freeform;
+    const steps = missingSteps ? 'ยังไม่มีวิธีทำ — รอครัวเขียน' : sop.steps_freeform;
     const st = sop.status || 'draft';
     const cover = sop.cover_photo_url
       ? `<img class="doc-cover-img" src="${esc(sop.cover_photo_url)}" alt="">`
@@ -354,26 +646,36 @@ async function buildBook() {
     const batch = r.batch_size_g ? `batch ${r.batch_size_g} g` : '';
 
     html += `
-    <section class="page recipe-page" data-cat="${esc(r.category || '')}" data-needs-kitchen-steps="${needsStepsFromKitchen}">
+    <section class="page recipe-page${subs ? '' : ' solo'}" data-cat="${esc(r.category || '')}" data-needs-kitchen-steps="${needsStepsFromKitchen}">
       <div class="doc-header">
         ${cover}
         <div class="doc-title-block">
           <div class="doc-cat-tag">${TYPE_EMOJI[r.type] || ''} ${esc(r.category || '')}</div>
-          <div class="doc-menu-name">${esc(r.name)}</div>
+          <div class="doc-menu-name">${dual(r.name, human(r.name))}</div>
           <div><span class="doc-rcp-code">${esc(r.rcp_code)}</span></div>
-          <div class="doc-meta">ประเภท: ${esc(r.type)}${batch ? ' · ' + batch : ''}</div>
+          <div class="doc-meta">${dual('ประเภท: ' + r.type + (batch ? ' · ' + batch : ''), r.batch_size_g ? 'ทำครั้งละ ' + r.batch_size_g + ' กรัม' : '')}</div>
           <span class="doc-status-badge ${esc(st)}">${esc(st)}</span>
         </div>
       </div>
 
-      <div class="doc-section-title">ส่วนผสม (BOM)</div>
-      <table class="ing-table">
-        <thead><tr><th>#</th><th>วัตถุดิบ</th><th style="text-align:right;">ปริมาณ</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <div class="recipe-body">
+        <div class="col-ing">
+          <div class="doc-section-title">${dual('ส่วนผสม (BOM)', 'ส่วนผสม')}</div>
+          <table class="ing-table">
+            <thead><tr><th>#</th><th>วัตถุดิบ</th><th style="text-align:right;">ปริมาณ</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div class="col-steps">
+          <div class="doc-section-title">${dual('ขั้นตอนการทำ', 'วิธีทำ')}</div>
+          <div class="steps-body">${esc(steps)}</div>
+        </div>
+      </div>
 
-      <div class="doc-section-title">ขั้นตอนการทำ</div>
-      <div class="col-steps"><div class="steps-body">${esc(steps)}</div></div>
+      ${subs ? `<div class="sub-wrap">
+        <div class="doc-section-title">ซอสและของที่ต้องเตรียมไว้ก่อน</div>
+        ${subs}
+      </div>` : ''}
 
       <div class="doc-footer">
         <div class="footer-item"><div class="footer-label">อนุมัติโดย</div><div class="footer-value">${esc(approvedBy)}</div><div class="footer-sig-line">ลายเซ็น</div></div>
@@ -382,8 +684,8 @@ async function buildBook() {
       </div>
 
       <div class="page-foot">
-        <span>NNTN CookBook · ${esc(r.category || '')}</span>
-        <span>${esc(r.rcp_code)} · สูตรที่ ${seqMap[r.id]}/${recipes.length}</span>
+        <span>${dual('NNTN CookBook · ' + (r.category || ''), 'ตำราครัว NNTN')}</span>
+        <span>${dual(r.rcp_code + ' · สูตรที่ ' + seqMap[r.id] + '/' + recipes.length, 'สูตรที่ ' + seqMap[r.id])}</span>
       </div>
     </section>`;
   });
@@ -407,6 +709,34 @@ async function buildBook() {
   document.getElementById('printBtn').disabled = false;
 }
 
+// โหมดหน้า: full = เล่มทางการ 1 สูตร/หน้า · kitchen = ครึ่ง A4 2 สูตร/หน้า วัตถุดิบซ้าย ขั้นตอนขวา
+// (ทั้งหมดเป็น CSS ล้วน ไม่ประกอบ HTML ใหม่ → สลับโหมดไม่ต้องโหลดข้อมูลซ้ำ)
+function applyLayout() {
+  const kitchen = document.getElementById('layoutMode').value === 'kitchen';
+  document.body.classList.toggle('kitchen', kitchen);
+  document.querySelector('.ctrl-hint').textContent = kitchen
+    ? '👨‍🍳 เล่มครัว: 2 สูตรต่อแผ่น A4 · เส้นประคือรอยตัด · หน่วยเป็นช้อนตวง · ตัวไหนขึ้นว่า "ใช้ตาชั่ง" คือยังไม่มีค่าช้อนที่เชื่อถือได้ ห้ามกะเอา'
+    : '💡 เลือกหมวดเพื่อปริ้นทีละส่วน → กดปริ้น → "Save as PDF" · เล่มทางการใช้หน่วยกรัมสำหรับคิดต้นทุน';
+  if (kitchen) sizeKitchenPages();
+  applyFilter();
+  window.scrollTo(0, 0);
+}
+
+// วัดความสูง "เนื้อหาจริง" ของแต่ละสูตร แล้วจัดให้ลงช่อง 1/4 หรือ 1/2 แผ่น
+// ทำด้วย JS เพราะ CSS วัดความสูงตัวเองไม่ได้ · เผื่อขอบ 3mm กันบรรทัดสุดท้ายชนเส้นตัด
+function sizeKitchenPages() {
+  const MM = 96 / 25.4;
+  const pages = [...document.querySelectorAll('.recipe-page')];
+  pages.forEach(p => { p.classList.remove('size-q', 'size-h'); p.style.minHeight = '0'; });
+  const natural = pages.map(p => p.getBoundingClientRect().height / MM);   // วัดตอนไม่มีขั้นต่ำ
+  pages.forEach((p, i) => {
+    p.style.minHeight = '';
+    if (natural[i] <= 71) p.classList.add('size-q');
+    else if (natural[i] <= 145) p.classList.add('size-h');
+    // เกินนั้นไม่ติดคลาส = ปล่อยยืดตามเนื้อหา
+  });
+}
+
 /* สูตรที่เนื้อหายาวเกิน 1 หน้า A4 (ตอนนี้มี RCP-019 กิวด้ง กับ RCP-022 ข้าวผัดพิคานย่า)
    ถ้าปล่อยไว้ เบราว์เซอร์จะไปตัดตรงไหนก็ได้ ผลคือหน้าถัดไปเหลือแค่ช่องเซ็นลอยๆ ทั้งหน้า
    เลยสั่งตัดเองตรงหัวข้อ "ขั้นตอนการทำ" → หน้าแรกได้ส่วนผสม หน้าสองได้วิธีทำ+ช่องเซ็น ทั้งสองหน้ามีของจริง
@@ -422,24 +752,6 @@ function markOverflowPages() {
     const body = sec.querySelector('.steps-body');
     const target = (body && body.previousElementSibling) || body;   // หัวข้อ "ขั้นตอนการทำ" ถ้ามี
     if (target) target.classList.add('break-here');
-  });
-}
-
-// ใบส่งครัวใช้พื้นที่เขียน 95 มม. เป็นค่าเริ่มต้น แต่ BOM ยาวบางสูตรทำให้ช่องเซ็น
-// หลุดไปอยู่หน้าว่างลำพัง จึงลดเฉพาะพื้นที่เขียนของสูตรที่สูงเกิน A4 โดยไม่ลดฟอนต์/ระยะบรรทัด
-function kitchenStepHeightMm(renderedHeightMm) { const overflowMm = Math.max(0, renderedHeightMm - 297); return overflowMm < 1 ? 95 : Math.max(55, 95 - overflowMm - 2); }
-
-function fitKitchenPages(enabled) {
-  document.querySelectorAll('.recipe-page').forEach(page => {
-    const stepsBody = page.querySelector('.steps-body');
-    if (!stepsBody) return;
-    stepsBody.classList.remove('kitchen-break');
-    stepsBody.style.minHeight = '';
-    if (!enabled || page.style.display === 'none') return;
-    const renderedHeightMm = page.getBoundingClientRect().height * 25.4 / 96;
-    stepsBody.style.minHeight = `${kitchenStepHeightMm(renderedHeightMm)}mm`;
-    const fittedHeightMm = page.getBoundingClientRect().height * 25.4 / 96;
-    if (fittedHeightMm > 301) stepsBody.classList.add('kitchen-break');
   });
 }
 
@@ -461,7 +773,6 @@ function applyFilter() {
     el.style.display = show ? '' : 'none';
     if (show) n++;
   });
-  fitKitchenPages(steps === '__kitchen__');
   const scope = category === '__all__' ? 'ทุกหมวด' : category;
   const mode = steps === '__kitchen__' ? ' · ต้องให้ครัวเขียน' : '';
   document.getElementById('bookStatus').textContent = wholeBook ? `✅ ทั้งเล่ม — ${n} สูตร` : `✅ ${scope}${mode} — ${n} สูตร`;

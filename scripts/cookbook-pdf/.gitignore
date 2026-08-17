@@ -1,3 +1,7 @@
 # ของที่สคริปต์สร้างเอง — ดึงใหม่ได้ตลอด ไม่ต้องเก็บเข้า git
 cookbook-data.json
 cookbook-print.html
+cookbook-kitchen-a5-full.html
+cookbook-kitchen-a5-template.html
+__pycache__/
+out/
