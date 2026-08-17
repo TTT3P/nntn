@@ -112,6 +112,9 @@ const ACTION_META = {
   disposal: { label:'🗑️ Disposed', cls:'action-dispense' }
 };
 function actionPill(a){ const m=ACTION_META[a]||{label:a,cls:'action-other'}; return `<span class="action-pill ${m.cls}">${m.label}</span>`; }
+// actor_verified = ผู้ทำที่ระบบยืนยันจาก JWT (แก้ไม่ได้จาก client) · null สำหรับแถวเก่า/งานอัตโนมัติ
+// แสดงชื่อที่กรอก (actor) เหมือนเดิม + flag เมื่อ verified ไม่ตรง (จับการปลอมชื่อผู้บันทึก)
+function actorCell(r){ const a=r.actor||'-'; const v=r.actor_verified; if(v&&v!==r.actor){ return `${a} <span title="ระบบยืนยันตัวตนจริงจาก JWT ไม่ตรงกับชื่อที่กรอก" style="color:#b91c1c;font-size:.85em;white-space:nowrap">⚠️ จริง: ${v}</span>`; } if(v){ return `${a} <span title="ยืนยันตัวตนจากระบบแล้ว" style="color:#175426">✓</span>`; } return a; }
 
 // Smart qty rendering — view มี qty heterogeneous ตาม source_table
 function formatQty(r) {
@@ -201,7 +204,7 @@ async function loadHistory() {
             <td>${actionPill(r.action)}</td>
             <td><strong>${r.sku||'-'}</strong> · ${r.item_name||''}</td>
             <td style="text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums">${qtyDisplay}</td>
-            <td style="color:#666">${r.actor||'-'}</td>
+            <td style="color:#666">${actorCell(r)}</td>
             <td class="note-cell">${r.notes||''}</td>
           </tr>`;
         }).join('')}

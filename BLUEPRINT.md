@@ -418,6 +418,7 @@ Blocked by `sm_block_mutation` (can't UPDATE sm — bags transition, sm append-o
 2. `stamp_actor_catch_weight` BEFORE INS/UPD → reads GUC → writes `cw.actor_id`
 3. `_resolve_actor()` fallback → `current_setting('app.actor', true)` or `auth.jwt()->>'email'`
 4. UI: `window.nntnCurrentUser` (from auth.js) passed as `p_actor`
+5. ⚠️ **Steps 1–4 are client-supplied** — `p_actor` = `nntnCurrentUser` from an *unverified* client-side JWT decode (`auth.js`), so the recorded actor is **spoofable** (a logged-in user can set another name in the console). Provenance hardening **2026-08-18 (nntn)**: `trg_set_actor_verified` BEFORE INSERT stamps a non-spoofable `actor_verified` from the verified `auth.jwt()` on `stock_counts · purchase_orders · production_log · production_tag_log · catch_weight` (null for service / no-JWT writes; existing rows null). `v_user_actions_daily` now exposes `actor_verified`; `stock-history.html` renders ✓ when it matches the entered actor and ⚠️ + the real name when they differ. Legacy chain 1–4 is unchanged; the `auto_stamp_actor` priority rewrite (5-table blast radius) is **deferred**. Design record: `vault/nntn/Departments/Platform/design-provenance-verified-actor-2026-08-17.md`.
 
 ### Auth refresh cycle (`auth.js`)
 - On load: check `localStorage.nntn_sb_token`
