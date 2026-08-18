@@ -1,0 +1,408 @@
+{
+  "review_version": "2026-08-04-first-set-v1",
+  "review_policy": "ลายมือที่แก้ชัดเจนมีสิทธิ์สูงสุด; ช่องที่ลายมือไม่แก้ให้เทียบ DOCX กับ V2; ไม่แปลงหน่วย",
+  "root_recipe_ids": [165, 37, 159, 163],
+  "manifest": [
+    { "recipe_id": 165, "recipe_name": "ข้าวหน้าเนื้อตุ๋น", "role": "root_menu", "depth": 0, "review_state": "reviewed_candidate" },
+    { "recipe_id": 164, "recipe_name": "เนื้อตุ๋น (ราดข้าว)", "role": "prepared_recipe", "depth": 1, "review_state": "conflict" },
+    { "recipe_id": 2, "recipe_name": "น้ำซุป", "role": "prepared_recipe", "depth": 2, "review_state": "conflict" },
+    { "recipe_id": 160, "recipe_name": "ซอสลับ (v2)", "role": "prepared_recipe", "depth": 3, "review_state": "conflict" },
+    { "recipe_id": 9, "recipe_name": "กระปุกเครื่องเทศ [70g]", "role": "prepared_recipe", "depth": 3, "review_state": "conflict" },
+    { "recipe_id": 161, "recipe_name": "เครื่องปรุงชุดสอง", "role": "prepared_recipe", "depth": 3, "review_state": "missing_source" },
+    { "recipe_id": 158, "recipe_name": "น้ำจิ้มซีฟู๊ด", "role": "prepared_recipe", "depth": 1, "review_state": "conflict" },
+    { "recipe_id": 159, "recipe_name": "ข้าวหน้าเนื้อยากินิกุ", "role": "root_menu", "depth": 0, "review_state": "conflict" },
+    { "recipe_id": 156, "recipe_name": "ซอสยากินิกุ", "role": "prepared_recipe", "depth": 1, "review_state": "conflict" },
+    { "recipe_id": 157, "recipe_name": "ผัดผัก", "role": "prepared_recipe", "depth": 1, "review_state": "reviewed_candidate" },
+    { "recipe_id": 14, "recipe_name": "ซอสอเนกประสงค์", "role": "prepared_recipe", "depth": 2, "review_state": "conflict" },
+    { "recipe_id": 37, "recipe_name": "ข้าวขยำเนื้อแดดเดียว", "role": "root_menu", "depth": 0, "review_state": "reviewed_candidate" },
+    { "recipe_id": 28, "recipe_name": "เนื้อแดด (ข้าวขยำ)", "role": "prepared_recipe", "depth": 1, "review_state": "missing_method" },
+    { "recipe_id": 16, "recipe_name": "น้ำยำ", "role": "prepared_recipe", "depth": 1, "review_state": "reviewed_candidate" },
+    { "recipe_id": 163, "recipe_name": "เนื้อตุ๋นคั่วพริกเกลือ", "role": "root_menu", "depth": 0, "review_state": "reviewed_candidate" },
+    { "recipe_id": 162, "recipe_name": "ผงคั่วพริกเกลือ", "role": "prepared_recipe", "depth": 1, "review_state": "missing_method" }
+  ],
+  "source_sections": [
+    {
+      "source_document": "ข้าวหน้าเนื้อยากินิกุ.docx",
+      "document_recipe_name": "ข้าวหน้าเนื้อยากินิกุ",
+      "sections": [
+        { "section_name": "ซอสยากินิกุ", "maps_to_recipe_id": 156, "maps_to_recipe_name": "ซอสยากินิกุ", "section_role": "prepared_recipe", "parent_recipe_id": 159 },
+        { "section_name": "น้ำจิ้มซีฟู๊ด", "maps_to_recipe_id": 158, "maps_to_recipe_name": "น้ำจิ้มซีฟู๊ด", "section_role": "prepared_recipe", "parent_recipe_id": 159 },
+        { "section_name": "วิธีการทำผัดผักและจัดเสิร์ฟ", "maps_to_recipe_id": 157, "maps_to_recipe_name": "ผัดผัก", "section_role": "prepared_recipe_with_method", "parent_recipe_id": 159 },
+        { "section_name": "วิธีการทำข้าวหน้าเนื้อยากินิกุ", "maps_to_recipe_id": 159, "maps_to_recipe_name": "ข้าวหน้าเนื้อยากินิกุ", "section_role": "menu_assembly", "parent_recipe_id": null }
+      ]
+    },
+    {
+      "source_document": "ข้าวหน้าเนื้อตุ๋น.docx",
+      "document_recipe_name": "ข้าวหน้าเนื้อตุ๋น",
+      "sections": [
+        { "section_name": "วัตถุดิบ เครื่องปรุง และวิธีทำเนื้อตุ๋น", "maps_to_recipe_id": 164, "maps_to_recipe_name": "เนื้อตุ๋น (ราดข้าว)", "section_role": "prepared_recipe_with_method", "parent_recipe_id": 165 },
+        { "section_name": "การจัดเสิร์ฟ", "maps_to_recipe_id": 165, "maps_to_recipe_name": "ข้าวหน้าเนื้อตุ๋น", "section_role": "menu_assembly", "parent_recipe_id": null }
+      ]
+    },
+    {
+      "source_document": "ข้าวขยำเนื้อแดดเดียว.docx",
+      "document_recipe_name": "ข้าวขยำเนื้อแดดเดียว",
+      "sections": [
+        { "section_name": "ส่วนผสมน้ำยำ", "maps_to_recipe_id": 16, "maps_to_recipe_name": "น้ำยำ", "section_role": "prepared_recipe", "parent_recipe_id": 37 },
+        { "section_name": "วัตถุดิบและวิธีทำข้าวขยำ", "maps_to_recipe_id": 37, "maps_to_recipe_name": "ข้าวขยำเนื้อแดดเดียว", "section_role": "menu_assembly", "parent_recipe_id": null }
+      ]
+    },
+    {
+      "source_document": "เนื้อตุ๋นคั่วพริกเกลือ.docx",
+      "document_recipe_name": "เนื้อตุ๋นคั่วพริกเกลือ",
+      "sections": [
+        { "section_name": "ผงคั่วพริกเกลือ", "maps_to_recipe_id": 162, "maps_to_recipe_name": "ผงคั่วพริกเกลือ", "section_role": "prepared_recipe", "parent_recipe_id": 163 },
+        { "section_name": "วิธีการทำเนื้อตุ๋นคั่วพริกเกลือ", "maps_to_recipe_id": 163, "maps_to_recipe_name": "เนื้อตุ๋นคั่วพริกเกลือ", "section_role": "menu_assembly", "parent_recipe_id": null }
+      ]
+    },
+    {
+      "source_document": "ต้นฉบับ ก๋วยเตี๋ยว/สูตรก๋วยเตี๋ยววัดหนัง-ห้ามแก้ไข.docx",
+      "document_recipe_name": "สูตรหม้อน้ำซุปก๋วยเตี๋ยว",
+      "sections": [
+        { "section_name": "การลงเนื้อและปรุงตามลำดับ", "maps_to_recipe_id": 2, "maps_to_recipe_name": "น้ำซุป", "section_role": "prepared_recipe_with_method", "parent_recipe_id": 164 },
+        { "section_name": "ผสมซอสปรุงน้ำ", "maps_to_recipe_id": 160, "maps_to_recipe_name": "ซอสลับ (v2)", "section_role": "possible_prepared_recipe_match", "parent_recipe_id": 2 },
+        { "section_name": "ขั้นตอนเก็บน้ำซุป", "maps_to_recipe_id": 2, "maps_to_recipe_name": "น้ำซุป", "section_role": "storage_method", "parent_recipe_id": 164 }
+      ]
+    },
+    {
+      "source_document": "ต้นฉบับ ก๋วยเตี๋ยว/เครื่องเทศ+เครื่องปรุง-ห้ามแก้ไข.docx",
+      "document_recipe_name": "เครื่องเทศและเครื่องปรุงหม้อน้ำซุป",
+      "sections": [
+        { "section_name": "เตรียมเครื่องเทศ 4 ชนิด", "maps_to_recipe_id": 9, "maps_to_recipe_name": "กระปุกเครื่องเทศ [70g]", "section_role": "possible_prepared_recipe_match", "parent_recipe_id": 2 },
+        { "section_name": "โขลกกระเทียมจีนและรากผักชี ทำเป็นถุง", "maps_to_recipe_id": 9, "maps_to_recipe_name": "กระปุกเครื่องเทศ [70g]", "section_role": "prepared_recipe_with_method", "parent_recipe_id": 2 }
+      ]
+    },
+    {
+      "source_document": "สูตรอาหาร ครัวเนื้อในตำนาน.docx",
+      "document_recipe_name": "รวม SOP ครัวเนื้อในตำนาน",
+      "sections": [
+        { "section_name": "SOP ซอสอเนกประสงค์", "maps_to_recipe_id": 14, "maps_to_recipe_name": "ซอสอเนกประสงค์", "section_role": "prepared_recipe_with_method", "parent_recipe_id": 157 }
+      ]
+    }
+  ],
+  "recipes": [
+    {
+      "recipe_id": 165,
+      "recipe_name": "ข้าวหน้าเนื้อตุ๋น",
+      "review_state": "reviewed_candidate",
+      "source_locators": [
+        "DOCX: true-originals/_inbox/ข้าวหน้าเนื้อตุ๋น.docx",
+        "V2: ข้าวหน้าเนื้อตุ๋น",
+        "ลายมือ: หน้า 1"
+      ],
+      "decisions": [
+        { "item_name": "เนื้อตุ๋น (ราดข้าว)", "v1": "75 g", "docx": "375 กรัม / 5 เสิร์ฟ", "v2": "75 g", "handwriting": "75 g", "candidate": "75 กรัม", "status": "confirmed" },
+        { "item_name": "ข้าวญี่ปุ่น", "v1": "72 g", "docx": "กล่าวถึงข้าว แต่ไม่ระบุปริมาณ", "v2": "72 g", "handwriting": "72 g", "candidate": "72 กรัม", "status": "confirmed" },
+        { "item_name": "น้ำจิ้มซีฟู้ด", "v1": "30 g", "docx": "เสิร์ฟคู่กัน แต่ไม่ระบุปริมาณ", "v2": "30 g", "handwriting": "30 g", "candidate": "30 กรัม", "status": "confirmed" },
+        { "item_name": "ผักชีไทย", "v1": "3 g", "docx": "โรยนิดหน่อย", "v2": "3 g", "handwriting": "3 g", "candidate": "3 กรัม", "status": "confirmed" }
+      ],
+      "method_status": "confirmed",
+      "method_note": "ใช้ขั้นตอนจัดเสิร์ฟจาก DOCX/V2; ลายมือหน้า 1 เพิ่มสูตรเตรียมเนื้อตุ๋นแยกต่างหาก"
+    },
+    {
+      "recipe_id": 164,
+      "recipe_name": "เนื้อตุ๋น (ราดข้าว)",
+      "review_state": "conflict",
+      "source_locators": [
+        "DOCX: true-originals/_inbox/ข้าวหน้าเนื้อตุ๋น.docx",
+        "V2: เนื้อตุ๋น (ราดข้าว)",
+        "ลายมือ: หน้า 1"
+      ],
+      "decisions": [
+        { "item_name": "เนื้อตุ๋น", "v1": "375 g", "docx": "375 กรัม", "v2": "375 g", "handwriting": "375 g", "candidate": "375 กรัม", "status": "confirmed" },
+        { "item_name": "น้ำซุปในหม้อหุงข้าว", "v1": "1000 g", "docx": "1000 ml", "v2": "1000 g", "handwriting": "1000 g", "candidate": "1000 กรัม", "status": "confirmed" },
+        { "item_name": "น้ำเปล่า", "v1": "1000 g", "docx": "1000 ml", "v2": "1000 g", "handwriting": "1000 g", "candidate": "1000 กรัม", "status": "confirmed" },
+        { "item_name": "แม็กกี้ Seasoning", "v1": "15 g", "docx": "1 ช้อนโต๊ะ", "v2": "15 g", "handwriting": "1 tb", "candidate": "1 ช้อนโต๊ะ", "status": "confirmed" },
+        { "item_name": "เหล้าจีน", "v1": "15 g", "docx": "1 ช้อนโต๊ะ", "v2": "15 g", "handwriting": "1 tb", "candidate": "1 ช้อนโต๊ะ", "status": "confirmed" },
+        { "item_name": "ซีอิ๊วขาว Amoy", "v1": "15 g", "docx": "1 ช้อนโต๊ะ", "v2": "15 g", "handwriting": "1 tb", "candidate": "1 ช้อนโต๊ะ", "status": "confirmed" },
+        { "item_name": "น้ำตาลทรายไม่ขัดสี", "v1": "13 g", "docx": "1 ช้อนโต๊ะ", "v2": "13 g", "handwriting": "1 tb", "candidate": "1 ช้อนโต๊ะ", "status": "confirmed" },
+        { "item_name": "ผงชูรส", "v1": "12 g", "docx": "1 ช้อนชา", "v2": "12 g", "handwriting": "1 tb", "candidate": "1 ช้อนโต๊ะ", "status": "confirmed_from_handwriting" },
+        { "item_name": "แป้งมันฮ่องกง", "v1": "16 g", "docx": "2 ช้อนโต๊ะ", "v2": "16 g", "handwriting": "ขั้นตอนกล่าวถึงแป้ง แต่ไม่มีในรายการ", "candidate": null, "status": "conflict" },
+        { "item_name": "แป้งข้าวโพด", "v1": "16 g", "docx": "2 ช้อนโต๊ะ", "v2": "16 g", "handwriting": "ขั้นตอนกล่าวถึงแป้ง แต่ไม่มีในรายการ", "candidate": null, "status": "conflict" },
+        { "item_name": "น้ำสำหรับผสมแป้ง", "v1": "ไม่แยกบรรทัด", "docx": "120 ml", "v2": "ระบุในขั้นตอน 120 ml", "handwriting": "กล่าวถึงน้ำ แต่ไม่ระบุปริมาณ", "candidate": null, "status": "conflict" }
+      ],
+      "method_status": "conflict",
+      "method_note": "ใช้โครงขั้นตอนลายมือ แต่ต้องยืนยันแป้งสองชนิดและน้ำผสมแป้งก่อนพิมพ์ฉบับใช้งาน"
+    },
+    {
+      "recipe_id": 37,
+      "recipe_name": "ข้าวขยำเนื้อแดดเดียว",
+      "review_state": "reviewed_candidate",
+      "source_locators": [
+        "DOCX: true-originals/_inbox/ข้าวขยำเนื้อแดดเดียว.docx",
+        "V2: ข้าวขยำเนื้อแดดเดียว",
+        "ลายมือ: หน้า 9"
+      ],
+      "decisions": [
+        { "item_name": "เนื้อแดดเดียว", "v1": "75 g", "docx": "75 กรัม", "v2": "75 g", "handwriting": "75 g", "candidate": "75 กรัม", "status": "confirmed" },
+        { "item_name": "ข้าวหอมมะลิ", "v1": "72 g", "docx": "กล่าวถึงข้าว แต่ไม่ระบุปริมาณ", "v2": "72 g", "handwriting": "72 g", "candidate": "72 กรัม", "status": "confirmed" },
+        { "item_name": "หอมอินเดีย", "v1": "10 g", "docx": "10 กรัม", "v2": "10 g", "handwriting": "10 g", "candidate": "10 กรัม", "status": "confirmed" },
+        { "item_name": "พริกแดงจินดา", "v1": "8 g", "docx": "8 กรัม", "v2": "8 g", "handwriting": "8 g", "candidate": "8 กรัม", "status": "confirmed" },
+        { "item_name": "ผักชีไทย", "v1": "5 g", "docx": "5 กรัม", "v2": "5 g", "handwriting": "5 g", "candidate": "5 กรัม", "status": "confirmed" },
+        { "item_name": "กระเทียมกรอบ", "v1": "5 g", "docx": "1 ช้อนโต๊ะ", "v2": "5 g", "handwriting": "ไม่แก้", "candidate": "1 ช้อนโต๊ะ", "status": "confirmed_from_docx" },
+        { "item_name": "น้ำมะนาวสด", "v1": "น้ำมะนาว ARO 5 g", "docx": "รายการ 1 ช้อนโต๊ะ / ขั้นตอน 1 ช้อนชา", "v2": "น้ำมะนาว ARO 5 g", "handwriting": "เปลี่ยนเป็นน้ำมะนาวสด และแก้เป็น 1 ts", "candidate": "1 ช้อนชา", "status": "confirmed_from_handwriting" },
+        { "item_name": "ผงชูรส", "v1": "0.5 g", "docx": "ปลายช้อน", "v2": "0.5 g", "handwriting": "ไม่แก้", "candidate": "ปลายช้อน", "status": "confirmed_from_docx" },
+        { "item_name": "น้ำยำ", "v1": "15 ml", "docx": "1 ช้อนโต๊ะ", "v2": "15 ml", "handwriting": "1 tb", "candidate": "1 ช้อนโต๊ะ", "status": "confirmed_from_handwriting" }
+      ],
+      "method_status": "confirmed",
+      "method_note": "ใช้วิธีทำจาก DOCX/V2 และใช้หน่วยช้อนตามลายมือหน้า 9"
+    },
+    {
+      "recipe_id": 16,
+      "recipe_name": "น้ำยำ",
+      "review_state": "reviewed_candidate",
+      "source_locators": ["V2: น้ำยำ", "ลายมือ: หน้า 21"],
+      "decisions": [
+        { "item_name": "น้ำตาลทรายไม่ขัดสี", "v1": "100 g", "docx": "100 กรัม", "v2": "100 g", "handwriting": "แก้ชนิดน้ำตาล", "candidate": "100 กรัม", "status": "confirmed_from_handwriting" },
+        { "item_name": "น้ำปลาทิพรส", "v1": "100 g", "docx": "100 กรัม", "v2": "100 g", "handwriting": "100 g", "candidate": "100 กรัม", "status": "confirmed" },
+        { "item_name": "น้ำตาลมะพร้าว", "v1": "55 g", "docx": "55 กรัม", "v2": "55 g", "handwriting": "55 g", "candidate": "55 กรัม", "status": "confirmed" },
+        { "item_name": "น้ำเปล่า", "v1": "250 g", "docx": "250 กรัม", "v2": "250 g", "handwriting": "เพิ่ม 250 g", "candidate": "250 กรัม", "status": "confirmed_from_handwriting" }
+      ],
+      "method_status": "confirmed_from_handwriting",
+      "method_note": "ใช้ขั้นตอนลายมือหน้า 21 ทั้งชุด"
+    },
+    {
+      "recipe_id": 159,
+      "recipe_name": "ข้าวหน้าเนื้อยากินิกุ",
+      "review_state": "conflict",
+      "source_locators": [
+        "DOCX: true-originals/_inbox/ข้าวหน้าเนื้อยากินิกุ.docx",
+        "V2: ข้าวหน้าเนื้อยากินิกุ"
+      ],
+      "decisions": [
+        { "item_name": "ซอสยากินิกุ", "v1": "45 g", "docx": "ราด 3 ช้อนโต๊ะ", "v2": "45 g", "handwriting": "ไม่มีการแก้เมนูนี้", "candidate": "3 ช้อนโต๊ะ", "status": "confirmed_from_docx" },
+        { "item_name": "ผัดผัก", "v1": "53 g", "docx": "ทำ 1 ชุดตามสูตร", "v2": "53 g", "handwriting": "ไม่มีการแก้", "candidate": null, "status": "needs_review" },
+        { "item_name": "น้ำจิ้มซีฟู้ด", "v1": "20 g", "docx": "มีสูตร แต่ขั้นตอนจัดเสิร์ฟไม่ได้ระบุ", "v2": "20 g", "handwriting": "ไม่มีการแก้", "candidate": null, "status": "conflict" },
+        { "item_name": "เนื้อพิคานย่า", "v1": "75 g", "docx": "ไม่ระบุปริมาณ", "v2": "75 g", "handwriting": "ไม่มีการแก้", "candidate": "75 กรัม", "status": "needs_review" },
+        { "item_name": "ข้าวญี่ปุ่น", "v1": "72 g", "docx": "ไม่ระบุปริมาณ", "v2": "72 g", "handwriting": "ไม่มีการแก้", "candidate": "72 กรัม", "status": "needs_review" }
+      ],
+      "method_status": "confirmed_from_docx",
+      "method_note": "ขั้นตอนจัดเสิร์ฟครบ แต่ยังต้องยืนยันน้ำจิ้มซีฟู้ดและปริมาณผัดผัก"
+    },
+    {
+      "recipe_id": 156,
+      "recipe_name": "ซอสยากินิกุ",
+      "review_state": "conflict",
+      "source_locators": [
+        "DOCX: true-originals/_inbox/ข้าวหน้าเนื้อยากินิกุ.docx",
+        "V2: ซอสยากินิกุ",
+        "ลายมือ: หน้า 23"
+      ],
+      "decisions": [
+        { "item_name": "โชยุ", "v1": "100 g", "docx": "100 กรัม", "v2": "100 g", "handwriting": "100 g", "candidate": "100 กรัม", "status": "confirmed" },
+        { "item_name": "มิริน", "v1": "100 g", "docx": "100 กรัม", "v2": "100 g", "handwriting": "100 g", "candidate": "100 กรัม", "status": "confirmed" },
+        { "item_name": "น้ำตาลทรายไม่ขัดสี", "v1": "45 g", "docx": "45 กรัม", "v2": "45 g", "handwriting": "45 g", "candidate": "45 กรัม", "status": "confirmed" },
+        { "item_name": "กระเทียมขูด", "v1": "12 g", "docx": "12 กรัม", "v2": "12 g", "handwriting": "12 g", "candidate": "12 กรัม", "status": "confirmed" },
+        { "item_name": "ขิงขูด", "v1": "12 g", "docx": "12 กรัม", "v2": "12 g", "handwriting": "12 g", "candidate": "12 กรัม", "status": "confirmed" },
+        { "item_name": "น้ำส้มสายชู", "v1": "5 g", "docx": "5 กรัม", "v2": "5 g", "handwriting": "5 g", "candidate": "5 กรัม", "status": "confirmed" },
+        { "item_name": "น้ำมันงา", "v1": "10 g", "docx": "10 กรัม", "v2": "10 g", "handwriting": "10 g", "candidate": "10 กรัม", "status": "confirmed" },
+        { "item_name": "งาคั่ว", "v1": "3 g", "docx": "3 กรัม", "v2": "3 g", "handwriting": "3 g", "candidate": "3 กรัม", "status": "confirmed" },
+        { "item_name": "ชิโรดาชิ", "v1": "10 g", "docx": "10 กรัม", "v2": "10 g", "handwriting": "10 g", "candidate": "10 กรัม", "status": "confirmed" },
+        { "item_name": "ฮอนสึยุ", "v1": "10 g", "docx": "10 กรัม", "v2": "10 g", "handwriting": "10 g", "candidate": "10 กรัม", "status": "confirmed" },
+        { "item_name": "ซอสอเนกประสงค์", "v1": "0 / ไม่มีปริมาณ", "docx": "ไม่ใช้", "v2": "แถวเปล่า", "handwriting": "ขีดฆ่าและเขียนตัดออก", "candidate": "ตัดออก", "status": "removed_by_handwriting" },
+        { "item_name": "น้ำเปล่า", "v1": "ไม่มี", "docx": "100 กรัม", "v2": "ไม่มี", "handwriting": "ไม่มีในรายการ", "candidate": null, "status": "conflict" }
+      ],
+      "method_status": "confirmed",
+      "method_note": "วิธีทำตรงกัน แต่ต้องยืนยันน้ำเปล่า 100 กรัมที่พบเฉพาะ DOCX"
+    },
+    {
+      "recipe_id": 157,
+      "recipe_name": "ผัดผัก",
+      "review_state": "reviewed_candidate",
+      "source_locators": [
+        "DOCX: true-originals/_inbox/ข้าวหน้าเนื้อยากินิกุ.docx",
+        "V2: ผัดผัก"
+      ],
+      "decisions": [
+        { "item_name": "กะหล่ำปลี", "v1": "25 g", "docx": "25 กรัม", "v2": "25 g", "handwriting": "ไม่มีการแก้", "candidate": "25 กรัม", "status": "confirmed" },
+        { "item_name": "แครอทหั่นเส้น", "v1": "25 g", "docx": "25 กรัม", "v2": "25 g", "handwriting": "ไม่มีการแก้", "candidate": "25 กรัม", "status": "confirmed" },
+        { "item_name": "น้ำมันปาล์ม", "v1": "1 tsp", "docx": "1 ช้อนชา", "v2": "tsp แต่จำนวนหาย", "handwriting": "ไม่มีการแก้", "candidate": "1 ช้อนชา", "status": "confirmed_from_docx" },
+        { "item_name": "ซอสอเนกประสงค์", "v1": "1 tsp", "docx": "1 ช้อนชา", "v2": "tsp แต่จำนวนหาย", "handwriting": "ไม่มีการแก้", "candidate": "1 ช้อนชา", "status": "confirmed_from_docx" },
+        { "item_name": "โชยุ", "v1": "1 g", "docx": "1 กรัม", "v2": "1 g", "handwriting": "ไม่มีการแก้", "candidate": "1 กรัม", "status": "confirmed" },
+        { "item_name": "น้ำมันงา", "v1": "1 g", "docx": "1 กรัม", "v2": "1 g", "handwriting": "ไม่มีการแก้", "candidate": "1 กรัม", "status": "confirmed" },
+        { "item_name": "งาขาวคั่ว", "v1": "1 g", "docx": "1 กรัม", "v2": "1 g", "handwriting": "ไม่มีการแก้", "candidate": "1 กรัม", "status": "confirmed" }
+      ],
+      "method_status": "confirmed_from_docx",
+      "method_note": "V1 ระบุว่าไม่มีวิธีทำ แต่ DOCX มี 2 ขั้นตอนครบ จึงนำมาเป็น candidate"
+    },
+    {
+      "recipe_id": 158,
+      "recipe_name": "น้ำจิ้มซีฟู๊ด",
+      "review_state": "conflict",
+      "source_locators": [
+        "DOCX: true-originals/_inbox/ข้าวหน้าเนื้อยากินิกุ.docx",
+        "V2: น้ำจิ้มซีฟู๊ด",
+        "ลายมือ: หน้า 3"
+      ],
+      "decisions": [
+        { "item_name": "น้ำมะนาว ARO", "v1": "300 g", "docx": "18 ช้อนโต๊ะ", "v2": "300 g", "handwriting": "แก้เป็น 300 g", "candidate": "300 กรัม", "status": "confirmed_from_handwriting" },
+        { "item_name": "น้ำตาลทรายไม่ขัดสี", "v1": "120 g", "docx": "9 ช้อนโต๊ะ", "v2": "120 g", "handwriting": "แก้เป็น 120 g", "candidate": "120 กรัม", "status": "confirmed_from_handwriting" },
+        { "item_name": "น้ำปลาทิพรส", "v1": "170 g", "docx": "11 ช้อนโต๊ะ", "v2": "170 g", "handwriting": "แก้เป็น 170 g", "candidate": "170 กรัม", "status": "confirmed_from_handwriting" },
+        { "item_name": "ผงชูรส", "v1": "30 g", "docx": "2 ช้อนโต๊ะ", "v2": "30 g", "handwriting": "แก้เป็น 30 g", "candidate": "30 กรัม", "status": "confirmed_from_handwriting" },
+        { "item_name": "พริกแดงจินดา", "v1": "160 g", "docx": "ไม่ระบุปริมาณ", "v2": "160 g", "handwriting": "160 g", "candidate": "160 กรัม", "status": "confirmed" },
+        { "item_name": "พริกเขียวจินดา", "v1": "160 g", "docx": "ไม่ระบุปริมาณ", "v2": "160 g", "handwriting": "160 g", "candidate": "160 กรัม", "status": "confirmed" },
+        { "item_name": "กระเทียมจีน", "v1": "250 g", "docx": "ไม่ระบุปริมาณ", "v2": "250 g", "handwriting": "250 g", "candidate": "250 กรัม", "status": "confirmed" },
+        { "item_name": "น้ำเปล่า", "v1": "120 g", "docx": "100 กรัม", "v2": "120 g แต่ขั้นตอน 100 กรัม", "handwriting": "เพิ่ม 120 g แต่ขั้นตอนพิมพ์ 100 g", "candidate": null, "status": "conflict" }
+      ],
+      "method_status": "conflict",
+      "method_note": "ต้องยืนยันน้ำเปล่าว่าใช้ 120 กรัมตามรายการ หรือ 100 กรัมตามขั้นตอน"
+    },
+    {
+      "recipe_id": 163,
+      "recipe_name": "เนื้อตุ๋นคั่วพริกเกลือ",
+      "review_state": "reviewed_candidate",
+      "source_locators": [
+        "DOCX: true-originals/_inbox/เนื้อตุ๋นคั่วพริกเกลือ.docx",
+        "V2: เนื้อตุ๋นคั่วพริกเกลือ",
+        "ลายมือ: หน้า 19"
+      ],
+      "decisions": [
+        { "item_name": "พริกแดงจินดา", "v1": "3 g", "docx": "3 กรัม", "v2": "3 g", "handwriting": "1 ts", "candidate": "1 ช้อนชา", "status": "confirmed_from_handwriting" },
+        { "item_name": "ต้นหอมซอย", "v1": "3 g", "docx": "3 กรัม", "v2": "3 g", "handwriting": "1 ts", "candidate": "1 ช้อนชา", "status": "confirmed_from_handwriting" },
+        { "item_name": "พริกไทยป่น", "v1": "1 g", "docx": "1 กรัม", "v2": "1 g", "handwriting": "ไม่แก้", "candidate": "1 กรัม", "status": "confirmed" },
+        { "item_name": "กระเทียมป่น", "v1": "กระเทียมไทย 5 g", "docx": "กระเทียมสับ 5 กรัม", "v2": "กระเทียมไทย 5 g", "handwriting": "เปลี่ยนเป็นกระเทียมป่น 1 ts", "candidate": "1 ช้อนชา", "status": "confirmed_from_handwriting" },
+        { "item_name": "เนื้อตุ๋น", "v1": "75 g", "docx": "กล่าวถึงแต่ไม่ใส่ในรายการ", "v2": "75 g", "handwriting": "75 g", "candidate": "75 กรัม", "status": "confirmed" },
+        { "item_name": "ผงคั่วพริกเกลือ", "v1": "15 g", "docx": "1 ช้อนโต๊ะ", "v2": "15 g", "handwriting": "1 tb", "candidate": "1 ช้อนโต๊ะ", "status": "confirmed_from_handwriting" }
+      ],
+      "method_status": "confirmed",
+      "method_note": "วิธีทำตรงกันและใช้หน่วยช้อนตามลายมือหน้า 19"
+    },
+    {
+      "recipe_id": 162,
+      "recipe_name": "ผงคั่วพริกเกลือ",
+      "review_state": "missing_method",
+      "source_locators": [
+        "DOCX: true-originals/_inbox/เนื้อตุ๋นคั่วพริกเกลือ.docx",
+        "V2: ผงคั่วพริกเกลือ"
+      ],
+      "decisions": [
+        { "item_name": "น้ำตาลทรายไม่ขัดสี", "v1": "90 g", "docx": "90 กรัม", "v2": "90 g", "handwriting": "ไม่แก้", "candidate": "90 กรัม", "status": "confirmed" },
+        { "item_name": "รสดีเนื้อ", "v1": "120 g", "docx": "120 กรัม", "v2": "120 g", "handwriting": "ไม่แก้", "candidate": "120 กรัม", "status": "confirmed" },
+        { "item_name": "ผงชูรส", "v1": "90 g", "docx": "90 กรัม", "v2": "90 g", "handwriting": "ไม่แก้", "candidate": "90 กรัม", "status": "confirmed" },
+        { "item_name": "เกลือ", "v1": "30 g", "docx": "30 กรัม", "v2": "30 g", "handwriting": "ไม่แก้", "candidate": "30 กรัม", "status": "confirmed" }
+      ],
+      "method_status": "missing_method",
+      "method_note": "มีสัดส่วนผสมครบ แต่ยังไม่มีขั้นตอนคลุก/เก็บ/ผลผลิต จึงพิมพ์ได้เฉพาะฉบับร่าง"
+    },
+    {
+      "recipe_id": 2,
+      "recipe_name": "น้ำซุป",
+      "review_state": "conflict",
+      "source_locators": [
+        "DOCX: true-originals/_inbox/ต้นฉบับ ก๋วยเตี๋ยว/สูตรก๋วยเตี๋ยววัดหนัง-ห้ามแก้ไข.docx",
+        "DOCX: true-originals/_inbox/ต้นฉบับ ก๋วยเตี๋ยว/เครื่องเทศ+เครื่องปรุง-ห้ามแก้ไข.docx",
+        "V2: น้ำซุป"
+      ],
+      "decisions": [
+        { "item_name": "น้ำตาลมะพร้าว", "v1": "350 g", "docx": "500 g", "v2": "350 g", "handwriting": "ไม่มี", "candidate": "500 กรัม", "status": "conflict" },
+        { "item_name": "น้ำตาลกรวด", "v1": "250 g", "docx": "300 g", "v2": "250 g", "handwriting": "ไม่มี", "candidate": "300 กรัม", "status": "conflict" },
+        { "item_name": "ซอสฝาเขียว", "v1": "รวมอยู่ในซอสลับ", "docx": "1 กระบวย / 250 ml", "v2": "รวมอยู่ในซอสลับ", "handwriting": "ไม่มี", "candidate": "1 กระบวย", "status": "needs_review" },
+        { "item_name": "โชยุ ARO", "v1": "รวมอยู่ในซอสลับ", "docx": "2 กระบวย / 250 ml", "v2": "รวมอยู่ในซอสลับ", "handwriting": "ไม่มี", "candidate": "2 กระบวย", "status": "needs_review" },
+        { "item_name": "รสดีก๋วยเตี๋ยว", "v1": "500 g", "docx": "2 กระบวยครึ่ง", "v2": "500 g", "handwriting": "ไม่มี", "candidate": "2½ กระบวย", "status": "needs_review" },
+        { "item_name": "กระเทียมดองพร้อมน้ำ", "v1": "200 g", "docx": "2 แก้ว", "v2": "200 g", "handwriting": "ไม่มี", "candidate": "2 แก้ว", "status": "needs_review" },
+        { "item_name": "ถุงเครื่องเทศ", "v1": "กระปุกเครื่องเทศ 50 ลิตร", "docx": "1 ถุง ต่อหม้อเบอร์ 50", "v2": "กระปุกเครื่องเทศ 50 ลิตร", "handwriting": "ไม่มี", "candidate": "1 ถุง", "status": "conflict" },
+        { "item_name": "ลูกมะกรูด", "v1": "150 g", "docx": "4 ลูก หั่นครึ่ง", "v2": "150 g", "handwriting": "ไม่มี", "candidate": "4 ลูก", "status": "confirmed_from_docx" },
+        { "item_name": "หัวไชเท้า", "v1": "1500 g", "docx": "1 หัว", "v2": "1500 g", "handwriting": "ไม่มี", "candidate": "1 หัว", "status": "confirmed_from_docx" },
+        { "item_name": "ใบเตย", "v1": "100 g", "docx": "1 กำ", "v2": "100 g", "handwriting": "ไม่มี", "candidate": "1 กำ", "status": "confirmed_from_docx" },
+        { "item_name": "เครื่องปรุงชุดสอง", "v1": "643 g", "docx": "ไม่พบชื่อชุดนี้", "v2": "643 g", "handwriting": "ไม่มี", "candidate": null, "status": "conflict" }
+      ],
+      "method_status": "candidate_from_docx",
+      "method_note": "DOCX มีลำดับปรุง การลงเนื้อ และการเก็บน้ำซุปครบ แต่สูตรกับ V1/V2 ต่างกันมาก จึงยังไม่พร้อมพิมพ์"
+    },
+    {
+      "recipe_id": 160,
+      "recipe_name": "ซอสลับ (v2)",
+      "review_state": "conflict",
+      "source_locators": [
+        "DOCX: สูตรก๋วยเตี๋ยววัดหนัง-ห้ามแก้ไข.docx / ผสมซอสปรุงน้ำ",
+        "V2: ซอสลับ (v2)"
+      ],
+      "decisions": [
+        { "item_name": "โชยุ ARO", "v1": "1100 g", "docx": "2500 ml", "v2": "1100 g", "handwriting": "ไม่มี", "candidate": null, "status": "conflict" },
+        { "item_name": "ซอสฝาเขียว", "v1": "1000 g", "docx": "2000 ml", "v2": "1000 g", "handwriting": "ไม่มี", "candidate": null, "status": "conflict" },
+        { "item_name": "ซอสหอยนางรม", "v1": "400 g", "docx": "2 กระบวย / 500 ml", "v2": "400 g", "handwriting": "ไม่มี", "candidate": "2 กระบวย", "status": "conflict" },
+        { "item_name": "ซีอิ๊วขาว", "v1": "1000 g", "docx": "ไม่มีในสูตรผสมซอสปรุงน้ำ", "v2": "1000 g", "handwriting": "ไม่มี", "candidate": null, "status": "conflict" }
+      ],
+      "method_status": "candidate_from_docx",
+      "method_note": "DOCX ระบุให้ผสมรวมในแกลอน 5 ลิตร แต่ยังยืนยันไม่ได้ว่าเป็นสูตรเดียวกับซอสลับ v2 บนเว็บ"
+    },
+    {
+      "recipe_id": 9,
+      "recipe_name": "กระปุกเครื่องเทศ [70g]",
+      "review_state": "conflict",
+      "source_locators": [
+        "DOCX: เครื่องเทศ+เครื่องปรุง-ห้ามแก้ไข.docx",
+        "V2: กระปุกเครื่องเทศ [70g]"
+      ],
+      "decisions": [
+        { "item_name": "ข่าเหลือง", "v1": "70 g", "docx": "100 g", "v2": "70 g", "handwriting": "ไม่มี", "candidate": "100 กรัม", "status": "conflict" },
+        { "item_name": "อบเชย", "v1": "20 g", "docx": "50 g", "v2": "20 g", "handwriting": "ไม่มี", "candidate": "50 กรัม", "status": "conflict" },
+        { "item_name": "โป๊ยกั๊ก", "v1": "20 g", "docx": "50 g", "v2": "20 g", "handwriting": "ไม่มี", "candidate": "50 กรัม", "status": "conflict" },
+        { "item_name": "พริกไทยดำเม็ด", "v1": "20 g", "docx": "50 g", "v2": "20 g", "handwriting": "ไม่มี", "candidate": "50 กรัม", "status": "conflict" },
+        { "item_name": "กระเทียมจีน", "v1": "100 g", "docx": "150 g", "v2": "100 g", "handwriting": "ไม่มี", "candidate": "150 กรัม", "status": "conflict" },
+        { "item_name": "รากผักชี", "v1": "100 g", "docx": "50 g", "v2": "100 g", "handwriting": "ไม่มี", "candidate": "50 กรัม", "status": "conflict" },
+        { "item_name": "สมุนไพรจีนอีก 5 รายการ", "v1": "มีใน V1/V2", "docx": "ไม่พบในถุงเครื่องเทศต้นฉบับนี้", "v2": "ซวงเจีย ลูกเฉาก๋วย ฮ่วยซัว เก๋ากี้ หญ้าหอม", "handwriting": "ไม่มี", "candidate": null, "status": "conflict" }
+      ],
+      "method_status": "candidate_from_docx",
+      "method_note": "DOCX มีวิธีคั่ว โขลก แพ็คถุง และเก็บฟรีซ แต่สัดส่วนไม่ใช่ batch 70 กรัมบนเว็บ จึงต้องยืนยันว่าเป็นคนละสูตรหรือไม่"
+    },
+    {
+      "recipe_id": 161,
+      "recipe_name": "เครื่องปรุงชุดสอง",
+      "review_state": "missing_source",
+      "source_locators": ["V2: เครื่องปรุงชุดสอง"],
+      "decisions": [
+        { "item_name": "สูตรทั้งชุด", "v1": "ซอสลับ 250 ml + น้ำตาลกรวด 120 g + โชยุ 20 g + รสดีเนื้อ 50 g + เกลือ 3 g + ม้ามตุ๋น 200 g", "docx": "ยังไม่พบต้นฉบับ", "v2": "เหมือน V1", "handwriting": "ไม่มี", "candidate": null, "status": "needs_review" }
+      ],
+      "method_status": "missing_method",
+      "method_note": "มีเฉพาะข้อมูลบนเว็บ/V2 ยังไม่พบเอกสารต้นฉบับหรือขั้นตอนการทำ"
+    },
+    {
+      "recipe_id": 14,
+      "recipe_name": "ซอสอเนกประสงค์",
+      "review_state": "conflict",
+      "source_locators": [
+        "DOCX: สูตรอาหาร ครัวเนื้อในตำนาน.docx / SOP ซอสอเนกประสงค์",
+        "V2: ซอสอเนกประสงค์"
+      ],
+      "decisions": [
+        { "item_name": "น้ำมันหอย", "v1": "ไฮนซ์ 500 g", "docx": "แพนกวิน 3 ตัว 500 กรัม", "v2": "ไฮนซ์ 500 g", "handwriting": "ไม่มี", "candidate": "แพนกวิน 3 ตัว 500 กรัม", "status": "conflict" },
+        { "item_name": "น้ำตาลทราย", "v1": "น้ำตาลทรายขาว 75 g", "docx": "มิตรผล 75 กรัม", "v2": "น้ำตาลทรายขาว 75 g", "handwriting": "ไม่มี", "candidate": "มิตรผล 75 กรัม", "status": "needs_review" },
+        { "item_name": "ซอสปรุงรสฝาเขียว", "v1": "ภูเขาทอง 38 g", "docx": "38 กรัม", "v2": "ภูเขาทอง 38 g", "handwriting": "ไม่มี", "candidate": "38 กรัม", "status": "confirmed" },
+        { "item_name": "คนอร์ไก่ฮ่องกง", "v1": "60 g", "docx": "60 กรัม", "v2": "60 g", "handwriting": "ไม่มี", "candidate": "60 กรัม", "status": "confirmed" },
+        { "item_name": "พริกไทยขาวป่น", "v1": "2.5 g", "docx": "2.5 กรัม", "v2": "2.5 g", "handwriting": "ไม่มี", "candidate": "2.5 กรัม", "status": "confirmed" },
+        { "item_name": "เหล้าจีน", "v1": "25 ml", "docx": "25 กรัม", "v2": "25 ml", "handwriting": "ไม่มี", "candidate": null, "status": "conflict" },
+        { "item_name": "ผงชูรส", "v1": "50 g", "docx": "50 กรัม", "v2": "50 g", "handwriting": "ไม่มี", "candidate": "50 กรัม", "status": "confirmed" }
+      ],
+      "method_status": "confirmed_from_docx",
+      "method_note": "DOCX มีวิธีทำ การเก็บ 0-5°C อายุประมาณ 1 เดือน และการนำไปใช้ครบ"
+    },
+    {
+      "recipe_id": 28,
+      "recipe_name": "เนื้อแดด (ข้าวขยำ)",
+      "review_state": "missing_method",
+      "source_locators": [
+        "DOCX: ข้าวขยำเนื้อแดดเดียว.docx / ใช้เนื้อแดดเดียว 75 กรัม",
+        "V2: เนื้อแดด (ข้าวขยำ)"
+      ],
+      "decisions": [
+        { "item_name": "สูตรหมักทั้งชุด", "v1": "สันนอก 1000 g + เครื่องปรุง 6 รายการ", "docx": "พบเฉพาะปริมาณใช้งาน 75 กรัม ไม่พบสูตรหมัก", "v2": "เหมือน V1", "handwriting": "ไม่มี", "candidate": null, "status": "needs_review" }
+      ],
+      "method_status": "missing_method",
+      "method_note": "เว็บมี BOM หมักแต่ไม่มีขั้นตอนหมัก ตาก/อบ การเก็บ และผลผลิต จึงยังทำตำราหน้าครัวไม่ได้"
+    }
+  ],
+  "unresolved": [
+    { "recipe_name": "เนื้อตุ๋น (ราดข้าว)", "question": "แป้งมันฮ่องกง แป้งข้าวโพด และน้ำผสมแป้งใช้เท่าไรในฉบับลายมือสุดท้าย", "severity": "blocks_print" },
+    { "recipe_name": "น้ำจิ้มซีฟู๊ด", "question": "น้ำเปล่าใช้ 120 กรัมตามรายการ หรือ 100 กรัมตามขั้นตอน", "severity": "blocks_print" },
+    { "recipe_name": "ซอสยากินิกุ", "question": "น้ำเปล่า 100 กรัมใน DOCX ต้องใส่หรือไม่ เพราะไม่อยู่ใน V2/ลายมือ", "severity": "blocks_print" },
+    { "recipe_name": "ข้าวหน้าเนื้อยากินิกุ", "question": "น้ำจิ้มซีฟู้ด 20 กรัมเสิร์ฟตรงไหน และผัดผักนับเป็น 1 ชุดหรือ 53 กรัม", "severity": "blocks_print" },
+    { "recipe_name": "ผงคั่วพริกเกลือ", "question": "ขั้นตอนการผสม การเก็บ และผลผลิตสุดท้าย", "severity": "draft_only" },
+    { "recipe_name": "น้ำซุป", "question": "สูตร DOCX ใช้กระบวย แก้ว ถุง หัว และกำ แต่สูตรเว็บเป็นกรัมหลายค่าที่ไม่ตรงกัน ต้องยืนยันว่าใช้ฉบับใด", "severity": "blocks_print" },
+    { "recipe_name": "ซอสลับ (v2)", "question": "สูตรผสมซอสปรุงน้ำ 5 ลิตรใน DOCX เป็นสูตรเดียวกับซอสลับ v2 หรือไม่", "severity": "blocks_print" },
+    { "recipe_name": "กระปุกเครื่องเทศ [70g]", "question": "ถุงเครื่องเทศต้นฉบับมีสัดส่วนต่างจากสูตร 70 กรัมและไม่มีสมุนไพรจีน 5 รายการ ต้องแยกว่าเป็นคนละสูตรหรือไม่", "severity": "blocks_print" },
+    { "recipe_name": "เครื่องปรุงชุดสอง", "question": "ยังไม่พบต้นฉบับและวิธีทำ พบเฉพาะ BOM บนเว็บ/V2", "severity": "blocks_print" },
+    { "recipe_name": "ซอสอเนกประสงค์", "question": "ยืนยันยี่ห้อน้ำมันหอย น้ำตาล และหน่วยเหล้าจีน 25 กรัมหรือ 25 ml", "severity": "blocks_print" },
+    { "recipe_name": "เนื้อแดด (ข้าวขยำ)", "question": "ยังไม่พบขั้นตอนหมัก ตาก/อบ การเก็บ และผลผลิตจากต้นฉบับ", "severity": "blocks_print" }
+  ]
+}

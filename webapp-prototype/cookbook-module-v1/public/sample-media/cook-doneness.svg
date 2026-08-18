@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">DEMO — สีและความสุก / Doneness and color</title>
+  <desc id="desc">Illustrative demo only, not real kitchen evidence.</desc>
+  <rect width="1200" height="800" fill="#fffaf2"/>
+  <text x="600" y="135" text-anchor="middle" font-family="sans-serif" font-size="92" font-weight="700" fill="#b42318">DEMO</text>
+  <text x="600" y="215" text-anchor="middle" font-family="sans-serif" font-size="46" fill="#3d2b1f">สีและความสุก / DONENESS &amp; COLOR</text>
+  <circle cx="600" cy="455" r="245" fill="#e7e5e4" stroke="#78716c" stroke-width="12"/>
+  <g fill="#7c2d12" stroke="#431407" stroke-width="7">
+    <path d="M385 410c45-100 150-125 220-52 76-82 184-30 205 70-28 114-143 170-248 112-92 54-185-15-177-130z"/>
+  </g>
+  <path d="M430 430c75-65 135 15 190-35s120-5 150 45" fill="none" stroke="#d97706" stroke-width="22" stroke-linecap="round"/>
+  <text x="600" y="675" text-anchor="middle" font-family="sans-serif" font-size="38" fill="#7c2d12">ตัวอย่างสีหลังทอด / Example finish</text>
+  <text x="600" y="735" text-anchor="middle" font-family="sans-serif" font-size="28" fill="#6b4f3b">ภาพประกอบตัวอย่าง ไม่ใช่ภาพครัวจริง / Illustration only</text>
+</svg>
