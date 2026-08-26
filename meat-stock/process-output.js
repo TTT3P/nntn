@@ -220,3 +220,8 @@ function updateProcOutputFilter() {
     renderPogDropdown(n, [...allowed])
   })
 }
+
+// dual-mode export: browser no-op; commonjs so the SKU-ref drift guard can read the maps
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { REPACK_MAP, SCRAP_MAP }
+}
