@@ -1,0 +1,34 @@
+name: SKU-ref drift guard
+
+# Fails a PR when a meat-stock SKU map (REPACK_MAP / SCRAP_MAP / PROC_OUTPUT_SKUS)
+# references a SKU that is missing or inactive in the item master — the class of bug
+# behind the 2026-08-26 MT-054 repack incident. Reads the master through the public
+# v_active_skus view with the shipped anon key, so it needs NO secret.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'meat-stock/process-output.js'
+      - 'meat-stock/index.html'
+      - 'meat-stock/check-sku-refs.js'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'meat-stock/process-output.js'
+      - 'meat-stock/index.html'
+      - 'meat-stock/check-sku-refs.js'
+  workflow_dispatch:
+
+jobs:
+  sku-refs:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # No dependencies to install — the guard uses only Node built-ins.
+      - name: Check SKU references against the live item master
+        run: npm run check:sku-refs
