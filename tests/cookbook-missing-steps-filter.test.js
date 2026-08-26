@@ -57,12 +57,8 @@ test('ใบส่งครัวเว้นพื้นที่อย่า�
   assert.ok(Number(rule[1]) >= 90, `handwritten area is only ${rule[1]}mm`);
 });
 
-test('ลดเฉพาะพื้นที่เขียนของสูตร BOM ยาวเพื่อไม่ให้ช่องเซ็นหลุดไปหน้าว่าง', () => {
-  const kitchenStepHeightMm = loadFunction('kitchenStepHeightMm');
-
-  assert.equal(kitchenStepHeightMm(297), 95);
-  assert.equal(kitchenStepHeightMm(320), 70);
-  assert.equal(kitchenStepHeightMm(360), 55);
-  assert.match(source, /fitKitchenPages\(steps === '__kitchen__'\)/);
-  assert.match(source, /kitchen-break/);
-});
+// [removed 2026-08-26] test 'ลดเฉพาะพื้นที่เขียนของสูตร BOM ยาว…' asserted the
+// pre-7624c6f kitchen-sheet pagination (kitchenStepHeightMm shrink + fitKitchenPages
+// + kitchen-break second page). Commit 7624c6f "เล่มครัว — 2 สูตร/หน้า A4" (TINE)
+// superseded that design, removing those functions from cookbook.html. The current
+// ≥90mm handwrite-area contract stays covered by the test above.
