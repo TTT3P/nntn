@@ -15,11 +15,11 @@ const path = require('node:path')
 const { REPACK_MAP, SCRAP_MAP } = require('./process-output.js')
 
 const SB = 'https://emjqulzikpxorvpaaiww.supabase.co'
-// public anon key (same one shipped in the client HTML). items is RLS-gated: anon cannot
-// read it, so an AUTHENTICATED token is required — pass one via NNTN_SB_TOKEN. Without it
-// the guard fails closed (UNVERIFIED, exit 2) rather than reporting a false all-clear.
+// public anon key (same one shipped in the client HTML). The guard reads the item master
+// through public.v_active_skus — a minimal anon-readable (sku, is_active) projection added
+// so the guard needs NO auth token or CI secret. items itself stays RLS-gated. On any fetch
+// error the guard still fails closed (UNVERIFIED, exit 2) rather than a false all-clear.
 const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtanF1bHppa3B4b3J2cGFhaXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDAsImV4cCI6MjA5MDYzNDM0MH0.BoslF10vIufPYucuHub_czSxzAhZ9u3nTDQjwgC7I5M'
-const TOKEN = process.env.NNTN_SB_TOKEN || ''
 
 // Collect every referenced SKU, tagged with where it came from (for a useful report).
 function collectRefs() {
@@ -42,11 +42,10 @@ function collectRefs() {
 }
 
 async function fetchItemMaster() {
-  if (!TOKEN) throw new Error('ไม่มี NNTN_SB_TOKEN — items ต้อง auth (RLS). set token ก่อน: NNTN_SB_TOKEN=<jwt> node meat-stock/check-sku-refs.js')
-  const res = await fetch(`${SB}/rest/v1/items?select=sku,is_active`, {
-    headers: { apikey: ANON, Authorization: 'Bearer ' + TOKEN }
+  const res = await fetch(`${SB}/rest/v1/v_active_skus?select=sku,is_active`, {
+    headers: { apikey: ANON, Authorization: 'Bearer ' + ANON }
   })
-  if (!res.ok) throw new Error(`items fetch ${res.status}: ${await res.text()}`)
+  if (!res.ok) throw new Error(`v_active_skus fetch ${res.status}: ${await res.text()}`)
   const rows = await res.json()
   if (rows.length >= 1000) console.warn('⚠️  item master hit the 1000-row cap — result may be truncated')
   const bySku = new Map()
