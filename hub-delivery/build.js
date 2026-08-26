@@ -151,6 +151,25 @@ function renderMeatChips(n) {
 }
 
 // ─── Bag Modal ────────────────────────────────────────────────────────────────
+// Fetch THIS item's live In-Stock bags from the server and swap them into the shared
+// page-load caches (cwBags snapshot + bagCache). Returns the fresh array, or null on a
+// network failure so the caller can fall back to the stale cwBags slice. Single source
+// for the "page-load snapshot drift" fix — every bag picker refetches through here so a
+// bag delivered by another session since load can never be offered.
+// getAll() paginates past PostgREST's 1000-row cap; filter by item_id server-side.
+async function refreshInStockBags(itemId) {
+  const freshBags = await getAll('catch_weight', {
+    select: 'id,item_id,weight_g,lot_date,warehouse,legacy_cw_row',
+    item_id: `eq.${itemId}`,
+    status: 'eq.✅ In Stock',
+    order: 'lot_date.asc,id.asc'
+  })
+  if (!Array.isArray(freshBags)) return null
+  cwBags = mergeFreshBags(cwBags, itemId, freshBags)   // pure swap (stock-logic.js)
+  freshBags.forEach(b => { bagCache[b.id] = b })
+  return freshBags
+}
+
 async function openBagModal(n) {
   _modalBlock = n
   const { itemId, selectedBags } = meatSel[n]
@@ -160,35 +179,22 @@ async function openBagModal(n) {
   const name = sel.options[sel.selectedIndex]?.dataset?.name || ''
   document.getElementById('bag-modal-title').textContent = `📦 ${name}`
 
-  let bags = cwBags.filter(b => b.item_id === itemId)
   const body = document.getElementById('bag-modal-body')
 
-  // Self-heal stale cache: cwBags is fetched once at page load (init()) and never
-  // re-fetched. If new production is recorded into catch_weight while this tab stays
-  // open, the in-memory cache misses those rows and the picker looks empty even though
-  // fresh stock exists server-side. Confirmed root cause 2026-08-13 (MT-047 marinated
-  // batch created mid-session — TINE's already-open tab never saw the new bags, RLS/data
-  // ruled out as separate causes). Re-fetch In-Stock bags once before declaring empty.
-  if (bags.length === 0) {
-    body.innerHTML = `<div style="text-align:center;color:var(--muted);padding:24px">กำลังตรวจสอบสต๊อกล่าสุด…</div>`
-    document.getElementById('bag-modal').classList.add('open')
-    try {
-      // getAll(), not get() — a single limit=N request silently truncates at
-      // PostgREST's server-side 1000-row cap (see getAll() comment above). Using a
-      // capped single fetch here would have re-produced the exact same class of bug
-      // this re-fetch is trying to self-heal.
-      const freshBags = await getAll('catch_weight', {
-        select: 'id,item_id,weight_g,lot_date,warehouse,legacy_cw_row',
-        status: 'eq.✅ In Stock',
-        order: 'lot_date.asc,id.asc'
-      })
-      if (Array.isArray(freshBags)) {
-        cwBags = freshBags
-        cwBags.forEach(b => { bagCache[b.id] = b })
-        bags = cwBags.filter(b => b.item_id === itemId)
-      }
-    } catch (_) { /* network hiccup — fall through to empty-state message below */ }
-  }
+  // Always refresh THIS item's In-Stock bags from the server before rendering the picker.
+  // cwBags is a page-load snapshot (init()); a bag that was In Stock then but has since
+  // been Delivered/Repacked by another session still sits in the cache. The old
+  // empty-only self-heal left a stale-but-non-empty list that offered an already-used
+  // bag — the submit Stock Guard then rejected it ("ถูกใช้ไปแล้ว") even though real
+  // In-Stock bags existed. Refetching by item_id keeps the picker live and cheap.
+  // (root cause 2026-08-26 ลูกชิ้น short-ship; supersedes empty-only self-heal 2026-08-13.)
+  body.innerHTML = `<div style="text-align:center;color:var(--muted);padding:24px">กำลังตรวจสอบสต๊อกล่าสุด…</div>`
+  document.getElementById('bag-modal').classList.add('open')
+  let bags = cwBags.filter(b => b.item_id === itemId)   // fallback if the refetch fails
+  try {
+    const freshBags = await refreshInStockBags(itemId)   // live refetch + cache swap (shared helper)
+    if (freshBags) bags = freshBags
+  } catch (_) { /* network hiccup — fall through with stale cache; submit guard still catches */ }
 
   const lots = {}
   bags.forEach(b => {

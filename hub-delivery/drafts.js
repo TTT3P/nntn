@@ -59,10 +59,13 @@ function renderDraftCard(d) {
         <div class="add-form-row">
           <select id="dmadd-item-${d.id}" onchange="renderDraftMeatBagPicker('${d.id}')">
             <option value="">— เลือก SKU เนื้อ —</option>
-            ${Array.from(new Set(cwBags.map(b => b.item_id))).map(iid => {
-              const it = (window._itemsById||{})[iid] || {}
-              return `<option value="${iid}">${escHtml(it.sku||'')} | ${escHtml(it.name||iid)}</option>`
-            }).join('')}
+            ${(typeof mtItems !== 'undefined' ? mtItems : []).map(it =>
+              // list every meat item from the master (same source as the main form), not
+              // only items that had In-Stock bags in the page-load cwBags snapshot — an
+              // item whose bags were all delivered/produced around load time is still
+              // selectable, and renderDraftMeatBagPicker live-refetches its bags.
+              `<option value="${it.id}">${escHtml(it.sku||'')} | ${escHtml(it.name||it.id)}</option>`
+            ).join('')}
           </select>
         </div>
         <div id="dmadd-bags-${d.id}" style="margin:8px 0;max-height:200px;overflow-y:auto"></div>
@@ -227,13 +230,28 @@ function cancelAddDraftMeat(id) {
   document.getElementById(`dmadd-bags-${id}`).innerHTML = ''
 }
 
-function renderDraftMeatBagPicker(id) {
+async function renderDraftMeatBagPicker(id) {
   const itemId = document.getElementById(`dmadd-item-${id}`).value
   const box = document.getElementById(`dmadd-bags-${id}`)
   if (!itemId) { box.innerHTML = ''; return }
   const draft = window._draftCache[id]
   const usedInThis = new Set((draft?.meat_lines||[]).map(m => String(m.bag_id)))
-  const avail = cwBags.filter(b => b.item_id === itemId && !usedInThis.has(String(b.id)))
+
+  // Live-refetch this item's In-Stock bags before rendering — same page-load-snapshot-drift
+  // fix as openBagModal. cwBags is a load-time snapshot, so a bag already Delivered by
+  // another session would otherwise be offered here and then pruned/rejected at submit.
+  // (root cause 2026-08-26 ลูกชิ้น short-ship; the deferred same-class site from that fix.)
+  box.innerHTML = '<div style="color:#999;padding:8px">กำลังตรวจสอบสต๊อกล่าสุด…</div>'
+  let bags = cwBags.filter(b => b.item_id === itemId)   // fallback if the refetch fails
+  try {
+    const freshBags = await refreshInStockBags(itemId)  // shared helper (build.js)
+    if (freshBags) bags = freshBags
+  } catch (_) { /* network hiccup — fall through with stale cache; submit guard still catches */ }
+
+  // Race guard: the user may have switched the SKU dropdown while the refetch was in flight.
+  if (document.getElementById(`dmadd-item-${id}`)?.value !== itemId) return
+
+  const avail = availableDraftBags(bags, itemId, usedInThis)   // pure (stock-logic.js)
   if (avail.length === 0) { box.innerHTML = '<div style="color:#999;padding:8px">ไม่มีถุงคงเหลือให้เลือก</div>'; return }
   box.innerHTML = avail.map(b => `
     <label style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid #eee;cursor:pointer">
@@ -353,10 +371,48 @@ async function submitDraft(draftId) {
     } catch (_) { /* network glitch — load draft as-is, submit guard will catch */ }
   }
   if (prunedBags.length > 0) {
-    const lines = prunedBags.slice(0, 15).map(p => `• ${p.name} bag ${p.bag_id} → ${p._liveStatus}`).join('\n')
-    const more  = prunedBags.length > 15 ? `\n…และอีก ${prunedBags.length - 15} ถุง` : ''
-    alert(`⚠️ ตัด ${prunedBags.length} ถุงออกจาก Draft อัตโนมัติ\n\nถุงพวกนี้ไม่อยู่ใน "✅ In Stock" แล้ว (อาจถูกส่ง / ปรับสต๊อกโดย session อื่น):\n\n${lines}${more}\n\nDraft จะถูกอัปเดตให้เหลือเฉพาะถุงที่ยังส่งได้ (${meatLines.length} ถุง)`)
-    // persist pruned set so the draft stays clean for next reload
+    // Auto-substitute: for each pruned bag pull in a fresh In-Stock bag of the SAME item
+    // (fungible portioned meat = identical weight). The reconciled list loads into the
+    // form for review before the user commits with 🚛 บันทึกส่งออก, so any weight change on
+    // a variable-weight item stays visible and correctable — it is a suggestion, not a
+    // silent commit. This is the "ระบบจะเลือกถุงใหม่ให้" the prune was missing.
+    // (root cause 2026-08-26 ลูกชิ้น short-ship — prune removed the bag but never replaced it.)
+    let swapped   = []
+    let stillGone = prunedBags.slice()   // default: all gone if the refetch fails
+    try {
+      const itemIds = [...new Set(prunedBags.map(p => String(p.item_id)).filter(Boolean))]
+      let freshInStock = []
+      if (itemIds.length > 0) {
+        const idList = itemIds.map(x => `"${x}"`).join(',')
+        const fetched = await getAll('catch_weight', {
+          select: 'id,item_id,weight_g,lot_date,warehouse,legacy_cw_row',
+          status: 'eq.✅ In Stock',
+          item_id: `in.(${idList})`,
+          order: 'lot_date.asc,id.asc'
+        })
+        if (Array.isArray(fetched)) freshInStock = fetched
+      }
+      // pure decision (stock-logic.js); caller applies the side effects
+      const usedIds = new Set(meatLines.map(m => String(m.bag_id)))
+      const r = reconcileSubstitutes(prunedBags, freshInStock, usedIds)
+      swapped   = r.swapped
+      stillGone = r.stillGone
+      r.additions.forEach(a => meatLines.push(a))            // load substitutes into the form
+      r.swapped.forEach(s => { bagCache[s.bag.id] = s.bag }) // warm cache so the chip renders
+    } catch (_) { swapped = []; stillGone = prunedBags.slice() }
+
+    const msg = []
+    if (swapped.length > 0) {
+      const s = swapped.slice(0, 15).map(x => `• ${x.name}: #${x.from} → #${x.to}`).join('\n')
+      msg.push(`✅ ถุงเดิมถูกส่ง/ปรับไปแล้ว — สลับถุงใหม่ให้อัตโนมัติ ${swapped.length} ถุง (ตรวจก่อนกดส่งออก):\n${s}`)
+    }
+    if (stillGone.length > 0) {
+      const g = stillGone.slice(0, 15).map(p => `• ${p.name} #${p.bag_id} → ${p._liveStatus}`).join('\n')
+      msg.push(`⚠️ ${stillGone.length} ถุงไม่มีของแทนใน In Stock — ถูกตัดออก:\n${g}`)
+    }
+    alert(`${msg.join('\n\n')}\n\nรวมถุงเนื้อที่จะส่งตอนนี้: ${meatLines.length} ถุง`)
+
+    // persist reconciled meat_lines back to the draft
     try {
       const pTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
       const pH   = { 'apikey': KEY, 'Authorization': 'Bearer ' + pTok, 'Content-Type': 'application/json',
