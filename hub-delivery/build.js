@@ -165,7 +165,7 @@ async function refreshInStockBags(itemId) {
     order: 'lot_date.asc,id.asc'
   })
   if (!Array.isArray(freshBags)) return null
-  cwBags = cwBags.filter(b => b.item_id !== itemId).concat(freshBags)  // swap this item's slice
+  cwBags = mergeFreshBags(cwBags, itemId, freshBags)   // pure swap (stock-logic.js)
   freshBags.forEach(b => { bagCache[b.id] = b })
   return freshBags
 }

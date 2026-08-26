@@ -248,7 +248,7 @@ async function renderDraftMeatBagPicker(id) {
   // Race guard: the user may have switched the SKU dropdown while the refetch was in flight.
   if (document.getElementById(`dmadd-item-${id}`)?.value !== itemId) return
 
-  const avail = bags.filter(b => b.item_id === itemId && !usedInThis.has(String(b.id)))
+  const avail = availableDraftBags(bags, itemId, usedInThis)   // pure (stock-logic.js)
   if (avail.length === 0) { box.innerHTML = '<div style="color:#999;padding:8px">ไม่มีถุงคงเหลือให้เลือก</div>'; return }
   box.innerHTML = avail.map(b => `
     <label style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid #eee;cursor:pointer">
@@ -374,37 +374,29 @@ async function submitDraft(draftId) {
     // a variable-weight item stays visible and correctable — it is a suggestion, not a
     // silent commit. This is the "ระบบจะเลือกถุงใหม่ให้" the prune was missing.
     // (root cause 2026-08-26 ลูกชิ้น short-ship — prune removed the bag but never replaced it.)
-    const usedIds   = new Set(meatLines.map(m => String(m.bag_id)))
-    const swapped   = []
-    const stillGone = []
+    let swapped   = []
+    let stillGone = prunedBags.slice()   // default: all gone if the refetch fails
     try {
       const itemIds = [...new Set(prunedBags.map(p => String(p.item_id)).filter(Boolean))]
-      const poolByItem = {}
+      let freshInStock = []
       if (itemIds.length > 0) {
         const idList = itemIds.map(x => `"${x}"`).join(',')
-        const freshInStock = await getAll('catch_weight', {
+        const fetched = await getAll('catch_weight', {
           select: 'id,item_id,weight_g,lot_date,warehouse,legacy_cw_row',
           status: 'eq.✅ In Stock',
           item_id: `in.(${idList})`,
           order: 'lot_date.asc,id.asc'
         })
-        if (Array.isArray(freshInStock)) freshInStock.forEach(b => {
-          if (usedIds.has(String(b.id))) return   // already in this draft
-          ;(poolByItem[String(b.item_id)] = poolByItem[String(b.item_id)] || []).push(b)
-        })
+        if (Array.isArray(fetched)) freshInStock = fetched
       }
-      prunedBags.forEach(p => {
-        const repl = (poolByItem[String(p.item_id)] || []).shift()   // FEFO oldest; remove to avoid double-assign
-        if (repl) {
-          usedIds.add(String(repl.id))
-          bagCache[repl.id] = repl
-          meatLines.push({ item_id: p.item_id, bag_id: repl.id, name: p.name, weight_g: repl.weight_g, lot_date: repl.lot_date })
-          swapped.push({ from: p.bag_id, to: repl.id, name: p.name })
-        } else {
-          stillGone.push(p)
-        }
-      })
-    } catch (_) { prunedBags.forEach(p => stillGone.push(p)) }
+      // pure decision (stock-logic.js); caller applies the side effects
+      const usedIds = new Set(meatLines.map(m => String(m.bag_id)))
+      const r = reconcileSubstitutes(prunedBags, freshInStock, usedIds)
+      swapped   = r.swapped
+      stillGone = r.stillGone
+      r.additions.forEach(a => meatLines.push(a))            // load substitutes into the form
+      r.swapped.forEach(s => { bagCache[s.bag.id] = s.bag }) // warm cache so the chip renders
+    } catch (_) { swapped = []; stillGone = prunedBags.slice() }
 
     const msg = []
     if (swapped.length > 0) {
