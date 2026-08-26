@@ -59,10 +59,13 @@ function renderDraftCard(d) {
         <div class="add-form-row">
           <select id="dmadd-item-${d.id}" onchange="renderDraftMeatBagPicker('${d.id}')">
             <option value="">— เลือก SKU เนื้อ —</option>
-            ${Array.from(new Set(cwBags.map(b => b.item_id))).map(iid => {
-              const it = (window._itemsById||{})[iid] || {}
-              return `<option value="${iid}">${escHtml(it.sku||'')} | ${escHtml(it.name||iid)}</option>`
-            }).join('')}
+            ${(typeof mtItems !== 'undefined' ? mtItems : []).map(it =>
+              // list every meat item from the master (same source as the main form), not
+              // only items that had In-Stock bags in the page-load cwBags snapshot — an
+              // item whose bags were all delivered/produced around load time is still
+              // selectable, and renderDraftMeatBagPicker live-refetches its bags.
+              `<option value="${it.id}">${escHtml(it.sku||'')} | ${escHtml(it.name||it.id)}</option>`
+            ).join('')}
           </select>
         </div>
         <div id="dmadd-bags-${d.id}" style="margin:8px 0;max-height:200px;overflow-y:auto"></div>
