@@ -151,6 +151,25 @@ function renderMeatChips(n) {
 }
 
 // ─── Bag Modal ────────────────────────────────────────────────────────────────
+// Fetch THIS item's live In-Stock bags from the server and swap them into the shared
+// page-load caches (cwBags snapshot + bagCache). Returns the fresh array, or null on a
+// network failure so the caller can fall back to the stale cwBags slice. Single source
+// for the "page-load snapshot drift" fix — every bag picker refetches through here so a
+// bag delivered by another session since load can never be offered.
+// getAll() paginates past PostgREST's 1000-row cap; filter by item_id server-side.
+async function refreshInStockBags(itemId) {
+  const freshBags = await getAll('catch_weight', {
+    select: 'id,item_id,weight_g,lot_date,warehouse,legacy_cw_row',
+    item_id: `eq.${itemId}`,
+    status: 'eq.✅ In Stock',
+    order: 'lot_date.asc,id.asc'
+  })
+  if (!Array.isArray(freshBags)) return null
+  cwBags = cwBags.filter(b => b.item_id !== itemId).concat(freshBags)  // swap this item's slice
+  freshBags.forEach(b => { bagCache[b.id] = b })
+  return freshBags
+}
+
 async function openBagModal(n) {
   _modalBlock = n
   const { itemId, selectedBags } = meatSel[n]
@@ -173,19 +192,8 @@ async function openBagModal(n) {
   document.getElementById('bag-modal').classList.add('open')
   let bags = cwBags.filter(b => b.item_id === itemId)   // fallback if the refetch fails
   try {
-    // getAll() paginates past PostgREST's 1000-row cap; filter by item_id server-side.
-    const freshBags = await getAll('catch_weight', {
-      select: 'id,item_id,weight_g,lot_date,warehouse,legacy_cw_row',
-      item_id: `eq.${itemId}`,
-      status: 'eq.✅ In Stock',
-      order: 'lot_date.asc,id.asc'
-    })
-    if (Array.isArray(freshBags)) {
-      // swap this item's slice of the caches for the live set
-      cwBags = cwBags.filter(b => b.item_id !== itemId).concat(freshBags)
-      freshBags.forEach(b => { bagCache[b.id] = b })
-      bags = freshBags
-    }
+    const freshBags = await refreshInStockBags(itemId)   // live refetch + cache swap (shared helper)
+    if (freshBags) bags = freshBags
   } catch (_) { /* network hiccup — fall through with stale cache; submit guard still catches */ }
 
   const lots = {}

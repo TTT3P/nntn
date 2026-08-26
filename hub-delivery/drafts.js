@@ -227,13 +227,28 @@ function cancelAddDraftMeat(id) {
   document.getElementById(`dmadd-bags-${id}`).innerHTML = ''
 }
 
-function renderDraftMeatBagPicker(id) {
+async function renderDraftMeatBagPicker(id) {
   const itemId = document.getElementById(`dmadd-item-${id}`).value
   const box = document.getElementById(`dmadd-bags-${id}`)
   if (!itemId) { box.innerHTML = ''; return }
   const draft = window._draftCache[id]
   const usedInThis = new Set((draft?.meat_lines||[]).map(m => String(m.bag_id)))
-  const avail = cwBags.filter(b => b.item_id === itemId && !usedInThis.has(String(b.id)))
+
+  // Live-refetch this item's In-Stock bags before rendering — same page-load-snapshot-drift
+  // fix as openBagModal. cwBags is a load-time snapshot, so a bag already Delivered by
+  // another session would otherwise be offered here and then pruned/rejected at submit.
+  // (root cause 2026-08-26 ลูกชิ้น short-ship; the deferred same-class site from that fix.)
+  box.innerHTML = '<div style="color:#999;padding:8px">กำลังตรวจสอบสต๊อกล่าสุด…</div>'
+  let bags = cwBags.filter(b => b.item_id === itemId)   // fallback if the refetch fails
+  try {
+    const freshBags = await refreshInStockBags(itemId)  // shared helper (build.js)
+    if (freshBags) bags = freshBags
+  } catch (_) { /* network hiccup — fall through with stale cache; submit guard still catches */ }
+
+  // Race guard: the user may have switched the SKU dropdown while the refetch was in flight.
+  if (document.getElementById(`dmadd-item-${id}`)?.value !== itemId) return
+
+  const avail = bags.filter(b => b.item_id === itemId && !usedInThis.has(String(b.id)))
   if (avail.length === 0) { box.innerHTML = '<div style="color:#999;padding:8px">ไม่มีถุงคงเหลือให้เลือก</div>'; return }
   box.innerHTML = avail.map(b => `
     <label style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid #eee;cursor:pointer">
