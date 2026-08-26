@@ -353,10 +353,56 @@ async function submitDraft(draftId) {
     } catch (_) { /* network glitch — load draft as-is, submit guard will catch */ }
   }
   if (prunedBags.length > 0) {
-    const lines = prunedBags.slice(0, 15).map(p => `• ${p.name} bag ${p.bag_id} → ${p._liveStatus}`).join('\n')
-    const more  = prunedBags.length > 15 ? `\n…และอีก ${prunedBags.length - 15} ถุง` : ''
-    alert(`⚠️ ตัด ${prunedBags.length} ถุงออกจาก Draft อัตโนมัติ\n\nถุงพวกนี้ไม่อยู่ใน "✅ In Stock" แล้ว (อาจถูกส่ง / ปรับสต๊อกโดย session อื่น):\n\n${lines}${more}\n\nDraft จะถูกอัปเดตให้เหลือเฉพาะถุงที่ยังส่งได้ (${meatLines.length} ถุง)`)
-    // persist pruned set so the draft stays clean for next reload
+    // Auto-substitute: for each pruned bag pull in a fresh In-Stock bag of the SAME item
+    // (fungible portioned meat = identical weight). The reconciled list loads into the
+    // form for review before the user commits with 🚛 บันทึกส่งออก, so any weight change on
+    // a variable-weight item stays visible and correctable — it is a suggestion, not a
+    // silent commit. This is the "ระบบจะเลือกถุงใหม่ให้" the prune was missing.
+    // (root cause 2026-08-26 ลูกชิ้น short-ship — prune removed the bag but never replaced it.)
+    const usedIds   = new Set(meatLines.map(m => String(m.bag_id)))
+    const swapped   = []
+    const stillGone = []
+    try {
+      const itemIds = [...new Set(prunedBags.map(p => String(p.item_id)).filter(Boolean))]
+      const poolByItem = {}
+      if (itemIds.length > 0) {
+        const idList = itemIds.map(x => `"${x}"`).join(',')
+        const freshInStock = await getAll('catch_weight', {
+          select: 'id,item_id,weight_g,lot_date,warehouse,legacy_cw_row',
+          status: 'eq.✅ In Stock',
+          item_id: `in.(${idList})`,
+          order: 'lot_date.asc,id.asc'
+        })
+        if (Array.isArray(freshInStock)) freshInStock.forEach(b => {
+          if (usedIds.has(String(b.id))) return   // already in this draft
+          ;(poolByItem[String(b.item_id)] = poolByItem[String(b.item_id)] || []).push(b)
+        })
+      }
+      prunedBags.forEach(p => {
+        const repl = (poolByItem[String(p.item_id)] || []).shift()   // FEFO oldest; remove to avoid double-assign
+        if (repl) {
+          usedIds.add(String(repl.id))
+          bagCache[repl.id] = repl
+          meatLines.push({ item_id: p.item_id, bag_id: repl.id, name: p.name, weight_g: repl.weight_g, lot_date: repl.lot_date })
+          swapped.push({ from: p.bag_id, to: repl.id, name: p.name })
+        } else {
+          stillGone.push(p)
+        }
+      })
+    } catch (_) { prunedBags.forEach(p => stillGone.push(p)) }
+
+    const msg = []
+    if (swapped.length > 0) {
+      const s = swapped.slice(0, 15).map(x => `• ${x.name}: #${x.from} → #${x.to}`).join('\n')
+      msg.push(`✅ ถุงเดิมถูกส่ง/ปรับไปแล้ว — สลับถุงใหม่ให้อัตโนมัติ ${swapped.length} ถุง (ตรวจก่อนกดส่งออก):\n${s}`)
+    }
+    if (stillGone.length > 0) {
+      const g = stillGone.slice(0, 15).map(p => `• ${p.name} #${p.bag_id} → ${p._liveStatus}`).join('\n')
+      msg.push(`⚠️ ${stillGone.length} ถุงไม่มีของแทนใน In Stock — ถูกตัดออก:\n${g}`)
+    }
+    alert(`${msg.join('\n\n')}\n\nรวมถุงเนื้อที่จะส่งตอนนี้: ${meatLines.length} ถุง`)
+
+    // persist reconciled meat_lines back to the draft
     try {
       const pTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
       const pH   = { 'apikey': KEY, 'Authorization': 'Bearer ' + pTok, 'Content-Type': 'application/json',
