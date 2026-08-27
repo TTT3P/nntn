@@ -12,12 +12,14 @@ on:
       - 'meat-stock/process-output.js'
       - 'meat-stock/index.html'
       - 'meat-stock/check-sku-refs.js'
+  # No `paths:` filter on pull_request — this check is a REQUIRED status check on
+  # main, and GitHub leaves a path-filtered required check stuck "expected" (never
+  # runs, never passes) on any PR that misses the filter, deadlocking every merge.
+  # The guard is cheap (Node built-ins + one anon read, ~15s) and validates the
+  # current SKU maps against the live master regardless of what the PR touched, so
+  # running it on every PR to main is both safe and more correct.
   pull_request:
     branches: [main]
-    paths:
-      - 'meat-stock/process-output.js'
-      - 'meat-stock/index.html'
-      - 'meat-stock/check-sku-refs.js'
   workflow_dispatch:
 
 jobs:
