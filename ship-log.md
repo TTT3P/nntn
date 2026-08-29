@@ -8,6 +8,15 @@
 
 ---
 
+## 29/08 13:22 · MT-059 น่องลายตุ๋น(หั่น) · ปิดหม้อ MT-035 → หั่น (Lv.2) → 75G/150G
+
+`aca23ed` (PR #47 squash) · nntn · QA: nntn-qa PASS + qa-pass · CI test/sku-refs/semgrep ✅ · Pages verified 13:23 ICT
+
+- **TINE 29/08:** ปิดหม้อ = **MT-035 `น่องลายตุ๋น`** (DB rename จาก 'เนื้อน่องลายตุ๋น') · แปรรูปหั่น = **MT-059 `น่องลายตุ๋น(หั่น)`** (new item, Lv.2 intermediate meat_cooked bag, DB 12:58 ICT)
+- `REPACK_MAP['MT-035']` = [MT-059, MT-049, MT-056, MT-045] (drop self-output ชิ้นสวย) · `REPACK_MAP['MT-059']` = [MT-049, MT-056, MT-045] — 75G/150G ทำได้จากทั้งปิดหม้อและหั่น · `MAIN_PROC_SKUS` += MT-059
+- Note: MT-059 โผล่ใน input dropdown เมื่อมีถุง CW แล้ว (กรองตาม cwStock — expected)
+- Receipt: vault nntn `Operations/change-receipts/2026-08-29-stock-v1-rename-mt035.md` · Discord notify skipped (MCP down this session)
+
 ## 04/05 18:05 · T-2BUGS · Bug 2 expand-row id collision FIX · Bug 1 PARK
 
 nntn-platform · #platform · #coo · TINE flag 17:58 · Bug 2 fixed 18:01 · Bug 1 verdict 18:05
