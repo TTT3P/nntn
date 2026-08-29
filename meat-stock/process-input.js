@@ -5,7 +5,7 @@ function addProcInput() {
   procInputCount++
   const n = procInputCount
   // Curated list: SKU หลัก + เศษเนื้อ (category=meat_trim)
-  const MAIN_PROC_SKUS = ['MT-028','MT-004','MT-046','MT-019','MT-035','SP-206','SP-101','SP-036','SP-037','SP-087','SP-020','SP-031','SP-038']  // MT-046 เพิ่ม 26/07 (route B input สำหรับ [75G]ชายโครงตุ๋น)
+  const MAIN_PROC_SKUS = ['MT-028','MT-004','MT-046','MT-019','MT-035','MT-059','SP-206','SP-101','SP-036','SP-037','SP-087','SP-020','SP-031','SP-038']  // MT-046 เพิ่ม 26/07 (route B input สำหรับ [75G]ชายโครงตุ๋น) · MT-059 น่องลายตุ๋น(หั่น) เพิ่ม 29/08 (input Lv.2 → 75G/150G)
   const mainInStock = [...new Set(
     cwStock.filter(r => MAIN_PROC_SKUS.includes(r.item_sku)).map(r => r.item_name).filter(Boolean)
   )].sort()
