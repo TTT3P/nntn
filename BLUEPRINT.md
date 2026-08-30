@@ -302,6 +302,24 @@ rpc_delivery_swap_bag(p_actor: text, p_old_cw_id: bigint, p_new_cw_id: bigint, p
 ```ts
 rpc_count_adjust(p_actor, p_item_id: uuid, p_counted_qty: numeric, p_note?: text): jsonb
 ```
+**Guard:** `type IN (non_meat, packaging)` only — meat rejected.
+
+### `public.rpc_manual_add_portioned` — manual add for portioned meat (added 30/08/2026)
+```ts
+rpc_manual_add_portioned(
+  p_actor:     text,      // required
+  p_item_id:   uuid,      // required · items.id
+  p_qty:       numeric,   // required · positive whole number of bags
+  p_lot_date:  date = CURRENT_DATE,
+  p_warehouse: char = 'C',
+  p_weight_g:  numeric?,  // NULL → derive from latest In Stock bag (e.g. [75G] items)
+  p_note:      text?
+): jsonb   // ok, cw_ids, sm_ids, cw_before/after, sm_before/after, invariant_delta
+```
+**Guard (NULL-safe):** `type IS DISTINCT FROM 'meat' OR tier IS DISTINCT FROM 'final' → reject`. Only portioned final meat. Fills the gap where `rpc_po_receive` (raw-only), `rpc_count_adjust` (non_meat/packaging-only), and `rpc_receive_universal` (final → stock_counts, **no catch_weight → divergence**) cannot serve a manual per-bag add for final-tier meat.
+**Mechanism:** inserts per-bag `catch_weight` (constant source `manual-add-backfill` → routes `po_receive` via `emit_sm_from_cw_insert`; actor kept in `app.actor`/`catch_weight.actor_id` + `notes`, never in source) → trigger emits matching sm. Fail-closed: raises `INVARIANT_VIOLATION` (rolls back batch) if SM/CW deltas disagree.
+**Discord:** manual add fires **no** notification — per-row notify skipped by the `%-backfill` source, and `aim_process_summary_trigger` only fires for `source='web-process'` (not manual add). Net: silent.
+**Rollback:** SM is append-only — do NOT delete. Reverse by disposing the bags (`rpc_disposal` or status → 🗑️ Disposed) which emits compensating −1 via `cw_emit_sm_status`.
 
 ### `public.rpc_production_execute` — cook session
 ```ts
