@@ -8,6 +8,14 @@
 
 ---
 
+## 02/09 · MT-046 ชายโครงตุ๋น(เนื้อตุ๋น) → +MT-051 [75G]เนื้อตุ๋น(ราดข้าว)
+
+PR feat/stock-mt046-radkhao (protected main) · nntn · SKU-ref guard ✅ (44 SKU active) · Discord notify skipped (MCP down)
+
+- **TINE 02/09:** ชายโครงตุ๋น(เนื้อตุ๋น) แปรรูปเป็น เนื้อตุ๋น75(ราดข้าว) ได้ (เดิมได้แค่ MT-040 เนื้อตุ๋น75)
+- `REPACK_MAP['MT-046']` = ['MT-040','MT-051'] (mirror MT-028 สามชั้นตุ๋น) · **frontend-only ไม่แตะ DB**
+- MT-051 มี recipe SRCP-019 (costing) อยู่แล้ว · produce flow ใช้ REPACK_MAP เป็นกฎ (MT-040 ไม่มี recipe row แต่ผลิตได้ = พิสูจน์ไม่ต้อง recipe ราย input-pair)
+
 ## 29/08 13:22 · MT-059 น่องลายตุ๋น(หั่น) · ปิดหม้อ MT-035 → หั่น (Lv.2) → 75G/150G
 
 `aca23ed` (PR #47 squash) · nntn · QA: nntn-qa PASS + qa-pass · CI test/sku-refs/semgrep ✅ · Pages verified 13:23 ICT
