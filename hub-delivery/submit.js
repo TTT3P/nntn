@@ -67,7 +67,7 @@ async function saveDraftToCloud() {
       method: 'POST',
       headers: { ...DH, Prefer: 'return=representation' },
       body: JSON.stringify([{
-        bill_no: bill || null, branch: dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : dest,
+        bill_no: bill || null, branch: dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : dest.includes('GB') ? 'GB' : dest,
         date, meat_lines: meatLines, nm_lines: nmLines,
         created_by: window.nntnCurrentUser || 'UNKNOWN', status: 'draft'
       }])
@@ -278,7 +278,7 @@ async function submitDelivery() {
       headers: { ...SH, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         p_bill:     bill,
-        p_branch:   dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : dest,
+        p_branch:   dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : dest.includes('GB') ? 'GB' : dest,
         p_date:     date,
         p_channel:  'hub-delivery',
         p_bag_ids:  allBagIds.map(id => Number(id)),
