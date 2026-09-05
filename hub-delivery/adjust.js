@@ -257,7 +257,7 @@ async function suggestBillNum() {
   const dateVal = document.getElementById('dl-date').value
   const dest    = document.getElementById('dl-dest').value
   if (!dateVal) return
-  const tag = dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : 'OT'
+  const tag = dest.includes('NT') ? 'NT' : dest.includes('FS') ? 'FS' : dest.includes('GB') ? 'GB' : 'OT'
   const d   = dateVal.replace(/-/g, '')   // 20260418
   const prefix = `${tag}${d}`             // NT20260418
   // ค้นจาก deliveries table โดยตรง

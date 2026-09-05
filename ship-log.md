@@ -8,6 +8,13 @@
 
 ---
 
+## 05/09 · hub-delivery · เพิ่มปลายทาง Glass Bangna (GB)
+
+`hub-delivery.html` + `adjust.js` + `submit.js` · nntn · TINE go · Discord notify skipped (MCP down)
+
+- เพิ่ม `<option value="Glass Bangna (GB)">` ใน dropdown ปลายทาง (dl-dest)
+- ต่อ logic bill-prefix (adjust.js) + branch (submit.js x2) รับ `GB` เหมือน NT/FS → เลือก Glass → บิล `GB20260905-1`, branch เก็บ `GB`
+
 ## 05/09 · hub-delivery FIX · submit ล้มเหลวหลอก → ใบนำส่งซ้ำ ตัดสต๊อกซ้ำ
 
 `submit.js` client-only · nntn · QA: `node --check` + logic walkthrough 4 เคส (ไม่ได้ e2e — playwright ชี้ prod, submit path เขียน prod จริง) · Discord notify skipped (MCP down)
