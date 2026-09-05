@@ -8,6 +8,15 @@
 
 ---
 
+## 05/09 · hub-delivery FIX · submit ล้มเหลวหลอก → ใบนำส่งซ้ำ ตัดสต๊อกซ้ำ
+
+`submit.js` client-only · nntn · QA: `node --check` + logic walkthrough 4 เคส (ไม่ได้ e2e — playwright ชี้ prod, submit path เขียน prod จริง) · Discord notify skipped (MCP down)
+
+- **Incident:** RPC `submit_delivery` commit สำเร็จบน server แต่โค้ด post-success throw (`preview-card` null `:356`) → catch แสดง "❌ บันทึกไม่สำเร็จ" + เปิดปุ่มกดซ้ำ ทั้งที่ save แล้ว → user retry เลขบิลใหม่ (หลุด guard bill_no ซ้ำ) → **ใบซ้ำ NT20260905-2 double-deduct** (ข้าว SP-072/ปาล์ม SP-041/รำข้าว SP-243)
+- **Fix (surgical 3 จุด):** `_committed` flag หลัง RPC ok · null-guard `preview-card` (fallback → body) · catch เช็ค `_committed` → post-success error = แสดง ✅+refresh ไม่ใช่ ❌/เปิดปุ่ม
+- **ยังเหลือ:** lost-response idempotency key (network timeout หลัง commit) = server-side, แยก task
+- Data cleanup + receipt: vault nntn `Operations/change-receipts/2026-09-05-stock-v1-fix-duplicate-delivery-nt20260905.md`
+
 ## 02/09 · MT-046 ชายโครงตุ๋น(เนื้อตุ๋น) → +MT-051 [75G]เนื้อตุ๋น(ราดข้าว)
 
 PR feat/stock-mt046-radkhao (protected main) · nntn · SKU-ref guard ✅ (44 SKU active) · Discord notify skipped (MCP down)

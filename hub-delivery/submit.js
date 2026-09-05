@@ -248,6 +248,11 @@ async function submitDelivery() {
   }
   _logSubmit('hub_delivery.submit', 'attempt', _auditPayload, { ref_id: bill })
 
+  // Once the RPC commits, the delivery is saved. Everything after that (banner, modal,
+  // draft cleanup, redirect) is cosmetic — a throw there must NOT be reported as a submit
+  // failure, or the user re-submits and creates a duplicate bill (see change-receipt
+  // 2026-09-05: duplicate NT20260905-2 double-deducted stock).
+  let _committed = false
   try {
     // Atomic RPC — deliveries + lines + catch_weight + stock_counts all-or-nothing
     const freshTok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || KEY
@@ -326,6 +331,10 @@ async function submitDelivery() {
       throw new Error(`❌ บันทึกไม่สำเร็จ\nสาเหตุ: ${errText.slice(0, 300)}`)
     }
 
+    // RPC committed on the server past this point — lock success so no post-success
+    // throw can flip it back to a "failed" state that invites a duplicate re-submit.
+    _committed = true
+
     _logSubmit('hub_delivery.submit', 'success', _auditPayload, { ref_id: bill })
 
     // Update local nm stock cache
@@ -353,7 +362,9 @@ async function submitDelivery() {
       เนื้อ <b>${bagCount} ถุง / ${totalKg.toFixed(3)} กก.</b>${nmLine}
     </div>`
     clearDraft()
-    document.getElementById('preview-card').insertAdjacentHTML('beforebegin', successHtml)
+    const _previewCard = document.getElementById('preview-card')
+    if (_previewCard) _previewCard.insertAdjacentHTML('beforebegin', successHtml)
+    else document.body.insertAdjacentHTML('afterbegin', successHtml)  // fallback: never let a null card throw
     window.scrollTo({ top: 0, behavior: 'smooth' })
 
     // Submit-done modal + redirect to history (28/04 ไทน์ rule)
@@ -387,6 +398,16 @@ async function submitDelivery() {
     }
 
   } catch(e) {
+    if (_committed) {
+      // Delivery already committed — this is only a post-success UI error. Do NOT show ❌
+      // or re-enable the button (that is what caused the duplicate re-submit). Refresh so
+      // the user sees the real saved state.
+      _logSubmit('hub_delivery.submit', 'post_success_ui_error', _auditPayload,
+        { ref_id: bill, error_msg: String(e?.message || e).slice(0, 1000) })
+      _hdToast('✅ บันทึกสำเร็จแล้ว — กำลังรีเฟรชหน้า', 'success')
+      setTimeout(() => location.reload(), 1200)
+      return
+    }
     _logSubmit('hub_delivery.submit', 'fail', _auditPayload,
       { ref_id: bill, error_msg: String(e?.message || e).slice(0, 1000) })
     alert(`❌ บันทึกไม่สำเร็จ: ${friendlyErr(e.message)}`)
