@@ -52,7 +52,19 @@ function reconcileSubstitutes(prunedBags, freshInStock, usedIds) {
   return { additions, swapped, stillGone }
 }
 
+// Idempotency fingerprint (issue #53): a stable string identifying "the same submit" so a
+// lost-response retry of an identical payload reuses its key (server dedups), while any real
+// change (bags/qty/dest/date) or a later deliberate re-delivery yields a different string and
+// thus a fresh key. Order-independent for bags and nm lines.
+function deliveryIdemFingerprint(dest, date, bagIds, nmLines) {
+  const bags = (bagIds || []).map(Number).sort((a, b) => a - b)
+  const nm = (nmLines || [])
+    .map(w => `${w.item_id}:${w.qty}`)
+    .sort()
+  return JSON.stringify([dest || '', date || '', bags, nm])
+}
+
 // dual-mode export: commonjs for `node --test`, harmless no-op in the browser
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { mergeFreshBags, availableDraftBags, reconcileSubstitutes }
+  module.exports = { mergeFreshBags, availableDraftBags, reconcileSubstitutes, deliveryIdemFingerprint }
 }
