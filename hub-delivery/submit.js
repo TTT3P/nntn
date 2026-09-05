@@ -5,6 +5,19 @@
 // ─── Submit ───────────────────────────────────────────────────────────────────
 let _submitting = false
 
+// Idempotency (issue #53): key stays constant across an immediate retry of the SAME
+// payload (lost-response case), and is cleared on confirmed success so a deliberate
+// identical re-delivery later gets a fresh key. Fingerprint decides "same submit".
+let _submitIdemKey = null
+let _submitIdemFp  = null
+function _newIdemKey() {
+  try { if (crypto?.randomUUID) return crypto.randomUUID() } catch (_) {}
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+  })
+}
+
 function _hdToast(msg, type) {
   const el = document.createElement('div')
   el.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
@@ -248,6 +261,17 @@ async function submitDelivery() {
   }
   _logSubmit('hub_delivery.submit', 'attempt', _auditPayload, { ref_id: bill })
 
+  // Idempotency key (issue #53): stable across a retry of the identical payload so a
+  // lost-response retry (RPC committed on server but response dropped) returns the original
+  // delivery instead of double-committing. Fingerprint (deliveryIdemFingerprint, stock-logic.js)
+  // = dest + date + bags + nm(item:qty); a confirmed success clears the key below.
+  const _idemFp = deliveryIdemFingerprint(dest, date, allBagIds, (nmOverride || nmWithdrawals))
+  if (!_submitIdemKey || _submitIdemFp !== _idemFp) {
+    _submitIdemKey = _newIdemKey()
+    _submitIdemFp  = _idemFp
+  }
+  const _idemKey = _submitIdemKey
+
   // Once the RPC commits, the delivery is saved. Everything after that (banner, modal,
   // draft cleanup, redirect) is cosmetic — a throw there must NOT be reported as a submit
   // failure, or the user re-submits and creates a duplicate bill (see change-receipt
@@ -282,7 +306,8 @@ async function submitDelivery() {
         p_date:     date,
         p_channel:  'hub-delivery',
         p_bag_ids:  allBagIds.map(id => Number(id)),
-        p_nm_lines: nmPayload
+        p_nm_lines: nmPayload,
+        p_idempotency_key: _idemKey
       })
     })
     if (!rpcRes.ok) {
@@ -334,6 +359,11 @@ async function submitDelivery() {
     // RPC committed on the server past this point — lock success so no post-success
     // throw can flip it back to a "failed" state that invites a duplicate re-submit.
     _committed = true
+
+    // Confirmed committed — retire this idempotency key so a later, deliberately identical
+    // delivery is treated as a NEW submit (fresh key) rather than deduped to this one.
+    _submitIdemKey = null
+    _submitIdemFp  = null
 
     _logSubmit('hub_delivery.submit', 'success', _auditPayload, { ref_id: bill })
 

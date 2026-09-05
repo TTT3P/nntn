@@ -76,3 +76,46 @@ test('reconcileSubstitutes: mixed — one swapped, one gone; inputs not mutated'
   assert.equal(pruned.length, 2)                               // pure: originals intact
   assert.equal(fresh.length, 1)
 })
+
+// ── deliveryIdemFingerprint (issue #53) ──────────────────────────────────────
+const { deliveryIdemFingerprint } = require('./stock-logic')
+
+test('idem fp: identical payload → identical fingerprint (retry reuses key)', () => {
+  const a = deliveryIdemFingerprint('GB', '2026-09-05', [3, 1, 2], [{ item_id: 'X', qty: 6 }])
+  const b = deliveryIdemFingerprint('GB', '2026-09-05', [3, 1, 2], [{ item_id: 'X', qty: 6 }])
+  assert.equal(a, b)
+})
+
+test('idem fp: bag order does not matter (sorted)', () => {
+  assert.equal(
+    deliveryIdemFingerprint('NT', '2026-09-05', [1, 2, 3], []),
+    deliveryIdemFingerprint('NT', '2026-09-05', [3, 2, 1], [])
+  )
+})
+
+test('idem fp: nm line order does not matter', () => {
+  assert.equal(
+    deliveryIdemFingerprint('NT', '2026-09-05', [], [{ item_id: 'A', qty: 1 }, { item_id: 'B', qty: 2 }]),
+    deliveryIdemFingerprint('NT', '2026-09-05', [], [{ item_id: 'B', qty: 2 }, { item_id: 'A', qty: 1 }])
+  )
+})
+
+test('idem fp: changed qty → different fingerprint (new key, not deduped)', () => {
+  assert.notEqual(
+    deliveryIdemFingerprint('NT', '2026-09-05', [], [{ item_id: 'A', qty: 6 }]),
+    deliveryIdemFingerprint('NT', '2026-09-05', [], [{ item_id: 'A', qty: 5 }])
+  )
+})
+
+test('idem fp: changed dest or date → different fingerprint', () => {
+  const base = deliveryIdemFingerprint('NT', '2026-09-05', [1], [])
+  assert.notEqual(base, deliveryIdemFingerprint('GB', '2026-09-05', [1], []))
+  assert.notEqual(base, deliveryIdemFingerprint('NT', '2026-09-06', [1], []))
+})
+
+test('idem fp: added bag → different fingerprint', () => {
+  assert.notEqual(
+    deliveryIdemFingerprint('NT', '2026-09-05', [1, 2], []),
+    deliveryIdemFingerprint('NT', '2026-09-05', [1, 2, 3], [])
+  )
+})
