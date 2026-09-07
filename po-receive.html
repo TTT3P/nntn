@@ -836,27 +836,16 @@
     btn.disabled = true;
     btn.textContent = 'กำลังบันทึก...';
 
-    // Generate PO number
-    const dateStr = date.replace(/-/g, '');
-    const { count } = await sb.from('purchase_orders').select('id', { count: 'exact', head: true });
-    const poNum = `PO-${dateStr}-${String((count || 0) + 1).padStart(2, '0')}`;
-
-    const supplierName = suppliers.find(s => s.id === supplierId)?.name || '';
-
-    // Insert PO
-    const { data: po, error: poErr } = await sb
-      .from('purchase_orders')
-      .insert({
-        po_number:     poNum,
-        supplier_id:   supplierId,
-        supplier_name: supplierName,
-        status:        'ordered',
-        ordered_at:    new Date().toISOString(),
-        created_by:    window.nntnCurrentUser || 'UNKNOWN',
-        note:          note || null
-      })
-      .select('id')
-      .single();
+    // Atomic create ผ่าน RPC create_po — purchase_orders + purchase_order_items ในทรานแซกชันเดียว
+    // (เดิม insert 2 ตารางแยก + items insert ไม่เช็ค error → partial PO / กดซ้ำได้ PO ซ้ำ · issue #64)
+    const { data: res, error: poErr } = await sb.rpc('create_po', {
+      p_supplier_id:   supplierId,
+      p_supplier_name: suppliers.find(s => s.id === supplierId)?.name || '',
+      p_date:          date,
+      p_note:          note || null,
+      p_created_by:    window.nntnCurrentUser || 'UNKNOWN',
+      p_items:         lines.map(l => ({ item_id: l.item_id, qty_ordered: l.qty_ordered, unit_price: l.unit_price || null }))
+    });
 
     if (poErr) {
       console.error(poErr);
@@ -866,16 +855,7 @@
       return;
     }
 
-    // Insert PO items
-    const poItems = lines.map(l => ({
-      po_id:       po.id,
-      item_id:     l.item_id,
-      qty_ordered: l.qty_ordered,
-      unit_price:  l.unit_price || null
-    }));
-    await sb.from('purchase_order_items').insert(poItems);
-
-    toast(`✅ บันทึก ${poNum} แล้ว (${lines.length} รายการ)`);
+    toast(`✅ บันทึก ${res?.po_number || 'PO'} แล้ว (${res?.item_count ?? lines.length} รายการ)`);
 
     // Reset form
     document.getElementById('sel-supplier').value = '';
