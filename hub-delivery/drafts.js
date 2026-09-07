@@ -339,7 +339,7 @@ async function submitDraft(draftId) {
 
   switchTab('delivery')
   if (draft.date) document.getElementById('dl-date').value = draft.date
-  const branchMap = { NT: 'ครัวกลาง (NT)', FS: 'หน้าร้าน (FS)' }
+  const branchMap = { NT: 'ครัวกลาง (NT)', FS: 'หน้าร้าน (FS)', GB: 'Glass Bangna (GB)' }
   if (draft.branch) document.getElementById('dl-dest').value = branchMap[draft.branch] || draft.branch
   // Always regenerate bill_no — don't reuse draft's (may already be submitted)
   document.getElementById('dl-bill').value = ''
