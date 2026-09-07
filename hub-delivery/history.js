@@ -248,10 +248,22 @@ function printHistBill(i) {
   <div><div class="line">ผู้ส่ง</div></div>
   <div><div class="line">ผู้รับ</div></div>
 </div>
-<scr${''}ipt>window.onload=()=>{setTimeout(()=>window.print(),250)}</scr${''}ipt>
 </body></html>`
-  const w = window.open('', '_blank', 'width=800,height=900')
-  if (!w) { alert('ไม่สามารถเปิดหน้าต่างใหม่ได้ — กรุณาอนุญาต popup'); return }
-  w.document.write(html)
-  w.document.close()
+  // พิมพ์ผ่าน hidden iframe ในหน้าเดิม — ไม่เปิดหน้าต่างใหม่ จึงไม่โดน popup blocker
+  // (เดิมใช้ window.open ที่ browser บล็อก popup → เครื่องน้องพิมพ์ใบนำส่งไม่ได้)
+  const prev = document.getElementById('print-frame')
+  if (prev) prev.remove()
+  const frame = document.createElement('iframe')
+  frame.id = 'print-frame'
+  frame.setAttribute('aria-hidden', 'true')
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden'
+  document.body.appendChild(frame)
+  const fdoc = frame.contentWindow.document
+  fdoc.open(); fdoc.write(html); fdoc.close()
+  const doPrint = () => {
+    try { frame.contentWindow.focus(); frame.contentWindow.print() }
+    catch (e) { alert(`พิมพ์ไม่สำเร็จ: ${e.message}`) }
+  }
+  frame.contentWindow.onafterprint = () => setTimeout(() => frame.remove(), 100)
+  setTimeout(doPrint, 350)
 }
