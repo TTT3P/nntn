@@ -674,29 +674,17 @@ async function submitLog() {
   btn.disabled = true;
   btn.textContent = '⏳ กำลังบันทึก...';
 
-  // Insert production_log rows one by one to get IDs
-  const insertedIds = {};
-  for (const row of rows) {
-    const { data, error } = await sb.from('production_log')
-      .insert({ logged_at: row.logged_at, logged_by: row.logged_by, rcp_code: row.rcp_code,
-                rcp_name: row.rcp_name, batch_count: row.batch_count, type: row.type, note: row.note,
-                output_qty: row.output_qty, output_unit: row.output_unit, waste_qty: row.waste_qty })
-      .select('id').single();
-    if (error) {
-      showToast('❌ บันทึก production_log ไม่สำเร็จ: ' + error.message, 'error');
-      btn.disabled = false;
-      btn.textContent = '✅ บันทึกการผลิต';
-      return;
-    }
-    insertedIds[row.id] = data.id;
-  }
+  // Build p_logs (ref = client row id) + p_dispense (log_ref → row) สำหรับ RPC atomic
+  const pLogs = rows.map(r => ({
+    ref: r.id, logged_at: r.logged_at, logged_by: r.logged_by, rcp_code: r.rcp_code,
+    rcp_name: r.rcp_name, batch_count: r.batch_count, type: r.type, note: r.note,
+    output_qty: r.output_qty, output_unit: r.output_unit, waste_qty: r.waste_qty
+  }));
 
-  // Collect ingredient_dispense rows
-  const dispenseRows = [];
+  const pDispense = [];
   document.querySelectorAll('.batch-row').forEach(rowEl => {
     const id = rowEl.id.replace('row-', '');
-    const prodLogId = insertedIds[id];
-    if (!prodLogId) return;
+    if (!rows.some(r => r.id === id)) return;   // ข้าม row ที่ไม่ได้ submit
 
     const rcpCode = document.getElementById(`rcp-${id}`).value;
     if (!rcpCode) return;
@@ -704,9 +692,9 @@ async function submitLog() {
     rowEl.querySelectorAll('[id^="disp-"]').forEach(input => {
       const qtyActual = parseFloat(input.value);
       if (isNaN(qtyActual)) return;
-      dispenseRows.push({
-        production_log_id: prodLogId,
-        logged_at: document.getElementById('log-date').value,
+      pDispense.push({
+        log_ref: id,
+        logged_at: logDate,
         rcp_code: rcpCode,
         sp_code: input.dataset.sp || null,
         ingredient: input.dataset.ingredient,
@@ -717,17 +705,18 @@ async function submitLog() {
     });
   });
 
-  if (dispenseRows.length > 0) {
-    const { error: dispErr } = await sb.from('ingredient_dispense').insert(dispenseRows);
-    if (dispErr) {
-      showToast('⚠️ บันทึก production_log ✅ แต่ ingredient_dispense ล้มเหลว: ' + dispErr.message, 'error');
-      btn.disabled = false;
-      btn.textContent = '✅ บันทึกการผลิต';
-      return;
-    }
+  // Atomic: production_log + ingredient_dispense ในทรานแซกชันเดียว (RPC submit_production)
+  // กัน partial-commit + retry-duplicate (เดิม insert 2 ตารางแยก — ถ้า dispense ล้มหลัง log commit → กดซ้ำได้ log ซ้ำ)
+  const { data: res, error } = await sb.rpc('submit_production', { p_logs: pLogs, p_dispense: pDispense });
+  if (error) {
+    showToast('❌ บันทึกไม่สำเร็จ: ' + error.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '✅ บันทึกการผลิต';
+    return;
   }
 
-  showToast(`✅ บันทึกแล้ว ${rows.length} รายการ (วัตถุดิบ ${dispenseRows.length} รายการ)`, 'success');
+  const dispCount = (res && res.dispense_count) || 0;
+  showToast(`✅ บันทึกแล้ว ${rows.length} รายการ (วัตถุดิบ ${dispCount} รายการ)`, 'success');
   btn.textContent = '✅ บันทึกแล้ว!';
 
   document.getElementById('batch-container').innerHTML = '';
