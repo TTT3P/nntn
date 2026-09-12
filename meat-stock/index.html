@@ -588,7 +588,7 @@ let recvItemCount = 0, procInputCount = 0
 // ── Init ──
 async function init() {
   const [its, cw] = await Promise.all([
-    get('items', { select:'id,name,sku,category,item_category,byproduct_item_id,byproduct_required,yield_expected_min,yield_expected_max', is_active:'eq.true', order:'name' }),
+    get('items', { select:'id,name,sku,category,item_category,tier,byproduct_item_id,byproduct_required,yield_expected_min,yield_expected_max', is_active:'eq.true', order:'name' }),  // tier: ใช้ route คลัง output แปรรูป (intermediate+meat_cooked → B) · เดิมไม่ได้ select ทำให้ลง C ทั้งหมดตั้งแต่ 28/04
     getAll('catch_weight', { 'select':'id,item_id,weight_g,lot_date,warehouse,status,legacy_cw_row,items(name,sku,category)', 'status':'eq.✅ In Stock' })
   ])
   items = Array.isArray(its) ? its : []
