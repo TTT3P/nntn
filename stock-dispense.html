@@ -685,7 +685,7 @@
       alert('⚠️ ' + item.name + ' เป็นเนื้อแบบ catch-weight · ต้องเบิกผ่าน hub-delivery (เลือกถุง) · ไม่ใช่หน้านี้\n\nหน้า stock-dispense ใช้สำหรับเบิกวัตถุดิบ non-meat (เช่น ผัก น้ำปลา)');
       return;
     }
-    dispenseList.push({ id: item.id, name: item.name, unit: item.unit, category: item.category || '', qty: 1 });
+    dispenseList.unshift({ id: item.id, name: item.name, unit: item.unit, category: item.category || '', qty: 1 });
     renderDispenseList();
 
     document.getElementById('d-item-pending').value = '';
@@ -897,7 +897,7 @@
     var exists = lossList.some(function(r) { return r.id === id; });
     if (exists) { toast('มี ' + item.name + ' ในรายการแล้วครับ'); return; }
 
-    lossList.push({ id: item.id, name: item.name, unit: item.unit });
+    lossList.unshift({ id: item.id, name: item.name, unit: item.unit });
     renderLossList();
 
     document.getElementById('l-item-pending').value = '';
