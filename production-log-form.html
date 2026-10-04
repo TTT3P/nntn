@@ -707,13 +707,25 @@ async function submitLog() {
 
   // Atomic: production_log + ingredient_dispense ในทรานแซกชันเดียว (RPC submit_production)
   // กัน partial-commit + retry-duplicate (เดิม insert 2 ตารางแยก — ถ้า dispense ล้มหลัง log commit → กดซ้ำได้ log ซ้ำ)
-  const { data: res, error } = await sb.rpc('submit_production', { p_logs: pLogs, p_dispense: pDispense });
+  // submit_log (Phase B) — attempt → success | fail ให้ health check เห็นการบันทึกผลิตที่ล้ม
+  const _audit = { date: logDate, logs: pLogs.length, dispense: pDispense.length,
+                   recipes: pLogs.map(l => l.rcp_code) };
+  const _log = (status, opts) => window.nntnLogSubmit && window.nntnLogSubmit('production.submit', status, _audit, opts);
+  _log('attempt');
+  let res, error;
+  try {
+    ({ data: res, error } = await sb.rpc('submit_production', { p_logs: pLogs, p_dispense: pDispense }));
+  } catch (e) {
+    error = e;
+  }
   if (error) {
+    _log('fail', { error_msg: error.message });
     showToast('❌ บันทึกไม่สำเร็จ: ' + error.message, 'error');
     btn.disabled = false;
     btn.textContent = '✅ บันทึกการผลิต';
     return;
   }
+  _log('success');
 
   const dispCount = (res && res.dispense_count) || 0;
   showToast(`✅ บันทึกแล้ว ${rows.length} รายการ (วัตถุดิบ ${dispCount} รายการ)`, 'success');

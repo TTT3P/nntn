@@ -974,6 +974,17 @@
   }
 
   // ─── Receive One Line ─────────────────────────────────
+  // submit_log (Phase B) — attempt → success | fail · ให้ health check เห็นการกดรับที่ล้ม
+  function _poLog(action, status, poId, extra, opts) {
+    if (!window.nntnLogSubmit) return;
+    const card = document.getElementById('pocard-' + poId);
+    window.nntnLogSubmit(action, status, Object.assign({
+      po_id:     poId,
+      po_number: card?.querySelector('.po-number')?.textContent?.trim() || null,
+      supplier:  card?.querySelector('.po-supplier')?.textContent?.trim() || null
+    }, extra || {}), Object.assign({ ref_id: poId }, opts || {}));
+  }
+
   async function receiveOneLine(poId, lineId, itemId, btn) {
     const row = btn.closest('.po-line-row');
     const inp = row.querySelector('.qty-received-input');
@@ -1016,6 +1027,7 @@
         btn.textContent = 'รับแล้ว';
         return;
       }
+      _poLog('po_receive.line', 'attempt', poId, { line_id: lineId, item_id: itemId, qty });
 
       // Call RPC to add to stock FIRST — qty_received ต้องผูกกับ stock ที่เข้าจริงเสมอ
       // (ถ้า RPC fail ห้าม set qty_received เด็ดขาด — line ถือว่า "ยังไม่รับ" กด retry ได้)
@@ -1047,6 +1059,7 @@
         <div></div>
       `;
 
+      _poLog('po_receive.line', 'success', poId, { line_id: lineId, item_id: itemId, qty });
       toast(`รับ ${itemName} ${qty} ${unit} แล้ว`);
 
       // Check if all lines in this PO are now received
@@ -1068,6 +1081,7 @@
       }
     } catch (e) {
       console.error('receiveOneLine:', e);
+      _poLog('po_receive.line', 'fail', poId, { line_id: lineId, item_id: itemId, qty }, { error_msg: e.message });
       toast('รับไม่สำเร็จ: ' + e.message);
       btn.disabled = false;
       btn.textContent = 'รับ';
@@ -1350,6 +1364,8 @@
     if (!confirm(confirmMsg)) return;
 
     processingPOs.add(poId);
+    const _auditLines = receives.map(r => ({ item_id: r.item_id, qty: r.qty_received }));
+    _poLog('po_receive.all', 'attempt', poId, { lines: _auditLines });
     const btn = document.querySelector(`#footer-${poId} .btn.btn-success`);
     if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
 
@@ -1380,6 +1396,7 @@
         .eq('id', poId);
       if (psErr) throw new Error(`ปิด PO ล้มเหลว: ${psErr.message}`);
 
+      _poLog('po_receive.all', 'success', poId, { lines: _auditLines });
       toast(`รับของแล้ว — stock +${receives.length} รายการ`);
       setTimeout(() => loadPOList(currentFilter), 1200);
       if (window.nntnSubmitDone) {
@@ -1394,6 +1411,7 @@
       }
     } catch (e) {
       console.error('confirmReceive failed:', e);
+      _poLog('po_receive.all', 'fail', poId, { lines: _auditLines }, { error_msg: e.message });
       alert(`รับของล้มเหลว: ${e.message}\n\nPO ยัง status "ordered" — ลองใหม่ได้`);
       if (btn) { btn.disabled = false; btn.textContent = 'รับทั้งหมดที่เหลือ'; }
     } finally {
