@@ -432,7 +432,9 @@ async function submitDelivery() {
       // Delivery already committed — this is only a post-success UI error. Do NOT show ❌
       // or re-enable the button (that is what caused the duplicate re-submit). Refresh so
       // the user sees the real saved state.
-      _logSubmit('hub_delivery.submit', 'post_success_ui_error', _auditPayload,
+      // stock.submit_log_status_check รับแค่ attempt/success/fail/cancel — 'post_success_ui_error' เดิมโดน reject เงียบ
+      // → แยก action ui_error (status fail) ไม่ปนกับยอด attempt/success ของ submit
+      _logSubmit('hub_delivery.ui_error', 'fail', _auditPayload,
         { ref_id: bill, error_msg: String(e?.message || e).slice(0, 1000) })
       _hdToast('✅ บันทึกสำเร็จแล้ว — กำลังรีเฟรชหน้า', 'success')
       setTimeout(() => location.reload(), 1200)

@@ -148,7 +148,7 @@ async function adjustReverse(di, cwId) {
     loadAdjust()
   } catch (e) {
     alert(`❌ คืนไม่ได้: ${e.message}`)
-    _logSubmit('adjust_reverse', 'error', { cw_id: cwId, reason }, { error_msg: e.message })
+    _logSubmit('adjust_reverse', 'fail', { cw_id: cwId, reason }, { error_msg: e.message })
   }
 }
 
@@ -189,7 +189,7 @@ async function adjustSwap(di, oldCwId, itemName) {
     loadAdjust()
   } catch (e) {
     alert(`❌ สลับไม่ได้: ${e.message}`)
-    _logSubmit('adjust_swap', 'error', { old_cw_id: oldCwId, reason: '' }, { error_msg: e.message })
+    _logSubmit('adjust_swap', 'fail', { old_cw_id: oldCwId, reason: '' }, { error_msg: e.message })
   }
 }
 
@@ -238,7 +238,7 @@ async function adjustAddBag(di) {
     loadAdjust()
   } catch (e) {
     alert(`❌ เพิ่มไม่ได้: ${e.message}`)
-    _logSubmit('adjust_add', 'error', { delivery_id: d?.id }, { error_msg: e.message })
+    _logSubmit('adjust_add', 'fail', { delivery_id: d?.id }, { error_msg: e.message })
   }
 }
 

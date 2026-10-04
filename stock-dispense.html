@@ -819,14 +819,25 @@
       };
     });
 
-    var result = await sb.from('stock_counts').insert(movements);
+    // submit_log (Phase B) — attempt → success | fail ให้ health check เห็นการเบิกที่ล้ม/ซ้ำ
+    var _audit = { lines: rows.map(function(r) { return { item_id: r.id, qty: r.qty }; }), note: note || null };
+    var _log = function(status, opts) { if (window.nntnLogSubmit) window.nntnLogSubmit('dispense.submit', status, _audit, opts); };
+    _log('attempt');
+    var result;
+    try {
+      result = await sb.from('stock_counts').insert(movements);
+    } catch (e) {
+      result = { error: e };
+    }
     if (result.error) {
       console.error(result.error);
+      _log('fail', { error_msg: result.error.message });
       toast('❌ ' + result.error.message);
       btn.disabled = false;
       btn.textContent = '📦 ยืนยันเบิกของทั้งหมด';
       return;
     }
+    _log('success');
 
     rows.forEach(function(r) {
       if (stockMap[r.id] !== undefined) stockMap[r.id] -= r.qty;
@@ -989,14 +1000,24 @@
       };
     });
 
-    var mvResult = await sb.from('stock_counts').insert(movements);
+    var _auditL = { lines: rows.map(function(r) { return { item_id: r.id, qty: r.qty, reason: r.reason }; }), note: noteGlobal || null };
+    var _logL = function(status, opts) { if (window.nntnLogSubmit) window.nntnLogSubmit('loss.submit', status, _auditL, opts); };
+    _logL('attempt');
+    var mvResult;
+    try {
+      mvResult = await sb.from('stock_counts').insert(movements);
+    } catch (e) {
+      mvResult = { error: e };
+    }
     if (mvResult.error) {
       console.error(mvResult.error);
+      _logL('fail', { error_msg: mvResult.error.message });
       toast('❌ ' + mvResult.error.message);
       btn.disabled = false;
       btn.textContent = '⚠️ บันทึก Loss/Waste ทั้งหมด';
       return;
     }
+    _logL('success');
 
     rows.forEach(function(r) {
       if (stockMap[r.id] !== undefined) stockMap[r.id] -= r.qty;

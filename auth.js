@@ -378,3 +378,38 @@ window.nntnSubmitDone = function (opts) {
   document.getElementById('nntn-go-history').onclick = function () { clearInterval(timer); window.location.href = url; };
   document.getElementById('nntn-stay').onclick = function () { clearInterval(timer); overlay.remove(); };
 };
+
+// ─────────────────────────────────────────────────────────────
+// submit_log audit trail — Phase B (04/10/2026 · TINE "ลุย")
+// รูปแบบเดียวกับ hub-delivery _logSubmit (Phase A 30/04): บันทึกทุกครั้งที่กดบันทึก
+// attempt → success | fail ลง stock.submit_log ให้ weekly health check เห็นว่ากดแล้วล้ม/ไม่จบ
+// (บทเรียน 05/09 จอหลอก→ใบซ้ำ · 07/09 Glass 23514 ไม่มีใครเห็นจนน้องแจ้ง)
+// Best-effort: ไม่ block การบันทึกจริง ล้มก็เงียบ
+// ─────────────────────────────────────────────────────────────
+window.nntnLogSubmit = function (action, status, payload, opts) {
+  try {
+    var tok = window.__nntnCurrentToken || localStorage.getItem('nntn_sb_token') || window.NNTN_SB_ANON;
+    var actor = null;
+    try {
+      var claims = JSON.parse(atob(tok.split('.')[1]));
+      actor = (claims && (claims.email || claims.sub)) || null;
+    } catch (_) {}
+    var body = {
+      actor_id:    actor,
+      device_hint: (navigator.platform || '') + ' · ' + (window.innerWidth + 'x' + window.innerHeight),
+      action:      action,
+      status:      status,
+      payload:     payload || null,
+      error_msg:   (opts && opts.error_msg) ? String(opts.error_msg).slice(0, 500) : null,
+      ref_id:      (opts && opts.ref_id) ? String(opts.ref_id) : null,
+      user_agent:  (navigator.userAgent || '').slice(0, 300) || null
+    };
+    fetch(window.NNTN_SB_URL + '/rest/v1/submit_log', {
+      method:  'POST',
+      headers: { 'apikey': window.NNTN_SB_ANON, 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json',
+                 'Content-Profile': 'stock', 'Accept-Profile': 'stock', 'Prefer': 'return=minimal' },
+      body:    JSON.stringify(body),
+      keepalive: true
+    }).catch(function () {});
+  } catch (_) { /* swallow — audit best-effort */ }
+};
