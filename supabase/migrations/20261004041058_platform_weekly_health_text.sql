@@ -6,7 +6,7 @@
 --   · cron weekly digest เดิมส่งข้อความนี้ตามหลัง digest (Sunday 20:00 ICT ช่องเดิม)
 -- ตรวจ: invariants ที่ไม่ ok · รับซ้ำ (คนเดิม ของเดิม จำนวนเท่ากัน ต่าง PO ภายใน 15 นาที) 7 วัน ·
 --   PO รอรับ > 2 วัน · ขนาด DB
--- Rollback: คืน cron command (ด้านล่าง) + drop function public.platform_weekly_health_text();
+-- Rollback: คืน cron ก่อน (ดู 20261004041122) แล้ว drop function public.platform_weekly_health_text();
 
 create or replace function public.platform_weekly_health_text()
  returns text
@@ -45,14 +45,7 @@ end $function$;
 
 revoke all on function public.platform_weekly_health_text() from public, anon, authenticated;
 
--- ส่งผล: cron job เดิม 'nntn-weekly-digest' (Sunday 13:00 UTC = 20:00 ICT) เรียก health ต่อท้ายเป็นข้อความที่ 2
---   (ไม่เขียน nntn_weekly_digest ใหม่ทั้งตัว — เลี่ยงความเสี่ยงทำ format เดิมพัง)
--- Rollback cron: command := ' SELECT public.nntn_weekly_digest(); '
-select cron.alter_job(
-  (select jobid from cron.job where jobname = 'nntn-weekly-digest'),
-  command := $cmd$ SELECT public.nntn_weekly_digest(); SELECT public.aim_notify(public.platform_weekly_health_text()); $cmd$
-);
-
+-- ส่วนที่ 1/2 (function) · ส่วนที่ 2/2 = 20261004041122_weekly_digest_cron_add_health.sql
 -- Applied to prod (emjqulzikpxorvpaaiww) 2026-10-04 via MCP apply_migration (2 ส่วน).
 -- Verified: select platform_weekly_health_text() → invariants ผ่าน · รับซ้ำ PKG-004 ×22 (SO 03/10 16:41) ·
 --   PO รอรับ > 2 วัน: PO-20260930-69 Shopee · DB 163 MB (ตรงกับตรวจมือ) · cron command อ่านกลับตรง

@@ -1,15 +1,7 @@
--- Weekly health check รอบ 2: เพิ่มเช็คจากเหตุที่เว็บเคยพัง (TINE 2026-10-04 "ย้อนดูตอนเว็บมีปัญหา → สอดส่องตรงไหนอีก")
---
--- เหตุในอดีต → เช็คที่เพิ่ม:
---   2026-09-05 ใบนำส่งซ้ำ (จอหลอกว่าล้ม → กดซ้ำ → ตัดสต๊อก 2 รอบ)
---     → เบิกซ้ำทั้งชุด: คนเดิม รายการ+จำนวนตรงกันทุกตัว ภายใน 15 นาที (production_consume)
---       (ทดสอบ 60 วัน: จับเฉพาะ 05/09 09:20/09:31 · ไม่เตือนผิดชุดเบิก TINE ที่มีบางรายการตรงกัน)
---   2026-09-07 ส่ง Glass "บันทึกไม่สำเร็จ" ทุกครั้ง (code 23514 — UI เพิ่มปลายทางแต่ DB ไม่ตาม) ไม่มีใครเห็นจนน้องแจ้ง
---     → submit_log: ล้มกี่ครั้ง + error ที่เจอ · attempt ที่ไม่จบ (ไม่มี success/fail = response หาย)
---   2026-07-04 PO รับครบแต่ไม่ปิด (ค้าง ordered)
---     → PO ordered ที่ทุกบรรทัดรับแล้ว
--- ของเดิมคงไว้: invariants · รับ PO ซ้ำ · PO รอรับ > 2 วัน · ขนาด DB
--- Rollback: apply นิยามจาก 20261004050000_weekly_health_in_digest.sql
+-- Weekly health check รอบ 3: submit_log ครอบทุกหน้า (Phase B — รับ PO · ผลิต · เบิก · Loss) (TINE 2026-10-04 "ลุย")
+-- เดิมหัวข้อ "ใบนำส่งกดแล้วล้ม" นับรวมทุก action → adjust_* (ไม่มี attempt) หักล้างยอด attempt ของ action อื่นได้
+-- แก้: นับ ล้ม/ไม่จบ แยกต่อ action · cancel ไม่นับ (ใบนำส่ง log cancel ก่อน attempt) · หัวข้อ "กดบันทึกแล้วล้ม/ไม่จบ (7 วัน)" แสดงรายการต่อ action
+-- Rollback: apply นิยามจาก 20261004042202_weekly_health_incident_checks.sql
 
 create or replace function public.platform_weekly_health_text()
  returns text
@@ -46,20 +38,18 @@ begin
     into v_disp
     from b a join b c on a.actor_id = c.actor_id and a.fp = c.fp and c.t > a.t and c.t <= a.t + interval '15 min';
 
-  -- กดบันทึกแล้วล้ม / response หาย (บทเรียน 07/09 + 05/09)
-  select case when sum(n) filter (where status = 'fail') > 0
-                or coalesce(sum(n) filter (where status = 'attempt'), 0)
-                   - coalesce(sum(n) filter (where status in ('success', 'fail')), 0) > 0
-              then format('ล้ม %s ครั้ง · ไม่จบ %s ครั้ง%s',
-                          coalesce(sum(n) filter (where status = 'fail'), 0),
-                          greatest(0, coalesce(sum(n) filter (where status = 'attempt'), 0)
-                                      - coalesce(sum(n) filter (where status in ('success', 'fail')), 0)),
-                          coalesce(E'\n• ' || string_agg(err, E'\n• ') filter (where status = 'fail'), ''))
-         end
-    into v_sub
-    from (select action, status, count(*) n, left(max(error_msg), 100) err
-            from stock.submit_log where created_at > now() - interval '7 days'
-           group by 1, 2) s;
+  -- กดบันทึกแล้วล้ม / ไม่จบ ทุกหน้า (submit_log Phase A+B) · "ไม่จบ" นับแยกต่อ action
+  -- (action ที่ไม่มี attempt เช่น adjust_* ห้ามไปหักล้างยอดของ action อื่น)
+  with a as (
+    select action,
+           count(*) filter (where status = 'fail') fails,
+           greatest(0, count(*) filter (where status = 'attempt')
+                       - count(*) filter (where status in ('success', 'fail'))) open_n,
+           left(max(error_msg) filter (where status = 'fail'), 100) err
+      from stock.submit_log where created_at > now() - interval '7 days'
+     group by action)
+  select string_agg(format('• %s: ล้ม %s · ไม่จบ %s%s', action, fails, open_n, coalesce(' — ' || err, '')), E'\n' order by action)
+    into v_sub from a where fails > 0 or open_n > 0;
 
   -- PO รอรับ > 2 วัน
   select string_agg(format('• %s %s (เปิด %s วัน)', po_number, supplier_name,
@@ -80,7 +70,7 @@ begin
     || coalesce(v_inv, '✅ invariants ผ่านทุกข้อ') || E'\n'
     || '**รับ PO ซ้ำ (7 วัน):** ' || coalesce(E'\n' || v_dup, '✅ ไม่มี') || E'\n'
     || '**เบิกซ้ำทั้งชุด (7 วัน):** ' || coalesce(E'\n' || v_disp, '✅ ไม่มี') || E'\n'
-    || '**ใบนำส่งกดแล้วล้ม (7 วัน):** ' || coalesce(v_sub, '✅ ไม่มี') || E'\n'
+    || '**กดบันทึกแล้วล้ม/ไม่จบ (7 วัน):** ' || coalesce(E'\n' || v_sub, '✅ ไม่มี') || E'\n'
     || '**PO รอรับ > 2 วัน:** ' || coalesce(E'\n' || v_po, '✅ ไม่มี') || E'\n'
     || '**PO รับครบแต่ไม่ปิด:** ' || coalesce(E'\n' || v_close, '✅ ไม่มี') || E'\n'
     || '**DB:** ' || v_db;
@@ -88,5 +78,7 @@ end $function$;
 
 revoke all on function public.platform_weekly_health_text() from public, anon, authenticated;
 
+
 -- Applied to prod (emjqulzikpxorvpaaiww) 2026-10-04 via MCP apply_migration.
--- Verified: select platform_weekly_health_text() → 7 หัวข้อ 303 ตัวอักษร (Discord ≤ 2000) · ผลตรงตรวจมือ
+-- Verified (DO + raise → rollback, leftover 0): po_receive.all attempt ค้าง → "ไม่จบ 1" ·
+--   production.submit fail → "ล้ม 1 — code 23514 test" · adjust_reverse success ไม่หักล้าง action อื่น · ข้อมูลจริงตอนนี้ ✅ ไม่มี
