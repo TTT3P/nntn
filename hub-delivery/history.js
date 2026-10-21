@@ -56,8 +56,11 @@ async function loadHistory() {
       // (~3s locally, >15s in CI → history tab timed out). Promise.all collapses it to
       // roughly one round-trip; failed chunks degrade to [] so one bad chunk can't
       // block the rest (same skip-on-error behavior as before).
+      // catch_weight อยู่ schema public — ห้ามใช้ SHh (Accept-Profile: stock) → เดิมได้ 404 ทุก chunk
+      // (retry ซ้ำอีกรอบ) แล้วตกเป็น [] เงียบ ๆ → ป้าย "ตีกลับแล้ว" ไม่เคยขึ้น (logs 21/10: 132× 404)
+      const cwH = { ...H, Authorization: 'Bearer ' + freshTok }
       const chunkResults = await Promise.all(chunks.map(chunk =>
-        _fetchCatchWeightBatch(chunk.join(','), 'id,status', SHh)
+        _fetchCatchWeightBatch(chunk.join(','), 'id,status', cwH)
           .then(cwRes => (cwRes.ok ? cwRes.json() : []))
           .catch(() => [])
       ))
