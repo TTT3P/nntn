@@ -6,8 +6,8 @@
   <script src="/nntn/auth.js"></script>
   <title>สต๊อกครัว — NNTN</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
+  <script defer src="https://unpkg.com/lucide@1.61.0/dist/umd/lucide.min.js"></script>
   <style>
     :root {
       --green-dark: #1B5E20;
@@ -353,7 +353,7 @@ const MEAT_CATS = ['meat','meat_raw','meat_fresh','meat_cooked','meat_portioned'
 (async function() {
   // สต๊อกครัว = Non-Meat Stock — นับเฉพาะ non-meat เหมือน dashboard.html (เนื้อดูที่ระบบ Meat Stock แยกต่างหาก)
   const { data: cs } = await sb.from('current_stock')
-    .select('item_id,current_qty,status,par_level,category');
+    .select('status,category');  // current_stock ไม่มีคอลัมน์ item_id → เดิมได้ 400 ทุกครั้งแล้วตกไป fallback
 
   if (cs && cs.length > 0) {
     const nonMeat = cs.filter(r => !MEAT_CATS.includes(r.category));
@@ -435,7 +435,7 @@ const MEAT_CATS = ['meat','meat_raw','meat_fresh','meat_cooked','meat_portioned'
 </nav>
 
 <script>
-lucide.createIcons();
+document.addEventListener('DOMContentLoaded', function () { if (typeof lucide !== 'undefined') lucide.createIcons(); });
 </script>
 
 <script src="shared/nntn-nav-badge.js"></script>

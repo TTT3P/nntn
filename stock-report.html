@@ -6,7 +6,7 @@
   <script src="/nntn/auth.js"></script>
   <title>รายงานสต๊อก — NNTN</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
   <style>
     :root {
       --green-dark: #1B5E20; --green: #4CAF50;
@@ -151,7 +151,7 @@
     body { padding-bottom: calc(68px + env(safe-area-inset-bottom)) !important; }
 
   </style>
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script defer src="https://unpkg.com/lucide@1.61.0/dist/umd/lucide.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -587,7 +587,7 @@ load();
   </a>
 </nav>
 <script>
-if(typeof lucide !== 'undefined') lucide.createIcons();
+document.addEventListener('DOMContentLoaded', function () { if (typeof lucide !== 'undefined') lucide.createIcons(); });
 </script>
 
 
