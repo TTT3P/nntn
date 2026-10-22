@@ -1,0 +1,29 @@
+[
+  { "sourceRecipeId": 165, "targetRecipeId": "RCP-071", "catalogCode": "RCP-071" },
+  { "sourceRecipeId": 164, "targetRecipeId": "SRCP-019", "catalogCode": "SRCP-019" },
+  { "sourceRecipeId": 2, "targetRecipeId": "RCP-002", "catalogCode": "RCP-002" },
+  { "sourceRecipeId": 160, "targetRecipeId": "SRCP-001V2", "catalogCode": "SRCP-001V2" },
+  { "sourceRecipeId": 9, "targetRecipeId": "RCP-007B", "catalogCode": "RCP-007B" },
+  { "sourceRecipeId": 161, "targetRecipeId": "SRCP-017", "catalogCode": "SRCP-017" },
+  { "sourceRecipeId": 158, "targetRecipeId": "SRCP-016", "catalogCode": "SRCP-016" },
+  { "sourceRecipeId": 159, "targetRecipeId": "RCP-069", "catalogCode": "RCP-069" },
+  { "sourceRecipeId": 156, "targetRecipeId": "SRCP-014", "catalogCode": "SRCP-014" },
+  { "sourceRecipeId": 157, "targetRecipeId": "SRCP-015", "catalogCode": "SRCP-015" },
+  { "sourceRecipeId": 14, "targetRecipeId": "RCP-015", "catalogCode": "RCP-015" },
+  { "sourceRecipeId": 37, "targetRecipeId": "RCP-021", "catalogCode": "RCP-021" },
+  { "sourceRecipeId": 28, "targetRecipeId": "RCP-009", "catalogCode": "RCP-009" },
+  { "sourceRecipeId": 16, "targetRecipeId": "RCP-020", "catalogCode": "RCP-020" },
+  { "sourceRecipeId": 163, "targetRecipeId": "RCP-070", "catalogCode": "RCP-070" },
+  { "sourceRecipeId": 162, "targetRecipeId": "SRCP-018", "catalogCode": "SRCP-018" },
+  {
+    "sourceRecipeId": "candidate:prepared:ข้าวญี่ปุ่นหุงสุก",
+    "targetRecipeId": "candidate:prepared:ข้าวญี่ปุ่นหุงสุก",
+    "catalogCode": null
+  },
+  {
+    "sourceRecipeId": "candidate:prepared:ข้าวหอมมะลิหุงสุก",
+    "targetRecipeId": "candidate:prepared:ข้าวหอมมะลิหุงสุก",
+    "catalogCode": null
+  },
+  { "sourceRecipeId": 18, "targetRecipeId": "RCP-026", "catalogCode": "RCP-026" }
+]

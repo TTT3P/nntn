@@ -1,0 +1,597 @@
+[
+  {
+    "code": "RCP-011",
+    "name": "ข้าวเนื้อสับคั่วน้ำปลาไข่ข้น",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 6,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-017A",
+    "name": "กะเพราเนื้อบด",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 7,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-017B",
+    "name": "กะเพราเนื้อสดหมักนุ่ม",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 7,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-017C",
+    "name": "กะเพราสามชั้นตุ๋น",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 7,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-017D",
+    "name": "กะเพราน่องลายตุ๋น",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 7,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-017E",
+    "name": "กะเพราเสือร้องไห้ออสเตรเลีย",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 7,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-018",
+    "name": "เนื้อตุ๋นรวนกระเทียม",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 7,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-019",
+    "name": "กิวด้ง (ข้าวหน้าเนื้อ)",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 14,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-021",
+    "name": "ข้าวขยำเนื้อแดดเดียว",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 9,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-022",
+    "name": "ข้าวผัดเนื้อพิคานย่า",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 8,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-022-M",
+    "name": "ข้าวผัดเนื้อพิคานย่า (ออส) [GLASS]",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 8,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-023",
+    "name": "ข้าวคลุกกะเพราเนื้อพิคานย่า",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 5,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-023-M",
+    "name": "ข้าวคลุกกะเพราเนื้อพิคานย่า (ออส) [GLASS]",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 5,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-024",
+    "name": "เกี๊ยว 7 ชิ้น + น้ำจิ้ม",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 6,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-025",
+    "name": "ซุปไข่สดชื่น",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 11,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-027",
+    "name": "ข้าวน้ำตกเสือแซ่บ",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 11,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-030",
+    "name": "น้ำเก็กฮวย",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 4,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-031",
+    "name": "น้ำกระเจี๊ยบ",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 6,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-032",
+    "name": "น้ำตะไคร้",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 4,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-033",
+    "name": "น้ำมะตูม",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 4,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-039",
+    "name": "ข้าวเนื้อแม็กกี้ไข่ดาว",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 5,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-041",
+    "name": "เนื้อสะเต๊ะ 1 set (10 ไม้)",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 3,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-043",
+    "name": "ก๋วยเตี๋ยวลิ้นวัวตุ๋น",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 10,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-044",
+    "name": "ก๋วยเตี๋ยวเนื้อตุ๋น S (3u)",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 9,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-045",
+    "name": "ก๋วยเตี๋ยวเนื้อตุ๋น M (5u)",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 9,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-046",
+    "name": "ก๋วยเตี๋ยวเนื้อตุ๋น L (6u)",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 9,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-047",
+    "name": "ก๋วยเตี๋ยวเนื้อตุ๋น XL (8u)",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 9,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-048",
+    "name": "เกาเหลาเนื้อตุ๋น (M-tier AVG)",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 8,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-049",
+    "name": "ข้าวผัดไข่",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 5,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-051",
+    "name": "ข้าวหน้าเนื้อกิวด้งไข่ออนเซ็น",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 2,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-052",
+    "name": "กระเพราเนื้อโคขุนสับ (กับข้าว)",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 6,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-053",
+    "name": "กระเพราเนื้อตุ๋น (กับข้าว)",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 6,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-054",
+    "name": "กระเพราเนื้อนุ่ม (กับข้าว)",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 6,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-055",
+    "name": "สเต๊กเนื้อพิคานย่า",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 2,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-055-M",
+    "name": "สเต๊กเนื้อพิคานย่า (ออส) [GLASS]",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 2,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-056",
+    "name": "เนื้อแดดเดียวทอด",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 2,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-057",
+    "name": "ลูกชิ้นปิ้งในตำนาน",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 1,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-058",
+    "name": "เกี๊ยวทอดเนื้อสับ",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 4,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-059",
+    "name": "ไข่เจียว",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 4,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-060",
+    "name": "ไข่ดาว (ไข่แดงเยิ้ม)",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 3,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-061",
+    "name": "ไข่ดาว (ไข่แดงสุก)",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 3,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-062",
+    "name": "ไข่ดองซีอิ๊วเกาหลี",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 2,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-063",
+    "name": "ไข่ออนเซ็น",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 1,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-064",
+    "name": "เซ็ตเนื้อสะเต๊ะ ฟรีน้ำสมุนไพร",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": null,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-065",
+    "name": "ดีลเด็ดข้าว + ฟรีน้ำสมุนไพร (ข)",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": null,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-066",
+    "name": "ดีลเด็ดข้าว + ฟรีน้ำสมุนไพร (ข2)",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": null,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-068",
+    "name": "ข้าวหอมมะลิ M (200g สุก)",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 1,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-069",
+    "name": "ข้าวหน้าเนื้อยากินิกุ",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 5,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-069-M",
+    "name": "ข้าวหน้าเนื้อยากินิกุ (ออส) [GLASS]",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 5,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-070",
+    "name": "เนื้อตุ๋นคั่วพริกเกลือ",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 6,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-071",
+    "name": "ข้าวหน้าเนื้อตุ๋น",
+    "kind": "sellable_menu",
+    "legacyBomLineCount": 4,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-002",
+    "name": "น้ำซุป",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 13,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-003",
+    "name": "เนื้อสดหมักนุ่ม",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 7,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-007",
+    "name": "กระปุกเครื่องเทศ [20g]",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 11,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-007B",
+    "name": "กระปุกเครื่องเทศ [70g]",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 11,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-008",
+    "name": "เนื้อแดด (กับแกล้ม)",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 7,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-009",
+    "name": "เนื้อแดด (ข้าวขยำ)",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 7,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-014",
+    "name": "พริกน้ำปลา",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 7,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-015",
+    "name": "ซอสอเนกประสงค์",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 7,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-016",
+    "name": "ผงข้าวผัด",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 5,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-020",
+    "name": "น้ำยำ",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 4,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-024A",
+    "name": "น้ำจิ้มเกี๊ยว",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 3,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-026",
+    "name": "ไข่ข้น",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 4,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-029",
+    "name": "น้ำสต๊อกเนื้อ (Beef Stock)",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 1,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-034",
+    "name": "เครื่องปรุงสามชั้นตุ๋นแยก",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 4,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-035",
+    "name": "เนื้อแม็กกี้ (หมัก)",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 3,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "RCP-037",
+    "name": "หมักเนื้อสะเต๊ะ",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 10,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-038",
+    "name": "อาจาด",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 5,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "RCP-040",
+    "name": "น้ำจิ้มสะเต๊ะ",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 10,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "SRCP-001V2",
+    "name": "ซอสลับ (v2)",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 4,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "SRCP-002",
+    "name": "น้ำซอสก๋วยเตี๋ยวแห้ง",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 9,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "SRCP-004",
+    "name": "พริกน้ำส้ม",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 5,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "SRCP-005",
+    "name": "กระเทียมเจียว",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 2,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "SRCP-006",
+    "name": "พริกผัด",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 6,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "SRCP-007",
+    "name": "น้ำมันกระเทียมเจียว",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": null,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "SRCP-008",
+    "name": "ซอสกะเพรา (เผ็ดน้อย)",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 12,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "SRCP-009",
+    "name": "ซอสกะเพรา (เผ็ดปกติ)",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 11,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "SRCP-014",
+    "name": "ซอสยากินิกุ",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 10,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "SRCP-015",
+    "name": "ผัดผัก",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 7,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "SRCP-016",
+    "name": "น้ำจิ้มซีฟู๊ด",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 8,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "SRCP-017",
+    "name": "เครื่องปรุงชุดสอง",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 6,
+    "legacyMethodAvailable": false
+  },
+  {
+    "code": "SRCP-019",
+    "name": "เนื้อตุ๋น (ราดข้าว)",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 10,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "SRCP-020",
+    "name": "เครื่องปรุงข้าวเนื้อสับคั่วน้ำปลา (30 เสิร์ฟ)",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 5,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "SRCP-021",
+    "name": "ซอสข้าวเนื้อแม็กกี้ (30 เสิร์ฟ)",
+    "kind": "prepared_recipe",
+    "legacyBomLineCount": 5,
+    "legacyMethodAvailable": true
+  },
+  {
+    "code": "SRCP-018",
+    "name": "ผงคั่วพริกเกลือ",
+    "kind": "sub_recipe",
+    "legacyBomLineCount": 4,
+    "legacyMethodAvailable": false
+  }
+]

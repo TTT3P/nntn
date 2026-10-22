@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ต้นแบบหน้าจัดการสูตรอาหาร NNTN แบบ static ไม่เชื่อมต่อฐานข้อมูล">
+  <title>NNTN Recipe Studio | Prototype</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23173d20'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-size='40' fill='%23fbf3dc'%3E%E0%B8%99%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand-mark" aria-hidden="true">น</div>
+    <div>
+      <p class="eyebrow">NNTN · STATIC PROTOTYPE</p>
+      <h1>Recipe Studio</h1>
+    </div>
+    <div class="header-actions">
+      <span class="prototype-badge">Mock only · ไม่บันทึกข้อมูล</span>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <nav class="workspace-tabs" aria-label="ส่วนงานหลัก">
+      <button class="workspace-tab" id="recipe-workspace-tab" type="button" data-workspace-target="recipe-workspace" aria-selected="false">Recipe Editor</button>
+      <button class="workspace-tab is-active" id="import-workspace-tab" type="button" data-workspace-target="import-workspace" aria-selected="true">ตรวจต้นฉบับ</button>
+      <button class="workspace-tab" id="branch-workspace-tab" type="button" data-workspace-target="branch-workspace" aria-selected="false">สาขาและเมนู</button>
+    </nav>
+
+    <div id="recipe-workspace" hidden>
+      <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">แบบฟอร์มต้นแบบ</p>
+        <h2 id="page-title">สร้างสูตรอาหาร</h2>
+        <p>กรอกข้อมูลเพื่อทดลองหน้าจอเท่านั้น ข้อมูลจะหายเมื่อรีเฟรชหรือปิดหน้า</p>
+      </div>
+      <button class="button button-secondary" id="clear-form" type="button">ล้างแบบฟอร์ม</button>
+      </section>
+
+      <div class="workspace-grid">
+      <form class="recipe-form" id="recipe-form" novalidate>
+        <section class="panel" aria-labelledby="recipe-info-title">
+          <div class="panel-heading">
+            <span class="step-number">01</span>
+            <div>
+              <h3 id="recipe-info-title">ข้อมูลสูตร</h3>
+              <p>รายละเอียดพื้นฐานที่ใช้ระบุสูตรอาหาร</p>
+            </div>
+          </div>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>ชื่อเมนู</span>
+              <input id="recipe-name" name="recipeName" type="text" placeholder="เช่น เนื้อตุ๋นน้ำแดง" autocomplete="off">
+            </label>
+
+            <label class="field">
+              <span>หมวด</span>
+              <select id="recipe-category" name="recipeCategory">
+                <option value="">เลือกหมวดอาหาร</option>
+                <option>เมนูหลัก</option>
+                <option>ของเตรียม</option>
+                <option>น้ำซุปและซอส</option>
+                <option>เครื่องเคียง</option>
+                <option>อื่น ๆ</option>
+              </select>
+            </label>
+          </div>
+
+          <fieldset class="menu-mode-control">
+            <legend>รูปแบบเมนู</legend>
+            <div class="segmented-control">
+              <label><input type="radio" name="recipe-mode" value="single" checked><span>เมนูเดี่ยว</span></label>
+              <label><input type="radio" name="recipe-mode" value="variant"><span>เมนูมีตัวเลือก</span></label>
+            </div>
+            <p id="recipe-mode-help">ส่วนผสมที่กรอกคือสูตรสมบูรณ์ของเมนูนี้</p>
+          </fieldset>
+
+          <div class="recipe-identity-grid">
+            <label class="field field-short">
+              <span>รหัสสูตร</span>
+              <input id="recipe-code" type="text" placeholder="เช่น KPR" autocomplete="off">
+            </label>
+            <label class="field field-short" id="single-sku-field">
+              <span>Internal SKU</span>
+              <input id="single-sku" type="text" placeholder="เช่น KPR-SINGLE" autocomplete="off">
+            </label>
+            <button class="button button-secondary button-small generate-single-sku" id="generate-single-sku" type="button">สร้าง SKU ตัวอย่าง</button>
+          </div>
+
+          <details class="sellable-metadata" id="single-menu-meta">
+            <summary>Metadata และ Routing ของเมนูเดี่ยว</summary>
+            <div class="sellable-meta-grid">
+              <label class="field"><span>สถานะ</span><select id="single-status"><option value="draft">แบบร่าง</option><option value="active">เปิดใช้งาน</option><option value="inactive">ปิดใช้งาน</option></select></label>
+              <label class="field"><span>จุดครัว</span><select id="single-station"><option>กระทะ</option><option>ครัวร้อน</option><option>ครัวเย็น</option><option>จุดจัดจาน</option></select></label>
+              <label class="field"><span>สาขาที่รับเมนู</span><select id="single-branch-route"><option value="assignment">ตาม Menu Assignment</option><option value="all">ทุกสาขา</option><option value="selected">เฉพาะสาขาที่เลือก</option></select></label>
+            </div>
+            <div class="route-list" aria-label="Channel routing ของเมนูเดี่ยว">
+              <div class="route-row"><label class="route-toggle"><input class="single-route-enabled" data-channel="store" type="checkbox" checked><span class="sr-only">เปิดขายหน้าร้าน</span></label><span>หน้าร้าน</span><input class="single-route-sku" data-channel="store" type="text" placeholder="POS SKU เช่น FS-1042" aria-label="POS SKU หน้าร้าน"></div>
+              <div class="route-row"><label class="route-toggle"><input class="single-route-enabled" data-channel="grab" type="checkbox"><span class="sr-only">เปิดขายบน Grab</span></label><span>Grab</span><input class="single-route-sku" data-channel="grab" type="text" placeholder="Grab SKU" aria-label="Grab SKU"></div>
+              <div class="route-row"><label class="route-toggle"><input class="single-route-enabled" data-channel="lineman" type="checkbox"><span class="sr-only">เปิดขายบน LINE MAN</span></label><span>LINE MAN</span><input class="single-route-sku" data-channel="lineman" type="text" placeholder="LINE MAN SKU" aria-label="LINE MAN SKU"></div>
+            </div>
+          </details>
+        </section>
+
+        <section class="panel" aria-labelledby="ingredients-title">
+          <div class="panel-heading panel-heading-action">
+            <div class="heading-copy">
+              <span class="step-number">02</span>
+              <div>
+                <h3 id="ingredients-title">ส่วนผสม</h3>
+                <p id="ingredients-description">ส่วนผสมทั้งหมดของเมนูเดี่ยว</p>
+              </div>
+            </div>
+            <button class="button button-small" id="add-ingredient" type="button">+ เพิ่มส่วนผสม</button>
+          </div>
+
+          <div class="ingredient-labels" aria-hidden="true">
+            <span>รายการ</span>
+            <span>ปริมาณ</span>
+            <span>หน่วย</span>
+            <span></span>
+          </div>
+          <div class="ingredient-list" id="ingredient-list" aria-live="polite"></div>
+        </section>
+
+        <section class="panel variant-panel" id="variant-panel" aria-labelledby="variants-title" hidden>
+          <div class="panel-heading panel-heading-action">
+            <div class="heading-copy">
+              <span class="step-number">03</span>
+              <div>
+                <h3 id="variants-title">ตัวเลือกเนื้อ / Recipe Variants</h3>
+                <p>ใช้สูตรแม่ร่วมกัน แต่แยกเนื้อ ปริมาณ ราคาขาย และต้นทุนของแต่ละตัวเลือก</p>
+              </div>
+            </div>
+            <div class="variant-heading-actions">
+              <button class="button button-secondary button-small" id="load-variant-example" type="button">ดูตัวอย่างกะเพรา</button>
+              <button class="button button-small" id="add-variant" type="button">+ เพิ่มตัวเลือก</button>
+            </div>
+          </div>
+
+          <div class="variant-principle">
+            <strong>หนึ่งตัวเลือกใส่เนื้อได้หลายส่วน</strong>
+            <span>เช่น กะเพราเนื้อรวม = ใบพาย 70 g + น่องลาย 50 g</span>
+          </div>
+
+          <div class="variant-status-summary" id="variant-status-summary" hidden>
+            <span><strong id="variant-active-count">0</strong> เปิดใช้งาน</span>
+            <span><strong id="variant-draft-count">0</strong> แบบร่าง</span>
+            <span><strong id="variant-inactive-count">0</strong> ปิดใช้งาน</span>
+          </div>
+          <div class="variant-status-warning" id="variant-status-warning" role="status" hidden>
+            ยังไม่มีตัวเลือกที่เปิดใช้งาน ตัวเลือกจะไม่ถูกส่งไป Print Center หรือ Routing
+          </div>
+
+          <div class="variant-empty" id="variant-empty">
+            เริ่มจากเพิ่มตัวเลือกที่ลูกค้าสั่งได้ เช่น เนื้อสับ หรือ เนื้อตุ๋น + เอ็น
+          </div>
+          <div class="variant-list" id="variant-list" aria-live="polite"></div>
+
+          <div class="modifier-note">
+            <span class="modifier-label">Modifier</span>
+            <span>ไข่ดาว เพิ่มข้าว หรือเพิ่มเนื้อ เป็น “ของเพิ่ม” แยกจาก Variant เพื่อไม่ให้สูตรแตกจำนวนมาก</span>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="method-title">
+          <div class="panel-heading">
+            <span class="step-number" id="method-step-number">03</span>
+            <div>
+              <h3 id="method-title">ขั้นตอนวิธีทำ</h3>
+              <p>เขียนหนึ่งขั้นตอนต่อหนึ่งบรรทัดเพื่อให้อ่านง่าย</p>
+            </div>
+          </div>
+
+          <label class="field">
+            <span class="sr-only">ขั้นตอนวิธีทำ</span>
+            <textarea id="recipe-method" name="recipeMethod" rows="9" placeholder="1. เตรียมวัตถุดิบ&#10;2. ตั้งหม้อและปรุงน้ำซุป&#10;3. ตุ๋นจนเนื้อนุ่ม"></textarea>
+          </label>
+        </section>
+
+        <section class="panel cost-panel" aria-labelledby="cost-preview-title">
+          <div class="panel-heading panel-heading-action">
+            <div class="heading-copy">
+              <span class="step-number" id="cost-step-number">04</span>
+              <div>
+                <h3 id="cost-preview-title">Food Cost Preview</h3>
+                <p>แปลงหน่วย SOP เป็นน้ำหนักด้วย knowledge ของวัตถุดิบแต่ละชนิด</p>
+              </div>
+            </div>
+            <button class="button button-small" id="load-cost-example" type="button">ใส่ข้อมูลตัวอย่าง</button>
+          </div>
+
+          <div class="knowledge-notice">
+            <strong>Prototype knowledge</strong>
+            <span>ตัวเลขเป็นข้อมูล mock เพื่อทดลอง workflow เท่านั้น ต้องยืนยันก่อนใช้จริง</span>
+          </div>
+
+          <label class="field cost-variant-field" id="cost-variant-field" hidden>
+            <span>คำนวณสำหรับตัวเลือก</span>
+            <select id="cost-variant-select">
+              <option value="">สูตรแม่เท่านั้น</option>
+            </select>
+          </label>
+          <p class="cost-mode-message" id="cost-mode-message">กำลังคำนวณส่วนผสมทั้งหมดของเมนูเดี่ยว</p>
+
+          <div class="knowledge-legend" aria-label="ความหมายของสถานะข้อมูล">
+            <span class="knowledge-badge is-measured">ชั่งจริง NNTN</span>
+            <span class="knowledge-badge is-manufacturer">ข้อมูลผู้ผลิต</span>
+            <span class="knowledge-badge is-estimated">ค่าประมาณอ้างอิง</span>
+            <span class="knowledge-badge is-missing">ยังไม่มีข้อมูล</span>
+          </div>
+
+          <div class="cost-empty" id="cost-knowledge-empty">
+            กรอกชื่อวัตถุดิบ ปริมาณ และหน่วย หรือกด “ใส่ข้อมูลตัวอย่าง” เพื่อดูการทำงาน
+          </div>
+
+          <div class="cost-table-wrap" id="cost-knowledge-table" hidden>
+            <table class="cost-table">
+              <thead>
+                <tr>
+                  <th>วัตถุดิบ</th>
+                  <th>หน่วย SOP</th>
+                  <th>น้ำหนักคำนวณ</th>
+                  <th>หลักฐาน</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="cost-knowledge-body"></tbody>
+            </table>
+          </div>
+
+          <div class="knowledge-detail" id="knowledge-detail" aria-live="polite" hidden></div>
+        </section>
+
+        <div class="form-actions">
+          <p><strong>หมายเหตุ:</strong> ปุ่มนี้จำลอง interaction เท่านั้น</p>
+          <button class="button button-primary" type="submit">บันทึกแบบร่าง (จำลอง)</button>
+        </div>
+      </form>
+
+      <aside class="side-column">
+        <section class="panel compact-panel print-entry-panel" aria-labelledby="print-entry-title">
+          <div class="panel-heading">
+            <span class="panel-icon" aria-hidden="true">⎙</span>
+            <div>
+              <h3 id="print-entry-title">Print Center</h3>
+              <p>จัดหน้าและรวมหลายสูตรเป็นตำรา</p>
+            </div>
+          </div>
+          <div class="print-entry-formats" aria-label="รูปแบบเอกสารที่รองรับ">
+            <span>A4 Master</span>
+            <span>A5 Kitchen</span>
+            <span>Booklet</span>
+            <span>SKU Routing</span>
+          </div>
+          <p class="print-entry-copy">เลือกหลายสูตร ปรับตัวคูณ ดูตัวอย่าง และพิมพ์หรือ Save PDF</p>
+          <button class="button button-primary button-full" id="open-print-center" type="button">เปิด Print Center</button>
+        </section>
+
+        <section class="panel compact-panel knowledge-summary-panel" aria-labelledby="knowledge-summary-title">
+          <div class="panel-heading">
+            <span class="panel-icon" aria-hidden="true">◉</span>
+            <div>
+              <h3 id="knowledge-summary-title">Measurement Knowledge</h3>
+              <p>สถานะคลังข้อมูลตัวอย่าง</p>
+            </div>
+          </div>
+          <div class="knowledge-stats">
+            <div><strong id="knowledge-measured-count">0</strong><span>ชั่งจริง</span></div>
+            <div><strong id="knowledge-manufacturer-count">0</strong><span>ผู้ผลิต</span></div>
+            <div><strong id="knowledge-estimated-count">0</strong><span>ประมาณ</span></div>
+          </div>
+          <p class="knowledge-summary-copy">ระบบเลือกหลักฐานที่น่าเชื่อถือที่สุด และไม่เดาเมื่อไม่มี conversion</p>
+        </section>
+
+        <section class="panel compact-panel" aria-labelledby="history-title">
+          <div class="panel-heading">
+            <span class="panel-icon" aria-hidden="true">↺</span>
+            <div>
+              <h3 id="history-title">Revision history</h3>
+              <p>ข้อมูลตัวอย่างสำหรับจัดวางหน้าจอ</p>
+            </div>
+          </div>
+          <ol class="history-list" id="history-list"></ol>
+        </section>
+      </aside>
+      </div>
+    </div>
+
+    <section class="branch-workspace" id="branch-workspace" aria-labelledby="branch-page-title" hidden>
+      <section class="intro branch-intro">
+        <div>
+          <p class="eyebrow">MULTI-BRANCH MENU</p>
+          <h2 id="branch-page-title">จัดเมนูให้สาขา</h2>
+          <p>เลือกเฉพาะเมนูที่จะขาย ระบบจะดึง Master Recipe และสูตรย่อยที่จำเป็นให้โดยอัตโนมัติ</p>
+        </div>
+        <span class="branch-draft-badge">แผนเปิดสาขา · Mock</span>
+      </section>
+
+      <section class="panel branch-context-panel" aria-labelledby="branch-context-title">
+        <div class="panel-heading">
+          <span class="step-number">01</span>
+          <div>
+            <h3 id="branch-context-title">บริษัท แบรนด์ และสาขา</h3>
+            <p>กำหนดบริบทก่อนเลือกชุดเมนู</p>
+          </div>
+        </div>
+        <div class="branch-context-fields">
+          <label class="field">
+            <span>บริษัท</span>
+            <select id="company-select">
+              <option value="nntn-group">NNTN Food Group</option>
+              <option value="demo-group">บริษัทตัวอย่าง จำกัด</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>แบรนด์</span>
+            <select id="brand-select">
+              <option value="nntn-stew">NNTN Beef Stew</option>
+              <option value="nntn-express">NNTN Express</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>สาขา</span>
+            <select id="branch-select">
+              <option value="ari">อารีย์</option>
+              <option value="bangna">บางนา</option>
+              <option value="chiangmai">เชียงใหม่</option>
+              <option value="new-branch" selected>สาขาใหม่ · พระราม 9</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <div class="branch-dashboard-grid">
+        <div class="branch-main-column">
+          <section class="panel" aria-labelledby="menu-set-title">
+            <div class="panel-heading">
+              <span class="step-number">02</span>
+              <div>
+                <h3 id="menu-set-title">เลือก Menu Set</h3>
+                <p>เริ่มจากชุดมาตรฐาน แล้วปรับเมนูรายตัวได้</p>
+              </div>
+            </div>
+            <div class="menu-set-grid">
+              <label class="menu-set-card">
+                <input type="radio" name="menu-set" value="full">
+                <span><strong>Full Menu</strong><small>หน้าร้านเต็มรูปแบบ · 5 เมนู</small><b>ครบทุกกลุ่ม</b></span>
+              </label>
+              <label class="menu-set-card">
+                <input type="radio" name="menu-set" value="express" checked>
+                <span><strong>Express</strong><small>พื้นที่จำกัด · 3 เมนู</small><b>แนะนำสำหรับสาขานี้</b></span>
+              </label>
+              <label class="menu-set-card">
+                <input type="radio" name="menu-set" value="delivery">
+                <span><strong>Delivery Only</strong><small>เน้นขนส่ง · 4 เมนู</small><b>แพ็กง่าย</b></span>
+              </label>
+            </div>
+          </section>
+
+          <section class="panel" aria-labelledby="menu-catalog-title">
+            <div class="panel-heading panel-heading-action">
+              <div class="heading-copy">
+                <span class="step-number">03</span>
+                <div>
+                  <h3 id="menu-catalog-title">เลือกเมนูที่จะเปิดขาย</h3>
+                  <p>การเลือกเมนูจะคำนวณ dependency ให้ทันที</p>
+                </div>
+              </div>
+              <div class="menu-catalog-actions">
+                <button class="text-button" id="select-all-menu-items" type="button">เลือกทั้งหมด</button>
+                <button class="text-button" id="clear-menu-items" type="button">ล้างการเลือก</button>
+              </div>
+            </div>
+            <div class="menu-catalog" id="menu-catalog"></div>
+          </section>
+
+          <section class="panel assignment-table-panel" aria-labelledby="assignment-table-title">
+            <div class="panel-heading">
+              <span class="step-number">04</span>
+              <div>
+                <h3 id="assignment-table-title">สถานะสาขาปัจจุบัน</h3>
+                <p>ตัวอย่าง rollout ของแต่ละสาขาเทียบกับ Master Recipe</p>
+              </div>
+            </div>
+            <div class="assignment-table-wrap">
+              <table class="assignment-table">
+                <thead><tr><th>สาขา</th><th>Menu Set</th><th>เมนู</th><th>Recipe version</th><th>สถานะ</th></tr></thead>
+                <tbody>
+                  <tr><td>อารีย์</td><td>Full Menu</td><td>5</td><td>ล่าสุดทั้งหมด</td><td><span class="rollout-status is-ready">ใช้งานแล้ว</span></td></tr>
+                  <tr><td>บางนา</td><td>Delivery Only</td><td>4</td><td>รออัปเดต 1 สูตร</td><td><span class="rollout-status is-review">รอทดสอบ</span></td></tr>
+                  <tr><td>เชียงใหม่</td><td>Custom</td><td>3</td><td>มี override 1 จุด</td><td><span class="rollout-status is-override">มีข้อยกเว้น</span></td></tr>
+                  <tr><td>พระราม 9</td><td id="new-branch-set-cell">Express</td><td id="new-branch-menu-count-cell">3</td><td>กำลังเตรียม</td><td><span class="rollout-status is-draft">แบบร่าง</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <aside class="branch-side-column">
+          <section class="panel compact-panel branch-profile-card" aria-labelledby="branch-profile-title">
+            <div class="panel-heading">
+              <span class="panel-icon" aria-hidden="true">⌂</span>
+              <div>
+                <h3 id="branch-profile-title">สาขาใหม่ · พระราม 9</h3>
+                <p id="branch-profile-subtitle">NNTN Beef Stew · Express</p>
+              </div>
+            </div>
+            <dl class="branch-profile-list">
+              <div><dt>รูปแบบร้าน</dt><dd id="branch-format-value">Food court · 28 ตร.ม.</dd></div>
+              <div><dt>อุปกรณ์</dt><dd id="branch-equipment-value">หม้อตุ๋น 2 · เตา 2 หัว</dd></div>
+              <div><dt>วันเปิดเป้าหมาย</dt><dd>25 ส.ค. 2026</dd></div>
+            </dl>
+          </section>
+
+          <section class="panel compact-panel dependency-card" aria-labelledby="dependency-title">
+            <div class="panel-heading">
+              <span class="panel-icon" aria-hidden="true">⌘</span>
+              <div>
+                <h3 id="dependency-title">Dependency Preview</h3>
+                <p>สิ่งที่สาขาจะได้รับจริง</p>
+              </div>
+            </div>
+            <div class="dependency-summary">
+              <div><strong id="selected-menu-count">0</strong><span>เมนูขาย</span></div>
+              <div><strong id="required-recipe-count">0</strong><span>สูตรที่ต้องใช้</span></div>
+              <div><strong id="missing-readiness-count">0</strong><span>รายการต้องเตรียม</span></div>
+            </div>
+            <div class="dependency-groups" id="dependency-groups"></div>
+          </section>
+
+          <section class="panel compact-panel readiness-card" aria-labelledby="readiness-title">
+            <div class="panel-heading">
+              <span class="panel-icon" aria-hidden="true">✓</span>
+              <div>
+                <h3 id="readiness-title">Branch Readiness</h3>
+                <p id="readiness-message">ตรวจความพร้อมก่อนเผยแพร่</p>
+              </div>
+            </div>
+            <div class="readiness-progress"><span id="readiness-progress-bar"></span></div>
+            <div class="readiness-checks" id="readiness-checks"></div>
+            <button class="button button-primary button-full" id="publish-branch-menu" type="button">จำลองเผยแพร่ให้สาขา</button>
+          </section>
+        </aside>
+      </div>
+    </section>
+
+    <section class="import-workspace" id="import-workspace" aria-labelledby="import-page-title">
+      <section class="intro import-intro">
+        <div>
+          <p class="eyebrow">SOURCE REVIEW · NO CONVERSION</p>
+          <h2 id="import-page-title">ตรวจสูตรจากชื่อเมนู</h2>
+          <p>ย้ายข้อมูลจากเว็บ V1 มาเป็นคิวตรวจ โดยยังไม่รับรองค่า g/ml และไม่แปลงช้อนชา ช้อนโต๊ะ กรัม หรือมิลลิลิตร</p>
+        </div>
+        <span class="branch-draft-badge">Prototype v2 · บันทึกชั่วคราว</span>
+      </section>
+
+      <section class="import-policy" aria-label="กติกาต้นฉบับ">
+        <strong>กติกาที่ใช้:</strong>
+        <span>ลายมือใหม่เป็นหลักเมื่อมีการแก้ไข · DOCX และ V2 ใช้เทียบ · V1 ใช้เป็นรายการตั้งต้นเท่านั้น</span>
+      </section>
+
+      <section class="import-summary-grid" aria-label="สรุปข้อมูลที่ย้ายจาก V1">
+        <article><strong id="import-recipe-count">—</strong><span>สูตรทั้งหมด</span></article>
+        <article><strong id="import-item-count">—</strong><span>บรรทัดส่วนผสม</span></article>
+        <article><strong id="import-dependency-count">—</strong><span>สูตรประกอบ</span></article>
+        <article class="is-warning"><strong id="import-missing-method-count">—</strong><span>สูตรขาดวิธีทำ</span></article>
+      </section>
+
+      <section class="first-set-strip" aria-label="ชุดเมนูแรก">
+        <div><strong>ชุดข้อมูล: 4 เมนูหลัก + 14 สูตรประกอบ</strong><span>ระบบไล่ dependency ลงไปถึงซอส น้ำซุป เครื่องปรุง ของเตรียม และข้าวหุงสุก</span></div>
+        <span>ตรวจเทียบจากต้นฉบับ 16 · เพิ่มสูตรหุงจากครัว 2</span>
+      </section>
+
+      <section class="kitchen-level-legend" aria-label="โครงสร้างสูตร">
+        <span><b>เมนูขาย</b> ของที่ลูกค้าสั่ง</span>
+        <span><b>สูตรเตรียม</b> ซอส น้ำซุป หรือของที่ครัวทำไว้</span>
+        <span><b>วัตถุดิบ</b> ของที่หยิบมาใช้โดยตรง</span>
+      </section>
+
+      <div class="import-review-grid">
+        <section class="panel import-queue-panel" aria-labelledby="import-queue-title">
+          <div class="panel-heading">
+            <span class="step-number">01</span>
+            <div>
+              <h3 id="import-queue-title">เลือกเมนูที่ต้องการตรวจ</h3>
+              <p>ค้นด้วยชื่อเมนู ไม่ต้องจำรหัสสูตร</p>
+            </div>
+          </div>
+
+          <div class="import-filter-grid">
+            <label class="field">
+              <span>ค้นชื่อเมนู</span>
+              <input id="import-search" type="search" placeholder="เช่น น้ำยำ หรือ ข้าวหน้าเนื้อ" autocomplete="off">
+            </label>
+            <label class="field">
+              <span>ขอบเขต</span>
+              <select id="import-scope-filter">
+                <option value="first-set">ชุดแรก 16 สูตร</option>
+                <option value="all">ทั้งหมด 101 สูตร</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>ประเภท</span>
+              <select id="import-kind-filter">
+                <option value="all">ทั้งหมด</option>
+                <option value="menu">เมนูขาย</option>
+                <option value="prep">สูตรเตรียม</option>
+                <option value="sub">สูตรย่อย</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>ขั้นตอนการทำ</span>
+              <select id="import-method-filter">
+                <option value="all">ทั้งหมด</option>
+                <option value="missing">ไม่มีข้อมูล</option>
+                <option value="draft">มีใน V1 · รอตรวจ</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="import-table-wrap">
+            <table class="import-table">
+              <thead><tr><th>ชื่อเมนู</th><th>ประเภท</th><th>ส่วนผสม</th><th>สูตรประกอบ</th><th>วิธีทำ</th><th>สถานะ</th></tr></thead>
+              <tbody id="import-review-body"></tbody>
+            </table>
+          </div>
+          <p class="import-empty" id="import-review-empty" hidden>ไม่พบชื่อเมนูตามตัวกรองนี้</p>
+        </section>
+
+        <aside class="panel import-detail-panel" id="import-detail-panel" aria-labelledby="import-detail-title">
+          <div class="panel-heading">
+            <span class="step-number">02</span>
+            <div>
+              <h3 id="import-detail-title">ตรวจและแก้ฉบับหน้าครัว</h3>
+              <p>แก้ได้ในหน้าทดลองนี้เท่านั้น รีโหลดแล้วข้อมูลจะกลับเป็นต้นฉบับ</p>
+            </div>
+          </div>
+          <div id="import-detail-content" class="import-detail-empty">เลือกชื่อเมนูจากตารางด้านซ้าย</div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <section class="print-modal" id="print-modal" aria-labelledby="print-center-title" role="dialog" aria-modal="true" hidden>
+    <div class="print-modal-card">
+      <header class="print-modal-header">
+        <div>
+          <p class="eyebrow">PRINT CENTER</p>
+          <h2 id="print-center-title">จัดรูปแบบตำรา</h2>
+          <p>เลือกสูตรและรูปแบบ จากนั้นพิมพ์หรือบันทึกเป็น PDF ผ่านเบราว์เซอร์</p>
+        </div>
+        <button class="modal-close" id="close-print-center" type="button" aria-label="ปิดศูนย์การพิมพ์">×</button>
+      </header>
+
+      <div class="print-center-grid">
+        <aside class="print-controls" aria-label="ตัวเลือกการพิมพ์">
+          <fieldset class="control-group">
+            <legend>1. จุดงาน</legend>
+            <label class="field">
+              <span>ชุดเอกสารที่ต้องการ</span>
+              <select id="print-work-stage">
+                <option value="all">ครบทั้งชุด</option>
+                <option value="prep">ผลิตซอสและของเตรียม</option>
+                <option value="cook">ครัวปรุง / BOM</option>
+                <option value="service">จัดเสิร์ฟหน้าร้าน</option>
+              </select>
+            </label>
+          </fieldset>
+
+          <fieldset class="control-group template-options">
+            <legend>2. รูปแบบ</legend>
+            <label class="template-option">
+              <input id="print-template-auto" type="radio" name="print-template" value="auto" checked>
+              <span><strong>เลือกให้อัตโนมัติ · แนะนำ</strong><small>ระบบเลือกตามจุดงานและชนิดสูตร</small></span>
+            </label>
+            <label class="template-option">
+              <input type="radio" name="print-template" value="station">
+              <span><strong>A5 แนวนอน</strong><small>การ์ดหน้างาน ครึ่ง A4 อ่านง่าย</small></span>
+            </label>
+            <label class="template-option">
+              <input type="radio" name="print-template" value="two-up">
+              <span><strong>2 ใบ A5 บน A4</strong><small>พิมพ์ครั้งเดียวแล้วตัดครึ่ง</small></span>
+            </label>
+            <label class="template-option">
+              <input type="radio" name="print-template" value="master">
+              <span><strong>A4 Master Recipe</strong><small>สูตรมาตรฐานฉบับเต็ม</small></span>
+            </label>
+            <label class="template-option">
+              <input type="radio" name="print-template" value="booklet">
+              <span><strong>Cookbook Booklet</strong><small>ปก สารบัญ และหลายสูตร</small></span>
+            </label>
+            <label class="template-option">
+              <input type="radio" name="print-template" value="routing">
+              <span><strong>SKU &amp; Routing Sheet</strong><small>รหัสขาย ช่องทาง สาขา และจุดครัว</small></span>
+            </label>
+          </fieldset>
+
+          <fieldset class="control-group">
+            <legend>3. สูตรที่จะพิมพ์</legend>
+            <div class="recipe-picker" id="print-recipe-picker"></div>
+            <div class="picker-actions">
+              <button class="text-button" id="select-all-recipes" type="button">เลือกทั้งหมด</button>
+              <button class="text-button" id="clear-recipe-selection" type="button">ล้างการเลือก</button>
+            </div>
+          </fieldset>
+
+          <div class="control-group control-fields">
+            <label class="field">
+              <span>ตัวคูณปริมาณ</span>
+              <input id="print-multiplier" type="number" min="0.1" step="0.1" value="1">
+            </label>
+            <label class="field">
+              <span>สถานะเอกสาร</span>
+              <select id="print-status">
+                <option value="DRAFT">DRAFT</option>
+                <option value="ทดลอง">ทดลอง</option>
+                <option value="อนุมัติแล้ว">อนุมัติแล้ว</option>
+              </select>
+            </label>
+            <label class="check-option">
+              <input id="print-include-history" type="checkbox" checked>
+              <span>แสดง revision history</span>
+            </label>
+          </div>
+
+          <div class="print-control-actions">
+            <button class="button button-secondary" id="refresh-print-preview" type="button">อัปเดตตัวอย่าง</button>
+            <button class="button button-primary" id="print-document-button" type="button">พิมพ์ / Save PDF</button>
+          </div>
+          <p class="print-help">ข้อมูลยังเป็น mock และไม่ถูกส่งออกจากเบราว์เซอร์</p>
+        </aside>
+
+        <section class="print-preview-shell" aria-label="ตัวอย่างเอกสารก่อนพิมพ์">
+          <div class="print-preview-toolbar">
+            <span id="print-preview-label">ตัวอย่าง A4 Master Recipe</span>
+            <span id="print-page-count">1 หน้า</span>
+          </div>
+          <div class="print-document print-master" id="print-document"></div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <template id="ingredient-template">
+    <div class="ingredient-row">
+      <label>
+        <span class="sr-only">ชื่อส่วนผสม</span>
+        <input class="ingredient-name" type="text" placeholder="ชื่อวัตถุดิบ" autocomplete="off">
+      </label>
+      <label>
+        <span class="sr-only">ปริมาณ</span>
+        <input class="ingredient-amount" type="number" min="0" step="0.01" placeholder="0">
+      </label>
+      <label>
+        <span class="sr-only">หน่วย</span>
+        <select class="ingredient-unit">
+          <option>กรัม</option>
+          <option>กิโลกรัม</option>
+          <option>มิลลิลิตร</option>
+          <option>ลิตร</option>
+          <option>ช้อนโต๊ะ</option>
+          <option>ช้อนชา</option>
+          <option>ชิ้น</option>
+        </select>
+      </label>
+      <button class="remove-ingredient" type="button" aria-label="ลบส่วนผสมรายการนี้">×</button>
+    </div>
+  </template>
+
+  <template id="variant-template">
+    <article class="variant-card">
+      <div class="variant-card-header">
+        <div class="variant-identity-grid">
+          <label class="field">
+            <span>ชื่อตัวเลือก</span>
+            <input class="variant-name" type="text" placeholder="เช่น หมูสับ หรือ เนื้อรวม" autocomplete="off">
+          </label>
+          <label class="field">
+            <span>ราคาขาย (บาท)</span>
+            <input class="variant-price" type="number" min="0" step="1" placeholder="0">
+          </label>
+          <label class="field">
+            <span>สถานะ</span>
+            <select class="variant-status"><option value="draft">แบบร่าง</option><option value="active">เปิดใช้งาน</option><option value="inactive">ปิดใช้งาน</option></select>
+          </label>
+        </div>
+        <button class="remove-variant" type="button" aria-label="ลบตัวเลือกนี้">ลบตัวเลือก</button>
+      </div>
+
+      <div class="variant-parts-heading">
+        <div><strong>เนื้อหรือชิ้นส่วนในตัวเลือกนี้</strong><span>เพิ่มได้มากกว่าหนึ่งรายการ</span></div>
+        <button class="button button-secondary button-small add-variant-part" type="button">+ เพิ่มชิ้นส่วน</button>
+      </div>
+      <div class="variant-part-labels" aria-hidden="true">
+        <span>เนื้อ / ชิ้นส่วน</span><span>ปริมาณ</span><span>หน่วย</span><span></span>
+      </div>
+      <div class="variant-part-list"></div>
+
+      <label class="field variant-note-field">
+        <span>ขั้นตอนที่ต่างจากสูตรแม่ (ถ้ามี)</span>
+        <input class="variant-note" type="text" placeholder="เช่น ผัดเนื้อเพียง 45 วินาที" autocomplete="off">
+      </label>
+
+      <details class="sellable-metadata variant-metadata">
+        <summary>Metadata, SKU และ Routing</summary>
+        <div class="sellable-meta-grid variant-meta-grid">
+          <label class="field"><span>Variant code</span><input class="variant-code" type="text" placeholder="เช่น BF-MIX" autocomplete="off"></label>
+          <label class="field"><span>Internal SKU</span><input class="variant-sku" type="text" placeholder="เช่น KPR-BF-MIX" autocomplete="off"></label>
+          <label class="field"><span>จุดครัว</span><select class="variant-station"><option>กระทะ</option><option>ครัวร้อน</option><option>ครัวเย็น</option><option>จุดจัดจาน</option></select></label>
+          <label class="field"><span>สาขาที่รับตัวเลือกนี้</span><select class="variant-branch-route"><option value="assignment">ตาม Menu Assignment</option><option value="all">ทุกสาขา</option><option value="selected">เฉพาะสาขาที่เลือก</option></select></label>
+        </div>
+        <button class="text-button generate-variant-sku" type="button">สร้าง SKU ตัวอย่าง</button>
+        <div class="route-list" aria-label="Channel routing ของตัวเลือก">
+          <div class="route-row"><label class="route-toggle"><input class="variant-route-enabled" data-channel="store" type="checkbox" checked><span class="sr-only">เปิดขายหน้าร้าน</span></label><span>หน้าร้าน</span><input class="variant-route-sku" data-channel="store" type="text" placeholder="POS SKU" aria-label="POS SKU หน้าร้าน"></div>
+          <div class="route-row"><label class="route-toggle"><input class="variant-route-enabled" data-channel="grab" type="checkbox"><span class="sr-only">เปิดขายบน Grab</span></label><span>Grab</span><input class="variant-route-sku" data-channel="grab" type="text" placeholder="Grab SKU" aria-label="Grab SKU"></div>
+          <div class="route-row"><label class="route-toggle"><input class="variant-route-enabled" data-channel="lineman" type="checkbox"><span class="sr-only">เปิดขายบน LINE MAN</span></label><span>LINE MAN</span><input class="variant-route-sku" data-channel="lineman" type="text" placeholder="LINE MAN SKU" aria-label="LINE MAN SKU"></div>
+        </div>
+      </details>
+    </article>
+  </template>
+
+  <template id="variant-part-template">
+    <div class="variant-part-row">
+      <label><span class="sr-only">ชื่อเนื้อหรือชิ้นส่วน</span><input class="variant-part-name" type="text" placeholder="เช่น เนื้อใบพาย" autocomplete="off"></label>
+      <label><span class="sr-only">ปริมาณ</span><input class="variant-part-amount" type="number" min="0" step="0.01" placeholder="0"></label>
+      <label><span class="sr-only">หน่วย</span><select class="variant-part-unit"><option>กรัม</option><option>กิโลกรัม</option><option>ชิ้น</option></select></label>
+      <button class="remove-variant-part" type="button" aria-label="ลบชิ้นส่วนนี้">×</button>
+    </div>
+  </template>
+
+  <script src="data/cookbook-import-v1.js"></script>
+  <script src="data/kitchen-sot-first-set-v2.js?v=20260804-17"></script>
+  <script src="import-review.js?v=20260804-17"></script>
+  <script src="kitchen-sot.js?v=20260804-17"></script>
+  <script src="import-review-ui.js?v=20260804-17"></script>
+  <script src="recipe-variants.js"></script>
+  <script src="print-center.js?v=20260804-17"></script>
+  <script src="app.js?v=20260804-17"></script>
+</body>
+</html>
