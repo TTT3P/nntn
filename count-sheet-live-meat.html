@@ -36,45 +36,54 @@
     .wh-sum { font-size: 12px; color: #555; margin-bottom: 4px; }
 
     .tbl-wrap { width: 100%; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
+    /* ตารางเดียวกันทั้งใบ: เส้นสีเดียว · ทุกแถวสูงเท่ากัน 1 บรรทัด · line-height ไทยพอให้สระ/วรรณยุกต์ไม่ชนเส้น */
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th, td { border: 1px solid #757575; line-height: 1.45; vertical-align: middle; }
     thead th {
       background: #FBE9E7; color: #8B0000; font-size: 12px; font-weight: 700;
-      padding: 4px 6px; border: 1px solid #FFCCBC; text-align: center;
+      padding: 3px 4px; text-align: center;
     }
-    thead th.left { text-align: left; }
-    td { border: 1px solid #BDBDBD; padding: 3px 6px; vertical-align: middle; height: 30px; }
+    thead th.left { text-align: left; padding-left: 6px; }
+    td { padding: 0 6px; height: 30px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .cat-row td {
-      background: #EEEEEE; font-size: 12px; font-weight: 700; color: #424242;
-      height: auto; padding: 2px 6px;
+      background: #EEEEEE; font-size: 12px; font-weight: 700; color: #424242; height: 22px;
     }
-    .td-name { width: 38%; }
-    .td-name .nm  { font-size: 15px; font-weight: 700; line-height: 1.2; }
-    .td-name .sub { font-size: 11px; color: #757575; }
-    .td-name .sub b { color: #8B0000; }
-    .td-lot  { width: 15%; text-align: center; font-size: 15px; font-weight: 600; white-space: nowrap; }
-    .td-lot .old { display: block; font-size: 10px; font-weight: 700; color: #c62828; line-height: 1.1; }
-    .td-sys  { width: 11%; text-align: center; font-size: 17px; font-weight: 700; color: #8B0000; }
-    .td-ok   { width: 9%;  text-align: center; }
-    .td-ok label { display: inline-flex; cursor: pointer; }
+    .c-sku  { width: 11%; }
+    .c-name { width: 31%; }
+    .c-lot  { width: 22%; }
+    .c-sys  { width: 9%; }
+    .c-ok   { width: 9%; }
+    .c-cnt  { width: 18%; }
+    .c-diff { width: 9%; }
+    .td-sku  { font-size: 11px; color: #616161; }
+    .td-name { font-size: 14px; font-weight: 700; white-space: normal; }
+    .td-name .tot { font-size: 11px; font-weight: 400; color: #616161; white-space: nowrap; }
+    .td-name .tot b { color: #8B0000; }
+    .td-lot  { text-align: center; font-size: 14px; font-weight: 600; }
+    .td-lot.multi { font-size: 12px; font-weight: 400; }
+    .td-lot .old { font-size: 11px; font-weight: 700; color: #c62828; margin-left: 4px; }
+    .td-sys  { text-align: center; font-size: 16px; font-weight: 700; color: #8B0000; }
+    .td-ok   { padding: 0; }
+    .td-ok label { display: flex; align-items: center; justify-content: center; height: 100%; min-height: 28px; cursor: pointer; }
     .td-ok input { position: absolute; opacity: 0; pointer-events: none; }
     .box {
-      width: 22px; height: 22px; border: 2px solid #424242; border-radius: 3px;
-      display: inline-flex; align-items: center; justify-content: center;
-      font-size: 16px; font-weight: 700; color: #2E7D32;
+      width: 18px; height: 18px; border: 1.5px solid #424242; border-radius: 2px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: #2E7D32; line-height: 1;
     }
     .td-ok input:checked + .box::after { content: '✓'; }
-    .td-cnt  { width: 15%; padding: 0; background: #FFFDE7; }
+    .td-cnt  { padding: 0; background: #FFFDE7; }
     .td-cnt input {
-      width: 100%; height: 30px; border: none; background: transparent;
+      display: block; width: 100%; height: 28px; border: none; background: transparent;
       font-family: inherit; font-size: 16px; text-align: center; color: #212121;
     }
     .td-cnt input:focus { outline: 2px solid #F9A825; }
-    .td-diff { width: 12%; text-align: center; font-weight: 700; color: #9E9E9E; }
+    .td-diff { text-align: center; font-weight: 700; color: #9E9E9E; }
     .td-diff.pos { color: #2E7D32; }
     .td-diff.neg { color: #c62828; }
 
-    .zero-box { margin-top: 8px; border: 1px dashed #9E9E9E; padding: 6px 8px; }
+    .zero-box { margin-top: 8px; border: 1px solid #757575; padding: 6px 8px; }
     .zero-box h3 { font-size: 12px; font-weight: 700; color: #424242; margin-bottom: 4px; }
     .zero-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px 14px; font-size: 12px; }
     .zero-grid div { display: flex; justify-content: space-between; gap: 6px; border-bottom: 1px dotted #BDBDBD; padding: 2px 0; }
@@ -82,10 +91,8 @@
 
     .found-box { margin-top: 8px; }
     .found-box h3 { font-size: 12px; font-weight: 700; color: #424242; margin-bottom: 3px; }
-    .found-tbl th { background: #F5F5F5; color: #424242; border-color: #BDBDBD; }
+    .found-tbl th { background: #F5F5F5; color: #424242; }
     .found-tbl td { height: 30px; }
-    .found-tbl td:nth-child(1) { width: 40%; }
-    .found-tbl td:nth-child(2), .found-tbl td:nth-child(3) { width: 16%; }
     .print-line { display: none; }
 
     .loading { text-align: center; padding: 40px; color: #888; font-size: 14px; }
@@ -107,11 +114,10 @@
       .wh-head { flex-direction: column; align-items: flex-start; gap: 4px; }
       .wh-fields { text-align: left; }
       .zero-grid { grid-template-columns: 1fr 1fr; }
-      .td-name .nm { font-size: 14px; }
-      .td-name { width: auto; }
+      table { table-layout: auto; }
+      .td-sku, .c-sku, .td-diff, th.no-print { display: none; }
       .td-lot { font-size: 13px; }
-      td { padding: 3px 4px; }
-      .td-diff, th.no-print { display: none; }
+      td { padding: 0 4px; }
       .btn-bar { left: 10px; right: 10px; flex-wrap: wrap; justify-content: flex-end; }
     }
 
@@ -125,22 +131,18 @@
       tbody tr, .zero-box { break-inside: avoid; }
       .cat-row td, thead th, .td-cnt, .wh-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .print-line { display: inline; }
-      .td-cnt input { color: transparent; height: 22px; } /* ใบพิมพ์ = ช่องว่างให้เขียนมือ */
-      td { height: 22px; padding: 0 6px; }
-      .td-name .nm { font-size: 14px; line-height: 1.1; }
-      .td-name .sub { font-size: 10px; line-height: 1.1; }
-      .td-lot, .td-name .nm { font-size: 14px; }
-      .td-sys { font-size: 16px; }
-      .box { width: 18px; height: 18px; }
+      .td-cnt input { color: transparent; height: 24px; } /* ใบพิมพ์ = ช่องว่างให้เขียนมือ */
+      td { height: 26px; }
+      .cat-row td { height: 20px; }
+      .td-ok label { min-height: 24px; }
       .wh-title { font-size: 22px; }
       .wh-head { padding-bottom: 4px; margin-bottom: 4px; }
+      .wh-sum { margin-bottom: 2px; }
       .zero-box { margin-top: 6px; padding: 4px 6px; }
-      .zero-grid { font-size: 11px; gap: 1px 12px; }
+      .zero-grid { font-size: 11px; gap: 0 12px; }
       .zero-grid div { padding: 1px 0; }
       .found-box { margin-top: 6px; break-inside: avoid; }
-      .found-tbl td { height: 22px; }
-      .wh-sum { margin-bottom: 2px; }
-      thead th { padding: 2px 6px; }
+      .found-tbl td { height: 26px; }
     }
   </style>
 </head>
@@ -349,7 +351,7 @@
         const it = itemBySku[sku], e = wh[W][sku];
         if (it.category !== lastCat) {
           lastCat = it.category;
-          rows += `<tr class="cat-row"><td colspan="6">${esc(CATEGORY_LABELS[lastCat] || lastCat || 'อื่นๆ')}</td></tr>`;
+          rows += `<tr class="cat-row"><td colspan="7">${esc(CATEGORY_LABELS[lastCat] || lastCat || 'อื่นๆ')}</td></tr>`;
         }
         // แยกแถวตามล็อตเฉพาะรายการถุงเยอะ (≥ SPLIT_MIN ถุง) — นับทีละกองตามวันที่บนถุง
         // รายการถุงน้อย/เศษหลายล็อต (เช่น เศษริ้วขาว 11 ล็อต ล็อตละ 1 ถุง) = แถวเดียว นับรวม
@@ -360,17 +362,18 @@
           const n = e.lots[lot];
           const oldest = lot === '*' ? allLots[0] : lot;
           const age = lotAgeDays(oldest);
-          const old = age !== null && age >= OLD_LOT_DAYS ? `<span class="old">⚠ เก่า ${age} วัน</span>` : '';
+          const old = age !== null && age >= OLD_LOT_DAYS ? `<span class="old">⚠${lot === '*' && allLots.length > 1 ? '' : age + ' วัน'}</span>` : '';
+          const multi = lot === '*' && allLots.length > 1;
           const lotTxt = lot !== '*' ? fmtLot(lot)
-            : allLots.length === 1 ? fmtLot(allLots[0])
-            : `<span style="font-size:12px">${allLots.length} ล็อต<br>เก่าสุด ${fmtLot(allLots[0])}</span>`;
-          const nameCell = i === 0
-            ? `<td class="td-name" rowspan="${lots.length}"><div class="nm">${esc(it.name)}</div>
-                 <div class="sub">${esc(sku)}${lots.length > 1 ? ` · รวม <b>${e.total}</b> ถุง` : ''}</div></td>`
+            : !multi ? fmtLot(allLots[0])
+            : `${allLots.length} ล็อต · เก่าสุด ${fmtLot(allLots[0]).slice(0, 5)}`;
+          const nameCells = i === 0
+            ? `<td class="td-sku" rowspan="${lots.length}">${esc(sku)}</td>
+               <td class="td-name" rowspan="${lots.length}">${esc(it.name)}${lots.length > 1 ? ` <span class="tot">· รวม <b>${e.total}</b></span>` : ''}</td>`
             : '';
           rows += `<tr data-key="${esc(sku)}|${esc(W)}|${esc(lot)}" data-sys="${n}">
-            ${nameCell}
-            <td class="td-lot">${lotTxt}${old}</td>
+            ${nameCells}
+            <td class="td-lot${multi ? ' multi' : ''}">${lotTxt}${old}</td>
             <td class="td-sys">${n}</td>
             <td class="td-ok"><label><input type="checkbox" onchange="onOk(this)"><span class="box"></span></label></td>
             <td class="td-cnt"><input type="number" min="0" step="1" inputmode="numeric" oninput="onCount(this)"></td>
@@ -406,12 +409,14 @@
           </div>
           <div class="wh-sum">ระบบมี ${skus.length} รายการ · ${nLots} ล็อต · ${nBags} ถุง</div>
           ${skus.length ? `<div class="tbl-wrap"><table>
+            <colgroup><col class="c-sku"><col class="c-name"><col class="c-lot"><col class="c-sys"><col class="c-ok"><col class="c-cnt"><col class="c-diff no-print"></colgroup>
             <thead><tr>
+              <th class="left c-sku">รหัส</th>
               <th class="left">รายการ</th>
-              <th>ล็อต<br><span style="font-weight:400">(วันที่บนถุง)</span></th>
-              <th>ระบบ<br><span style="font-weight:400">(ถุง)</span></th>
+              <th>ล็อต (วันที่บนถุง)</th>
+              <th>ระบบ</th>
               <th>ตรง ✓</th>
-              <th>ไม่ตรง<br><span style="font-weight:400">นับได้</span></th>
+              <th>ไม่ตรง: นับได้</th>
               <th class="no-print">ผลต่าง</th>
             </tr></thead>
             <tbody>${rows}</tbody>
@@ -420,6 +425,7 @@
           <div class="found-box">
             <h3>➕ ของที่มีจริง แต่ไม่มีในใบ (รวมล็อตที่ใบไม่ได้ระบุ) — เขียนเพิ่มตรงนี้</h3>
             <table class="found-tbl">
+              <colgroup><col style="width:44%"><col style="width:18%"><col style="width:14%"><col style="width:24%"></colgroup>
               <thead><tr><th class="left">ชื่อ / รหัส</th><th>วันที่บนถุง</th><th>จำนวนถุง</th><th class="left">หมายเหตุ</th></tr></thead>
               <tbody>${'<tr><td></td><td></td><td></td><td></td></tr>'.repeat(FOUND_ROWS)}</tbody>
             </table>
