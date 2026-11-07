@@ -80,9 +80,13 @@
     .zero-grid div { display: flex; justify-content: space-between; gap: 6px; border-bottom: 1px dotted #BDBDBD; padding: 2px 0; }
     .zero-grid span.w { color: #9E9E9E; white-space: nowrap; }
 
+    .found-box { margin-top: 8px; }
+    .found-box h3 { font-size: 12px; font-weight: 700; color: #424242; margin-bottom: 3px; }
+    .found-tbl th { background: #F5F5F5; color: #424242; border-color: #BDBDBD; }
+    .found-tbl td { height: 30px; }
+    .found-tbl td:nth-child(1) { width: 40%; }
+    .found-tbl td:nth-child(2), .found-tbl td:nth-child(3) { width: 16%; }
     .print-line { display: none; }
-    .wh-note { margin-top: 10px; font-size: 12px; color: #555; }
-    .wh-note .nl { border-bottom: 1px solid #999; height: 20px; }
 
     .loading { text-align: center; padding: 40px; color: #888; font-size: 14px; }
     .error-msg { text-align: center; padding: 20px; color: #c62828; font-size: 13px; background: #ffebee; border-radius: 6px; margin: 12px 0; }
@@ -121,8 +125,8 @@
       tbody tr, .zero-box { break-inside: avoid; }
       .cat-row td, thead th, .td-cnt, .wh-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .print-line { display: inline; }
-      .td-cnt input { color: transparent; height: 24px; } /* ใบพิมพ์ = ช่องว่างให้เขียนมือ */
-      td { height: 24px; padding: 1px 6px; }
+      .td-cnt input { color: transparent; height: 22px; } /* ใบพิมพ์ = ช่องว่างให้เขียนมือ */
+      td { height: 22px; padding: 0 6px; }
       .td-name .nm { font-size: 14px; line-height: 1.1; }
       .td-name .sub { font-size: 10px; line-height: 1.1; }
       .td-lot, .td-name .nm { font-size: 14px; }
@@ -133,8 +137,10 @@
       .zero-box { margin-top: 6px; padding: 4px 6px; }
       .zero-grid { font-size: 11px; gap: 1px 12px; }
       .zero-grid div { padding: 1px 0; }
-      .wh-note { margin-top: 6px; }
-      .wh-note .nl { height: 16px; }
+      .found-box { margin-top: 6px; break-inside: avoid; }
+      .found-tbl td { height: 22px; }
+      .wh-sum { margin-bottom: 2px; }
+      thead th { padding: 2px 6px; }
     }
   </style>
 </head>
@@ -144,6 +150,7 @@
 
 <p class="intro no-print">
   🥩 <b>ใบนับสต๊อกเนื้อ</b> · พิมพ์ได้ <b>1 คลัง = 1 ใบ</b> เดินนับทีละคลังไม่ต้องย้อนกลับ ·
+  ของที่มีจริงแต่ไม่มีในใบ เขียนในตารางท้ายใบ ·
   แต่ละแถว = <b>1 ล็อต</b> (วันที่เขียนบนถุง) ·
   นับแล้ว<b>ตรงกับระบบ → ติ๊ก ✓</b> · <b>ไม่ตรง → เขียนเลขที่นับได้</b> ·
   รายการที่ระบบว่าหมดอยู่กรอบล่าง ถ้าเจอของให้เขียนจำนวน
@@ -187,7 +194,8 @@
   };
   const SPLIT_MIN = 10;    // รายการ ≥ 10 ถุง และมีหลายล็อต → แยกแถวตามล็อต
   const MAX_SPLIT_LOTS = 4; // เกิน 4 ล็อต = ถุงกระจัดกระจาย (เศษ) → แถวเดียว
-  const OLD_LOT_DAYS = 30; // ล็อตเก่ากว่านี้ = ติดป้าย ⚠ ให้ดูว่ายังอยู่จริงไหม
+  const OLD_LOT_DAYS = 30;
+  const FOUND_ROWS = 4;     // แถวว่างให้เขียน "ของที่มีจริงแต่ไม่มีในใบ" (TINE 2026-11-07) // ล็อตเก่ากว่านี้ = ติดป้าย ⚠ ให้ดูว่ายังอยู่จริงไหม
 
   // Freshness: หน้านี้ดึงข้อมูลครั้งเดียวตอน load() — แท็บที่เปิดค้างระหว่างครัวปิดหม้อ
   // จะเห็นเลขเก่า (root cause 2026-08-13) → มีปุ่มรีเฟรช + auto-refresh เมื่อกลับมาที่แท็บ ≥60 วิ
@@ -409,8 +417,12 @@
             <tbody>${rows}</tbody>
           </table></div>` : ''}
           ${zeroBox}
-          <div class="wh-note">หมายเหตุ / ของที่เจอแต่ไม่มีในใบ:
-            <div class="nl"></div><div class="nl"></div>
+          <div class="found-box">
+            <h3>➕ ของที่มีจริง แต่ไม่มีในใบ (รวมล็อตที่ใบไม่ได้ระบุ) — เขียนเพิ่มตรงนี้</h3>
+            <table class="found-tbl">
+              <thead><tr><th class="left">ชื่อ / รหัส</th><th>วันที่บนถุง</th><th>จำนวนถุง</th><th class="left">หมายเหตุ</th></tr></thead>
+              <tbody>${'<tr><td></td><td></td><td></td><td></td></tr>'.repeat(FOUND_ROWS)}</tbody>
+            </table>
           </div>
         </section>`;
     }
