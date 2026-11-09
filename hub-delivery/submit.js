@@ -43,13 +43,16 @@ async function saveDraftToCloud() {
   if (!date || !dest) { _hdToast('กรุณากรอกวันที่และปลายทางก่อน', 'error'); return }
 
   const meatLines = []
+  const savedIds = new Set()   // one line per bag — a bag in two blocks must not be saved twice (FS20261109-3)
   Object.entries(meatSel).forEach(([n, s]) => {
     if (!s.itemId || s.selectedBags.size === 0) return
     const sel = document.getElementById(`mb-sku-${n}`)
     const name = sel?.options[sel?.selectedIndex]?.dataset?.name || ''
     s.selectedBags.forEach(id => {
       const b = bagCache[id]
-      if (b) meatLines.push({ bag_id: id, item_id: s.itemId, name, weight_g: b.weight_g, lot_date: b.lot_date })
+      if (!b || savedIds.has(String(id))) return
+      savedIds.add(String(id))
+      meatLines.push({ bag_id: id, item_id: s.itemId, name, weight_g: b.weight_g, lot_date: b.lot_date })
     })
   })
 
@@ -124,6 +127,18 @@ async function submitDelivery() {
       const dArr = await dRes.json()
       const fresh = dArr?.[0]
       if (!fresh) throw new Error('draft not found — may have been deleted')
+      // A draft saved before the one-block-per-SKU fix can list the same bag twice. The
+      // screen collapses repeats (blocks are rebuilt per SKU into a Set), so say exactly
+      // which bags repeat and offer to keep one line each — the real bags don't change.
+      const draftDups = findDuplicateBags((fresh.meat_lines || []).map(m => ({ bag_id: m.bag_id })))
+      if (draftDups.length > 0) {
+        const extra = draftDups.reduce((a, d) => a + d.count - 1, 0)
+        const total = (fresh.meat_lines || []).length
+        const list = draftDups.slice(0, 10).map(d => `• ${meatBagDesc(d.bag_id)} — อยู่ใน Draft ${d.count} ครั้ง`).join('\n')
+        const msg = `⚠️ Draft นี้มีถุงซ้ำ ${draftDups.length} ถุง (Draft มี ${total} บรรทัด แต่เป็นถุงจริง ${total - extra} ถุง)\n\n${list}${draftDups.length > 10 ? '\n…' : ''}\n\nสาเหตุ: ตอนทำ Draft เลือกถุงเดียวกันไว้ใน 2 รายการ\n\n[ตกลง] = ตัดบรรทัดซ้ำออก ส่ง ${total - extra} ถุง (ถุงจริงครบ ไม่มีถุงหาย)\n[ยกเลิก] = หยุด ยังไม่ส่ง`
+        if (!confirm(msg)) { _release(); return }
+        fresh.meat_lines = dedupeBagLines(fresh.meat_lines)
+      }
       const draftBagIds = (fresh.meat_lines || []).map(m => String(m.bag_id))
       const formBagIds  = []
       Object.values(meatSel).forEach(s => s.selectedBags.forEach(id => formBagIds.push(String(id))))
@@ -150,13 +165,30 @@ async function submitDelivery() {
       _release(); return
     }
   } else {
-    Object.values(meatSel).forEach(s => s.selectedBags.forEach(id => allBagIds.push(Number(id))))
+    // Same bag picked in two blocks → stop and name the bag + both blocks so staff can fix it
+    const picks = []
+    Object.entries(meatSel).forEach(([n, s]) => s.selectedBags.forEach(id => picks.push({ bag_id: id, block: meatBlockLabel(n) })))
+    const dups = findDuplicateBags(picks)
+    if (dups.length > 0) {
+      const list = dups.slice(0, 10).map(d => `• ${meatBagDesc(d.bag_id)} — เลือกไว้ใน ${d.blocks.join(' และ ')}`).join('\n')
+      alert(`❌ เลือกถุงซ้ำ ${dups.length} ถุง — ยังไม่ส่งออก\n\n${list}${dups.length > 10 ? '\n…' : ''}\n\nวิธีแก้: ถุง 1 ใบต้องอยู่รายการเดียว\n→ กด ✕ ลบรายการที่ซ้ำ หรือกด 📦 เลือกถุง แล้วเอาถุงนี้ออกจากรายการใดรายการหนึ่ง\nแล้วกดส่งออกใหม่`)
+      _release(); return
+    }
+    picks.forEach(p => allBagIds.push(Number(p.bag_id)))
   }
   // meat is optional — allow non-meat only delivery
 
   if (!checkMeatBagInvariant(allBagIds)) {
     const domChipCount = document.querySelectorAll('#meat-blocks .lot-chip.selected').length
-    alert(`❌ ตรวจพบข้อมูลไม่ตรงกัน — หยุดส่งออกเพื่อความปลอดภัย\n\nถุงที่แสดงบนหน้าจอ: ${domChipCount} ถุง\nถุงที่กำลังจะส่งจริง: ${allBagIds.length} ถุง\n\nกรุณารีเฟรชหน้าแล้วเลือกถุงใหม่ (อย่าส่งออกจากสถานะนี้)`)
+    const screenIds = []
+    Object.values(meatSel).forEach(s => s.selectedBags.forEach(id => screenIds.push(id)))
+    const { onlyScreen, onlySend } = bagSetDiff(screenIds, allBagIds)
+    const sendDups = findDuplicateBags(allBagIds.map(id => ({ bag_id: id })))
+    const lines = []
+    if (sendDups.length) lines.push(`ถุงซ้ำในรายการที่จะส่ง:\n${sendDups.slice(0, 10).map(d => `• ${meatBagDesc(d.bag_id)} × ${d.count}`).join('\n')}`)
+    if (onlySend.length) lines.push(`จะถูกส่ง แต่ไม่ขึ้นบนหน้าจอ:\n${onlySend.slice(0, 10).map(id => `• ${meatBagDesc(id)}`).join('\n')}`)
+    if (onlyScreen.length) lines.push(`ขึ้นบนหน้าจอ แต่จะไม่ถูกส่ง:\n${onlyScreen.slice(0, 10).map(id => `• ${meatBagDesc(id)}`).join('\n')}`)
+    alert(`❌ ถุงบนหน้าจอไม่ตรงกับที่จะส่ง — หยุดส่งออกเพื่อความปลอดภัย\n\nบนหน้าจอ: ${domChipCount} ถุง · จะส่งจริง: ${allBagIds.length} ถุง\n\n${lines.join('\n\n') || '(ไม่พบถุงที่ต่างกัน)'}\n\nวิธีแก้: รีเฟรชหน้า แล้วเปิด Draft / เลือกถุงใหม่ ตรวจรายการข้างบนก่อนส่ง\nถ้ายังขึ้นอีก แคปหน้าจอนี้ส่งหัวหน้า`)
     _release(); return
   }
 

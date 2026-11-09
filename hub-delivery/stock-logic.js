@@ -64,7 +64,51 @@ function deliveryIdemFingerprint(dest, date, bagIds, nmLines) {
   return JSON.stringify([dest || '', date || '', bags, nm])
 }
 
+// Duplicate-bag finder (2026-11-09 FS20261109-3: the same 2 bags were picked in two meat
+// blocks of the same SKU → draft held 27 lines for 25 real bags → export blocked with an
+// alert that only showed the two counts). `entries` = [{ bag_id, block }] in pick order;
+// `block` is whatever label the caller shows staff (e.g. "รายการที่ 3", or null for a
+// draft line). Returns one row per bag id seen more than once, with every block it sits
+// in (in order, repeats kept so "รายการที่ 3, รายการที่ 3" still reads as a duplicate).
+function findDuplicateBags(entries) {
+  const byId = new Map()
+  for (const e of entries || []) {
+    const id = String(e.bag_id)
+    if (!byId.has(id)) byId.set(id, [])
+    byId.get(id).push(e.block ?? null)
+  }
+  const dups = []
+  for (const [bag_id, blocks] of byId) {
+    if (blocks.length > 1) dups.push({ bag_id, count: blocks.length, blocks })
+  }
+  return dups
+}
+
+// Keep the first line of each bag id (order preserved). Lines are draft meat_lines
+// ({ bag_id, ... }); bag_id may be a number or a string — compared as strings.
+function dedupeBagLines(lines) {
+  const seen = new Set()
+  return (lines || []).filter(l => {
+    const id = String(l.bag_id)
+    if (seen.has(id)) return false
+    seen.add(id)
+    return true
+  })
+}
+
+// What differs between the bags staff see selected on screen and the bags about to be
+// sent: ids only on screen, ids only in the send list (each list distinct, as strings).
+function bagSetDiff(screenIds, sendIds) {
+  const screen = new Set([...(screenIds || [])].map(String))
+  const send = new Set([...(sendIds || [])].map(String))
+  return {
+    onlyScreen: [...screen].filter(id => !send.has(id)),
+    onlySend: [...send].filter(id => !screen.has(id)),
+  }
+}
+
 // dual-mode export: commonjs for `node --test`, harmless no-op in the browser
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { mergeFreshBags, availableDraftBags, reconcileSubstitutes, deliveryIdemFingerprint }
+  module.exports = { mergeFreshBags, availableDraftBags, reconcileSubstitutes, deliveryIdemFingerprint,
+    findDuplicateBags, dedupeBagLines, bagSetDiff }
 }

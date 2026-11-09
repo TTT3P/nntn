@@ -63,6 +63,29 @@ function checkMeatBagInvariant(allBagIds) {
   return domChipCount === allBagIds.length
 }
 
+// Label staff see on a block ("รายการที่ 3") — blocks are renumbered on screen after a
+// removal, so the internal counter n is not what the header shows.
+function meatBlockLabel(n) {
+  const blocks = [...document.querySelectorAll('#meat-blocks .meat-block')]
+  const idx = blocks.findIndex(b => b.id === `meat-block-${n}`)
+  return idx >= 0 ? `รายการที่ ${idx + 1}` : `รายการที่ ${n}`
+}
+
+// One readable line per bag for alerts: "#35465 เนื้อน่องกรอบหมัก 0.587 กก."
+function meatBagDesc(bagId) {
+  const b = bagCache[bagId] || {}
+  const item = mtItems.find(i => i.id === b.item_id)
+  const kg = b.weight_g ? ` ${(b.weight_g / 1000).toFixed(3)} กก.` : ''
+  return `#${bagId}${item ? ' ' + item.name : ''}${kg}`
+}
+
+// Other block (≠ n) that already holds this SKU, or null.
+function otherBlockWithItem(n, itemId) {
+  if (!itemId) return null
+  const hit = Object.entries(meatSel).find(([k, s]) => String(k) !== String(n) && s.itemId === itemId)
+  return hit ? Number(hit[0]) : null
+}
+
 function onMeatItemChange(n) {
   const sel = document.getElementById(`mb-sku-${n}`)
   const itemId = sel.value
@@ -74,6 +97,21 @@ function onMeatItemChange(n) {
   // that silently wiped selectedBags with zero warning — confirmed root cause of the
   // 2026-08-10 short-ship (10 delivered vs 15 packed, 5 bags vanished with no error).
   if (itemId === prevItemId) return
+
+  // One block per SKU (2026-11-09 FS20261109-3): a second block of the same meat let the
+  // same bags be picked twice → draft saved 27 lines for 25 bags → export blocked.
+  const dupBlock = otherBlockWithItem(n, itemId)
+  if (dupBlock !== null) {
+    const name = sel.options[sel.selectedIndex]?.dataset?.name || ''
+    alert(`⚠️ "${name}" อยู่ใน${meatBlockLabel(dupBlock)} แล้ว\n\nเนื้อชนิดเดียวกันให้เลือกถุงในรายการเดิม (กด 📦 เลือกถุง ที่${meatBlockLabel(dupBlock)})\nไม่ต้องเพิ่มรายการใหม่ — ถ้าเพิ่มซ้ำ ถุงจะถูกนับ 2 ครั้ง`)
+    sel.value = prevItemId || ''
+    const searchInput = document.getElementById(`mb-sku-${n}-search`)
+    if (searchInput) {
+      const prevOpt = Array.from(sel.options).find(o => o.value === (prevItemId || ''))
+      searchInput.value = prevItemId && prevOpt ? prevOpt.text : ''
+    }
+    return
+  }
 
   // Real SKU change while bags are already selected → confirm before wiping,
   // same UX pattern as the Form-vs-Draft mismatch confirm() used elsewhere in this file.
@@ -203,6 +241,14 @@ async function openBagModal(n) {
     lots[lot].push(b)
   })
 
+  // Bags already picked in ANOTHER block (bag id → that block's label) — shown but not
+  // pickable, so one bag can never sit in two blocks.
+  const takenElsewhere = new Map()
+  Object.entries(meatSel).forEach(([k, s]) => {
+    if (String(k) === String(n)) return
+    s.selectedBags.forEach(id => takenElsewhere.set(String(id), meatBlockLabel(k)))
+  })
+
   if (bags.length === 0) {
     body.innerHTML = `<div style="text-align:center;color:var(--muted);padding:24px">ไม่มีถุง In Stock สำหรับรายการนี้</div>`
   } else {
@@ -210,6 +256,14 @@ async function openBagModal(n) {
       const chips = lotBags.map(b => {
         const cw = b.legacy_cw_row ? `${b.legacy_cw_row}` : '#' + String(b.id).substring(0, 6)
         const kg = ((b.weight_g || 0) / 1000).toFixed(3)
+        const taken = takenElsewhere.get(String(b.id))
+        if (taken) {
+          return `<div class="lot-chip" id="bagchip-${b.id}" data-id="${b.id}"
+                       style="opacity:.45;cursor:not-allowed" title="ถุงนี้อยู่ใน${taken}แล้ว">
+            <div class="lot-name">${cw}</div>
+            <div class="lot-kg">อยู่ใน${taken}</div>
+          </div>`
+        }
         const isSel = selectedBags.has(String(b.id)) ? ' selected' : ''
         return `<div class="lot-chip${isSel}" id="bagchip-${b.id}"
                      data-id="${b.id}" onclick="toggleBag('${b.id}')">
