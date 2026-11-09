@@ -119,3 +119,39 @@ test('idem fp: added bag → different fingerprint', () => {
     deliveryIdemFingerprint('NT', '2026-09-05', [1, 2, 3], [])
   )
 })
+
+// ─── duplicate bags (2026-11-09 FS20261109-3) ───────────────────────────────
+const { findDuplicateBags, dedupeBagLines, bagSetDiff } = require('./stock-logic')
+
+test('findDuplicateBags: same bag in two blocks is reported with both blocks', () => {
+  const entries = [
+    { bag_id: 35466, block: 'รายการที่ 3' }, { bag_id: 35465, block: 'รายการที่ 3' },
+    { bag_id: 35763, block: 'รายการที่ 4' },
+    { bag_id: '35466', block: 'รายการที่ 5' }, { bag_id: '35465', block: 'รายการที่ 5' },
+  ]
+  const d = findDuplicateBags(entries)
+  assert.deepEqual(d.map(x => x.bag_id).sort(), ['35465', '35466'])
+  assert.deepEqual(d.find(x => x.bag_id === '35466').blocks, ['รายการที่ 3', 'รายการที่ 5'])
+  assert.equal(d[0].count, 2)
+})
+
+test('findDuplicateBags: no duplicates → empty; number vs string id is the same bag', () => {
+  assert.deepEqual(findDuplicateBags([{ bag_id: 1 }, { bag_id: 2 }]), [])
+  assert.equal(findDuplicateBags([{ bag_id: 7 }, { bag_id: '7' }]).length, 1)
+  assert.deepEqual(findDuplicateBags(undefined), [])
+})
+
+test('dedupeBagLines: keeps first of each bag, preserves order, does not mutate input', () => {
+  const lines = [{ bag_id: '1', n: 'a' }, { bag_id: '2' }, { bag_id: 1, n: 'b' }, { bag_id: '3' }, { bag_id: '2' }]
+  const out = dedupeBagLines(lines)
+  assert.deepEqual(out.map(l => String(l.bag_id)), ['1', '2', '3'])
+  assert.equal(out[0].n, 'a')
+  assert.equal(lines.length, 5)
+})
+
+test('bagSetDiff: lists ids only on screen and only in the send list', () => {
+  const r = bagSetDiff([1, 2, 3], ['2', '3', '4', '4'])
+  assert.deepEqual(r.onlyScreen, ['1'])
+  assert.deepEqual(r.onlySend, ['4'])
+  assert.deepEqual(bagSetDiff([1], [1]), { onlyScreen: [], onlySend: [] })
+})

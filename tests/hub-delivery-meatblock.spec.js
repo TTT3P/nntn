@@ -194,4 +194,125 @@ test.describe('hub-delivery meat-block selection guards', () => {
 
     expect(result).toBe(true);
   });
+  // ─── duplicate bags across blocks (2026-11-09 FS20261109-3: 27 lines for 25 bags) ───
+
+  test('onMeatItemChange: a second block of the same SKU is refused with a message naming the first block', async ({ page }) => {
+    await seedAuth(page);
+    await page.goto('hub-delivery.html');
+    await page.waitForLoadState('networkidle');
+
+    let msg = '';
+    page.on('dialog', async d => { msg = d.message(); await d.accept(); });
+
+    const result = await page.evaluate(() => {
+      const mk = (n) => {
+        const sel = document.getElementById(`mb-sku-${n}`);
+        const o = document.createElement('option');
+        o.value = 'FAKE-DUP'; o.dataset.name = 'เนื้อทดสอบ'; o.textContent = 'FAKE | เนื้อทดสอบ';
+        sel.appendChild(o);
+        return sel;
+      };
+      addMeatBlock(); const a = meatBlockCount;
+      const selA = mk(a); selA.value = 'FAKE-DUP'; onMeatItemChange(a);
+      addMeatBlock(); const b = meatBlockCount;
+      const selB = mk(b); selB.value = 'FAKE-DUP'; onMeatItemChange(b);
+      return { aItem: meatSel[a].itemId, bItem: meatSel[b].itemId, bValue: selB.value };
+    });
+
+    expect(result.aItem).toBe('FAKE-DUP');
+    expect(result.bItem).toBeNull();          // second block did not take the SKU
+    expect(result.bValue).toBe('');           // dropdown reverted
+    expect(msg).toContain('เนื้อทดสอบ');
+    expect(msg).toContain('อยู่ในรายการที่');
+  });
+
+  test('openBagModal: a bag already picked in another block is shown as taken and is not pickable', async ({ page }) => {
+    await seedAuth(page);
+    await page.goto('hub-delivery.html');
+    await page.waitForLoadState('networkidle');
+
+    const result = await page.evaluate(async () => {
+      window.refreshInStockBags = async () => [
+        { id: 9001, item_id: 'FAKE-DUP', weight_g: 500, lot_date: '2026-11-03' },
+        { id: 9002, item_id: 'FAKE-DUP', weight_g: 500, lot_date: '2026-11-03' },
+      ];
+      addMeatBlock(); const a = meatBlockCount;
+      meatSel[a].itemId = 'FAKE-DUP'; meatSel[a].selectedBags = new Set(['9001']);
+      addMeatBlock(); const b = meatBlockCount;
+      meatSel[b].itemId = 'FAKE-DUP';
+      await openBagModal(b);
+      const taken = document.getElementById('bagchip-9001');
+      const free = document.getElementById('bagchip-9002');
+      return {
+        takenText: taken?.textContent || '', takenClick: taken?.getAttribute('onclick'),
+        freeClick: free?.getAttribute('onclick') || '',
+      };
+    });
+
+    expect(result.takenText).toContain('อยู่ในรายการที่');
+    expect(result.takenClick).toBeNull();
+    expect(result.freeClick).toContain('toggleBag');
+  });
+
+  test('submitDelivery: same bag in two blocks stops with the bag and both blocks named (no RPC)', async ({ page }) => {
+    await seedAuth(page);
+    await page.goto('hub-delivery.html');
+    await page.waitForLoadState('networkidle');
+
+    let rpcCalled = false;
+    await page.route('**/rest/v1/rpc/**', r => { rpcCalled = true; r.abort(); });
+    let msg = '';
+    page.on('dialog', async d => { msg = d.message(); await d.accept(); });
+
+    await page.evaluate(async () => {
+      document.getElementById('dl-bill').value = 'TEST-DUP-1';
+      document.getElementById('dl-date').value = '2026-11-09';
+      bagCache['9001'] = { id: 9001, item_id: 'FAKE-DUP', weight_g: 587, lot_date: '2026-11-03' };
+      addMeatBlock(); const a = meatBlockCount;
+      meatSel[a].itemId = 'FAKE-DUP'; meatSel[a].selectedBags = new Set(['9001']);
+      addMeatBlock(); const b = meatBlockCount;
+      meatSel[b].itemId = 'FAKE-DUP'; meatSel[b].selectedBags = new Set(['9001']);
+      window._pendingDraftId = null;
+      await submitDelivery();
+    });
+
+    expect(msg).toContain('เลือกถุงซ้ำ');
+    expect(msg).toContain('#9001');
+    expect(msg).toMatch(/รายการที่ \d+ และ รายการที่ \d+/);
+    expect(msg).toContain('0.587');
+    expect(rpcCalled).toBe(false);
+  });
+
+  test('submitDelivery (draft): a draft listing the same bag twice names it and offers to keep one line each', async ({ page }) => {
+    await seedAuth(page);
+    await page.goto('hub-delivery.html');
+    await page.waitForLoadState('networkidle');
+
+    await page.route('**/rest/v1/delivery_drafts**', r => r.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify([{ meat_lines: [
+        { bag_id: '9001', item_id: 'FAKE-DUP', name: 'เนื้อทดสอบ', weight_g: 587 },
+        { bag_id: '9002', item_id: 'FAKE-DUP', name: 'เนื้อทดสอบ', weight_g: 526 },
+        { bag_id: '9001', item_id: 'FAKE-DUP', name: 'เนื้อทดสอบ', weight_g: 587 },
+      ], nm_lines: [] }]),
+    }));
+    let rpcCalled = false;
+    await page.route('**/rest/v1/rpc/**', r => { rpcCalled = true; r.abort(); });
+    const msgs = [];
+    page.on('dialog', async d => { msgs.push(d.message()); await d.dismiss(); });
+
+    await page.evaluate(async () => {
+      document.getElementById('dl-bill').value = 'TEST-DUP-2';
+      document.getElementById('dl-date').value = '2026-11-09';
+      bagCache['9001'] = { id: 9001, item_id: 'FAKE-DUP', weight_g: 587, lot_date: '2026-11-03' };
+      window._pendingDraftId = 'FAKE-DRAFT';
+      await submitDelivery();
+    });
+
+    expect(msgs.length).toBe(1);
+    expect(msgs[0]).toContain('Draft นี้มีถุงซ้ำ 1 ถุง');
+    expect(msgs[0]).toContain('#9001');
+    expect(msgs[0]).toContain('3 บรรทัด แต่เป็นถุงจริง 2 ถุง');
+    expect(rpcCalled).toBe(false);
+  });
 });
