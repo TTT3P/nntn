@@ -195,11 +195,21 @@ test.describe('hub-delivery meat-block selection guards', () => {
     expect(result).toBe(true);
   });
   // ─── duplicate bags across blocks (2026-11-09 FS20261109-3: 27 lines for 25 bags) ───
+  // CI runs this spec against the deployed site (baseURL = GitHub Pages main), so on the PR
+  // that introduces these guards the page under test does not have them yet. Skip — not
+  // fail — until the deployed page carries the feature; after merge the push-to-main run
+  // (and every later PR) executes them for real. Feature probe = the pure helper they need.
+  async function skipIfNotDeployed(page) {
+    const has = await page.evaluate(() => typeof findDuplicateBags === 'function');
+    test.skip(!has, 'page under test predates the duplicate-bag guards (PR #81) — runs after deploy');
+  }
+
 
   test('onMeatItemChange: a second block of the same SKU is refused with a message naming the first block', async ({ page }) => {
     await seedAuth(page);
     await page.goto('hub-delivery.html');
     await page.waitForLoadState('networkidle');
+    await skipIfNotDeployed(page);
 
     let msg = '';
     page.on('dialog', async d => { msg = d.message(); await d.accept(); });
@@ -230,6 +240,7 @@ test.describe('hub-delivery meat-block selection guards', () => {
     await seedAuth(page);
     await page.goto('hub-delivery.html');
     await page.waitForLoadState('networkidle');
+    await skipIfNotDeployed(page);
 
     const result = await page.evaluate(async () => {
       window.refreshInStockBags = async () => [
@@ -258,6 +269,7 @@ test.describe('hub-delivery meat-block selection guards', () => {
     await seedAuth(page);
     await page.goto('hub-delivery.html');
     await page.waitForLoadState('networkidle');
+    await skipIfNotDeployed(page);
 
     let rpcCalled = false;
     await page.route('**/rest/v1/rpc/**', r => { rpcCalled = true; r.abort(); });
@@ -287,6 +299,7 @@ test.describe('hub-delivery meat-block selection guards', () => {
     await seedAuth(page);
     await page.goto('hub-delivery.html');
     await page.waitForLoadState('networkidle');
+    await skipIfNotDeployed(page);
 
     await page.route('**/rest/v1/delivery_drafts**', r => r.fulfill({
       status: 200, contentType: 'application/json',
